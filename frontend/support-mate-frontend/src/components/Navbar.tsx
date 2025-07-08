@@ -18,9 +18,10 @@ interface NavbarProps {
   onMyAccount?: () => void;
   onLogout?: () => void;
   onHome?: () => void;
+  userRole?: string;
 }
 
-const Navbar: React.FC<NavbarProps> = ({
+export default function Navbar({
   title = '',
   leftIcon,
   isAuth = false,
@@ -30,23 +31,47 @@ const Navbar: React.FC<NavbarProps> = ({
   onMyAccount,
   onLogout,
   onHome,
-}) => {
+  userRole,
+}: NavbarProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
-  const rightContent = !isAuth ? (
-    <>
-      <Button color="inherit" sx={{ ml: 2, '&:hover': { background: '#1565c0' } }} onClick={onHome}>HOME</Button>
-      <Button color="inherit" sx={{ ml: 2, '&:hover': { background: '#1565c0' } }} onClick={onLogin}>LOGIN</Button>
-      <Button color="inherit" sx={{ ml: 1, '&:hover': { background: '#1565c0' } }} onClick={onSignup}>SIGNUP</Button>
-    </>
-  ) : (
-    <>
-      <Button color="inherit" sx={{ ml: 2, '&:hover': { background: '#1565c0' } }} onClick={onHome}>HOME</Button>
-      <Button color="inherit" sx={{ ml: 2, '&:hover': { background: '#1565c0' } }} onClick={onMyAccount}>MY ACCOUNT</Button>
-      <Button color="inherit" sx={{ ml: 1, '&:hover': { background: '#1565c0' } }} onClick={onLogout}>LOGOUT</Button>
-    </>
-  );
+  let rightContent;
+  if (userRole === 'user' && isAuth) {
+    rightContent = (
+      <>
+        <Button color="inherit" sx={{ ml: 2, '&:hover': { background: '#1565c0' } }}>Taleplerim</Button>
+        <Button color="inherit" sx={{ ml: 2, '&:hover': { background: '#1565c0' } }}>Talep Oluştur</Button>
+        <Button color="inherit" sx={{ ml: 2, '&:hover': { background: '#1565c0' } }}>Canlı Chat</Button>
+        <Button color="inherit" sx={{ ml: 2, '&:hover': { background: '#1565c0' } }} onClick={onMyAccount}>My Account</Button>
+        <Button color="inherit" sx={{ ml: 1, '&:hover': { background: '#1565c0' } }} onClick={onLogout}>Logout</Button>
+      </>
+    );
+  } else if (userRole === 'user' && !isAuth) {
+    rightContent = (
+      <>
+        <Button color="inherit" sx={{ ml: 2, '&:hover': { background: '#1565c0' } }}>Talep Oluştur</Button>
+        <Button color="inherit" sx={{ ml: 2, '&:hover': { background: '#1565c0' } }} onClick={onLogin}>Login</Button>
+        <Button color="inherit" sx={{ ml: 1, '&:hover': { background: '#1565c0' } }} onClick={onSignup}>Signup</Button>
+      </>
+    );
+  } else if (!isAuth) {
+    rightContent = (
+      <>
+        <Button color="inherit" sx={{ ml: 2, '&:hover': { background: '#1565c0' } }} onClick={onHome}>HOME</Button>
+        <Button color="inherit" sx={{ ml: 2, '&:hover': { background: '#1565c0' } }} onClick={onLogin}>LOGIN</Button>
+        <Button color="inherit" sx={{ ml: 1, '&:hover': { background: '#1565c0' } }} onClick={onSignup}>SIGNUP</Button>
+      </>
+    );
+  } else {
+    rightContent = (
+      <>
+        <Button color="inherit" sx={{ ml: 2, '&:hover': { background: '#1565c0' } }} onClick={onHome}>HOME</Button>
+        <Button color="inherit" sx={{ ml: 2, '&:hover': { background: '#1565c0' } }} onClick={onMyAccount}>MY ACCOUNT</Button>
+        <Button color="inherit" sx={{ ml: 1, '&:hover': { background: '#1565c0' } }} onClick={onLogout}>LOGOUT</Button>
+      </>
+    );
+  }
 
   return (
     <Box sx={{ flexGrow: 1, width: '100vw', minHeight: '80px', background: 'transparent' }}>
@@ -102,6 +127,4 @@ const Navbar: React.FC<NavbarProps> = ({
       </Box>
     </Box>
   );
-};
-
-export default Navbar; 
+} 

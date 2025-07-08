@@ -10,9 +10,35 @@ import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import Paper from '@mui/material/Paper';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
+import { useNavigate } from 'react-router-dom';
+import { UserRole } from '../routes';
 
-export default function LoginCard() {
+interface LoginCardProps {
+  onUserLogin?: (role: UserRole) => void;
+}
+
+export default function LoginCard({ onUserLogin }: LoginCardProps) {
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email === 'admin@admin.com' && password === 'admin') {
+      navigate('/admin');
+    } else if (email === 'support@support.com' && password === 'support') {
+      navigate('/support');
+    } else if (email === 'employee@employee.com' && password === 'employee') {
+      navigate('/employee');
+    } else if (email === 'user@user.com' && password === 'user') {
+      if (onUserLogin) onUserLogin('user');
+      navigate('/');
+    } else {
+      setError('Geçersiz e-posta veya şifre');
+    }
+  };
 
   return (
     <Box display="flex" justifyContent="center" alignItems="flex-start" sx={{ background: '#f5f5f5', minHeight: '100vh' }}>
@@ -25,9 +51,9 @@ export default function LoginCard() {
             Welcome back! Please login to your account.
           </Typography>
         </Box>
-        <Box component="form" noValidate>
+        <Box component="form" noValidate onSubmit={handleSubmit}>
           <Stack spacing={3.5}>
-            <TextField required fullWidth id="email" label="Email Address" name="email" autoComplete="email" size="small" />
+            <TextField required fullWidth id="email" label="Email Address" name="email" autoComplete="email" size="small" value={email} onChange={e => setEmail(e.target.value)} />
             <TextField
               required
               fullWidth
@@ -37,6 +63,8 @@ export default function LoginCard() {
               id="password"
               autoComplete="current-password"
               size="small"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
@@ -52,6 +80,10 @@ export default function LoginCard() {
               }}
             />
           </Stack>
+          
+          {error && (
+            <Typography color="error" sx={{ mt: 2, textAlign: 'center' }}>{error}</Typography>
+          )}
           <Button
             type="submit"
             fullWidth
@@ -65,6 +97,12 @@ export default function LoginCard() {
               Hesabın yok mu?{' '}
               <Link href="#" color="primary" underline="hover">
                 Kayıt ol
+              </Link>
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              Şifreni mi unuttun?{' '}
+              <Link href="#" color="primary" underline="hover" onClick={() => navigate('/forgot-password')}>
+                Şifremi sıfırla
               </Link>
             </Typography>
           </Box>
