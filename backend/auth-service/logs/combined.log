@@ -629,3 +629,11 @@
 {"code":"ENOTFOUND","errno":-3008,"hostname":"redis_auth_service","level":"error","message":"Redis connection error: getaddrinfo ENOTFOUND redis_auth_service","stack":"Error: getaddrinfo ENOTFOUND redis_auth_service\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)","syscall":"getaddrinfo","timestamp":"2025-07-08 15:41:34"}
 {"code":"ENOTFOUND","errno":-3008,"hostname":"redis_auth_service","level":"error","message":"Redis connection error: getaddrinfo ENOTFOUND redis_auth_service","stack":"Error: getaddrinfo ENOTFOUND redis_auth_service\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)","syscall":"getaddrinfo","timestamp":"2025-07-08 15:41:37"}
 {"code":"ENOTFOUND","errno":-3008,"hostname":"redis_auth_service","level":"error","message":"Redis connection error: getaddrinfo ENOTFOUND redis_auth_service","stack":"Error: getaddrinfo ENOTFOUND redis_auth_service\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)","syscall":"getaddrinfo","timestamp":"2025-07-08 15:41:40"}
+{"level":"info","message":"Redis connection successful","timestamp":"2025-07-08 15:41:47"}
+{"level":"info","message":"MongoDB connection successful","timestamp":"2025-07-08 15:41:47"}
+{"host":"localhost","level":"info","message":"MongoDB Connection Info:","name":"auth-service","port":27017,"readyState":1,"timestamp":"2025-07-08 15:41:47"}
+{"level":"info","message":"MongoDB connection test successful","timestamp":"2025-07-08 15:41:47"}
+{"level":"info","message":"Database connection and test successful.","timestamp":"2025-07-08 15:41:47"}
+{"host":"localhost","level":"info","message":"Database Info:","name":"auth-service","port":27017,"readyState":1,"timestamp":"2025-07-08 15:41:47"}
+{"level":"info","message":"Redis connection test successful.","timestamp":"2025-07-08 15:41:47"}
+{"level":"info","message":"🚀 Server is listening on port 8080","timestamp":"2025-07-08 15:41:47"}
