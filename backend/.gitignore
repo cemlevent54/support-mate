@@ -1,2 +1,3 @@
 auth-service/logs/
 auth-service/node_modules/
+auth-service/.env
