@@ -1,0 +1,29 @@
+http:
+  port: 8080
+admin:
+  port: 9876
+  hostname: localhost
+apiEndpoints:
+  api:
+    host: localhost
+    paths: '/api/*'
+serviceEndpoints:
+  authService:
+    url: 'http://localhost:8080'
+  userService:
+    url: 'http://localhost:8086'
+pipelines:
+  basic:
+    apiEndpoints:
+      - api
+    policies:
+      - proxy:
+          - action:
+              serviceEndpoint: authService
+              changeOrigin: true
+      - cors:
+          - action:
+              origin: '*'
+              methods: 'GET, POST, PUT, DELETE, OPTIONS'
+              allowedHeaders: 'Content-Type, Authorization'
+              credentials: true 

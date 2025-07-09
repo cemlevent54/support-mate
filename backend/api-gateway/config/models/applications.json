@@ -1,0 +1,24 @@
+{
+  "$id": "http://express-gateway.io/schemas/applications.json",
+  "type": "object",
+  "properties": {
+    "applications": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "keyId": {
+            "type": "string"
+          },
+          "secretKey": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "applications": []
+} 
