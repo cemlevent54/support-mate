@@ -1,0 +1,73 @@
+{
+  "accountDeleteSuccess": "Hesabınız silindi.",
+  "accountDeleteError": "Hesap silinirken bir hata oluştu.",
+  "components": {
+    "navbar": {
+      "home": "Anasayfa",
+      "login": "Giriş Yap",
+      "logout": "Çıkış Yap",
+      "signup": "Kayıt Ol",
+      "myAccount": "Hesabım",
+      "requests": "Taleplerim",
+      "createRequest": "Talep Oluştur",
+      "liveChat": "Canlı Chat",
+      "logoutSuccess": "Başarıyla çıkış yapıldı.",
+      "logoutError": "Çıkış yapılamadı."
+    }
+  },
+  "pages": {
+    "login": {
+      "title": "Giriş Yap",
+      "subtitle": "Tekrar hoş geldin! Lütfen hesabına giriş yap.",
+      "email": "E-posta Adresi",
+      "password": "Şifre",
+      "button": "Giriş Yap",
+      "noAccount": "Hesabın yok mu?",
+      "signup": "Kayıt ol",
+      "forgot": "Şifreni mi unuttun?",
+      "reset": "Şifremi sıfırla",
+      "error": "Giriş başarısız. Lütfen bilgilerinizi kontrol edin.",
+      "errorApi": "Sunucudan hata mesajı alındı.",
+      "success": "Başarıyla giriş yaptınız. Yönlendiriliyorsunuz..."
+    },
+    "signup": {
+      "title": "Kayıt Ol",
+      "subtitle": "Tüm harika özelliklerimizden yararlanmak için kaydolun!",
+      "firstName": "Ad",
+      "lastName": "Soyad",
+      "email": "E-posta Adresi",
+      "password": "Şifre",
+      "confirmPassword": "Şifreyi Onayla",
+      "button": "Kayıt Ol",
+      "alreadyUser": "Zaten üye misin?",
+      "login": "Giriş yap",
+      "required": "Lütfen tüm zorunlu alanları doldurun.",
+      "passwordsNoMatch": "Şifreler eşleşmiyor.",
+      "success": "Kayıt başarılı! Giriş yapabilirsiniz.",
+      "error": "Kayıt başarısız. Lütfen bilgilerinizi kontrol edin."
+    },
+    "myAccount": {
+      "title": "Hesabım",
+      "infoTitle": "Kullanıcı Bilgileri",
+      "firstName": "Ad",
+      "lastName": "Soyad",
+      "email": "E-posta",
+      "phone": "Telefon Numarası",
+      "save": "Kaydet",
+      "passwordTitle": "Şifre Güncelle",
+      "newPassword": "Yeni Şifre",
+      "confirmPassword": "Yeni Şifreyi Onayla",
+      "updatePassword": "Şifreyi Güncelle",
+      "deleteAccount": "Hesabımı Sil",
+      "updateSuccess": "Bilgiler başarıyla güncellendi.",
+      "updateError": "Bilgiler güncellenemedi.",
+      "loading": "İşlem yapılıyor..."
+    }
+  },
+  "confirm": {
+    "deleteTitle": "Hesabı Sil",
+    "deleteDesc": "Bu işlemi geri alamazsınız. Hesabınızı silmek istediğinize emin misiniz?",
+    "deleteYes": "Evet, Sil",
+    "deleteNo": "Vazgeç"
+  }
+} 

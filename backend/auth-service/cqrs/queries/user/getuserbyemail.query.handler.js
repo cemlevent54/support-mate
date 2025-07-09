@@ -19,7 +19,8 @@ export class GetUserByEmailQueryHandler {
         lastName: user.lastName,
         role: user.role,
         createdAt: user.createdAt,
-        updatedAt: user.updatedAt
+        updatedAt: user.updatedAt,
+        phoneNumber: user.phoneNumber // <-- Telefon numarası eklendi
       };
       logger.info('GetUserByEmailQuery completed successfully', { userId: user._id });
       return result;

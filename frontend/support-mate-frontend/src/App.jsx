@@ -13,6 +13,7 @@ import HomePage from './pages/HomePage/HomePage';
 import LoginCard from './components/LoginCard';
 import SignupCard from './components/SignupCard';
 import MyAccount from './components/MyAccount';
+import LanguageProvider from './components/LanguageProvider';
 
 function AppContent() {
   const [drawerOpen, setDrawerOpen] = React.useState(false);
@@ -40,6 +41,18 @@ function AppContent() {
 
   // Route'ları role bazlı filtrele (ileride kullanılacak)
   const filteredRoutes = appRoutes.filter(route => !route.roles || route.roles.includes(userRole));
+
+  // Sayfa yenilendiğinde oturum kontrolü
+  React.useEffect(() => {
+    const token = localStorage.getItem('jwt');
+    if (token) {
+      setIsAuth(true);
+      setUserRole('user'); // JWT decode ile rol alınabilir
+    } else {
+      setIsAuth(false);
+      setUserRole('guest');
+    }
+  }, []);
 
   return (
     <div className="App">
@@ -98,9 +111,11 @@ function AppContent() {
 
 function App() {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <LanguageProvider>
+      <Router>
+        <AppContent />
+      </Router>
+    </LanguageProvider>
   );
 }
 

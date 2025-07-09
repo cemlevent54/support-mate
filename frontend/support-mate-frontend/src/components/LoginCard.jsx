@@ -11,6 +11,11 @@ import Paper from '@mui/material/Paper';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import { useNavigate } from 'react-router-dom';
+import { login } from '../api/authApi';
+import { useTranslation } from 'react-i18next';
+import { useLanguage } from './LanguageProvider';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
 
 export default function LoginCard({ onUserLogin }) {
   const [showPassword, setShowPassword] = useState(false);
@@ -18,20 +23,39 @@ export default function LoginCard({ onUserLogin }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const { language, onLanguageChange } = useLanguage();
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
 
-  const handleSubmit = (e) => {
+  const handleSnackbarClose = () => setSnackbar({ ...snackbar, open: false });
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (email === 'admin@admin.com' && password === 'admin') {
-      navigate('/admin');
-    } else if (email === 'support@support.com' && password === 'support') {
-      navigate('/support');
-    } else if (email === 'employee@employee.com' && password === 'employee') {
-      navigate('/employee');
-    } else if (email === 'user@user.com' && password === 'user') {
-      if (onUserLogin) onUserLogin('user');
-      navigate('/');
-    } else {
-      setError('Geçersiz e-posta veya şifre');
+    setError('');
+    try {
+      const result = await login({ email, password });
+      // JWT'yi localStorage'a kaydet
+      if (result && result.data && result.data.accessToken) {
+        localStorage.setItem('jwt', result.data.accessToken);
+      }
+      // Başarılı girişte yönlendirme (rol veya başka bilgiye göre özelleştirilebilir)
+      setSnackbar({ open: true, message: t('pages.login.success'), severity: 'success' });
+      if (result && result.data && result.data.role) {
+        const role = result.data.role;
+        if (role === 'admin') navigate('/admin');
+        else if (role === 'support') navigate('/support');
+        else if (role === 'employee') navigate('/employee');
+        else {
+          if (onUserLogin) onUserLogin(role);
+          setTimeout(() => navigate('/'), 1000);
+        }
+      } else {
+        if (onUserLogin) onUserLogin('user');
+        setTimeout(() => navigate('/'), 1000);
+      }
+    } catch (err) {
+      setError(t('pages.login.error'));
+      setSnackbar({ open: true, message: t('pages.login.error'), severity: 'error' });
     }
   };
 
@@ -40,20 +64,20 @@ export default function LoginCard({ onUserLogin }) {
       <Paper elevation={6} sx={{ mt: 6, p: 2.5, borderRadius: 3, width: '100%', maxWidth: 500 }}>
         <Box display="flex" flexDirection="column" alignItems="center" mb={2}>
           <Typography component="h1" variant="h5" fontWeight={700} gutterBottom>
-            Login
+            {t('pages.login.title')}
           </Typography>
           <Typography variant="body2" color="text.secondary" align="center">
-            Welcome back! Please login to your account.
+            {t('pages.login.subtitle')}
           </Typography>
         </Box>
         <Box component="form" noValidate onSubmit={handleSubmit}>
           <Stack spacing={3.5}>
-            <TextField required fullWidth id="email" label="Email Address" name="email" autoComplete="email" size="small" value={email} onChange={e => setEmail(e.target.value)} />
+            <TextField required fullWidth id="email" label={t('pages.login.email')} name="email" autoComplete="email" size="small" value={email} onChange={e => setEmail(e.target.value)} />
             <TextField
               required
               fullWidth
               name="password"
-              label="Password"
+              label={t('pages.login.password')}
               type={showPassword ? 'text' : 'password'}
               id="password"
               autoComplete="current-password"
@@ -76,33 +100,35 @@ export default function LoginCard({ onUserLogin }) {
             />
           </Stack>
           
-          {error && (
-            <Typography color="error" sx={{ mt: 2, textAlign: 'center' }}>{error}</Typography>
-          )}
           <Button
             type="submit"
             fullWidth
             variant="contained"
-            sx={{ mt: 3.5, mb: 1.5, py: 1, fontWeight: 600 }}
+            sx={{ mt: 3.5, mb: 1.5, py: 1, fontWeight: 600, textTransform: 'none' }}
           >
-            Login
+            {t('pages.login.button')}
           </Button>
           <Box mt={1.5} textAlign="center">
             <Typography variant="body2">
-              Hesabın yok mu?{' '}
+              {t('pages.login.noAccount')}{' '}
               <Link href="#" color="primary" underline="hover">
-                Kayıt ol
+                {t('pages.login.signup')}
               </Link>
             </Typography>
             <Typography variant="body2" sx={{ mt: 1 }}>
-              Şifreni mi unuttun?{' '}
+              {t('pages.login.forgot')}{' '}
               <Link href="#" color="primary" underline="hover" onClick={() => navigate('/forgot-password')}>
-                Şifremi sıfırla
+                {t('pages.login.reset')}
               </Link>
             </Typography>
           </Box>
         </Box>
       </Paper>
+      <Snackbar open={snackbar.open} autoHideDuration={2500} onClose={handleSnackbarClose} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 } 

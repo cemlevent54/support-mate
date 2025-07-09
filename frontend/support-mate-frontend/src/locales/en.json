@@ -1,0 +1,73 @@
+{
+  "accountDeleteSuccess": "Your account has been deleted.",
+  "accountDeleteError": "An error occurred while deleting your account.",
+  "components": {
+    "navbar": {
+      "home": "Home",
+      "login": "Login",
+      "logout": "Logout",
+      "signup": "Signup",
+      "myAccount": "My Account",
+      "requests": "My Requests",
+      "createRequest": "Create Request",
+      "liveChat": "Live Chat",
+      "logoutSuccess": "Logged out successfully.",
+      "logoutError": "Logout failed."
+    }
+  },
+  "pages": {
+    "login": {
+      "title": "Login",
+      "subtitle": "Welcome back! Please login to your account.",
+      "email": "Email Address",
+      "password": "Password",
+      "button": "Login",
+      "noAccount": "Don't have an account?",
+      "signup": "Sign up",
+      "forgot": "Forgot your password?",
+      "reset": "Reset my password",
+      "error": "Login failed. Please check your credentials.",
+      "errorApi": "Received error message from server.",
+      "success": "Login successful. Redirecting..."
+    },
+    "signup": {
+      "title": "Sign up",
+      "subtitle": "To enjoy all of our cool features ✌️",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "email": "Email Address",
+      "password": "Password",
+      "confirmPassword": "Confirm Password",
+      "button": "Sign up",
+      "alreadyUser": "Already a user?",
+      "login": "Login",
+      "required": "Please fill in all required fields.",
+      "passwordsNoMatch": "Passwords do not match.",
+      "success": "Registration successful! You can now login.",
+      "error": "Registration failed. Please check your information."
+    },
+    "myAccount": {
+      "title": "My Account",
+      "infoTitle": "User Information",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "email": "Email",
+      "phone": "Phone Number",
+      "save": "Save",
+      "passwordTitle": "Update Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm New Password",
+      "updatePassword": "Update Password",
+      "deleteAccount": "Delete My Account",
+      "updateSuccess": "Information updated successfully.",
+      "updateError": "Failed to update information.",
+      "loading": "Processing..."
+    }
+  },
+  "confirm": {
+    "deleteTitle": "Delete Account",
+    "deleteDesc": "This action cannot be undone. Are you sure you want to delete your account?",
+    "deleteYes": "Yes, Delete",
+    "deleteNo": "Cancel"
+  }
+} 
