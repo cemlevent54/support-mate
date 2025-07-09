@@ -3,23 +3,9 @@ import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
-
-interface NavbarProps {
-  title?: string;
-  leftIcon?: React.ReactNode;
-  isAuth?: boolean;
-  mobileSidebar?: React.ReactNode;
-  onLogin?: () => void;
-  onSignup?: () => void;
-  onMyAccount?: () => void;
-  onLogout?: () => void;
-  onHome?: () => void;
-  userRole?: string;
-}
 
 export default function Navbar({
   title = '',
@@ -32,7 +18,7 @@ export default function Navbar({
   onLogout,
   onHome,
   userRole,
-}: NavbarProps) {
+}) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 

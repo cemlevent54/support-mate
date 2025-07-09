@@ -6,17 +6,7 @@ import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 
-interface SidebarProps {
-  open: boolean;
-  onClose: () => void;
-  isAuth: boolean;
-  onLogin?: () => void;
-  onSignup?: () => void;
-  onMyAccount?: () => void;
-  onLogout?: () => void;
-}
-
-const Sidebar: React.FC<SidebarProps> = ({ open, onClose, isAuth, onLogin, onSignup, onMyAccount, onLogout }) => {
+const Sidebar = ({ open, onClose, isAuth, onLogin, onSignup, onMyAccount, onLogout }) => {
   return (
     <Drawer anchor="left" open={open} onClose={onClose}>
       <Box

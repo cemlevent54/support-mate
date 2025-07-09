@@ -10,16 +10,7 @@ import ForgotPassword from './components/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
 
 // Role bazlı erişim için örnek bir yapı
-export type UserRole = 'guest' | 'user' | 'admin' | 'support' | 'employee';
-
-export interface AppRoute {
-  path: string;
-  element: React.ReactNode;
-  roles?: UserRole[]; // Hangi roller erişebilir
-  children?: AppRoute[];
-}
-
-export const appRoutes: AppRoute[] = [
+export const appRoutes = [
   {
     path: '/signup',
     element: <SignupCard />,

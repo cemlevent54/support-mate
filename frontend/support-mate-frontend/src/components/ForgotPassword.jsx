@@ -6,51 +6,35 @@ import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import Snackbar from '@mui/material/Snackbar';
 
-export default function ResetPassword() {
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+export default function ForgotPassword() {
+  const [email, setEmail] = useState('');
   const [open, setOpen] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    // Burada şifre güncelleme işlemi yapılabilir
     setOpen(true);
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-    setNewPassword('');
-    setConfirmPassword('');
   };
 
   return (
     <Box display="flex" justifyContent="center" alignItems="flex-start" sx={{ background: '#f5f5f5', minHeight: '100vh' }}>
       <Paper elevation={6} sx={{ mt: 10, p: 4, borderRadius: 3, width: '100%', maxWidth: 400 }}>
         <Typography component="h1" variant="h5" fontWeight={700} gutterBottom textAlign="center">
-          Şifreyi Sıfırla
+          Şifremi Unuttum
         </Typography>
         <Typography variant="body2" color="text.secondary" align="center" mb={3}>
-          Yeni şifrenizi girin ve onaylayın.
+          Şifrenizi sıfırlamak için e-posta adresinizi girin.
         </Typography>
         <form onSubmit={handleSubmit}>
           <TextField
             required
             fullWidth
-            label="New Password"
-            type="password"
-            value={newPassword}
-            onChange={e => setNewPassword(e.target.value)}
+            id="email"
+            label="Email Address"
+            name="email"
+            autoComplete="email"
             size="small"
-            sx={{ mb: 2 }}
-          />
-          <TextField
-            required
-            fullWidth
-            label="Confirm Password"
-            type="password"
-            value={confirmPassword}
-            onChange={e => setConfirmPassword(e.target.value)}
-            size="small"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
             sx={{ mb: 3 }}
           />
           <Button type="submit" variant="contained" fullWidth sx={{ fontWeight: 600, textTransform: 'none' }}>
@@ -61,8 +45,8 @@ export default function ResetPassword() {
       <Snackbar
         open={open}
         autoHideDuration={3000}
-        onClose={handleClose}
-        message="Şifreniz başarıyla değiştirildi."
+        onClose={() => setOpen(false)}
+        message="Mail gönderildi"
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       />
     </Box>

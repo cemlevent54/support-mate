@@ -14,12 +14,12 @@ export default function MyAccount() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = (e) => {
     e.preventDefault();
     // Bilgileri güncelleme işlemi
   };
 
-  const handlePasswordUpdate = (e: React.FormEvent) => {
+  const handlePasswordUpdate = (e) => {
     e.preventDefault();
     // Şifre güncelleme işlemi
   };

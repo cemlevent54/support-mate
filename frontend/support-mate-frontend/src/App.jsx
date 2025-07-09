@@ -8,7 +8,7 @@ import AppLogo from './components/AppLogo';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { appRoutes, AppRoute, UserRole } from './routes';
+import { appRoutes } from './routes';
 import HomePage from './pages/HomePage/HomePage';
 import LoginCard from './components/LoginCard';
 import SignupCard from './components/SignupCard';
@@ -17,7 +17,7 @@ import MyAccount from './components/MyAccount';
 function AppContent() {
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [isAuth, setIsAuth] = React.useState(false); // örnek auth state
-  const [userRole, setUserRole] = React.useState<UserRole>('guest');
+  const [userRole, setUserRole] = React.useState('guest');
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
@@ -33,7 +33,7 @@ function AppContent() {
   };
   const handleHome = () => navigate('/');
 
-  const handleUserLogin = (role: UserRole) => {
+  const handleUserLogin = (role) => {
     setIsAuth(true);
     setUserRole(role);
   };
@@ -104,4 +104,4 @@ function App() {
   );
 }
 
-export default App;
+export default App; 

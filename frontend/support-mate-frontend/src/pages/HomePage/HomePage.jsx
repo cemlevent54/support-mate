@@ -1,6 +1,6 @@
 import React from 'react';
 
-const HomePage: React.FC = () => {
+const HomePage = () => {
   return (
     <div style={{ marginTop: 120, textAlign: 'center' }}>
       <h1>Hoşgeldiniz!</h1>

@@ -11,20 +11,15 @@ import Paper from '@mui/material/Paper';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import { useNavigate } from 'react-router-dom';
-import { UserRole } from '../routes';
 
-interface LoginCardProps {
-  onUserLogin?: (role: UserRole) => void;
-}
-
-export default function LoginCard({ onUserLogin }: LoginCardProps) {
+export default function LoginCard({ onUserLogin }) {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (email === 'admin@admin.com' && password === 'admin') {
       navigate('/admin');
