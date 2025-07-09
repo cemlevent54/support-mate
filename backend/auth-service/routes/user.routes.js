@@ -4,8 +4,9 @@ import { authMiddleware } from '../middlewares/authMiddleware.js';
 
 const router = Router();
 
-router.post('/register', userController.register);
-router.post('/login', userController.login);
-router.post('/logout', authMiddleware, userController.logout);
+
+router.get('/:id', authMiddleware, userController.getUserById);
+router.get('/', authMiddleware, userController.getAllUsers);
+router.get('/role/:role', authMiddleware, userController.getUsersByRole);
 
 export default router; 

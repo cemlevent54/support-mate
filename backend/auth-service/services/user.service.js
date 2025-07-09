@@ -1,99 +1,83 @@
-import { createUser, findUserByEmail } from '../repositories/user.repository.js';
-import bcrypt from 'bcrypt';
-import { conflictError } from '../responseHandlers/clientErrors/conflict.error.js';
-import { unauthorizedError } from '../responseHandlers/clientErrors/unauthorized.error.js';
+import userRepository from '../repositories/user.repository.js';
+import { notFoundError } from '../responseHandlers/clientErrors/notfound.error.js';
 import { apiSuccess } from '../responseHandlers/api.success.js';
 import { internalServerError } from '../responseHandlers/serverErrors/internalserver.error.js';
 import logger from '../config/logger.js';
-import JWTUtils from '../middlewares/jwt.service.js';
+import {
+  queryHandler,
+  QUERY_TYPES,
+  GetUserByIdQueryHandler,
+  GetAllUsersQueryHandler,
+  GetUsersByRoleQueryHandler
+} from '../cqrs/index.js';
 
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
+class UserService {
+  constructor() {
+    queryHandler.register(QUERY_TYPES.GET_USER_BY_ID, new GetUserByIdQueryHandler());
+    queryHandler.register(QUERY_TYPES.GET_ALL_USERS, new GetAllUsersQueryHandler());
+    queryHandler.register(QUERY_TYPES.GET_USERS_BY_ROLE, new GetUsersByRoleQueryHandler());
+  }
 
-export const registerUser = async (req, res) => {
-  try {
-    logger.info('Register request received', { body: req.body });
-    const existingUser = await findUserByEmail(req.body.email);
-    if (existingUser) {
-      logger.warn('Register failed: email already in use', { email: req.body.email });
-      conflictError(res, 'Email already in use');
-      return;
+  async getUserById(req, res) {
+    try {
+      const { id } = req.params;
+      logger.info('Get user by ID request', { userId: id });
+      const getUserQuery = { id };
+      const user = await queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_ID, getUserQuery);
+      if (!user) {
+        logger.warn('Get user by ID: user not found', { userId: id });
+        notFoundError(res, 'User not found');
+        return;
+      }
+      logger.info('Get user by ID success', { userId: id });
+      apiSuccess(res, user, 'User retrieved successfully', 200);
+    } catch (err) {
+      logger.error('Get user by ID error', { error: err, userId: req.params.id });
+      internalServerError(res);
     }
-    const user = await createUser(req.body);
-    logger.info('Register success', { user });
-    apiSuccess(res, user, 'User registered successfully', 201);
-  } catch (err) {
-    logger.error('Register internal server error', { error: err, body: req.body });
-    internalServerError(res);
   }
-};
 
-export const loginUser = async (req, res) => {
-  try {
-    logger.info('Login request received', { body: req.body });
-    const { email, password } = req.body;
-    const user = await findUserByEmail(email);
-    if (!user) {
-      logger.warn('Login failed: user not found', { email });
-      unauthorizedError(res, 'Invalid email or password');
-      return;
+  async getAllUsers(req, res) {
+    try {
+      const { page, limit, role } = req.query;
+      logger.info('Get all users request', { page, limit, role });
+      const getAllUsersQuery = {
+        page: page ? parseInt(page) : undefined,
+        limit: limit ? parseInt(limit) : undefined,
+        role: role
+      };
+      const result = await queryHandler.dispatch(QUERY_TYPES.GET_ALL_USERS, getAllUsersQuery);
+      logger.info('Get all users success', { total: result.total });
+      apiSuccess(res, result, 'Users retrieved successfully', 200);
+    } catch (err) {
+      logger.error('Get all users error', { error: err, query: req.query });
+      internalServerError(res);
     }
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      logger.warn('Login failed: password mismatch', { email });
-      unauthorizedError(res, 'Invalid email or password');
-      return;
-    }
-    // Aktif oturum kontrolü
-    const activeSession = await JWTUtils.findActiveSession(user.id);
-    if (activeSession) {
-      logger.warn('Login failed: user already logged in', { userId: user.id });
-      conflictError(res, 'User already logged in');
-      return;
-    }
-    // Access token oluştur
-    const payload = {
-      id: user.id,
-      email: user.email,
-      role: user.role
-    };
-    const accessToken = JWTUtils.generateAccessToken(payload, JWT_EXPIRES_IN);
-    // expireAt hesapla
-    const expiresInMs = typeof JWT_EXPIRES_IN === 'string' && JWT_EXPIRES_IN.endsWith('m')
-      ? parseInt(JWT_EXPIRES_IN) * 60 * 1000
-      : typeof JWT_EXPIRES_IN === 'string' && JWT_EXPIRES_IN.endsWith('h')
-        ? parseInt(JWT_EXPIRES_IN) * 60 * 60 * 1000
-        : 15 * 60 * 1000; // default 15m
-    const expireAt = new Date(Date.now() + expiresInMs);
-    logger.info('Login success', { user, accessToken, expireAt });
-    apiSuccess(res, { user, accessToken, expireAt }, 'Login successful', 200);
-  } catch (err) {
-    logger.error('Login internal server error', { error: err, body: req.body });
-    internalServerError(res);
   }
-};
 
-export const logoutUser = async (req, res) => {
-  logger.info('Logout fonksiyonu çağrıldı', { user: req.user });
-  const userId = req.user?.id;
-  if (!userId) {
-    res.status(400).json({ success: false, message: 'User ID is required' });
-    return;
-  }
-  try {
-    logger.info(`User logout process started - User ID: ${userId}`);
-    // Aktif oturumu temizle
-    await JWTUtils.removeActiveSession(userId);
-    // Blacklist'e ekle
-    JWTUtils.addToBlacklist(userId);
-    // Cookie'yi temizle
-    if (res) {
-      res.clearCookie('refreshToken');
+  async getUsersByRole(req, res) {
+    try {
+      const { role } = req.params;
+      const { page, limit } = req.query;
+      logger.info('Get users by role request', { role, page, limit });
+      const getUsersByRoleQuery = {
+        role,
+        page: page ? parseInt(page) : undefined,
+        limit: limit ? parseInt(limit) : undefined
+      };
+      const result = await queryHandler.dispatch(QUERY_TYPES.GET_USERS_BY_ROLE, getUsersByRoleQuery);
+      logger.info('Get users by role success', { role, total: result.total });
+      apiSuccess(res, result, 'Users retrieved successfully', 200);
+    } catch (err) {
+      logger.error('Get users by role error', { error: err, role: req.params.role });
+      internalServerError(res);
     }
-    logger.info(`User logged out successfully - User ID: ${userId}`);
-    apiSuccess(res, null, 'Logged out successfully', 200);
-    logger.info('Logout fonksiyonu başarıyla tamamlandı', { userId });
-  } catch (error) {
-    logger.error(`Error in logoutUser - Error: ${error.message}, User ID: ${userId}`);
-    internalServerError(res, error.message);
   }
-}; 
+
+  async getUserByIdRaw(id) {
+    // Sadece CQRS ile kullanıcıyı döndür, response işlemi yapma
+    return await queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_ID, { id });
+  }
+}
+
+export default new UserService(); 

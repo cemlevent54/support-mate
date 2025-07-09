@@ -1,9 +1,9 @@
-import { registerUser, loginUser, logoutUser } from '../services/user.service.js';
+import userService from '../services/user.service.js';
 
-const userController = {
-  register: registerUser,
-  login: loginUser,
-  logout: logoutUser,
-};
+class UserController {
+  getUserById = userService.getUserById.bind(userService);
+  getAllUsers = userService.getAllUsers.bind(userService);
+  getUsersByRole = userService.getUsersByRole.bind(userService);
+}
 
-export default userController; 
+export default new UserController();

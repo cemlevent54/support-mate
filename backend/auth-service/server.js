@@ -12,6 +12,7 @@ app.use(express.json());
 
 app.use('/api', router); 
 
+
 // Basit bir Health Check endpointi
 app.get('/health', healthCheck);
 

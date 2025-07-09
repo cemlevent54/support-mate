@@ -27,7 +27,7 @@ function parseDuration(duration) {
   return parseInt(duration);
 }
 
-class JWTUtils {
+class JWTService {
   static addToBlacklist(userId) {
     blacklistedUsers.add(userId);
     logger.info(`User added to blacklist - User ID: ${userId}`);
@@ -69,7 +69,7 @@ class JWTUtils {
   }
   static generateRefreshToken(payload) {
     logger.debug(`Generating refresh token - User ID: ${payload.id}, Email: ${payload.email}`);
-    const token = jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
     logger.debug(`Refresh token generated successfully - User ID: ${payload.id}`);
     return token;
   }
@@ -90,7 +90,7 @@ class JWTUtils {
   }
   static verifyRefreshToken(token) {
     logger.debug(`Verifying refresh token`);
-    const decoded = jwt.verify(token, JWT_REFRESH_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET);
     if (this.isBlacklisted(decoded.id)) {
       logger.warn(`Refresh token rejected - User is blacklisted - User ID: ${decoded.id}`);
       throw new Error('Token is invalid - user logged out');
@@ -140,4 +140,4 @@ class JWTUtils {
   }
 }
 
-export default JWTUtils; 
+export default JWTService; 
