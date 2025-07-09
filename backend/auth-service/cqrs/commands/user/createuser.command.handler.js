@@ -14,8 +14,20 @@ export class CreateUserCommandHandler {
         role: command.role || 'user'
       };
       const user = await userRepository.createUser(userData);
-      logger.info('CreateUserCommand completed successfully', { userId: user.id });
-      return user;
+      
+      // MongoDB'den gelen _id'yi id olarak normalize et
+      const result = {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      };
+      
+      logger.info('CreateUserCommand completed successfully', { userId: user._id });
+      return result;
     } catch (error) {
       logger.error('CreateUserCommand failed', { error, command });
       throw error;

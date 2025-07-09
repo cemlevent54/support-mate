@@ -10,26 +10,40 @@ import {
   GetAllUsersQueryHandler,
   GetUsersByRoleQueryHandler
 } from '../cqrs/index.js';
+import { commandHandler, COMMAND_TYPES, UpdateUserCommandHandler, DeleteUserCommandHandler } from '../cqrs/index.js';
 
 class UserService {
   constructor() {
     queryHandler.register(QUERY_TYPES.GET_USER_BY_ID, new GetUserByIdQueryHandler());
     queryHandler.register(QUERY_TYPES.GET_ALL_USERS, new GetAllUsersQueryHandler());
     queryHandler.register(QUERY_TYPES.GET_USERS_BY_ROLE, new GetUsersByRoleQueryHandler());
+    commandHandler.register(COMMAND_TYPES.UPDATE_USER, new UpdateUserCommandHandler());
+    commandHandler.register(COMMAND_TYPES.DELETE_USER, new DeleteUserCommandHandler());
   }
 
   async getUserById(req, res) {
     try {
-      const { id } = req.params;
-      logger.info('Get user by ID request', { userId: id });
-      const getUserQuery = { id };
+      // Hem /users/:id hem de /users/me için id'yi belirle
+      let userId = req.params.id;
+      // Eğer id parametresi yoksa veya undefined ise JWT'den al
+      if (!userId) {
+        if (req.user && req.user.id) {
+          userId = req.user.id;
+        } else {
+          logger.error('Get user by ID: No user id found in params or JWT', { user: req.user });
+          notFoundError(res, 'User not authenticated');
+          return;
+        }
+      }
+      logger.info('Get user by ID request', { userId });
+      const getUserQuery = { id: userId };
       const user = await queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_ID, getUserQuery);
       if (!user) {
-        logger.warn('Get user by ID: user not found', { userId: id });
+        logger.warn('Get user by ID: user not found', { userId });
         notFoundError(res, 'User not found');
         return;
       }
-      logger.info('Get user by ID success', { userId: id });
+      logger.info('Get user by ID success', { userId });
       apiSuccess(res, user, 'User retrieved successfully', 200);
     } catch (err) {
       logger.error('Get user by ID error', { error: err, userId: req.params.id });
@@ -77,6 +91,75 @@ class UserService {
   async getUserByIdRaw(id) {
     // Sadece CQRS ile kullanıcıyı döndür, response işlemi yapma
     return await queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_ID, { id });
+  }
+
+  async updateUser(req, res) {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+      logger.info('Update user request', { userId: id, updateData });
+      const command = { id, updateData };
+      const user = await commandHandler.dispatch(COMMAND_TYPES.UPDATE_USER, command);
+      if (!user) {
+        logger.warn('Update user: user not found', { userId: id });
+        notFoundError(res, 'User not found');
+        return;
+      }
+      logger.info('Update user success', { userId: id });
+      apiSuccess(res, user, 'User updated successfully', 200);
+    } catch (err) {
+      logger.error('Update user error', { error: err, userId: req.params.id });
+      internalServerError(res);
+    }
+  }
+
+  async deleteUser(req, res) {
+    try {
+      const { id } = req.params;
+      logger.info('Soft delete user request', { userId: id });
+      const command = { id };
+      const user = await commandHandler.dispatch(COMMAND_TYPES.DELETE_USER, command);
+      if (!user) {
+        logger.warn('Soft delete user: user not found', { userId: id });
+        notFoundError(res, 'User not found');
+        return;
+      }
+      logger.info('Soft delete user success', { userId: id });
+      apiSuccess(res, user, 'User soft deleted successfully', 200);
+    } catch (err) {
+      logger.error('Soft delete user error', { error: err, userId: req.params.id });
+      internalServerError(res);
+    }
+  }
+
+  async getAuthenticatedUser(req, res) {
+    try {
+      // JWT'den gelen kullanıcı bilgisini kontrol et
+      if (!req.user || !req.user.email) {
+        logger.error('Get authenticated user: No user email found in JWT', { user: req.user });
+        notFoundError(res, 'User not authenticated');
+        return;
+      }
+
+      const userEmail = req.user.email;
+      logger.info('Get authenticated user request', { userEmail });
+      
+      // CQRS pattern'ine uygun olarak email ile query dispatch et
+      const getUserQuery = { email: userEmail };
+      const user = await queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_EMAIL, getUserQuery);
+      
+      if (!user) {
+        logger.warn('Get authenticated user: user not found', { userEmail });
+        notFoundError(res, 'User not found');
+        return;
+      }
+      
+      logger.info('Get authenticated user success', { userEmail });
+      apiSuccess(res, user, 'Authenticated user retrieved successfully', 200);
+    } catch (err) {
+      logger.error('Get authenticated user error', { error: err, userEmail: req.user?.email });
+      internalServerError(res);
+    }
   }
 }
 

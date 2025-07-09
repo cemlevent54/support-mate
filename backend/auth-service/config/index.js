@@ -1,6 +1,6 @@
 import { connectDatabase, testConnection } from './database.js';
 import logger from './logger.js';
-import redisClient from './cache.js';
+import cacheService from './cache.js';
 
 export const initializeApp = async () => {
   try {
@@ -15,7 +15,8 @@ export const initializeApp = async () => {
 
     // Redis bağlantı testi
     try {
-      const result = await redisClient.ping();
+      // Cache service'in client'ını kullanarak ping testi yap
+      const result = await cacheService.client.ping();
       if (result === 'PONG') {
         logger.info('Redis connection test successful.');
       } else {

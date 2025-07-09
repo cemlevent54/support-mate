@@ -35,13 +35,29 @@ class AuthService {
   async register(req, res) {
     try {
       logger.info('Register request received', { body: req.body });
-      const emailCheckQuery = { email: req.body.email };
-      const existingUser = await queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_EMAIL, emailCheckQuery);
+      // isDeleted filtresi olmadan kullanıcıyı bul
+      const existingUser = await userRepository.findAnyUserByEmail(req.body.email);
       if (existingUser) {
-        logger.warn('Register failed: email already in use', { email: req.body.email });
-        conflictError(res, 'Email already in use');
-        return;
+        if (existingUser.isDeleted) {
+          // Soft deleted kullanıcıyı tekrar aktif et ve bilgilerini güncelle
+          logger.info('Register: Reactivating soft deleted user', { email: req.body.email });
+          existingUser.firstName = req.body.firstName;
+          existingUser.lastName = req.body.lastName;
+          existingUser.password = req.body.password;
+          existingUser.role = req.body.role;
+          existingUser.isDeleted = false;
+          existingUser.deletedAt = null;
+          await existingUser.save();
+          logger.info('Register: Soft deleted user reactivated', { user: existingUser });
+          apiSuccess(res, existingUser, 'User registered successfully (reactivated)', 201);
+          return;
+        } else {
+          logger.warn('Register failed: email already in use', { email: req.body.email });
+          conflictError(res, 'Email already in use');
+          return;
+        }
       }
+      // Hiç kullanıcı yoksa yeni kullanıcı oluştur
       const createUserCommand = {
         email: req.body.email,
         password: req.body.password,
@@ -124,7 +140,7 @@ class AuthService {
     logger.info('Logout request received', { user: req.user });
     const userId = req.user?.id;
     if (!userId) {
-      ba(res, 'User ID is required');R
+      unauthorizedError(res, 'User ID is required');
       return;
     }
     try {

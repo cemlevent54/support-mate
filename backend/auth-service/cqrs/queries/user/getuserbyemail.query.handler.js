@@ -12,7 +12,7 @@ export class GetUserByEmailQueryHandler {
       }
       // Login için password'u da döndür
       const result = {
-        id: user.id,
+        id: user._id,
         email: user.email,
         password: user.password, // <-- Şifre hash'i login için gerekli
         firstName: user.firstName,
@@ -21,7 +21,7 @@ export class GetUserByEmailQueryHandler {
         createdAt: user.createdAt,
         updatedAt: user.updatedAt
       };
-      logger.info('GetUserByEmailQuery completed successfully', { userId: user.id });
+      logger.info('GetUserByEmailQuery completed successfully', { userId: user._id });
       return result;
     } catch (error) {
       logger.error('GetUserByEmailQuery failed', { error, query });
