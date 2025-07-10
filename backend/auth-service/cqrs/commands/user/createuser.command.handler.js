@@ -1,19 +1,33 @@
 import userRepository from '../../../repositories/user.repository.js';
+import roleRepository from '../../../repositories/role.repository.js';
 import bcrypt from 'bcrypt';
 import logger from '../../../config/logger.js';
+import { UserModel } from '../../../models/user.model.js';
 
 export class CreateUserCommandHandler {
   async execute(command) {
     try {
       logger.info('CreateUserCommand executing', { email: command.email });
-      const userData = {
+      let roleId = command.role;
+      // Eğer rol string ise, role nesnesini bul
+      if (!roleId || typeof roleId === 'string') {
+        const roleDoc = await roleRepository.findRoleByName('User');
+        roleId = roleDoc ? roleDoc._id : null;
+      }
+      if (!roleId) {
+        // Hiçbir şekilde rol bulunamazsa default user rolünü bul
+        const defaultRole = await roleRepository.findDefaultUserRole();
+        roleId = defaultRole ? defaultRole._id : null;
+      }
+      const user = new UserModel({
         email: command.email,
         password: command.password,
         firstName: command.firstName,
         lastName: command.lastName,
-        role: command.role || 'user'
-      };
-      const user = await userRepository.createUser(userData);
+        role: roleId,
+        roleName: command.roleName
+      });
+      await userRepository.createUser(user);
       
       // MongoDB'den gelen _id'yi id olarak normalize et
       const result = {

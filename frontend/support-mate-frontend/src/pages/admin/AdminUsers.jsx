@@ -31,9 +31,11 @@ import {
   Search as SearchIcon
 } from '@mui/icons-material';
 import { getAllUsers, updateUser, deleteUser } from '../../api/userApi';
+import * as roleApi from '../../api/roleApi';
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -70,9 +72,20 @@ export default function AdminUsers() {
     }
   }, []);
 
+  const fetchRoles = useCallback(async () => {
+    try {
+      const rolesData = await roleApi.getRoles();
+      setRoles(rolesData);
+    } catch (error) {
+      console.error('Roller yüklenirken hata:', error);
+      setRoles([]);
+    }
+  }, []);
+
   useEffect(() => {
     fetchUsers();
-  }, [fetchUsers]);
+    fetchRoles();
+  }, [fetchUsers, fetchRoles]);
 
   const handleEditUser = (user) => {
     setSelectedUser(user);
@@ -80,7 +93,7 @@ export default function AdminUsers() {
       firstName: user.firstName || '',
       lastName: user.lastName || '',
       email: user.email || '',
-      role: user.role || 'user',
+      role: user.role?.name || user.role || 'user',
       isActive: user.isActive !== undefined ? user.isActive : true
     });
     setOpenDialog(true);
@@ -99,11 +112,20 @@ export default function AdminUsers() {
     }
   };
 
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setSelectedUser(null);
+  };
+
   const handleSaveUser = async () => {
+    if (!selectedUser || !selectedUser._id) {
+      showSnackbar('Kullanıcı bilgisi bulunamadı', 'error');
+      return;
+    }
     try {
       await updateUser(selectedUser._id, formData);
       showSnackbar('Kullanıcı başarıyla güncellendi', 'success');
-      setOpenDialog(false);
+      handleCloseDialog();
       fetchUsers();
     } catch (error) {
       console.error('Kullanıcı kaydedilirken hata:', error);
@@ -119,14 +141,16 @@ export default function AdminUsers() {
     const matchesSearch = user.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+    const userRoleName = user.role?.name || user.role;
+    const matchesRole = roleFilter === 'all' || userRoleName === roleFilter;
     return matchesSearch && matchesRole;
   });
 
   const paginatedUsers = filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   const getRoleColor = (role) => {
-    switch (role) {
+    const roleName = typeof role === 'object' ? role.name : role;
+    switch (roleName) {
       case 'admin': return 'error';
       case 'support': return 'warning';
       case 'user': return 'primary';
@@ -135,11 +159,12 @@ export default function AdminUsers() {
   };
 
   const getRoleLabel = (role) => {
-    switch (role) {
+    const roleName = typeof role === 'object' ? role.name : role;
+    switch (roleName) {
       case 'admin': return 'Admin';
       case 'support': return 'Destek';
       case 'user': return 'Kullanıcı';
-      default: return role;
+      default: return roleName;
     }
   };
 
@@ -188,9 +213,11 @@ export default function AdminUsers() {
               onChange={(e) => setRoleFilter(e.target.value)}
             >
               <MenuItem value="all">Tümü</MenuItem>
-              <MenuItem value="admin">Admin</MenuItem>
-              <MenuItem value="support">Destek</MenuItem>
-              <MenuItem value="user">Kullanıcı</MenuItem>
+              {roles.map((role) => (
+                <MenuItem key={role.id || role._id} value={role.name}>
+                  {getRoleLabel(role.name)}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
         </Box>
@@ -280,7 +307,7 @@ export default function AdminUsers() {
       </TableContainer>
 
       {/* User Dialog */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
+      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
         <DialogTitle>
           Kullanıcı Düzenle
         </DialogTitle>
@@ -312,9 +339,11 @@ export default function AdminUsers() {
                 label="Rol"
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
               >
-                <MenuItem value="user">Kullanıcı</MenuItem>
-                <MenuItem value="support">Destek</MenuItem>
-                <MenuItem value="admin">Admin</MenuItem>
+                {roles.map((role) => (
+                  <MenuItem key={role.id || role._id} value={role.name}>
+                    {getRoleLabel(role.name)}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
             <FormControl fullWidth>
@@ -331,7 +360,7 @@ export default function AdminUsers() {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>İptal</Button>
+          <Button onClick={handleCloseDialog}>İptal</Button>
           <Button onClick={handleSaveUser} variant="contained">
             Güncelle
           </Button>

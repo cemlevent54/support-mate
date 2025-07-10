@@ -17,6 +17,7 @@ import {
   GetUserByIdQueryHandler
 } from '../cqrs/index.js';
 import userRepository from '../repositories/user.repository.js';
+import roleService from './role.service.js';
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
 const REFRESH_TOKEN_EXPIRES = process.env.JWT_REFRESH_EXPIRES_IN;
@@ -44,7 +45,17 @@ class AuthService {
           existingUser.firstName = req.body.firstName;
           existingUser.lastName = req.body.lastName;
           existingUser.password = req.body.password;
-          existingUser.role = req.body.role;
+          // ROL ATAMASI
+          let roleId = req.body.role;
+          let roleName = req.body.roleName;
+          if (!roleId || !roleName) {
+            // Role gelmezse roleService ile user rolünü bul
+            const userRole = await roleService.getRoleByName('User');
+            roleId = userRole ? userRole._id : null;
+            roleName = userRole ? userRole.name : null;
+          }
+          existingUser.role = roleId;
+          existingUser.roleName = roleName;
           existingUser.isDeleted = false;
           existingUser.deletedAt = null;
           await existingUser.save();
@@ -58,12 +69,20 @@ class AuthService {
         }
       }
       // Hiç kullanıcı yoksa yeni kullanıcı oluştur
+      let roleId = req.body.role;
+      let roleName = req.body.roleName;
+      if (!roleId || !roleName) {
+        const userRole = await roleService.getRoleByName('User');
+        roleId = userRole ? userRole._id : null;
+        roleName = userRole ? userRole.name : null;
+      }
       const createUserCommand = {
         email: req.body.email,
         password: req.body.password,
         firstName: req.body.firstName,
         lastName: req.body.lastName,
-        role: req.body.role
+        role: roleId,
+        roleName: roleName
       };
       const user = await commandHandler.dispatch(COMMAND_TYPES.CREATE_USER, createUserCommand);
       logger.info('Register success', { user });
@@ -103,7 +122,8 @@ class AuthService {
       const payload = {
         id: user.id,
         email: user.email,
-        role: user.role
+        roleId: user.role?.toString ? user.role.toString() : user.role,
+        roleName: user.roleName
       };
       const accessToken = JWTService.generateAccessToken(payload, JWT_EXPIRES_IN);
       const expiresInMs = typeof JWT_EXPIRES_IN === 'string' && JWT_EXPIRES_IN.endsWith('m')
@@ -113,6 +133,8 @@ class AuthService {
           : 15 * 60 * 1000; // default 15m
       const expireAt = new Date(Date.now() + expiresInMs);
       const refreshToken = JWTService.generateRefreshToken(payload);
+      // Aktif oturumu kaydet
+      await JWTService.addActiveSession(user.id, accessToken, expireAt);
       // Eğer response objesi varsa (HTTP endpoint)
       if (res) {
         res.cookie('refreshToken', refreshToken, {
@@ -207,13 +229,15 @@ class AuthService {
       const accessToken = JWTService.generateAccessToken({
         id: user.id,
         email: user.email,
-        role: user.role
+        roleId: user.role?.toString ? user.role.toString() : user.role,
+        roleName: user.roleName
       }, JWT_EXPIRES_IN);
 
       const newRefreshToken = JWTService.generateRefreshToken({
         id: user.id,
         email: user.email,
-        role: user.role
+        roleId: user.role?.toString ? user.role.toString() : user.role,
+        roleName: user.roleName
       });
       logger.info('New tokens generated', { accessToken, newRefreshToken });
 
@@ -232,7 +256,8 @@ class AuthService {
           user: {
             id: user.id,
             email: user.email,
-            role: user.role
+            role: user.role?.toString ? user.role.toString() : user.role,
+            roleName: user.roleName
           }
         }, 'Tokens refreshed successfully', 200);
       } else {
@@ -244,7 +269,8 @@ class AuthService {
           user: {
             id: user.id,
             email: user.email,
-            role: user.role
+            role: user.role?.toString ? user.role.toString() : user.role,
+            roleName: user.roleName
           }
         };
       }

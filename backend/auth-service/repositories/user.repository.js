@@ -1,6 +1,5 @@
 import { UserModel } from '../models/user.model.js';
 import logger from '../config/logger.js';
-import cacheService from '../config/cache.js';
 
 class UserRepository {
   async createUser(userData) {
@@ -19,22 +18,10 @@ class UserRepository {
   async findUserByEmail(email) {
     try {
       logger.info('Finding user by email', { email });
-      
-      // Önce Redis'ten çekmeye çalış
-      const cacheKey = cacheService.getCacheKey('user:email', email);
-      const cachedUser = await cacheService.getFromCache(cacheKey);
-      if (cachedUser) {
-        logger.info('User found by email from Redis cache', { email });
-        return cachedUser;
-      }
-
-      // Redis'te yoksa MongoDB'den çek
-      logger.info('User not found in cache, querying MongoDB', { email });
-      const user = await UserModel.findOne({ email, isDeleted: false });
+      // Sadece MongoDB'den çek
+      const user = await UserModel.findOne({ email, isDeleted: false }).populate('role');
       if (user) {
         logger.info('User found by email from MongoDB', { email });
-        // Redis'e kaydet
-        await cacheService.setToCache(cacheKey, user);
       } else {
         logger.info('User not found by email', { email });
       }
@@ -48,22 +35,10 @@ class UserRepository {
   async findAnyUserByEmail(email) {
     try {
       logger.info('Finding any user by email (register)', { email });
-      
-      // Önce Redis'ten çekmeye çalış
-      const cacheKey = cacheService.getCacheKey('user:any_email', email);
-      const cachedUser = await cacheService.getFromCache(cacheKey);
-      if (cachedUser) {
-        logger.info('Any user found by email from Redis cache', { email });
-        return cachedUser;
-      }
-
-      // Redis'te yoksa MongoDB'den çek
-      logger.info('Any user not found in cache, querying MongoDB', { email });
-      const user = await UserModel.findOne({ email });
+      // Sadece MongoDB'den çek
+      const user = await UserModel.findOne({ email }).populate('role');
       if (user) {
         logger.info('Any user found by email from MongoDB', { email });
-        // Redis'e kaydet
-        await cacheService.setToCache(cacheKey, user);
       } else {
         logger.info('No user found by email (register)', { email });
       }
@@ -77,22 +52,10 @@ class UserRepository {
   async findUserById(id) {
     try {
       logger.info('Finding user by ID', { id });
-      
-      // Önce Redis'ten çekmeye çalış
-      const cacheKey = cacheService.getCacheKey('user:id', id);
-      const cachedUser = await cacheService.getFromCache(cacheKey);
-      if (cachedUser) {
-        logger.info('User found by ID from Redis cache', { id });
-        return cachedUser;
-      }
-
-      // Redis'te yoksa MongoDB'den çek
-      logger.info('User not found in cache, querying MongoDB', { id });
-      const user = await UserModel.findById(id);
+      // Sadece MongoDB'den çek
+      const user = await UserModel.findById(id).populate('role');
       if (user) {
         logger.info('User found by ID from MongoDB', { id });
-        // Redis'e kaydet
-        await cacheService.setToCache(cacheKey, user);
       } else {
         logger.info('User not found by ID', { id });
       }
@@ -107,14 +70,6 @@ class UserRepository {
     try {
       const { page = 1, limit = 10, role, search } = options;
       logger.info('Finding all users', { page, limit, role, search });
-
-      // Cache key oluştur
-      const cacheKey = cacheService.getCacheKey('users:list', { page, limit, role, search });
-      const cachedResult = await cacheService.getFromCache(cacheKey);
-      if (cachedResult) {
-        logger.info('Users found from Redis cache', { page, limit, role, search });
-        return cachedResult;
-      }
 
       // MongoDB sorgusu oluştur
       const query = { isDeleted: false };
@@ -134,6 +89,7 @@ class UserRepository {
       
       // Kullanıcıları çek
       const users = await UserModel.find(query)
+        .populate('role')
         .select('-password') // Şifreleri hariç tut
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -149,9 +105,6 @@ class UserRepository {
         limit,
         totalPages: Math.ceil(total / limit)
       };
-
-      // Cache'e kaydet (5 dakika)
-      await cacheService.setToCache(cacheKey, result, 300);
       
       logger.info('Users found from MongoDB', { 
         count: users.length, 
@@ -175,12 +128,6 @@ class UserRepository {
       const user = await UserModel.findByIdAndUpdate(id, updateData, { new: true });
       if (user) {
         logger.info('User updated successfully', { id });
-        // Cache'i güncelle
-        const cacheKey = cacheService.getCacheKey('user:id', id);
-        await cacheService.setToCache(cacheKey, user);
-        // Email cache'ini de güncelle
-        const emailCacheKey = cacheService.getCacheKey('user:email', user.email);
-        await cacheService.setToCache(emailCacheKey, user);
       } else {
         logger.info('User not found for update', { id });
       }
@@ -201,13 +148,6 @@ class UserRepository {
       );
       if (user) {
         logger.info('User soft deleted successfully', { id });
-        // Cache'leri temizle
-        const cacheKey = cacheService.getCacheKey('user:id', id);
-        await cacheService.deleteFromCache(cacheKey);
-        const emailCacheKey = cacheService.getCacheKey('user:email', user.email);
-        await cacheService.deleteFromCache(emailCacheKey);
-        const anyEmailCacheKey = cacheService.getCacheKey('user:any_email', user.email);
-        await cacheService.deleteFromCache(anyEmailCacheKey);
       } else {
         logger.info('User not found for soft delete', { id });
       }
@@ -215,38 +155,6 @@ class UserRepository {
     } catch (err) {
       logger.error('Error soft deleting user', { error: err, id });
       throw err;
-    }
-  }
-
-  // Yeni metod: Kullanıcı cache'ini temizleme
-  async clearUserCache(userId, email) {
-    try {
-      logger.info('Clearing user cache', { userId, email });
-      const cacheKeys = [
-        cacheService.getCacheKey('user:id', userId),
-        cacheService.getCacheKey('user:email', email),
-        cacheService.getCacheKey('user:any_email', email)
-      ];
-      await cacheService.deleteMultipleFromCache(cacheKeys);
-      logger.info('User cache cleared successfully', { userId, email });
-    } catch (err) {
-      logger.error('Error clearing user cache', { error: err, userId, email });
-    }
-  }
-
-  // Yeni metod: Tüm kullanıcı cache'ini temizleme
-  async clearAllUserCache() {
-    try {
-      logger.info('Clearing all user cache');
-      const userKeys = await cacheService.getKeysByPattern('user:*');
-      if (userKeys.length > 0) {
-        await cacheService.deleteMultipleFromCache(userKeys);
-        logger.info('All user cache cleared successfully', { count: userKeys.length });
-      } else {
-        logger.info('No user cache found to clear');
-      }
-    } catch (err) {
-      logger.error('Error clearing all user cache', { error: err });
     }
   }
 }

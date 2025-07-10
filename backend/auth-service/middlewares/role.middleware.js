@@ -6,4 +6,14 @@ export function roleMiddleware(roles) {
     }
     next();
   };
+}
+
+export function requireRole(role) {
+  return (req, res, next) => {
+    const user = req.user;
+    if (!user || user.role !== role) {
+      return res.status(403).json({ success: false, message: 'Forbidden: insufficient role' });
+    }
+    next();
+  };
 } 

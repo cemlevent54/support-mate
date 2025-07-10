@@ -15,13 +15,38 @@ export class GetAllUsersQueryHandler {
 
       const result = await userRepository.findAllUsers(options);
       
+      // Kullanıcıları normalize et, rol nesnesini de ekle
+      const normalizedUsers = result.users.map(user => ({
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role ? {
+          id: user.role._id,
+          name: user.role.name,
+          description: user.role.description,
+          permissions: user.role.permissions
+        } : null,
+        isActive: user.isActive,
+        isDeleted: user.isDeleted,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      }));
+      const normalizedResult = {
+        users: normalizedUsers,
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages
+      };
+      
       logger.info('GetAllUsersQuery completed successfully', { 
-        count: result.users.length, 
+        count: normalizedUsers.length, 
         total: result.total,
         page: result.page 
       });
       
-      return result;
+      return normalizedResult;
     } catch (error) {
       logger.error('GetAllUsersQuery failed', { error, query });
       throw error;

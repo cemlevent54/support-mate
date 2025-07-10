@@ -9,6 +9,8 @@ import MyAccount from './components/MyAccount';
 import ForgotPassword from './components/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
 import AdminUsers from './pages/admin/AdminUsers';
+import AdminUserRoles from './pages/admin/AdminUserRoles';
+import AdminRolePermissions from './pages/admin/AdminRolePermissions';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 
@@ -41,6 +43,14 @@ export const appRoutes = [
       {
         path: 'users',
         element: <AdminUsers />,
+      },
+      {
+        path: 'roles',
+        element: <AdminUserRoles />,
+      },
+      {
+        path: 'roles/permissions',
+        element: <AdminRolePermissions />,
       },
     ],
   },

@@ -38,18 +38,19 @@ export default function LoginCard({ onUserLogin }) {
       if (result && result.data && result.data.accessToken) {
         localStorage.setItem('jwt', result.data.accessToken);
   
-        // JWT'den rolü al
+        // JWT'den rol bilgilerini al
         const decoded = jwtDecode(result.data.accessToken);
-        const role = decoded.role;
-  
+        const roleName = decoded.roleName;
+        const isAdmin = roleName === 'Admin';
+
         setSnackbar({ open: true, message: t('pages.login.success'), severity: 'success' });
-  
+
         // App.jsx'teki state'i güncelle
-        if (onUserLogin) onUserLogin(role);
-  
-        if (role === 'admin') navigate('/admin');
-        else if (role === 'support') navigate('/support');
-        else if (role === 'employee') navigate('/employee');
+        if (onUserLogin) onUserLogin(roleName || 'User');
+
+        if (isAdmin) navigate('/admin');
+        else if (roleName === 'Support') navigate('/support');
+        else if (roleName === 'Employee') navigate('/employee');
         else {
           setTimeout(() => navigate('/'), 1000);
         }

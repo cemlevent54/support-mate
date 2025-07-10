@@ -4,7 +4,7 @@ import userRepository from '../../../repositories/user.repository.js';
 export class GetUserByIdQueryHandler {
   async execute(query) {
     try {
-      logger.info('GetUserByIdQuery executing', { userId: query.id });
+      logger.info('GetUserByIdQuery executing', { query });
       
       // "me" kontrolü - bu durumda service katmanında JWT'den user ID alınmalı
       if (query.id === 'me') {
@@ -18,18 +18,22 @@ export class GetUserByIdQueryHandler {
         return null;
       }
       
-      // MongoDB'den gelen _id'yi id olarak normalize et
+      // Kullanıcıyı normalize et, rol nesnesini de ekle
       const result = {
         id: user._id,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        role: user.role,
+        role: user.role?._id ? user.role._id : user.role,
+        roleName: user.roleName,
+        isActive: user.isActive,
+        isDeleted: user.isDeleted,
         createdAt: user.createdAt,
-        updatedAt: user.updatedAt
+        updatedAt: user.updatedAt,
+        phoneNumber: user.phoneNumber
       };
       
-      logger.info('GetUserByIdQuery completed successfully', { userId: query.id });
+      logger.info('GetUserByIdQuery completed successfully', { userId: user._id });
       return result;
     } catch (error) {
       logger.error('GetUserByIdQuery failed', { error, query });

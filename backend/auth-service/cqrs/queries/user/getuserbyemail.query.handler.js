@@ -17,7 +17,8 @@ export class GetUserByEmailQueryHandler {
         password: user.password, // <-- Şifre hash'i login için gerekli
         firstName: user.firstName,
         lastName: user.lastName,
-        role: user.role,
+        role: user.role?._id ? user.role._id : user.role, // ObjectId veya nesne olabilir
+        roleName: user.roleName,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
         phoneNumber: user.phoneNumber // <-- Telefon numarası eklendi

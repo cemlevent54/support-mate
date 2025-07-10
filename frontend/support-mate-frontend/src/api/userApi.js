@@ -12,8 +12,7 @@ const getAuthHeader = () => {
 export const getAuthenticatedUser = async () => {
   try {
     const res = await axios.get(`${API_BASE_URL}/profile`, {
-      headers: { ...getAuthHeader() },
-      withCredentials: true,
+      headers: { ...getAuthHeader() }
     });
     return res.data;
   } catch (err) {
@@ -25,8 +24,7 @@ export const getAuthenticatedUser = async () => {
 export const getUserById = async (id) => {
   try {
     const res = await axios.get(`${API_BASE_URL}/${id}`, {
-      headers: { ...getAuthHeader() },
-      withCredentials: true,
+      headers: { ...getAuthHeader() }
     });
     return res.data;
   } catch (err) {
@@ -40,7 +38,6 @@ export const getAllUsers = async (params = {}) => {
     const res = await axios.get(`${API_BASE_URL}`, {
       headers: { ...getAuthHeader() },
       params,
-      withCredentials: true,
     });
     return res.data;
   } catch (err) {
@@ -54,7 +51,6 @@ export const getUsersByRole = async (role, params = {}) => {
     const res = await axios.get(`${API_BASE_URL}/role/${role}`, {
       headers: { ...getAuthHeader() },
       params,
-      withCredentials: true,
     });
     return res.data;
   } catch (err) {
@@ -66,8 +62,7 @@ export const getUsersByRole = async (role, params = {}) => {
 export const updateUser = async (id, updateData) => {
   try {
     const res = await axios.patch(`${API_BASE_URL}/${id}`, updateData, {
-      headers: { ...getAuthHeader() },
-      withCredentials: true,
+      headers: { ...getAuthHeader() }
     });
     return res.data;
   } catch (err) {
@@ -79,8 +74,7 @@ export const updateUser = async (id, updateData) => {
 export const deleteUser = async (id) => {
   try {
     const res = await axios.delete(`${API_BASE_URL}/${id}`, {
-      headers: { ...getAuthHeader() },
-      withCredentials: true,
+      headers: { ...getAuthHeader() }
     });
     return res.data;
   } catch (err) {

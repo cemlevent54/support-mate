@@ -13,6 +13,7 @@ import { logout as apiLogout } from '../api/authApi';
 const sidebarItems = [
   { key: 'dashboard', label: 'Dashboard', path: '/admin' },
   { key: 'users', label: 'Kullanıcılar', path: '/admin/users' },
+  { key: 'roles', label: 'Roller', path: '/admin/roles' },
   // { key: 'settings', label: 'Ayarlar', path: '/admin/settings' },
 ];
 
