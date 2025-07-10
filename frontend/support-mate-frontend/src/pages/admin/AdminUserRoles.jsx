@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Button, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Checkbox, FormControlLabel, Stack
+  Button, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Checkbox, FormControlLabel, Stack, Snackbar, Alert
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon, List as ListIcon, Settings as SettingsIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import * as roleApi from '../../api/roleApi';
+import ConfirmModal from '../../components/ConfirmModal';
 
 const DUMMY_PERMISSIONS = [
   'user:read', 'user:write', 'user:delete',
@@ -22,6 +23,8 @@ export default function AdminUserRoles() {
   const [openPermModal, setOpenPermModal] = useState(false);
   const [permRole, setPermRole] = useState(null);
   const [permChecked, setPermChecked] = useState([]);
+  const [confirmDelete, setConfirmDelete] = useState({ open: false, roleId: null });
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const navigate = useNavigate();
 
   // Rolleri API'den çek
@@ -57,28 +60,61 @@ export default function AdminUserRoles() {
   };
   const handleClosePermModal = () => setOpenPermModal(false);
 
-  // Role ekle/güncelle
-  const handleSaveRole = async () => {
-    if (modalType === 'add') {
-      await roleApi.createRole({ name: modalRole.name, permissions: [] });
-    } else if (modalType === 'edit') {
-      await roleApi.updateRole(modalRole.id, { name: modalRole.name, permissions: modalRole.permissions });
-    }
-    setOpenModal(false);
-    fetchRoles();
+  const showSnackbar = (message, severity) => {
+    setSnackbar({ open: true, message, severity });
   };
 
-  // Role sil
-  const handleDeleteRole = async (id) => {
-    await roleApi.deleteRole(id);
-    fetchRoles();
+  // Role ekle/güncelle
+  const handleSaveRole = async () => {
+    try {
+      if (modalType === 'add') {
+        await roleApi.createRole({ name: modalRole.name, permissions: [] });
+        showSnackbar('Rol başarıyla eklendi', 'success');
+      } else if (modalType === 'edit') {
+        await roleApi.updateRole(modalRole.id, { name: modalRole.name, permissions: modalRole.permissions });
+        showSnackbar('Rol başarıyla güncellendi', 'success');
+      }
+      setOpenModal(false);
+      fetchRoles();
+    } catch (error) {
+      console.error('Rol kaydedilirken hata:', error);
+      showSnackbar('Rol kaydedilirken hata oluştu', 'error');
+    }
+  };
+
+  // ConfirmModal ile silme
+  const handleDeleteRole = (id) => {
+    setConfirmDelete({ open: true, roleId: id });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!confirmDelete.roleId) return;
+    try {
+      await roleApi.deleteRole(confirmDelete.roleId);
+      showSnackbar('Rol başarıyla silindi', 'success');
+      setConfirmDelete({ open: false, roleId: null });
+      fetchRoles();
+    } catch (error) {
+      console.error('Rol silinirken hata:', error);
+      showSnackbar('Rol silinirken hata oluştu', 'error');
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setConfirmDelete({ open: false, roleId: null });
   };
 
   // Permissionları kaydet
   const handleSavePermissions = async () => {
-    await roleApi.updateRole(permRole.id, { ...permRole, permissions: permChecked });
-    setOpenPermModal(false);
-    fetchRoles();
+    try {
+      await roleApi.updateRole(permRole.id, { ...permRole, permissions: permChecked });
+      showSnackbar('İzinler başarıyla güncellendi', 'success');
+      setOpenPermModal(false);
+      fetchRoles();
+    } catch (error) {
+      console.error('İzinler kaydedilirken hata:', error);
+      showSnackbar('İzinler kaydedilirken hata oluştu', 'error');
+    }
   };
 
   // Permission checkbox değişimi
@@ -176,6 +212,32 @@ export default function AdminUserRoles() {
           <Button onClick={handleSavePermissions} variant="contained">Kaydet</Button>
         </DialogActions>
       </Dialog>
+
+      {/* ConfirmModal ile silme onayı */}
+      <ConfirmModal
+        open={confirmDelete.open}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        title="Rolü Sil"
+        description="Bu rolü silmek istediğinizden emin misiniz?"
+        confirmText="Evet, Sil"
+        cancelText="Vazgeç"
+      />
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

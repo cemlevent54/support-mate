@@ -32,6 +32,7 @@ import {
 } from '@mui/icons-material';
 import { getAllUsers, updateUser, deleteUser } from '../../api/userApi';
 import * as roleApi from '../../api/roleApi';
+import ConfirmModal from '../../components/ConfirmModal';
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -44,6 +45,7 @@ export default function AdminUsers() {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [confirmDelete, setConfirmDelete] = useState({ open: false, userId: null });
 
   // Form state
   const [formData, setFormData] = useState({
@@ -88,8 +90,16 @@ export default function AdminUsers() {
   }, [fetchUsers, fetchRoles]);
 
   const handleEditUser = (user) => {
+    console.log('handleEditUser çağrıldı:', user);
     setSelectedUser(user);
     setFormData({
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      email: user.email || '',
+      role: user.role?.name || user.role || 'user',
+      isActive: user.isActive !== undefined ? user.isActive : true
+    });
+    console.log('formData set edildi:', {
       firstName: user.firstName || '',
       lastName: user.lastName || '',
       email: user.email || '',
@@ -99,17 +109,37 @@ export default function AdminUsers() {
     setOpenDialog(true);
   };
 
-  const handleDeleteUser = async (userId) => {
-    if (window.confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) {
-      try {
-        await deleteUser(userId);
-        showSnackbar('Kullanıcı başarıyla silindi', 'success');
-        fetchUsers();
-      } catch (error) {
-        console.error('Kullanıcı silinirken hata:', error);
-        showSnackbar('Kullanıcı silinirken hata oluştu', 'error');
-      }
+  const handleDeleteUser = (userId) => {
+    console.log('handleDeleteUser çağrıldı, userId:', userId);
+    console.log('confirmDelete state öncesi:', confirmDelete);
+    setConfirmDelete({ open: true, userId });
+    console.log('confirmDelete state sonrası:', { open: true, userId });
+  };
+
+  const handleConfirmDelete = async () => {
+    console.log('handleConfirmDelete çağrıldı, confirmDelete state:', confirmDelete);
+    const userId = confirmDelete.userId;
+    console.log('handleConfirmDelete çağrıldı, userId:', userId);
+    if (!userId) {
+      console.log('userId bulunamadı');
+      return;
     }
+    try {
+      console.log('deleteUser çağrılıyor:', userId);
+      await deleteUser(userId);
+      console.log('deleteUser başarılı');
+      showSnackbar('Kullanıcı başarıyla silindi', 'success');
+      fetchUsers();
+    } catch (error) {
+      console.error('Kullanıcı silinirken hata:', error);
+      showSnackbar('Kullanıcı silinirken hata oluştu', 'error');
+    } finally {
+      setConfirmDelete({ open: false, userId: null });
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setConfirmDelete({ open: false, userId: null });
   };
 
   const handleCloseDialog = () => {
@@ -118,12 +148,20 @@ export default function AdminUsers() {
   };
 
   const handleSaveUser = async () => {
-    if (!selectedUser || !selectedUser._id) {
+    console.log('selectedUser:', selectedUser);
+    console.log('formData:', formData);
+    
+    const userId = selectedUser?._id || selectedUser?.id;
+    
+    if (!selectedUser || !userId) {
+      console.error('Kullanıcı ID bulunamadı:', { selectedUser, userId });
       showSnackbar('Kullanıcı bilgisi bulunamadı', 'error');
       return;
     }
+    
     try {
-      await updateUser(selectedUser._id, formData);
+      console.log('updateUser çağrılıyor:', { userId, formData });
+      await updateUser(userId, formData);
       showSnackbar('Kullanıcı başarıyla güncellendi', 'success');
       handleCloseDialog();
       fetchUsers();
@@ -228,6 +266,7 @@ export default function AdminUsers() {
         <Table>
           <TableHead>
             <TableRow sx={{ bgcolor: '#f5f5f5' }}>
+              <TableCell><strong>ID</strong></TableCell>
               <TableCell><strong>Ad Soyad</strong></TableCell>
               <TableCell><strong>E-posta</strong></TableCell>
               <TableCell><strong>Rol</strong></TableCell>
@@ -239,19 +278,20 @@ export default function AdminUsers() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} align="center">
+                <TableCell colSpan={7} align="center">
                   <Typography>Yükleniyor...</Typography>
                 </TableCell>
               </TableRow>
             ) : paginatedUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} align="center">
+                <TableCell colSpan={7} align="center">
                   <Typography>Kullanıcı bulunamadı</Typography>
                 </TableCell>
               </TableRow>
             ) : (
               paginatedUsers.map((user) => (
                 <TableRow key={user._id} hover>
+                  <TableCell>{user.id || user._id}</TableCell>
                   <TableCell>
                     <Typography fontWeight={500}>
                       {user.firstName} {user.lastName}
@@ -282,7 +322,7 @@ export default function AdminUsers() {
                     </IconButton>
                     <IconButton
                       size="small"
-                      onClick={() => handleDeleteUser(user._id)}
+                      onClick={() => handleDeleteUser(user.id)}
                       sx={{ color: '#d32f2f' }}
                       disabled={user.is_deleted}
                     >
@@ -381,6 +421,17 @@ export default function AdminUsers() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* ConfirmModal ile silme onayı */}
+      <ConfirmModal
+        open={confirmDelete.open}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        title="Kullanıcıyı Sil"
+        description="Bu kullanıcıyı silmek istediğinizden emin misiniz?"
+        confirmText="Evet, Sil"
+        cancelText="Vazgeç"
+      />
     </Box>
   );
 }
