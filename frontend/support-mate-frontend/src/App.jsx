@@ -7,13 +7,29 @@ import IconButton from '@mui/material/IconButton';
 import AppLogo from './components/AppLogo';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
-import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { appRoutes } from './routes';
 import HomePage from './pages/HomePage/HomePage';
 import LoginCard from './components/LoginCard';
 import SignupCard from './components/SignupCard';
 import MyAccount from './components/MyAccount';
 import LanguageProvider from './components/LanguageProvider';
+import { jwtDecode } from "jwt-decode";
+import { Box, Typography } from '@mui/material';
+import AdminUsers from './pages/admin/AdminUsers';
+
+// Admin route koruma bileşeni
+function ProtectedAdminRoute({ children, isAuth, userRole }) {
+  if (!isAuth) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (userRole !== 'admin') {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return children;
+}
 
 function AppContent() {
   const [drawerOpen, setDrawerOpen] = React.useState(false);
@@ -46,17 +62,27 @@ function AppContent() {
   React.useEffect(() => {
     const token = localStorage.getItem('jwt');
     if (token) {
-      setIsAuth(true);
-      setUserRole('user'); // JWT decode ile rol alınabilir
+      try {
+        const decoded = jwtDecode(token);
+        setIsAuth(true);
+        setUserRole(decoded.role || 'user'); // JWT'den rolü al
+      } catch (error) {
+        // JWT geçersizse temizle
+        localStorage.removeItem('jwt');
+        setIsAuth(false);
+        setUserRole('guest');
+      }
     } else {
       setIsAuth(false);
       setUserRole('guest');
     }
   }, []);
 
+  const isAdminPanel = location.pathname.startsWith('/admin');
+
   return (
     <div className="App">
-      {location.pathname !== '/admin' && location.pathname !== '/support' && location.pathname !== '/employee' && (
+      {!isAdminPanel && (
         <Navbar
           title=""
           isAuth={isAuth}
@@ -101,9 +127,28 @@ function AppContent() {
         <Route path="/login" element={<LoginCard onUserLogin={handleUserLogin} />} />
         <Route path="/signup" element={<SignupCard />} />
         <Route path="/my-account" element={<MyAccount />} />
-        {filteredRoutes.map((route, idx) => (
-          <Route key={idx} path={route.path} element={route.element} />
-        ))}
+        {/* Nested admin route yapısı */}
+        <Route 
+          path="/admin/*" 
+          element={
+            <ProtectedAdminRoute isAuth={isAuth} userRole={userRole}>
+              {filteredRoutes.find(route => route.path === '/admin')?.element}
+            </ProtectedAdminRoute>
+          }
+        >
+          <Route index element={
+            <Box>
+              <Typography variant="h5" fontWeight={600} mb={2}>Hoş Geldiniz</Typography>
+              <Typography>Admin panelini kullanmaya başlayın.</Typography>
+            </Box>
+          } />
+          <Route path="users" element={<AdminUsers />} />
+        </Route>
+        {filteredRoutes
+          .filter(route => !route.path.startsWith('/admin'))
+          .map((route, idx) => (
+            <Route key={idx} path={route.path} element={route.element} />
+          ))}
       </Routes>
     </div>
   );

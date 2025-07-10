@@ -103,6 +103,72 @@ class UserRepository {
     }
   }
 
+  async findAllUsers(options = {}) {
+    try {
+      const { page = 1, limit = 10, role, search } = options;
+      logger.info('Finding all users', { page, limit, role, search });
+
+      // Cache key oluştur
+      const cacheKey = cacheService.getCacheKey('users:list', { page, limit, role, search });
+      const cachedResult = await cacheService.getFromCache(cacheKey);
+      if (cachedResult) {
+        logger.info('Users found from Redis cache', { page, limit, role, search });
+        return cachedResult;
+      }
+
+      // MongoDB sorgusu oluştur
+      const query = { isDeleted: false };
+      if (role) {
+        query.role = role;
+      }
+      if (search) {
+        query.$or = [
+          { firstName: { $regex: search, $options: 'i' } },
+          { lastName: { $regex: search, $options: 'i' } },
+          { email: { $regex: search, $options: 'i' } }
+        ];
+      }
+
+      // Sayfalama
+      const skip = (page - 1) * limit;
+      
+      // Kullanıcıları çek
+      const users = await UserModel.find(query)
+        .select('-password') // Şifreleri hariç tut
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+
+      // Toplam sayıyı çek
+      const total = await UserModel.countDocuments(query);
+
+      const result = {
+        users,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      };
+
+      // Cache'e kaydet (5 dakika)
+      await cacheService.setToCache(cacheKey, result, 300);
+      
+      logger.info('Users found from MongoDB', { 
+        count: users.length, 
+        total, 
+        page, 
+        limit, 
+        role, 
+        search 
+      });
+
+      return result;
+    } catch (err) {
+      logger.error('Error finding all users', { error: err, options });
+      throw err;
+    }
+  }
+
   async updateUser(id, updateData) {
     try {
       logger.info('Updating user', { id, updateData });

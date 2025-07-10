@@ -7,19 +7,47 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
-import { useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { logout as apiLogout } from '../api/authApi';
 
 const sidebarItems = [
-  { key: 'users', label: 'Kullanıcılar' },
-  { key: 'settings', label: 'Ayarlar' },
+  { key: 'dashboard', label: 'Dashboard', path: '/admin' },
+  { key: 'users', label: 'Kullanıcılar', path: '/admin/users' },
+  // { key: 'settings', label: 'Ayarlar', path: '/admin/settings' },
 ];
 
 export default function Dashboard() {
-  const [selected, setSelected] = useState('users');
+  const [selected, setSelected] = useState('dashboard');
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const handleLogout = () => {
-    navigate('/login');
+  React.useEffect(() => {
+    const currentPath = location.pathname;
+    const currentItem = sidebarItems.find(item => currentPath === item.path);
+    if (currentItem) {
+      setSelected(currentItem.key);
+    } else if (currentPath.startsWith('/admin/users')) {
+      setSelected('users');
+    } else {
+      setSelected('dashboard');
+    }
+  }, [location.pathname]);
+
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem('jwt');
+      await apiLogout(token);
+    } catch (e) {
+      // Hata olsa da localStorage temizlensin ve yönlendirilsin
+      localStorage.removeItem('jwt');
+    } finally {
+      navigate('/login');
+    }
+  };
+
+  const handleSidebarItemClick = (item) => {
+    setSelected(item.key);
+    navigate(item.path);
   };
 
   return (
@@ -33,7 +61,7 @@ export default function Dashboard() {
               <ListItem key={item.key} disablePadding>
                 <ListItemButton 
                   selected={selected === item.key} 
-                  onClick={() => setSelected(item.key)}
+                  onClick={() => handleSidebarItemClick(item)}
                   sx={{
                     color: '#fff',
                     ...(selected === item.key && {
@@ -55,18 +83,7 @@ export default function Dashboard() {
       </Paper>
       {/* İçerik */}
       <Box flex={1} p={4}>
-        {selected === 'users' && (
-          <Box>
-            <Typography variant="h5" fontWeight={600} mb={2}>Kullanıcılar</Typography>
-            <Typography>Kullanıcı listesi burada görünecek.</Typography>
-          </Box>
-        )}
-        {selected === 'settings' && (
-          <Box>
-            <Typography variant="h5" fontWeight={600} mb={2}>Ayarlar</Typography>
-            <Typography>Admin ayarları burada görünecek.</Typography>
-          </Box>
-        )}
+        <Outlet />
       </Box>
     </Box>
   );

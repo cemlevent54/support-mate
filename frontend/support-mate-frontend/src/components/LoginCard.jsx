@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { useLanguage } from './LanguageProvider';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
+import { jwtDecode } from "jwt-decode";
 
 export default function LoginCard({ onUserLogin }) {
   const [showPassword, setShowPassword] = useState(false);
@@ -34,19 +35,22 @@ export default function LoginCard({ onUserLogin }) {
     setError('');
     try {
       const result = await login({ email, password });
-      // JWT'yi localStorage'a kaydet
       if (result && result.data && result.data.accessToken) {
         localStorage.setItem('jwt', result.data.accessToken);
-      }
-      // Başarılı girişte yönlendirme (rol veya başka bilgiye göre özelleştirilebilir)
-      setSnackbar({ open: true, message: t('pages.login.success'), severity: 'success' });
-      if (result && result.data && result.data.role) {
-        const role = result.data.role;
+  
+        // JWT'den rolü al
+        const decoded = jwtDecode(result.data.accessToken);
+        const role = decoded.role;
+  
+        setSnackbar({ open: true, message: t('pages.login.success'), severity: 'success' });
+  
+        // App.jsx'teki state'i güncelle
+        if (onUserLogin) onUserLogin(role);
+  
         if (role === 'admin') navigate('/admin');
         else if (role === 'support') navigate('/support');
         else if (role === 'employee') navigate('/employee');
         else {
-          if (onUserLogin) onUserLogin(role);
           setTimeout(() => navigate('/'), 1000);
         }
       } else {
