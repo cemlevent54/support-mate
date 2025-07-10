@@ -43,6 +43,7 @@ export default function Dashboard() {
       localStorage.removeItem('jwt');
     } finally {
       navigate('/login');
+      setTimeout(() => { window.location.reload(); }, 100);
     }
   };
 
