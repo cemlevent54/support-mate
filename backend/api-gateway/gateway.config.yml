@@ -12,6 +12,8 @@ serviceEndpoints:
     url: 'http://localhost:8080'
   userService:
     url: 'http://localhost:8086'
+  notificationService:
+    url: 'http://localhost:8082'
 pipelines:
   basic:
     apiEndpoints:
@@ -20,6 +22,12 @@ pipelines:
       - proxy:
           - action:
               serviceEndpoint: authService
+              changeOrigin: true
+          - action:
+              serviceEndpoint: userService
+              changeOrigin: true
+          - action:
+              serviceEndpoint: notificationService
               changeOrigin: true
       - cors:
           - action:

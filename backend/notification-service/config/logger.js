@@ -1,4 +1,4 @@
-const { createLogger, format, transports } = require('winston');
+import { createLogger, format, transports } from 'winston';
 
 const customConsoleFormat = format.printf(({ timestamp, level, message, ...meta }) => {
   return `${timestamp} ${level}: ${message} ${Object.keys(meta).length ? JSON.stringify(meta) : ''}`;
@@ -25,4 +25,4 @@ const logger = createLogger({
   ]
 });
 
-module.exports = logger; 
+export default logger; 

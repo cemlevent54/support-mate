@@ -18,6 +18,7 @@ import {
 } from '../cqrs/index.js';
 import userRepository from '../repositories/user.repository.js';
 import roleService from './role.service.js';
+import { sendUserRegisteredEvent } from '../kafka/kafkaProducer.js';
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
 const REFRESH_TOKEN_EXPIRES = process.env.JWT_REFRESH_EXPIRES_IN;
@@ -60,6 +61,7 @@ class AuthService {
           existingUser.deletedAt = null;
           await existingUser.save();
           logger.info('Register: Soft deleted user reactivated', { user: existingUser });
+          await sendUserRegisteredEvent(existingUser);
           apiSuccess(res, existingUser, 'User registered successfully (reactivated)', 201);
           return;
         } else {
@@ -86,6 +88,7 @@ class AuthService {
       };
       const user = await commandHandler.dispatch(COMMAND_TYPES.CREATE_USER, createUserCommand);
       logger.info('Register success', { user });
+      await sendUserRegisteredEvent(user);
       apiSuccess(res, user, 'User registered successfully', 201);
     } catch (err) {
       logger.error('Register internal server error', { error: err, body: req.body });

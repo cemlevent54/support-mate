@@ -9,6 +9,10 @@ const services = [
   {
     name: 'userService',
     url: getServiceUrl('userService')
+  },
+  {
+    name: 'notificationService',
+    url: getServiceUrl('notificationService')
   }
 ];
 

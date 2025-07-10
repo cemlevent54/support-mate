@@ -1,9 +1,12 @@
-import dotenv from 'dotenv';
+const dotenv = require('dotenv');
 dotenv.config();
 
-export const PORT = process.env.PORT;
+const PORT = process.env.PORT;
 
-export const SERVICES = {
+const SERVICES = {
   auth: process.env.AUTH_SERVICE_URL,
   user: process.env.AUTH_SERVICE_URL,
+  notification: process.env.NOTIFICATION_SERVICE_URL
 };
+
+module.exports = { PORT, SERVICES };

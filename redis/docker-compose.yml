@@ -1,4 +1,3 @@
-version: "3.8"
 services:
   redis_auth_service:
     image: redis:latest
@@ -9,7 +8,7 @@ services:
     volumes:
       - ./data:/data
     networks:
-      - redis-network
+      - mongodb-network
     command: redis-server --appendonly yes
 
   # Redis Admin UI (Opsional)
@@ -23,12 +22,12 @@ services:
     depends_on:
       - redis_auth_service
     networks:
-      - redis-network
+      - mongodb-network
     restart: always
 
 volumes:
   redis_data:
 
 networks:
-  redis-network:
+  mongodb-network:
     driver: bridge 

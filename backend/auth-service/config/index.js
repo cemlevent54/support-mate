@@ -1,6 +1,7 @@
 import { connectDatabase, testConnection } from './database.js';
 import logger from './logger.js';
 import cacheService from './cache.js';
+import kafkaService, { testKafkaConnection } from './kafka.js';
 
 export const initializeApp = async () => {
   try {
@@ -25,8 +26,20 @@ export const initializeApp = async () => {
     } catch (err) {
       logger.error('Redis connection test failed:', err);
     }
+
+    // Kafka bağlantı testi
+    try {
+      const kafkaResult = await testKafkaConnection();
+      if (kafkaResult) {
+        logger.info('Kafka connection test successful.');
+      } else {
+        logger.error('Kafka connection test failed.');
+      }
+    } catch (err) {
+      logger.error('Kafka connection test failed:', err);
+    }
   } catch (error) {
-    logger.error('Error occurred while initializing the database or cache:', error);
+    logger.error('Error occurred while initializing the database, cache, or kafka:', error);
     throw error;
   }
 }; 

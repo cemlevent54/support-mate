@@ -1,6 +1,6 @@
-import express from 'express';
-import { createProxyMiddleware } from 'http-proxy-middleware';
-import { SERVICES } from '../config/config.js';
+const express = require('express');
+const { createProxyMiddleware } = require('http-proxy-middleware');
+const { SERVICES } = require('../config/config.js');
 
 const router = express.Router();
 
@@ -17,6 +17,12 @@ router.use('/api/user', createProxyMiddleware({
   pathRewrite: { '^/api/user': '' }
 }));
 
+// /api/notification -> notification service
+router.use('/api/notification', createProxyMiddleware({
+  target: SERVICES.notification,
+  changeOrigin: true
+}));
+
 // /api/order -> order service (örnek, ileride eklenirse)
 // router.use('/api/order', createProxyMiddleware({
 //   target: SERVICES.order,
@@ -24,4 +30,4 @@ router.use('/api/user', createProxyMiddleware({
 //   pathRewrite: { '^/api/order': '' }
 // }));
 
-export default router;
+module.exports = router;

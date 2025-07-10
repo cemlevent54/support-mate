@@ -1,6 +1,7 @@
 const express = require('express');
-const logger = require('../config/logger.config.js').default;
+const logger = require('../config/logger.config.js');
 const { getGatewayHealth, services } = require('../config/health.config.js');
+const proxyRoutes = require('./proxy.routes.js');
 
 const router = express.Router();
 
@@ -25,5 +26,8 @@ router.get('/', (req, res) => {
   logger.info('Root endpoint called');
   res.json({ message: 'Support Mate API Gateway' });
 });
+
+// Proxy route'larını ekle
+router.use(proxyRoutes);
 
 module.exports = router; 
