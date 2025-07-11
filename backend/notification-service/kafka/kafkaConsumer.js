@@ -1,15 +1,21 @@
 import kafkaService from '../config/kafka.js';
 import logger from '../config/logger.js';
 
-export async function startKafkaConsumer(onUserRegistered) {
+export async function startKafkaConsumer(onUserRegistered, onPasswordReset) {
   try {
     await kafkaService.connectConsumer();
     await kafkaService.consumer.subscribe({ topic: 'user-registered', fromBeginning: false });
     logger.info('Kafka consumer subscribed to topic: user-registered');
+    await kafkaService.consumer.subscribe({ topic: 'password-reset', fromBeginning: false });
+    logger.info('Kafka consumer subscribed to topic: password-reset');
     await kafkaService.consumer.run({
-      eachMessage: async ({ message }) => {
-        const user = JSON.parse(message.value.toString());
-        await onUserRegistered(user);
+      eachMessage: async ({ topic, message }) => {
+        const data = JSON.parse(message.value.toString());
+        if (topic === 'user-registered') {
+          await onUserRegistered(data);
+        } else if (topic === 'password-reset') {
+          await onPasswordReset(data);
+        }
       },
     });
   } catch (err) {

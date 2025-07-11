@@ -1,6 +1,6 @@
 import React from 'react';
 import SignupCard from './components/SignupCard';
-// import HomePage from './components/HomePage'; // Örnek, ileride eklenebilir
+import HomePage from './pages/HomePage/HomePage';
 import LoginCard from './components/LoginCard';
 import Dashboard from './components/Dashboard';
 import SupportDashboard from './components/SupportDashboard';
@@ -16,6 +16,11 @@ import Typography from '@mui/material/Typography';
 
 // Role bazlı erişim için örnek bir yapı
 export const appRoutes = [
+  {
+    path: '/',
+    element: <HomePage />,
+    roles: ['guest', 'user', 'admin'],
+  },
   {
     path: '/signup',
     element: <SignupCard />,

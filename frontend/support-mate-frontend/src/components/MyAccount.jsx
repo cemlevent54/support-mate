@@ -10,7 +10,7 @@ import Alert from '@mui/material/Alert';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from './LanguageProvider';
 import { getAuthenticatedUser, updateUser, deleteUser } from '../api/userApi';
-import LoadingButton from '@mui/lab/LoadingButton';
+import { changePassword } from '../api/authApi';
 import ConfirmModal from './ConfirmModal';
 import { useNavigate } from 'react-router-dom';
 
@@ -88,22 +88,21 @@ export default function MyAccount() {
 
   const handlePasswordUpdate = async (e) => {
     e.preventDefault();
-    if (!userId) return;
-    if (newPassword !== confirmPassword) {
-      setError(t('pages.myAccount.passwordMismatch'));
-      return;
-    }
     setLoading(true);
     setMessage(null);
     setError(null);
     try {
-      const updateData = { password: newPassword };
-      await updateUser(userId, updateData);
-      setMessage(t('pages.myAccount.passwordUpdateSuccess'));
+      await changePassword({
+        newPassword,
+        confirmPassword
+      });
+      setMessage(t('pages.myAccount.passwordUpdateSuccess', 'Şifreniz başarıyla güncellendi.'));
       setNewPassword('');
       setConfirmPassword('');
     } catch (err) {
-      setError(err.message || t('pages.myAccount.passwordUpdateError'));
+      setError(
+        err?.response?.data?.message || t('pages.myAccount.passwordUpdateError', 'Şifre güncellenemedi.')
+      );
     } finally {
       setLoading(false);
     }
@@ -148,14 +147,14 @@ export default function MyAccount() {
               <TextField label={t('pages.myAccount.lastName')} value={lastName} onChange={e => setLastName(e.target.value)} fullWidth size="small" />
               <TextField label={t('pages.myAccount.email')} value={email} onChange={e => setEmail(e.target.value)} fullWidth size="small" />
               <TextField label={t('pages.myAccount.phone')} value={phone} onChange={e => setPhone(e.target.value)} fullWidth size="small" />
-              <LoadingButton
+              <Button
                 type="submit"
                 variant="contained"
                 loading={loading}
                 sx={{ mt: 1, fontWeight: 600, textTransform: 'none' }}
               >
                 {t('pages.myAccount.save')}
-              </LoadingButton>
+              </Button>
             </Stack>
           </form>
         </Paper>

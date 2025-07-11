@@ -5,6 +5,9 @@ class AuthController {
   login = authService.login.bind(authService);
   logout = authService.logout.bind(authService);
   refreshToken = authService.refreshToken.bind(authService);
+  forgotPassword = authService.forgotPassword.bind(authService);
+  resetPassword = authService.resetPassword.bind(authService);
+  changePassword = authService.changePassword.bind(authService);
 }
 
 export default new AuthController(); 

@@ -18,7 +18,7 @@ import {
 } from '../cqrs/index.js';
 import userRepository from '../repositories/user.repository.js';
 import roleService from './role.service.js';
-import { sendUserRegisteredEvent } from '../kafka/kafkaProducer.js';
+import { sendUserRegisteredEvent, sendPasswordResetEvent } from '../kafka/kafkaProducer.js';
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
 const REFRESH_TOKEN_EXPIRES = process.env.JWT_REFRESH_EXPIRES_IN;
@@ -42,7 +42,7 @@ class AuthService {
       if (existingUser) {
         if (existingUser.isDeleted) {
           // Soft deleted kullanıcıyı tekrar aktif et ve bilgilerini güncelle
-          logger.info('Register: Reactivating soft deleted user', { email: req.body.email });
+          logger.info('Reactivating soft deleted user', { email: req.body.email });
           existingUser.firstName = req.body.firstName;
           existingUser.lastName = req.body.lastName;
           existingUser.password = req.body.password;
@@ -60,7 +60,7 @@ class AuthService {
           existingUser.isDeleted = false;
           existingUser.deletedAt = null;
           await existingUser.save();
-          logger.info('Register: Soft deleted user reactivated', { user: existingUser });
+          logger.info('Soft deleted user reactivated', { user: existingUser });
           await sendUserRegisteredEvent(existingUser);
           apiSuccess(res, existingUser, 'User registered successfully (reactivated)', 201);
           return;
@@ -281,6 +281,124 @@ class AuthService {
       logger.error('Error in refreshToken', { error: error.message, stack: error.stack });
       if (res) internalServerError(res, error.message);
       else throw error;
+    }
+  }
+
+  async forgotPassword(req, res) {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        logger.error('Forgot password failed - Email missing');
+        return unauthorizedError(res, 'Email is required');
+      }
+
+      // Kullanıcıyı CQRS ile bul
+      const user = await queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_EMAIL, { email });
+      if (!user) {
+        logger.warn(`Forgot password - User not found: ${email}`);
+        // Güvenlik için her zaman aynı mesajı döndür
+        return apiSuccess(res, null, 'If the email exists, a password reset link will be sent', 200);
+      }
+
+      // Şifre sıfırlama token'ı üret
+      const resetToken = JWTService.generatePasswordResetToken(user);
+
+      // Frontend linki
+      const frontendUrl = process.env.WEBSITE_URL;
+      const resetLink = `${frontendUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+
+      // Kafka ile event gönder
+      await sendPasswordResetEvent({ email, resetLink });
+
+      logger.info(`Password reset event sent to Kafka - Email: ${email}, Link: ${resetLink}`);
+      return apiSuccess(res, null, 'If the email exists, a password reset link will be sent', 200);
+    } catch (error) {
+      logger.error(`Error in forgotPassword - Error: ${error.message}, Email: ${req.body?.email}`);
+      return internalServerError(res, error.message);
+    }
+  }
+
+  async resetPassword(req, res) {
+    try {
+      const { token, password, confirmPassword } = req.body;
+      if (!token || !password || !confirmPassword) {
+        logger.error('Reset password failed - Missing required fields');
+        return unauthorizedError(res, 'Token, password, and confirm password are required');
+      }
+      if (password !== confirmPassword) {
+        logger.error('Reset password failed - Passwords do not match');
+        return unauthorizedError(res, 'Passwords do not match');
+      }
+      if (password.length < 8) {
+        logger.error('Reset password failed - Password too short');
+        return unauthorizedError(res, 'Password must be at least 8 characters long');
+      }
+
+      // Token'ı doğrula
+      let decoded;
+      try {
+        decoded = JWTService.verifyPasswordResetToken(token);
+        logger.info(`Password reset token verified - User ID: ${decoded.id}`);
+      } catch (verifyErr) {
+        logger.warn(`Password reset token verification failed - Error: ${verifyErr.message}`);
+        return unauthorizedError(res, 'Invalid or expired reset token');
+      }
+
+      // Şifreyi hashle
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // CQRS ile kullanıcıyı güncelle
+      const updateUserCommand = {
+        id: decoded.id,
+        updateData: { password: hashedPassword }
+      };
+      const updatedUser = await commandHandler.dispatch(COMMAND_TYPES.UPDATE_USER, updateUserCommand);
+
+      if (!updatedUser) {
+        logger.warn(`Password reset failed - User not found - User ID: ${decoded.id}`);
+        return unauthorizedError(res, 'User not found');
+      }
+
+      logger.info(`Password reset successful - User ID: ${updatedUser.id}, Email: ${updatedUser.email}`);
+      return apiSuccess(res, null, 'Password updated successfully', 200);
+    } catch (error) {
+      logger.error(`Error in resetPassword - Error: ${error.message}`);
+      return internalServerError(res, error.message);
+    }
+  }
+
+  async changePassword(req, res) {
+    try {
+      const userId = req.user.id; // JWT'den geliyor
+      const { newPassword, confirmPassword } = req.body;
+  
+      if (!newPassword || !confirmPassword) {
+        return unauthorizedError(res, 'All fields are required');
+      }
+      if (newPassword !== confirmPassword) {
+        return unauthorizedError(res, 'Passwords do not match');
+      }
+      if (newPassword.length < 8) {
+        return unauthorizedError(res, 'Password must be at least 8 characters');
+      }
+  
+      // CQRS ile kullanıcıyı bul
+      const user = await queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_ID, { id: userId });
+      if (!user) {
+        return unauthorizedError(res, 'User not found');
+      }
+  
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      // CQRS ile kullanıcıyı güncelle
+      const updateUserCommand = {
+        id: userId,
+        updateData: { password: hashedPassword }
+      };
+      await commandHandler.dispatch(COMMAND_TYPES.UPDATE_USER, updateUserCommand);
+  
+      return apiSuccess(res, null, 'Password updated successfully', 200);
+    } catch (error) {
+      return internalServerError(res, error.message);
     }
   }
 }

@@ -12,17 +12,32 @@ const app = express();
 const PORT = process.env.PORT;
 
 async function handleUserRegistered(user) {
-  logger.info('Yeni kullanıcı kaydı (notification-service):', { email: user.email });
+  logger.info('New user registration (notification-service):', { email: user.email });
   try {
     await emailService.send({
       to: user.email,
-      subject: 'Kayıt Başarılı',
-      text: `Hoş geldiniz, ${user.firstName || ''}! Kaydınız başarıyla tamamlandı.`,
-      html: `<h2>Hoş geldiniz, ${user.firstName || ''}!</h2><p>Kaydınız başarıyla tamamlandı.</p>`
+      subject: 'Registration Successful',
+      text: `Welcome, ${user.firstName || ''}! Your registration is complete.`,
+      html: `<h2>Welcome, ${user.firstName || ''}!</h2><p>Your registration is complete.</p>`
     });
-    logger.info('Kayıt e-postası gönderildi', { email: user.email });
+    logger.info('Registration email sent', { email: user.email });
   } catch (err) {
-    logger.error('Kayıt e-postası gönderilemedi', { email: user.email, error: err });
+    logger.error('Registration email could not be sent', { email: user.email, error: err });
+  }
+}
+
+async function handlePasswordReset(data) {
+  logger.info('Password reset event received (notification-service):', { email: data.email });
+  try {
+    await emailService.send({
+      to: data.email,
+      subject: 'Password Reset Request',
+      text: `To reset your password, click the following link: ${data.resetLink}`,
+      html: `<p>To reset your password, click the following link:</p><a href="${data.resetLink}">${data.resetLink}</a>`
+    });
+    logger.info('Password reset email sent', { email: data.email });
+  } catch (err) {
+    logger.error('Password reset email could not be sent', { email: data.email, error: err });
   }
 }
 
@@ -30,12 +45,12 @@ app.get('/health', healthCheck);
 
 initializeApp()
   .then(() => {
-    startKafkaConsumer(handleUserRegistered);
+    startKafkaConsumer(handleUserRegistered, handlePasswordReset);
     app.listen(PORT, () => {
       logger.info(`Notification Service listening on port ${PORT}`);
     });
   })
   .catch((error) => {
-    logger.error('Uygulama başlatılamadı:', error);
+    logger.error('Application could not be started:', error);
     process.exit(1);
   }); 

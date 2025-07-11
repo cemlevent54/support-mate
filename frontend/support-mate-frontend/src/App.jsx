@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, useLocation, useRoutes } from 'react-router-dom';
+import { BrowserRouter as Router, useLocation, useRoutes, useNavigate } from 'react-router-dom';
 import LanguageProvider from './components/LanguageProvider';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
@@ -17,16 +17,27 @@ function AppContent() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Buton click fonksiyonları
-  const handleLogin = () => {};
-  const handleSignup = () => {};
-  const handleMyAccount = () => {};
+  const handleLogin = () => {
+    navigate('/login');
+  };
+  const handleSignup = () => {
+    navigate('/signup');
+  };
+  const handleMyAccount = () => {
+    navigate('/my-account');
+  };
   const handleLogout = () => {
     setIsAuth(false);
     setUserRole('guest');
+    localStorage.removeItem('jwt');
+    navigate('/');
   };
-  const handleHome = () => {};
+  const handleHome = () => {
+    navigate('/');
+  };
 
   // Sayfa yenilendiğinde oturum kontrolü (JWT vs.) burada yapılabilir
   React.useEffect(() => {
@@ -76,10 +87,12 @@ function AppContent() {
               open={drawerOpen}
               onClose={() => setDrawerOpen(false)}
               isAuth={isAuth}
+              userRole={userRole}
               onLogin={handleLogin}
               onSignup={handleSignup}
               onMyAccount={handleMyAccount}
               onLogout={handleLogout}
+              onHome={handleHome}
             />
           }
         />
