@@ -18,7 +18,7 @@ async function handleUserRegistered(user) {
       to: user.email,
       subject: 'Registration Successful',
       text: `Welcome, ${user.firstName || ''}! Your registration is complete.`,
-      html: `<h2>Welcome, ${user.firstName || ''}!</h2><p>Your registration is complete.</p>`
+      html: user.html
     });
     logger.info('Registration email sent', { email: user.email });
   } catch (err) {
@@ -41,11 +41,28 @@ async function handlePasswordReset(data) {
   }
 }
 
+async function handleUserVerified(data) {
+  logger.info('User verified event received (notification-service):', { email: data.email });
+  try {
+    await emailService.send({
+      to: data.email,
+      subject: data.language === 'en' ? 'Your Account Has Been Verified' : 'Hesabınız Doğrulandı',
+      text: data.language === 'en'
+        ? `Hello ${data.firstName}, your account has been successfully verified.`
+        : `Merhaba ${data.firstName}, hesabınız başarıyla doğrulandı.`,
+      html: data.html
+    });
+    logger.info('Verification email sent', { email: data.email });
+  } catch (err) {
+    logger.error('Verification email could not be sent', { email: data.email, error: err });
+  }
+}
+
 app.get('/health', healthCheck);
 
 initializeApp()
   .then(() => {
-    startKafkaConsumer(handleUserRegistered, handlePasswordReset);
+    startKafkaConsumer(handleUserRegistered, handlePasswordReset, handleUserVerified);
     app.listen(PORT, () => {
       logger.info(`Notification Service listening on port ${PORT}`);
     });

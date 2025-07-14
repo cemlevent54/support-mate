@@ -18,22 +18,29 @@ import {
 } from '../cqrs/index.js';
 import userRepository from '../repositories/user.repository.js';
 import roleService from './role.service.js';
-import { sendUserRegisteredEvent, sendPasswordResetEvent } from '../kafka/kafkaProducer.js';
+import { sendUserRegisteredEvent, sendPasswordResetEvent, sendUserVerifiedEvent } from '../kafka/kafkaProducer.js';
 import translation from '../config/translation.js';
 import { OAuth2Client } from 'google-auth-library';
 import crypto from 'crypto';
 import { UserModel } from '../models/user.model.js';
+import jwt from 'jsonwebtoken';
+import path from 'path';
+import fs from 'fs';
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
 const REFRESH_TOKEN_EXPIRES = process.env.JWT_REFRESH_EXPIRES_IN;
 const JWT_SECRET = process.env.JWT_SECRET;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
+const EMAIL_VERIFY_TOKEN_SECRET = process.env.EMAIL_VERIFY_TOKEN_SECRET || 'email_verify_secret';
 
 // Auth servisinde kullanılacak izinler
 export const AUTH_PERMISSIONS = [
   // Örnek: { code: 'auth:login', name: 'Giriş', description: 'Kullanıcı girişi', category: 'auth' }
 ];
+
+// Geçici olarak kodları saklamak için (production için cache/redis önerilir)
+global.emailVerificationCodes = global.emailVerificationCodes || {};
 
 class AuthService {
   constructor() {
@@ -43,6 +50,14 @@ class AuthService {
   async register(req, res) {
     try {
       logger.info(translation('services.authService.logs.registerRequest'), { body: req.body });
+      const language = req.body.language || 'tr'; // Sadece mail için kullanılacak
+      // 6 haneli kod üret
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      // Kodun geçerlilik süresi (10 dakika)
+      const expiresAt = Date.now() + 10 * 60 * 1000;
+      global.emailVerificationCodes[req.body.email] = { code, expiresAt };
+      // JWT tabanlı doğrulama token'ı üret
+      const token = jwt.sign({ email: req.body.email, code, exp: Math.floor(expiresAt / 1000) }, EMAIL_VERIFY_TOKEN_SECRET);
       // isDeleted filtresi olmadan kullanıcıyı bul
       const existingUser = await userRepository.findAnyUserByEmail(req.body.email);
       if (existingUser) {
@@ -52,11 +67,9 @@ class AuthService {
           existingUser.firstName = req.body.firstName;
           existingUser.lastName = req.body.lastName;
           existingUser.password = req.body.password;
-          // ROL ATAMASI
           let roleId = req.body.role;
           let roleName = req.body.roleName;
           if (!roleId || !roleName) {
-            // Role gelmezse roleService ile user rolünü bul
             const userRole = await roleService.getRoleByName('User');
             roleId = userRole ? userRole._id : null;
             roleName = userRole ? userRole.name : null;
@@ -67,7 +80,10 @@ class AuthService {
           existingUser.deletedAt = null;
           await existingUser.save();
           logger.info(translation('services.authService.logs.userReactivated'), { user: existingUser });
-          await sendUserRegisteredEvent(existingUser);
+          // Doğrulama linki
+          const frontendUrl = process.env.WEBSITE_URL;
+          const verifyUrl = `${frontendUrl}/verify-email?email=${encodeURIComponent(existingUser.email)}&token=${encodeURIComponent(token)}`;
+          await sendUserRegisteredEvent(existingUser, language, code, verifyUrl);
           apiSuccess(res, existingUser, 'User registered successfully (reactivated)', 201);
           return;
         } else {
@@ -76,7 +92,6 @@ class AuthService {
           return;
         }
       }
-      // Hiç kullanıcı yoksa yeni kullanıcı oluştur
       let roleId = req.body.role;
       let roleName = req.body.roleName;
       if (!roleId || !roleName) {
@@ -94,7 +109,10 @@ class AuthService {
       };
       const user = await commandHandler.dispatch(COMMAND_TYPES.CREATE_USER, createUserCommand);
       logger.info(translation('services.authService.logs.registerSuccess'), { user });
-      await sendUserRegisteredEvent(user);
+      // Doğrulama linki
+      const frontendUrl = process.env.WEBSITE_URL;
+      const verifyUrl = `${frontendUrl}/verify-email?email=${encodeURIComponent(user.email)}&token=${encodeURIComponent(token)}`;
+      await sendUserRegisteredEvent(user, language, code, verifyUrl);
       apiSuccess(res, user, 'User registered successfully', 201);
     } catch (err) {
       logger.error(translation('services.authService.logs.registerError'), { error: err, body: req.body });
@@ -473,7 +491,7 @@ class AuthService {
   async googleRegister(req, res) {
     try {
       logger.info(translation('services.authService.logs.registerRequest'), { provider: 'google', body: req.body });
-      const { credential } = req.body;
+      const { credential, language } = req.body;
       if (!credential) {
         logger.warn(translation('services.authService.logs.registerConflict'), { provider: 'google', reason: 'No credential' });
         return unauthorizedError(res, translation('services.authService.logs.registerConflict'));
@@ -488,20 +506,16 @@ class AuthService {
         logger.warn(translation('services.authService.logs.registerConflict'), { provider: 'google', reason: 'Token doğrulanamadı' });
         return unauthorizedError(res, translation('services.authService.logs.registerConflict'));
       }
-      // Kullanıcıyı googleId ile bul, yoksa email ile bul
       let user = await UserModel.findOne({ googleId: payload.sub });
       if (!user) {
         user = await userRepository.findAnyUserByEmail(payload.email);
       }
-      // Kullanıcı zaten varsa hata döndür
       if (user) {
         logger.warn(translation('services.authService.logs.registerConflict'), { provider: 'google', email: payload.email });
         return conflictError(res, translation('services.authService.logs.registerConflict'));
       }
-      // Varsayılan rolü bul
       const userRole = await roleService.getRoleByName('User');
       const randomPassword = crypto.randomBytes(32).toString('hex');
-      // Kullanıcıyı oluştur
       const createUserCommand = {
         email: payload.email,
         password: randomPassword, // dummy password
@@ -513,9 +527,16 @@ class AuthService {
         isEmailVerified: payload.email_verified || false
       };
       user = await commandHandler.dispatch(COMMAND_TYPES.CREATE_USER, createUserCommand);
-      // Kullanıcı başarıyla oluşturulursa mail eventi gönder
-      await sendUserRegisteredEvent(user);
-      // JWT üret
+      // 6 haneli kod üret
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = Date.now() + 10 * 60 * 1000;
+      global.emailVerificationCodes[user.email] = { code, expiresAt };
+      // JWT tabanlı doğrulama token'ı üret
+      const token = jwt.sign({ email: user.email, code, exp: Math.floor(expiresAt / 1000) }, EMAIL_VERIFY_TOKEN_SECRET);
+      // Doğrulama linki
+      const frontendUrl = process.env.WEBSITE_URL;
+      const verifyUrl = `${frontendUrl}/verify-email?email=${encodeURIComponent(user.email)}&token=${encodeURIComponent(token)}`;
+      await sendUserRegisteredEvent(user, language || 'tr', code, verifyUrl);
       const payloadJwt = {
         id: user.id,
         email: user.email,
@@ -535,6 +556,76 @@ class AuthService {
     } catch (err) {
       logger.error(translation('services.authService.logs.registerError'), { provider: 'google', error: err.message });
       internalServerError(res, translation('services.authService.logs.registerError'));
+    }
+  }
+
+  async verifyEmail(req, res) {
+    try {
+      const { code, token } = req.body;
+      if (!code || !token) {
+        return unauthorizedError(res, 'Code and token are required');
+      }
+      // Token'ı doğrula ve çöz
+      let decoded;
+      try {
+        decoded = jwt.verify(token, EMAIL_VERIFY_TOKEN_SECRET);
+      } catch (err) {
+        return unauthorizedError(res, 'Invalid or expired token');
+      }
+      const email = decoded.email;
+      if (!email) {
+        return unauthorizedError(res, 'Token does not contain email');
+      }
+      if (decoded.code !== code) {
+        return unauthorizedError(res, 'Token and code do not match');
+      }
+      // Kodun süresi geçti mi kontrolü (JWT exp zaten kontrol ediyor)
+      const record = global.emailVerificationCodes[email];
+      if (!record) {
+        return unauthorizedError(res, 'No verification code found for this email');
+      }
+      if (record.code !== code) {
+        return unauthorizedError(res, 'Invalid verification code');
+      }
+      if (Date.now() > record.expiresAt) {
+        delete global.emailVerificationCodes[email];
+        return unauthorizedError(res, 'Verification code expired');
+      }
+      // Kullanıcıyı CQRS ile bul
+      const user = await queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_EMAIL, { email });
+      if (!user) {
+        return unauthorizedError(res, 'User not found');
+      }
+      // Zaten doğrulanmışsa
+      if (user.isEmailVerified) {
+        delete global.emailVerificationCodes[email];
+        return apiSuccess(res, null, 'Email already verified', 200);
+      }
+      // CQRS ile kullanıcıyı güncelle
+      const updateUserCommand = {
+        id: user.id,
+        updateData: {
+          isEmailVerified: true,
+          emailVerifiedAt: new Date()
+        }
+      };
+      await commandHandler.dispatch(COMMAND_TYPES.UPDATE_USER, updateUserCommand);
+      // Başarıyla doğrulandıktan sonra kullanıcıya "Hesabınız doğrulandı" maili için Kafka event'i gönder
+      try {
+        const language = user.language || 'tr';
+        await sendUserVerifiedEvent({
+          email: user.email,
+          firstName: user.firstName,
+          language
+        });
+      } catch (mailErr) {
+        logger.error('Verification success mail could not be sent', { error: mailErr });
+      }
+      delete global.emailVerificationCodes[email];
+      return apiSuccess(res, null, 'Email verified successfully', 200);
+    } catch (err) {
+      logger.error('verifyEmail error', { error: err });
+      return internalServerError(res, 'Internal server error');
     }
   }
 }

@@ -13,6 +13,7 @@ import AdminUserRoles from './pages/admin/AdminUserRoles';
 import AdminRolePermissions from './pages/admin/AdminRolePermissions';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
+import SixDigitVerifyEmail from './components/SixDigitVerifyEmail';
 
 // Role bazlı erişim için örnek bir yapı
 export const appRoutes = [
@@ -78,6 +79,10 @@ export const appRoutes = [
   {
     path: '/reset-password',
     element: <ResetPassword />,
+  },
+  {
+    path: '/verify-email',
+    element: <SixDigitVerifyEmail />,
   },
   // {
   //   path: '/',

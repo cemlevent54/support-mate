@@ -10,6 +10,7 @@ class AuthController {
   changePassword = authService.changePassword.bind(authService);
   googleLogin = authService.googleLogin.bind(authService);
   googleRegister = authService.googleRegister.bind(authService);
+  verifyEmail = authService.verifyEmail.bind(authService);
 }
 
 export default new AuthController(); 

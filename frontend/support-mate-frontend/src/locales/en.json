@@ -67,6 +67,14 @@
       "updateError": "Failed to update information.",
       "loading": "Processing...",
       "passwordResetSuccess": "Your password has been reset successfully. Redirecting to login..."
+    },
+    "verifyEmail": {
+      "title": "Email Verification",
+      "subtitle": "Enter the 6-digit code sent to your email address.",
+      "invalidCode": "Please enter the 6-digit code.",
+      "success": "Code verified!",
+      "error": "Code could not be verified.",
+      "button": "Verify"
     }
   },
   "confirm": {

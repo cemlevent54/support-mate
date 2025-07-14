@@ -66,6 +66,14 @@
       "updateError": "Bilgiler güncellenemedi.",
       "loading": "İşlem yapılıyor...",
       "passwordResetSuccess": "Şifreniz başarıyla güncellendi. Giriş sayfasına yönlendiriliyorsunuz..."
+    },
+    "verifyEmail": {
+      "title": "E-posta Doğrulama",
+      "subtitle": "E-posta adresinize gönderilen 6 haneli kodu girin.",
+      "invalidCode": "Lütfen 6 haneli kodu girin.",
+      "success": "Kod doğrulandı!",
+      "error": "Kod doğrulanamadı.",
+      "button": "Onayla"
     }
   },
   "confirm": {

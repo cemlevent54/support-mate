@@ -56,7 +56,7 @@ export default function SignupCard() {
       return;
     }
     try {
-      const result = await register({ firstName, lastName, email, password });
+      const result = await register({ firstName, lastName, email, password, language: localLang });
       setSuccess(t('pages.signup.success'));
       setSnackbarType('success');
       setSnackbarMsg(t('pages.signup.success'));
@@ -161,7 +161,7 @@ export default function SignupCard() {
           <GoogleLogin
             onSuccess={async credentialResponse => {
               try {
-                const result = await googleRegister(credentialResponse.credential);
+                const result = await googleRegister(credentialResponse.credential, localLang);
                 const accessToken = result?.accessToken || result?.data?.accessToken;
                 if (accessToken) {
                   localStorage.setItem('jwt', accessToken);
