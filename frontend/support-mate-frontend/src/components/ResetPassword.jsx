@@ -6,7 +6,7 @@ import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import Snackbar from '@mui/material/Snackbar';
 import { resetPassword } from '../api/authApi';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 function useQuery() {
@@ -21,6 +21,7 @@ export default function ResetPassword() {
   const [error, setError] = useState('');
   const query = useQuery();
   const token = query.get('token');
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -39,6 +40,9 @@ export default function ResetPassword() {
     setOpen(false);
     setNewPassword('');
     setConfirmPassword('');
+    setTimeout(() => {
+      navigate('/login');
+    }, 2000);
   };
 
   return (
@@ -81,7 +85,7 @@ export default function ResetPassword() {
         open={open}
         autoHideDuration={3000}
         onClose={handleClose}
-        message={t('pages.myAccount.updateSuccess', 'Şifreniz başarıyla değiştirildi.')}
+        message={t('pages.myAccount.passwordResetSuccess', 'Şifreniz başarıyla güncellendi. Giriş sayfasına yönlendiriliyorsunuz...')}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       />
     </Box>

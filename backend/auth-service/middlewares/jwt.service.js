@@ -145,8 +145,8 @@ class JWTService {
     return token;
   }
   static verifyPasswordResetToken(token) {
-    logger.debug(translation('middlewares.jwtService.logs.passwordResetTokenVerified'), { userId: decoded.id });
     const decoded = jwt.verify(token, JWT_REFRESH_SECRET);
+    logger.debug(translation('middlewares.jwtService.logs.passwordResetTokenVerified'), { userId: decoded.id });
     if (decoded.type !== 'password_reset') {
       logger.warn(translation('middlewares.jwtService.logs.invalidTokenType'), { userId: decoded.id });
       throw new Error('Invalid token type');

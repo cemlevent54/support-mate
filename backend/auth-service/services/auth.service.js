@@ -339,12 +339,16 @@ class AuthService {
       let decoded;
       try {
         decoded = JWTService.verifyPasswordResetToken(token);
-        logger.info(translation('services.authService.logs.resetPasswordSuccess'), { userId: decoded.id });
+        if (decoded && decoded.id) {
+          logger.info(translation('services.authService.logs.resetPasswordSuccess'), { userId: decoded.id });
+        } else {
+          logger.warn(translation('services.authService.logs.resetPasswordError'), { error: 'Decoded token does not contain user id' });
+          return unauthorizedError(res, 'Invalid or expired reset token');
+        }
       } catch (verifyErr) {
-        logger.warn(translation('services.authService.logs.resetPasswordError'), { userId: decoded.id });
+        logger.warn(translation('services.authService.logs.resetPasswordError'), { error: verifyErr.message });
         return unauthorizedError(res, 'Invalid or expired reset token');
       }
-
       // Şifreyi hashle
       const hashedPassword = await bcrypt.hash(password, 10);
 

@@ -28,7 +28,8 @@
       "reset": "Şifremi sıfırla",
       "error": "Giriş başarısız. Lütfen bilgilerinizi kontrol edin.",
       "errorApi": "Sunucudan hata mesajı alındı.",
-      "success": "Başarıyla giriş yaptınız. Yönlendiriliyorsunuz..."
+      "success": "Başarıyla giriş yaptınız. Yönlendiriliyorsunuz...",
+      "forgotMailSent": "Şifre sıfırlama maili gönderildi."
     },
     "signup": {
       "title": "Kayıt Ol",
@@ -61,7 +62,8 @@
       "deleteAccount": "Hesabımı Sil",
       "updateSuccess": "Bilgiler başarıyla güncellendi.",
       "updateError": "Bilgiler güncellenemedi.",
-      "loading": "İşlem yapılıyor..."
+      "loading": "İşlem yapılıyor...",
+      "passwordResetSuccess": "Şifreniz başarıyla güncellendi. Giriş sayfasına yönlendiriliyorsunuz..."
     }
   },
   "confirm": {
@@ -186,5 +188,26 @@
       "saveError": "Yetki kaydedilirken hata oluştu",
       "deleteError": "Yetki silinirken hata oluştu"
     }
+  },
+  "supportDashboard": {
+    "sidebar": {
+      "requests": "Destek Talepleri",
+      "profile": "Profil"
+    },
+    "requestsTitle": "Destek Talepleri",
+    "requestsDesc": "Destek talepleri burada görünecek.",
+    "profileTitle": "Profil",
+    "profileDesc": "Profil bilgileri burada görünecek."
+  },
+  "employeeDashboard": {
+    "title": "Employee Panel",
+    "sidebar": {
+      "tasks": "Görevler",
+      "profile": "Profil"
+    },
+    "tasksTitle": "Görevler",
+    "tasksDesc": "Çalışana atanmış görevler burada görünecek.",
+    "profileTitle": "Profil",
+    "profileDesc": "Profil bilgileri burada görünecek."
   }
 } 

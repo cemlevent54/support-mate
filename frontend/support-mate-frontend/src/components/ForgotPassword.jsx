@@ -57,7 +57,7 @@ export default function ForgotPassword() {
         open={open}
         autoHideDuration={3000}
         onClose={() => setOpen(false)}
-        message={t('pages.login.success', 'Mail gönderildi')}
+        message={t('pages.login.forgotMailSent', 'Şifre sıfırlama maili gönderildi')}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       />
     </Box>

@@ -165,7 +165,9 @@ export default function AdminUsers() {
     
     try {
       console.log('updateUser çağrılıyor:', { userId, formData });
-      await updateUser(userId, formData);
+      const selectedRole = roles.find(r => r.name === formData.role);
+      const roleName = selectedRole ? selectedRole.name : formData.role;
+      await updateUser(userId, { ...formData, roleName });
       showSnackbar('Kullanıcı başarıyla güncellendi', 'success');
       handleCloseDialog();
       fetchUsers();

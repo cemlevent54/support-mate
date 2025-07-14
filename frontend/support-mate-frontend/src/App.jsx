@@ -44,18 +44,30 @@ function AppContent() {
     const token = localStorage.getItem('jwt');
     if (token) {
       setIsAuth(true);
-      setUserRole('user'); // JWT decode ile rol alınabilir
+      try {
+        const decoded = JSON.parse(atob(token.split('.')[1]));
+        const roleName = decoded.roleName;
+        setUserRole(roleName || 'user');
+        // Eğer Customer Supporter ise support paneline yönlendir
+        if (roleName === 'Customer Supporter' && location.pathname !== '/support') {
+          navigate('/support');
+        }
+      } catch (e) {
+        setUserRole('user');
+      }
     } else {
       setIsAuth(false);
       setUserRole('guest');
     }
-  }, []);
+  }, [location.pathname, navigate]);
 
   const isAdminPanel = location.pathname.startsWith('/admin');
+  const isSupportPanel = location.pathname.startsWith('/support');
+  const isEmployeePanel = location.pathname.startsWith('/employee');
 
   return (
     <>
-      {!isAdminPanel && (
+      {!(isAdminPanel || isSupportPanel || isEmployeePanel) && (
         <Navbar
           title=""
           isAuth={isAuth}

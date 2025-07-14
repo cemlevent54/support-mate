@@ -8,6 +8,11 @@ import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import { useNavigate } from 'react-router-dom';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
+import { useTranslation } from 'react-i18next';
+import { useLanguage } from './LanguageProvider';
+import { logout as apiLogout } from '../api/authApi';
 
 const sidebarItems = [
   { key: 'tasks', label: 'Görevler' },
@@ -17,9 +22,19 @@ const sidebarItems = [
 export default function EmployeeDashboard() {
   const [selected, setSelected] = useState('tasks');
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const { language, onLanguageChange } = useLanguage();
 
-  const handleLogout = () => {
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem('jwt');
+      await apiLogout(token);
+    } catch (e) {
+      localStorage.removeItem('jwt');
+    } finally {
+      navigate('/login');
+      setTimeout(() => { window.location.reload(); }, 100);
+    }
   };
 
   return (
@@ -27,7 +42,16 @@ export default function EmployeeDashboard() {
       {/* Sidebar */}
       <Paper elevation={3} sx={{ width: 220, minHeight: '100vh', borderRadius: 0, p: 2, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', bgcolor: '#111', color: '#fff' }}>
         <div>
-          <Typography variant="h6" fontWeight={700} mb={2} textAlign="center" sx={{ color: '#fff' }}>Employee Panel</Typography>
+          <Typography variant="h6" fontWeight={700} mb={2} textAlign="center" sx={{ color: '#fff' }}>{t('employeeDashboard.title', 'Employee Panel')}</Typography>
+          <Select
+            value={language}
+            onChange={e => onLanguageChange(e.target.value)}
+            size="small"
+            sx={{ mb: 2, width: '100%', bgcolor: '#222', color: '#fff', '.MuiSvgIcon-root': { color: '#fff' } }}
+          >
+            <MenuItem value="tr">Türkçe</MenuItem>
+            <MenuItem value="en">English</MenuItem>
+          </Select>
           <List>
             {sidebarItems.map(item => (
               <ListItem key={item.key} disablePadding>
@@ -43,28 +67,28 @@ export default function EmployeeDashboard() {
                     '&:hover': { bgcolor: '#222' },
                   }}
                 >
-                  <ListItemText primary={item.label} sx={{ color: '#fff' }} />
+                  <ListItemText primary={t(`employeeDashboard.sidebar.${item.key}`, item.label)} sx={{ color: '#fff' }} />
                 </ListItemButton>
               </ListItem>
             ))}
           </List>
         </div>
         <Button variant="outlined" color="error" onClick={handleLogout} sx={{ mt: 2, borderColor: '#fff', color: '#fff', '&:hover': { borderColor: '#fff', bgcolor: '#222' } }}>
-          Çıkış Yap
+          {t('components.navbar.logout', 'Çıkış Yap')}
         </Button>
       </Paper>
       {/* İçerik */}
       <Box flex={1} p={4}>
         {selected === 'tasks' && (
           <Box>
-            <Typography variant="h5" fontWeight={600} mb={2}>Görevler</Typography>
-            <Typography>Çalışana atanmış görevler burada görünecek.</Typography>
+            <Typography variant="h5" fontWeight={600} mb={2}>{t('employeeDashboard.tasksTitle', 'Görevler')}</Typography>
+            <Typography>{t('employeeDashboard.tasksDesc', 'Çalışana atanmış görevler burada görünecek.')}</Typography>
           </Box>
         )}
         {selected === 'profile' && (
           <Box>
-            <Typography variant="h5" fontWeight={600} mb={2}>Profil</Typography>
-            <Typography>Profil bilgileri burada görünecek.</Typography>
+            <Typography variant="h5" fontWeight={600} mb={2}>{t('employeeDashboard.profileTitle', 'Profil')}</Typography>
+            <Typography>{t('employeeDashboard.profileDesc', 'Profil bilgileri burada görünecek.')}</Typography>
           </Box>
         )}
       </Box>

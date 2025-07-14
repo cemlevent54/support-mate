@@ -29,7 +29,8 @@
       "reset": "Reset my password",
       "error": "Login failed. Please check your credentials.",
       "errorApi": "Received error message from server.",
-      "success": "Login successful. Redirecting..."
+      "success": "Login successful. Redirecting...",
+      "forgotMailSent": "Password reset email sent."
     },
     "signup": {
       "title": "Sign up",
@@ -62,7 +63,8 @@
       "deleteAccount": "Delete My Account",
       "updateSuccess": "Information updated successfully.",
       "updateError": "Failed to update information.",
-      "loading": "Processing..."
+      "loading": "Processing...",
+      "passwordResetSuccess": "Your password has been reset successfully. Redirecting to login..."
     }
   },
   "confirm": {
@@ -187,5 +189,26 @@
       "saveError": "Error saving permission",
       "deleteError": "Error deleting permission"
     }
+  },
+  "supportDashboard": {
+    "sidebar": {
+      "requests": "Support Requests",
+      "profile": "Profile"
+    },
+    "requestsTitle": "Support Requests",
+    "requestsDesc": "Support requests will be shown here.",
+    "profileTitle": "Profile",
+    "profileDesc": "Profile information will be shown here."
+  },
+  "employeeDashboard": {
+    "title": "Employee Panel",
+    "sidebar": {
+      "tasks": "Tasks",
+      "profile": "Profile"
+    },
+    "tasksTitle": "Tasks",
+    "tasksDesc": "Tasks assigned to the employee will be shown here.",
+    "profileTitle": "Profile",
+    "profileDesc": "Profile information will be shown here."
   }
 } 

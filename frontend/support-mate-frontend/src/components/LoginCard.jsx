@@ -42,6 +42,8 @@ export default function LoginCard({ onUserLogin }) {
         const decoded = jwtDecode(result.data.accessToken);
         const roleName = decoded.roleName;
         const isAdmin = roleName === 'Admin';
+        const isSupport = roleName === 'Customer Supporter';
+        const isEmployee = roleName === 'Employee';
 
         setSnackbar({ open: true, message: t('pages.login.success'), severity: 'success' });
 
@@ -49,8 +51,9 @@ export default function LoginCard({ onUserLogin }) {
         if (onUserLogin) onUserLogin(roleName || 'User');
 
         if (isAdmin) navigate('/admin');
+        else if (isSupport) navigate('/support');
         else if (roleName === 'Support') navigate('/support');
-        else if (roleName === 'Employee') navigate('/employee');
+        else if (isEmployee) navigate('/employee');
         else {
           setTimeout(() => navigate('/'), 1000);
         }
