@@ -69,5 +69,122 @@
     "deleteDesc": "Bu işlemi geri alamazsınız. Hesabınızı silmek istediğinize emin misiniz?",
     "deleteYes": "Evet, Sil",
     "deleteNo": "Vazgeç"
+  },
+  "adminDashboard": {
+    "title": "Admin Panel",
+    "dashboard": "Dashboard",
+    "users": "Kullanıcılar",
+    "roles": "Roller"
+  },
+  "adminUsers": {
+    "title": "Kullanıcı Yönetimi",
+    "searchPlaceholder": "Kullanıcı ara...",
+    "roleFilter": "Rol Filtresi",
+    "allRoles": "Tümü",
+    "table": {
+      "id": "ID",
+      "fullName": "Ad Soyad",
+      "email": "E-posta",
+      "role": "Rol",
+      "status": "Durum",
+      "createdAt": "Kayıt Tarihi",
+      "actions": "İşlemler"
+    },
+    "status": {
+      "deleted": "Silinmiş",
+      "active": "Aktif",
+      "inactive": "Pasif"
+    },
+    "editDialog": {
+      "title": "Kullanıcı Düzenle",
+      "firstName": "Ad",
+      "lastName": "Soyad",
+      "email": "E-posta",
+      "role": "Rol",
+      "status": "Durum",
+      "active": "Aktif",
+      "inactive": "Pasif",
+      "cancel": "İptal",
+      "save": "Güncelle"
+    },
+    "snackbar": {
+      "userUpdated": "Kullanıcı başarıyla güncellendi",
+      "userDeleted": "Kullanıcı başarıyla silindi",
+      "userNotFound": "Kullanıcı bilgisi bulunamadı",
+      "userLoadError": "Kullanıcılar yüklenirken hata oluştu",
+      "userSaveError": "Kullanıcı kaydedilirken hata oluştu",
+      "userDeleteError": "Kullanıcı silinirken hata oluştu"
+    },
+    "confirmDelete": {
+      "title": "Kullanıcıyı Sil",
+      "desc": "Bu kullanıcıyı silmek istediğinizden emin misiniz?",
+      "yes": "Evet, Sil",
+      "no": "Vazgeç"
+    },
+    "noUsers": "Kullanıcı bulunamadı",
+    "loading": "Yükleniyor...",
+    "rowsPerPage": "Sayfa başına kullanıcı:"
+  },
+  "adminUserRoles": {
+    "manageAllPermissions": "Tüm İzinleri Yönet",
+    "title": "Rol Yönetimi",
+    "addRole": "Rol Ekle",
+    "editRole": "Rolü Güncelle",
+    "roleName": "Rol Adı",
+    "permissions": "İzinler",
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "delete": "Sil",
+    "confirmDeleteTitle": "Rolü Sil",
+    "confirmDeleteDesc": "Bu rolü silmek istediğinizden emin misiniz?",
+    "confirmDeleteYes": "Evet, Sil",
+    "confirmDeleteNo": "Vazgeç",
+    "snackbar": {
+      "roleAdded": "Rol başarıyla eklendi",
+      "roleUpdated": "Rol başarıyla güncellendi",
+      "roleDeleted": "Rol başarıyla silindi",
+      "roleSaveError": "Rol kaydedilirken hata oluştu",
+      "roleDeleteError": "Rol silinirken hata oluştu",
+      "permUpdate": "İzinler başarıyla güncellendi",
+      "permUpdateError": "İzinler kaydedilirken hata oluştu"
+    },
+    "table": {
+      "id": "ID",
+      "name": "Rol Adı",
+      "permissions": "İzinler",
+      "actions": "İşlemler"
+    },
+    "permissionModalTitle": "İzinler - {{roleName}}",
+    "category": "Kategori"
+  },
+  "adminRolePermissions": {
+    "title": "Tüm İzinler",
+    "addPermission": "İzin Ekle",
+    "editPermission": "İzni Güncelle",
+    "searchPlaceholder": "İzin adı, kodu veya kategori ara...",
+    "table": {
+      "id": "ID",
+      "nameTr": "İzin Adı (TR)",
+      "nameEn": "İzin Adı (EN)",
+      "code": "Kod",
+      "category": "Kategori",
+      "actions": "İşlemler"
+    },
+    "form": {
+      "nameTr": "İzin Adı (TR)",
+      "nameEn": "İzin Adı (EN)",
+      "code": "Kod",
+      "category": "Kategori"
+    },
+    "noPermissions": "Kayıt bulunamadı",
+    "cancel": "İptal",
+    "save": "Kaydet",
+    "snackbar": {
+      "added": "Yetki başarıyla eklendi",
+      "updated": "Yetki başarıyla güncellendi",
+      "deleted": "Yetki başarıyla silindi",
+      "saveError": "Yetki kaydedilirken hata oluştu",
+      "deleteError": "Yetki silinirken hata oluştu"
+    }
   }
 } 

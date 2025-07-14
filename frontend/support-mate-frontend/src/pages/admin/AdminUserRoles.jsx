@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import * as roleApi from '../../api/roleApi';
 import ConfirmModal from '../../components/ConfirmModal';
 import { usePermissions } from '../../hooks/usePermissions';
+import { useTranslation } from 'react-i18next';
 
 export default function AdminUserRoles() {
   const [roles, setRoles] = useState([]);
@@ -23,6 +24,7 @@ export default function AdminUserRoles() {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const navigate = useNavigate();
   const { isAdmin } = usePermissions();
+  const { t } = useTranslation();
 
   // Rolleri ve yetkileri API'den çek
   const fetchData = async () => {
@@ -73,16 +75,16 @@ export default function AdminUserRoles() {
     try {
       if (modalType === 'add') {
         await roleApi.createRole({ name: modalRole.name, permissions: [] });
-        showSnackbar('Rol başarıyla eklendi', 'success');
+        showSnackbar('roleAdded', 'success');
       } else if (modalType === 'edit') {
         await roleApi.updateRole(modalRole.id, { name: modalRole.name, permissions: modalRole.permissions });
-        showSnackbar('Rol başarıyla güncellendi', 'success');
+        showSnackbar('roleUpdated', 'success');
       }
       setOpenModal(false);
       fetchData();
     } catch (error) {
       console.error('Rol kaydedilirken hata:', error);
-      showSnackbar('Rol kaydedilirken hata oluştu', 'error');
+      showSnackbar('roleSaveError', 'error');
     }
   };
 
@@ -95,12 +97,12 @@ export default function AdminUserRoles() {
     if (!confirmDelete.roleId) return;
     try {
       await roleApi.deleteRole(confirmDelete.roleId);
-      showSnackbar('Rol başarıyla silindi', 'success');
+      showSnackbar('roleDeleted', 'success');
       setConfirmDelete({ open: false, roleId: null });
       fetchData();
     } catch (error) {
       console.error('Rol silinirken hata:', error);
-      showSnackbar('Rol silinirken hata oluştu', 'error');
+      showSnackbar('roleDeleteError', 'error');
     }
   };
 
@@ -112,12 +114,12 @@ export default function AdminUserRoles() {
   const handleSavePermissions = async () => {
     try {
       await roleApi.updateRolePermissions(permRole.id, permChecked);
-      showSnackbar('İzinler başarıyla güncellendi', 'success');
+      showSnackbar('permUpdate', 'success');
       setOpenPermModal(false);
       fetchData();
     } catch (error) {
       console.error('İzinler kaydedilirken hata:', error);
-      showSnackbar('İzinler kaydedilirken hata oluştu', 'error');
+      showSnackbar('permUpdateError', 'error');
     }
   };
 
@@ -128,50 +130,47 @@ export default function AdminUserRoles() {
 
   // Yetki adını güzel gösterme
   const getPermissionDisplayName = (permObj) => {
-    // permObj bir nesne ise adı ve kodu birlikte göster
     if (typeof permObj === 'object' && permObj !== null) {
-      // Öncelik: name_tr > name_en > name
       const displayName = permObj.name_tr || permObj.name_en || permObj.name || '';
       return `${displayName} (${permObj.code})`;
     }
-    // string ise sadece kodu göster
     return permObj;
   };
 
   return (
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" fontWeight={600}>Roller</Typography>
+        <Typography variant="h4" fontWeight={600}>{t('adminUserRoles.title')}</Typography>
         <Box display="flex" gap={2}>
           <Button variant="outlined" startIcon={<SettingsIcon />} onClick={() => navigate('/admin/roles/permissions')}>
-            Tüm İzinleri Yönet
+            {t('adminUserRoles.manageAllPermissions')}
           </Button>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpenModal('add')}>Rol Ekle</Button>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpenModal('add')}>{t('adminUserRoles.addRole')}</Button>
         </Box>
       </Box>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell><strong>ID</strong></TableCell>
-              <TableCell><strong>Rol Adı</strong></TableCell>
-              <TableCell><strong>İzinler</strong></TableCell>
-              <TableCell align="center"><strong>İşlemler</strong></TableCell>
+              <TableCell><strong>{t('adminUserRoles.table.id')}</strong></TableCell>
+              <TableCell><strong>{t('adminUserRoles.table.name')}</strong></TableCell>
+              <TableCell><strong>{t('adminUserRoles.table.permissions')}</strong></TableCell>
+              <TableCell align="center"><strong>{t('adminUserRoles.table.actions')}</strong></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={4}>Yükleniyor...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={4}>{t('adminUsers.loading')}</TableCell></TableRow>
             ) : roles.length === 0 ? (
-              <TableRow><TableCell colSpan={4}>Hiç rol bulunamadı.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={4}>{t('adminUsers.noUsers')}</TableCell></TableRow>
             ) : (
               roles.map(role => (
-                <TableRow key={role.id}>
+                <TableRow key={role.id || role._id}>
                   <TableCell>{role.id || role._id}</TableCell>
                   <TableCell>{role.name}</TableCell>
                   <TableCell>
                     <Button size="small" variant="outlined" startIcon={<ListIcon />} onClick={() => handleOpenPermModal(role)}>
-                      İzinleri Görüntüle ({role.permissions?.length || 0})
+                      {t('adminUserRoles.permissions')} ({role.permissions?.length || 0})
                     </Button>
                   </TableCell>
                   <TableCell align="center">
@@ -187,11 +186,11 @@ export default function AdminUserRoles() {
 
       {/* Rol Ekle/Güncelle Modal */}
       <Dialog open={openModal} onClose={handleCloseModal} maxWidth="xs" fullWidth>
-        <DialogTitle>{modalType === 'add' ? 'Rol Ekle' : 'Rolü Güncelle'}</DialogTitle>
+        <DialogTitle>{modalType === 'add' ? t('adminUserRoles.addRole') : t('adminUserRoles.editRole')}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} mt={1}>
             <TextField
-              label="Rol Adı"
+              label={t('adminUserRoles.roleName')}
               value={modalRole?.name || ''}
               onChange={e => setModalRole({ ...modalRole, name: e.target.value })}
               fullWidth
@@ -199,18 +198,18 @@ export default function AdminUserRoles() {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseModal}>İptal</Button>
-          <Button onClick={handleSaveRole} variant="contained">Kaydet</Button>
+          <Button onClick={handleCloseModal}>{t('adminUserRoles.cancel')}</Button>
+          <Button onClick={handleSaveRole} variant="contained">{t('adminUserRoles.save')}</Button>
         </DialogActions>
       </Dialog>
 
       {/* Permission Modal */}
       <Dialog open={openPermModal} onClose={handleClosePermModal} maxWidth="sm" fullWidth>
-        <DialogTitle>İzinler - {permRole?.name}</DialogTitle>
+        <DialogTitle>{t('adminUserRoles.permissionModalTitle', { roleName: permRole?.name })}</DialogTitle>
         <DialogContent>
           <Stack spacing={1} mt={1}>
             {permissions.map(perm => (
-              <Tooltip key={perm.code} title={`Kategori: ${perm.category || '-'}`} placement="right">
+              <Tooltip key={perm.code} title={`${t('adminUserRoles.category')}: ${perm.category || '-'}`} placement="right">
                 <FormControlLabel
                   control={
                     <Checkbox
@@ -225,8 +224,8 @@ export default function AdminUserRoles() {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClosePermModal}>İptal</Button>
-          <Button onClick={handleSavePermissions} variant="contained">Kaydet</Button>
+          <Button onClick={handleClosePermModal}>{t('adminUserRoles.cancel')}</Button>
+          <Button onClick={handleSavePermissions} variant="contained">{t('adminUserRoles.save')}</Button>
         </DialogActions>
       </Dialog>
 
@@ -235,10 +234,10 @@ export default function AdminUserRoles() {
         open={confirmDelete.open}
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
-        title="Rolü Sil"
-        description="Bu rolü silmek istediğinizden emin misiniz?"
-        confirmText="Evet, Sil"
-        cancelText="Vazgeç"
+        title={t('adminUserRoles.confirmDeleteTitle')}
+        description={t('adminUserRoles.confirmDeleteDesc')}
+        confirmText={t('adminUserRoles.confirmDeleteYes')}
+        cancelText={t('adminUserRoles.confirmDeleteNo')}
       />
 
       {/* Snackbar */}
@@ -252,7 +251,7 @@ export default function AdminUserRoles() {
           severity={snackbar.severity}
           sx={{ width: '100%' }}
         >
-          {snackbar.message}
+          {t('adminUserRoles.snackbar.' + snackbar.message) || snackbar.message}
         </Alert>
       </Snackbar>
     </Box>

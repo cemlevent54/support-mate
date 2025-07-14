@@ -8,6 +8,7 @@
       "logout": "Logout",
       "signup": "Signup",
       "myAccount": "My Account",
+      "users": "Users",
       "requests": "My Requests",
       "createRequest": "Create Request",
       "liveChat": "Live Chat",
@@ -69,5 +70,122 @@
     "deleteDesc": "This action cannot be undone. Are you sure you want to delete your account?",
     "deleteYes": "Yes, Delete",
     "deleteNo": "Cancel"
+  },
+  "adminDashboard": {
+    "title": "Admin Panel",
+    "dashboard": "Dashboard",
+    "users": "Users",
+    "roles": "Roles"
+  },
+  "adminUsers": {
+    "title": "User Management",
+    "searchPlaceholder": "Search user...",
+    "roleFilter": "Role Filter",
+    "allRoles": "All",
+    "table": {
+      "id": "ID",
+      "fullName": "Full Name",
+      "email": "Email",
+      "role": "Role",
+      "status": "Status",
+      "createdAt": "Created At",
+      "actions": "Actions"
+    },
+    "status": {
+      "deleted": "Deleted",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "editDialog": {
+      "title": "Edit User",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "email": "Email",
+      "role": "Role",
+      "status": "Status",
+      "active": "Active",
+      "inactive": "Inactive",
+      "cancel": "Cancel",
+      "save": "Update"
+    },
+    "snackbar": {
+      "userUpdated": "User updated successfully",
+      "userDeleted": "User deleted successfully",
+      "userNotFound": "User information not found",
+      "userLoadError": "Error loading users",
+      "userSaveError": "Error saving user",
+      "userDeleteError": "Error deleting user"
+    },
+    "confirmDelete": {
+      "title": "Delete User",
+      "desc": "Are you sure you want to delete this user?",
+      "yes": "Yes, Delete",
+      "no": "Cancel"
+    },
+    "noUsers": "No users found",
+    "loading": "Loading...",
+    "rowsPerPage": "Users per page:"
+  },
+  "adminUserRoles": {
+    "manageAllPermissions": "Manage All Permissions",
+    "title": "Role Management",
+    "addRole": "Add Role",
+    "editRole": "Edit Role",
+    "roleName": "Role Name",
+    "permissions": "Permissions",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "confirmDeleteTitle": "Delete Role",
+    "confirmDeleteDesc": "Are you sure you want to delete this role?",
+    "confirmDeleteYes": "Yes, Delete",
+    "confirmDeleteNo": "Cancel",
+    "snackbar": {
+      "roleAdded": "Role added successfully",
+      "roleUpdated": "Role updated successfully",
+      "roleDeleted": "Role deleted successfully",
+      "roleSaveError": "Error saving role",
+      "roleDeleteError": "Error deleting role",
+      "permUpdate": "Permissions updated successfully",
+      "permUpdateError": "Error updating permissions"
+    },
+    "table": {
+      "id": "ID",
+      "name": "Role Name",
+      "permissions": "Permissions",
+      "actions": "Actions"
+    },
+    "permissionModalTitle": "Permissions - {{roleName}}",
+    "category": "Category"
+  },
+  "adminRolePermissions": {
+    "title": "All Permissions",
+    "addPermission": "Add Permission",
+    "editPermission": "Edit Permission",
+    "searchPlaceholder": "Search by name, code or category...",
+    "table": {
+      "id": "ID",
+      "nameTr": "Permission Name (TR)",
+      "nameEn": "Permission Name (EN)",
+      "code": "Code",
+      "category": "Category",
+      "actions": "Actions"
+    },
+    "form": {
+      "nameTr": "Permission Name (TR)",
+      "nameEn": "Permission Name (EN)",
+      "code": "Code",
+      "category": "Category"
+    },
+    "noPermissions": "No records found",
+    "cancel": "Cancel",
+    "save": "Save",
+    "snackbar": {
+      "added": "Permission added successfully",
+      "updated": "Permission updated successfully",
+      "deleted": "Permission deleted successfully",
+      "saveError": "Error saving permission",
+      "deleteError": "Error deleting permission"
+    }
   }
 } 

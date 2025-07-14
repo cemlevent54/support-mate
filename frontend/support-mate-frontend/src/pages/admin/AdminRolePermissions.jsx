@@ -7,6 +7,7 @@ import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon, Search as Searc
 import * as roleApi from '../../api/roleApi';
 import axiosInstance from '../../api/axiosInstance';
 import { usePermissions } from '../../hooks/usePermissions';
+import { useTranslation } from 'react-i18next';
 
 export default function AdminRolePermissions() {
   const [permissions, setPermissions] = useState([]);
@@ -16,6 +17,7 @@ export default function AdminRolePermissions() {
   const [modalPerm, setModalPerm] = useState({ id: '', name_tr: '', name_en: '', code: '', category: '' });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const { isAdmin } = usePermissions();
+  const { t } = useTranslation();
 
   // Yetkileri API'den çek
   const fetchPermissions = async () => {
@@ -55,7 +57,7 @@ export default function AdminRolePermissions() {
           code: modalPerm.code,
           category: modalPerm.category
         });
-        setSnackbar({ open: true, message: 'Yetki başarıyla eklendi', severity: 'success' });
+        setSnackbar({ open: true, message: 'added', severity: 'success' });
       } else {
         await axiosInstance.patch(`/api/auth/permissions/${modalPerm.id}`, {
           name_tr: modalPerm.name_tr,
@@ -63,12 +65,12 @@ export default function AdminRolePermissions() {
           code: modalPerm.code,
           category: modalPerm.category
         });
-        setSnackbar({ open: true, message: 'Yetki başarıyla güncellendi', severity: 'success' });
+        setSnackbar({ open: true, message: 'updated', severity: 'success' });
       }
       setOpenModal(false);
       fetchPermissions();
     } catch (error) {
-      setSnackbar({ open: true, message: 'Yetki kaydedilirken hata oluştu', severity: 'error' });
+      setSnackbar({ open: true, message: 'saveError', severity: 'error' });
     }
   };
 
@@ -76,22 +78,22 @@ export default function AdminRolePermissions() {
   const handleDelete = async (id) => {
     try {
       await axiosInstance.delete(`/api/auth/permissions/${id}`);
-      setSnackbar({ open: true, message: 'Yetki başarıyla silindi', severity: 'success' });
+      setSnackbar({ open: true, message: 'deleted', severity: 'success' });
       fetchPermissions();
     } catch (error) {
-      setSnackbar({ open: true, message: 'Yetki silinirken hata oluştu', severity: 'error' });
+      setSnackbar({ open: true, message: 'deleteError', severity: 'error' });
     }
   };
 
   return (
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" fontWeight={600}>Tüm İzinler</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpenModal('add')}>İzin Ekle</Button>
+        <Typography variant="h4" fontWeight={600}>{t('adminRolePermissions.title')}</Typography>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpenModal('add')}>{t('adminRolePermissions.addPermission')}</Button>
       </Box>
       <Box mb={2}>
         <TextField
-          placeholder="İzin adı, kodu, açıklama veya kategori ara..."
+          placeholder={t('adminRolePermissions.searchPlaceholder')}
           value={search}
           onChange={e => setSearch(e.target.value)}
           InputProps={{
@@ -104,12 +106,12 @@ export default function AdminRolePermissions() {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell><strong>ID</strong></TableCell>
-              <TableCell><strong>İzin Adı (TR)</strong></TableCell>
-              <TableCell><strong>İzin Adı (EN)</strong></TableCell>
-              <TableCell><strong>Kod</strong></TableCell>
-              <TableCell><strong>Kategori</strong></TableCell>
-              <TableCell align="center"><strong>İşlemler</strong></TableCell>
+              <TableCell><strong>{t('adminRolePermissions.table.id')}</strong></TableCell>
+              <TableCell><strong>{t('adminRolePermissions.table.nameTr')}</strong></TableCell>
+              <TableCell><strong>{t('adminRolePermissions.table.nameEn')}</strong></TableCell>
+              <TableCell><strong>{t('adminRolePermissions.table.code')}</strong></TableCell>
+              <TableCell><strong>{t('adminRolePermissions.table.category')}</strong></TableCell>
+              <TableCell align="center"><strong>{t('adminRolePermissions.table.actions')}</strong></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -128,7 +130,7 @@ export default function AdminRolePermissions() {
             ))}
             {filteredPermissions.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} align="center">Kayıt bulunamadı</TableCell>
+                <TableCell colSpan={6} align="center">{t('adminRolePermissions.noPermissions')}</TableCell>
               </TableRow>
             )}
           </TableBody>
@@ -137,29 +139,29 @@ export default function AdminRolePermissions() {
 
       {/* Ekle/Güncelle Modal */}
       <Dialog open={openModal} onClose={handleCloseModal} maxWidth="xs" fullWidth>
-        <DialogTitle>{modalType === 'add' ? 'İzin Ekle' : 'İzni Güncelle'}</DialogTitle>
+        <DialogTitle>{modalType === 'add' ? t('adminRolePermissions.addPermission') : t('adminRolePermissions.editPermission')}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} mt={1}>
             <TextField
-              label="İzin Adı (TR)"
+              label={t('adminRolePermissions.form.nameTr')}
               value={modalPerm.name_tr}
               onChange={e => setModalPerm({ ...modalPerm, name_tr: e.target.value })}
               fullWidth
             />
             <TextField
-              label="İzin Adı (EN)"
+              label={t('adminRolePermissions.form.nameEn')}
               value={modalPerm.name_en}
               onChange={e => setModalPerm({ ...modalPerm, name_en: e.target.value })}
               fullWidth
             />
             <TextField
-              label="Kod"
+              label={t('adminRolePermissions.form.code')}
               value={modalPerm.code}
               onChange={e => setModalPerm({ ...modalPerm, code: e.target.value })}
               fullWidth
             />
             <TextField
-              label="Kategori"
+              label={t('adminRolePermissions.form.category')}
               value={modalPerm.category}
               onChange={e => setModalPerm({ ...modalPerm, category: e.target.value })}
               fullWidth
@@ -167,8 +169,8 @@ export default function AdminRolePermissions() {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseModal}>İptal</Button>
-          <Button onClick={handleSave} variant="contained">Kaydet</Button>
+          <Button onClick={handleCloseModal}>{t('adminRolePermissions.cancel')}</Button>
+          <Button onClick={handleSave} variant="contained">{t('adminRolePermissions.save')}</Button>
         </DialogActions>
       </Dialog>
 
@@ -183,7 +185,7 @@ export default function AdminRolePermissions() {
           severity={snackbar.severity}
           sx={{ width: '100%' }}
         >
-          {snackbar.message}
+          {t('adminRolePermissions.snackbar.' + snackbar.message) || snackbar.message}
         </Alert>
       </Snackbar>
     </Box>

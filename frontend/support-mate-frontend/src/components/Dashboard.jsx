@@ -9,16 +9,20 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { logout as apiLogout } from '../api/authApi';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
+import { useTranslation } from 'react-i18next';
+import { useLanguage } from './LanguageProvider';
 
-const sidebarItems = [
-  { key: 'dashboard', label: 'Dashboard', path: '/admin' },
-  { key: 'users', label: 'Kullanıcılar', path: '/admin/users' },
-  { key: 'roles', label: 'Roller', path: '/admin/roles' },
-  // { key: 'settings', label: 'Ayarlar', path: '/admin/settings' },
+const LANGUAGES = [
+  { code: 'tr', label: 'Türkçe' },
+  { code: 'en', label: 'English' }
 ];
 
 export default function Dashboard() {
   const [selected, setSelected] = useState('dashboard');
+  const { t } = useTranslation();
+  const { language, onLanguageChange } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -52,12 +56,34 @@ export default function Dashboard() {
     navigate(item.path);
   };
 
+  const handleLanguageChange = (e) => {
+    onLanguageChange(e.target.value);
+    // window.location.reload(); // LanguageProvider zaten context ile değişimi sağlıyor
+  };
+
+  const sidebarItems = [
+    { key: 'dashboard', label: t('adminDashboard.dashboard'), path: '/admin' },
+    { key: 'users', label: t('adminDashboard.users'), path: '/admin/users' },
+    { key: 'roles', label: t('adminDashboard.roles'), path: '/admin/roles' },
+    // { key: 'settings', label: t('adminDashboard.settings'), path: '/admin/settings' },
+  ];
+
   return (
     <Box display="flex" minHeight="100vh" sx={{ background: '#f5f5f5' }}>
       {/* Sidebar */}
       <Paper elevation={3} sx={{ width: 220, minHeight: '100vh', borderRadius: 0, p: 2, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', bgcolor: '#111', color: '#fff' }}>
         <div>
-          <Typography variant="h6" fontWeight={700} mb={2} textAlign="center" sx={{ color: '#fff' }}>Admin Panel</Typography>
+          <Typography variant="h6" fontWeight={700} mb={2} textAlign="center" sx={{ color: '#fff' }}>{t('adminDashboard.title')}</Typography>
+          <Select
+            value={language}
+            onChange={handleLanguageChange}
+            size="small"
+            sx={{ mb: 2, width: '100%', bgcolor: '#222', color: '#fff', '.MuiSvgIcon-root': { color: '#fff' } }}
+          >
+            {LANGUAGES.map(lang => (
+              <MenuItem key={lang.code} value={lang.code}>{lang.label}</MenuItem>
+            ))}
+          </Select>
           <List>
             {sidebarItems.map(item => (
               <ListItem key={item.key} disablePadding>
@@ -80,7 +106,7 @@ export default function Dashboard() {
           </List>
         </div>
         <Button variant="outlined" color="error" onClick={handleLogout} sx={{ mt: 2, borderColor: '#fff', color: '#fff', '&:hover': { borderColor: '#fff', bgcolor: '#222' } }}>
-          Çıkış Yap
+          {t('components.navbar.logout')}
         </Button>
       </Paper>
       {/* İçerik */}

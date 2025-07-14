@@ -34,8 +34,10 @@ import { getAllUsers, updateUser, deleteUser } from '../../api/userApi';
 import * as roleApi from '../../api/roleApi';
 import ConfirmModal from '../../components/ConfirmModal';
 import { usePermissions } from '../../hooks/usePermissions';
+import { useTranslation } from 'react-i18next';
 
 export default function AdminUsers() {
+  const { t } = useTranslation();
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -207,17 +209,17 @@ export default function AdminUsers() {
     const roleName = typeof role === 'object' ? role.name : role;
     switch (roleName) {
       case 'admin': return 'Admin';
-      case 'support': return 'Destek';
-      case 'user': return 'Kullanıcı';
+      case 'support': return t('adminUsers.table.role') + ' (Destek)';
+      case 'user': return t('adminUsers.table.role') + ' (Kullanıcı)';
       default: return roleName;
     }
   };
 
   const getStatusChip = (user) => {
     if (user.is_deleted) {
-      return <Chip label="Silinmiş" color="default" size="small" sx={{ bgcolor: '#888', color: '#fff' }} />;
+      return <Chip label={t('adminUsers.status.deleted')} color="default" size="small" sx={{ bgcolor: '#888', color: '#fff' }} />;
     }
-    return <Chip label={user.isActive ? 'Aktif' : 'Pasif'} color={user.isActive ? 'success' : 'default'} size="small" />;
+    return <Chip label={user.isActive ? t('adminUsers.status.active') : t('adminUsers.status.inactive')} color={user.isActive ? 'success' : 'default'} size="small" />;
   };
 
   const handleChangePage = (event, newPage) => {
@@ -234,7 +236,7 @@ export default function AdminUsers() {
       {/* Header */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4" fontWeight={600}>
-          Kullanıcı Yönetimi
+          {t('adminUsers.title')}
         </Typography>
       </Box>
 
@@ -242,7 +244,7 @@ export default function AdminUsers() {
       <Paper sx={{ p: 2, mb: 3 }}>
         <Box display="flex" gap={2} alignItems="center">
           <TextField
-            placeholder="Kullanıcı ara..."
+            placeholder={t('adminUsers.searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             InputProps={{
@@ -251,13 +253,13 @@ export default function AdminUsers() {
             sx={{ minWidth: 300 }}
           />
           <FormControl sx={{ minWidth: 150 }}>
-            <InputLabel>Rol Filtresi</InputLabel>
+            <InputLabel>{t('adminUsers.roleFilter')}</InputLabel>
             <Select
               value={roleFilter}
-              label="Rol Filtresi"
+              label={t('adminUsers.roleFilter')}
               onChange={(e) => setRoleFilter(e.target.value)}
             >
-              <MenuItem value="all">Tümü</MenuItem>
+              <MenuItem value="all">{t('adminUsers.allRoles')}</MenuItem>
               {roles.map((role) => (
                 <MenuItem key={role.id || role._id} value={role.name}>
                   {getRoleLabel(role.name)}
@@ -273,26 +275,26 @@ export default function AdminUsers() {
         <Table>
           <TableHead>
             <TableRow sx={{ bgcolor: '#f5f5f5' }}>
-              <TableCell><strong>ID</strong></TableCell>
-              <TableCell><strong>Ad Soyad</strong></TableCell>
-              <TableCell><strong>E-posta</strong></TableCell>
-              <TableCell><strong>Rol</strong></TableCell>
-              <TableCell><strong>Durum</strong></TableCell>
-              <TableCell><strong>Kayıt Tarihi</strong></TableCell>
-              <TableCell align="center"><strong>İşlemler</strong></TableCell>
+              <TableCell><strong>{t('adminUsers.table.id')}</strong></TableCell>
+              <TableCell><strong>{t('adminUsers.table.fullName')}</strong></TableCell>
+              <TableCell><strong>{t('adminUsers.table.email')}</strong></TableCell>
+              <TableCell><strong>{t('adminUsers.table.role')}</strong></TableCell>
+              <TableCell><strong>{t('adminUsers.table.status')}</strong></TableCell>
+              <TableCell><strong>{t('adminUsers.table.createdAt')}</strong></TableCell>
+              <TableCell align="center"><strong>{t('adminUsers.table.actions')}</strong></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {loading ? (
               <TableRow>
                 <TableCell colSpan={7} align="center">
-                  <Typography>Yükleniyor...</Typography>
+                  <Typography>{t('adminUsers.loading')}</Typography>
                 </TableCell>
               </TableRow>
             ) : paginatedUsers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} align="center">
-                  <Typography>Kullanıcı bulunamadı</Typography>
+                  <Typography>{t('adminUsers.noUsers')}</Typography>
                 </TableCell>
               </TableRow>
             ) : (
@@ -351,41 +353,41 @@ export default function AdminUsers() {
           rowsPerPage={rowsPerPage}
           onRowsPerPageChange={handleChangeRowsPerPage}
           rowsPerPageOptions={[5, 10, 25, 50]}
-          labelRowsPerPage="Sayfa başına kullanıcı:"
+          labelRowsPerPage={t('adminUsers.rowsPerPage')}
         />
       </TableContainer>
 
       {/* User Dialog */}
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
         <DialogTitle>
-          Kullanıcı Düzenle
+          {t('adminUsers.editDialog.title')}
         </DialogTitle>
         <DialogContent>
           <Box display="flex" flexDirection="column" gap={2} mt={1}>
             <TextField
-              label="Ad"
+              label={t('adminUsers.editDialog.firstName')}
               value={formData.firstName}
               onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
               fullWidth
             />
             <TextField
-              label="Soyad"
+              label={t('adminUsers.editDialog.lastName')}
               value={formData.lastName}
               onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
               fullWidth
             />
             <TextField
-              label="E-posta"
+              label={t('adminUsers.editDialog.email')}
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               fullWidth
             />
             <FormControl fullWidth>
-              <InputLabel>Rol</InputLabel>
+              <InputLabel>{t('adminUsers.editDialog.role')}</InputLabel>
               <Select
                 value={formData.role}
-                label="Rol"
+                label={t('adminUsers.editDialog.role')}
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
               >
                 {roles.map((role) => (
@@ -396,22 +398,22 @@ export default function AdminUsers() {
               </Select>
             </FormControl>
             <FormControl fullWidth>
-              <InputLabel>Durum</InputLabel>
+              <InputLabel>{t('adminUsers.editDialog.status')}</InputLabel>
               <Select
                 value={formData.isActive}
-                label="Durum"
+                label={t('adminUsers.editDialog.status')}
                 onChange={(e) => setFormData({ ...formData, isActive: e.target.value })}
               >
-                <MenuItem value={true}>Aktif</MenuItem>
-                <MenuItem value={false}>Pasif</MenuItem>
+                <MenuItem value={true}>{t('adminUsers.editDialog.active')}</MenuItem>
+                <MenuItem value={false}>{t('adminUsers.editDialog.inactive')}</MenuItem>
               </Select>
             </FormControl>
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog}>İptal</Button>
+          <Button onClick={handleCloseDialog}>{t('adminUsers.editDialog.cancel')}</Button>
           <Button onClick={handleSaveUser} variant="contained">
-            Güncelle
+            {t('adminUsers.editDialog.save')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -436,10 +438,10 @@ export default function AdminUsers() {
         open={confirmDelete.open}
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
-        title="Kullanıcıyı Sil"
-        description="Bu kullanıcıyı silmek istediğinizden emin misiniz?"
-        confirmText="Evet, Sil"
-        cancelText="Vazgeç"
+        title={t('adminUsers.confirmDelete.title')}
+        description={t('adminUsers.confirmDelete.desc')}
+        confirmText={t('adminUsers.confirmDelete.yes')}
+        cancelText={t('adminUsers.confirmDelete.no')}
       />
     </Box>
   );
