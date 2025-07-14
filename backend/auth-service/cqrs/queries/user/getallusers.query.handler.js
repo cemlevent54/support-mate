@@ -1,10 +1,11 @@
 import logger from '../../../config/logger.js';
 import userRepository from '../../../repositories/user.repository.js';
+import translation from '../../../config/translation.js';
 
 export class GetAllUsersQueryHandler {
   async execute(query) {
     try {
-      logger.info('GetAllUsersQuery executing', { query });
+      logger.info(translation('cqrs.queries.user.getAllUsers.logs.executing'), { query });
       
       const options = {
         page: query.page || 1,
@@ -40,15 +41,11 @@ export class GetAllUsersQueryHandler {
         totalPages: result.totalPages
       };
       
-      logger.info('GetAllUsersQuery completed successfully', { 
-        count: normalizedUsers.length, 
-        total: result.total,
-        page: result.page 
-      });
+      logger.info(translation('cqrs.queries.user.getAllUsers.logs.success'), { count: normalizedUsers.length, total: result.total, page: result.page });
       
       return normalizedResult;
     } catch (error) {
-      logger.error('GetAllUsersQuery failed', { error, query });
+      logger.error(translation('cqrs.queries.user.getAllUsers.logs.fail'), { error, query });
       throw error;
     }
   }

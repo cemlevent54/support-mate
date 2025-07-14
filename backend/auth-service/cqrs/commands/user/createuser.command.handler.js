@@ -3,11 +3,12 @@ import roleRepository from '../../../repositories/role.repository.js';
 import bcrypt from 'bcrypt';
 import logger from '../../../config/logger.js';
 import { UserModel } from '../../../models/user.model.js';
+import translation from '../../../config/translation.js';
 
 export class CreateUserCommandHandler {
   async execute(command) {
     try {
-      logger.info('CreateUserCommand executing', { email: command.email });
+      logger.info(translation('cqrs.commands.user.createUser.logs.executing'), { email: command.email });
       let roleId = command.role;
       // Eğer rol string ise, role nesnesini bul
       if (!roleId || typeof roleId === 'string') {
@@ -40,10 +41,10 @@ export class CreateUserCommandHandler {
         updatedAt: user.updatedAt
       };
       
-      logger.info('CreateUserCommand completed successfully', { userId: user._id });
+      logger.info(translation('cqrs.commands.user.createUser.logs.success'), { userId: user._id });
       return result;
     } catch (error) {
-      logger.error('CreateUserCommand failed', { error, command });
+      logger.error(translation('cqrs.commands.user.createUser.logs.fail'), { error, command });
       throw error;
     }
   }

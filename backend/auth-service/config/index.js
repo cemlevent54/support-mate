@@ -1,17 +1,24 @@
 import { connectDatabase, testConnection } from './database.js';
 import logger from './logger.js';
 import cacheService from './cache.js';
-import kafkaService, { testKafkaConnection } from './kafka.js';
+import { KafkaService } from './kafka.js';
+import i18n from './i18n.js';
+import translation from './translation.js';
+
+// Locale (dil) ayarı ve logu server.js dosyasında yapılmaktadır.
+// initializeApp fonksiyonu içinde tekrar locale ayarı yapılmamalı ve handler kayıtları burada yer almamalı.
+
+let kafkaService;
 
 export const initializeApp = async () => {
   try {
     const connInfo = await connectDatabase();
     const testResult = await testConnection();
     if (testResult) {
-      logger.info('Database connection and test successful.');
-      logger.info('Database Info:', connInfo);
+      logger.info(translation('config.database.logs.testSuccess'));
+      logger.info(translation('config.database.logs.connectionInfo'), connInfo);
     } else {
-      logger.error('Database connection test failed.');
+      logger.error(translation('config.database.logs.testError'));
     }
 
     // Redis bağlantı testi
@@ -19,27 +26,33 @@ export const initializeApp = async () => {
       // Cache service'in client'ını kullanarak ping testi yap
       const result = await cacheService.client.ping();
       if (result === 'PONG') {
-        logger.info('Redis connection test successful.');
+        logger.info(translation('config.cache.logs.connectSuccess'));
       } else {
-        logger.error('Redis connection test failed.');
+        logger.error(translation('config.cache.logs.connectError'));
       }
     } catch (err) {
-      logger.error('Redis connection test failed:', err);
+      logger.error(translation('config.cache.logs.connectError'), err);
     }
 
     // Kafka bağlantı testi
     try {
-      const kafkaResult = await testKafkaConnection();
+      if (!kafkaService) {
+        kafkaService = new KafkaService();
+      }
+      const kafkaResult = await kafkaService.testConnection();
       if (kafkaResult) {
-        logger.info('Kafka connection test successful.');
+        logger.info(translation('config.kafka.logs.producerConnectSuccess'));
       } else {
-        logger.error('Kafka connection test failed.');
+        logger.error(translation('config.kafka.logs.producerConnectError'));
       }
     } catch (err) {
-      logger.error('Kafka connection test failed:', err);
+      logger.error(translation('config.kafka.logs.producerConnectError'), err);
     }
   } catch (error) {
-    logger.error('Error occurred while initializing the database, cache, or kafka:', error);
+    logger.error(translation('config.database.logs.connectError'), error);
     throw error;
   }
-}; 
+};
+
+export { kafkaService };
+

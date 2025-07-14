@@ -1,11 +1,12 @@
 import userRepository from '../../../repositories/user.repository.js';
 import roleRepository from '../../../repositories/role.repository.js';
 import logger from '../../../config/logger.js';
+import translation from '../../../config/translation.js';
 
 export class UpdateUserCommandHandler {
   async execute(command) {
     try {
-      logger.info('UpdateUserCommand executing', { id: command.id });
+      logger.info(translation('cqrs.commands.user.updateUser.logs.executing'), { id: command.id });
       const updateData = { ...command.updateData };
       // Eğer rol güncelleniyorsa ve string ise, ObjectId olarak bul
       if (updateData.role && typeof updateData.role === 'string') {
@@ -16,7 +17,8 @@ export class UpdateUserCommandHandler {
       }
       const user = await userRepository.updateUser(command.id, updateData);
       if (!user) {
-        throw new Error('User not found');
+        logger.error(translation('cqrs.commands.user.updateUser.logs.notFound'), { id: command.id });
+        throw new Error(translation('cqrs.commands.user.updateUser.logs.notFound'));
       }
       // MongoDB'den gelen _id'yi id olarak normalize et
       const result = {
@@ -29,10 +31,10 @@ export class UpdateUserCommandHandler {
         createdAt: user.createdAt,
         updatedAt: user.updatedAt
       };
-      logger.info('UpdateUserCommand completed successfully', { userId: user._id });
+      logger.info(translation('cqrs.commands.user.updateUser.logs.success'), { userId: user._id });
       return result;
     } catch (error) {
-      logger.error('UpdateUserCommand failed', { error, command });
+      logger.error(translation('cqrs.commands.user.updateUser.logs.fail'), { error, command });
       throw error;
     }
   }

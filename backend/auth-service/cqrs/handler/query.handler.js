@@ -1,4 +1,5 @@
 import logger from '../../config/logger.js';
+import translation from '../../config/translation.js';
 
 export class QueryHandler {
   constructor() {
@@ -7,7 +8,7 @@ export class QueryHandler {
 
   register(queryType, handler) {
     this.handlers.set(queryType, handler);
-    logger.info('Query handler registered', { queryType });
+    logger.info(translation('cqrs.handler.query.logs.registered'), { queryType });
   }
 
   async dispatch(queryType, query) {
@@ -15,17 +16,17 @@ export class QueryHandler {
     
     if (!handler) {
       const error = `No handler registered for query: ${queryType}`;
-      logger.error(error);
-      throw new Error(error);
+      logger.error(translation('cqrs.handler.query.logs.noHandler'), { queryType });
+      throw new Error(translation('cqrs.handler.query.logs.noHandler', { queryType }));
     }
 
     try {
-      logger.info('Dispatching query', { queryType, query });
+      logger.info(translation('cqrs.handler.query.logs.dispatching'), { queryType, query });
       const result = await handler.execute(query);
-      logger.info('Query dispatched successfully', { queryType, result });
+      logger.info(translation('cqrs.handler.query.logs.success'), { queryType, result });
       return result;
     } catch (error) {
-      logger.error('Query dispatch failed', { queryType, error, query });
+      logger.error(translation('cqrs.handler.query.logs.fail'), { queryType, error, query });
       throw error;
     }
   }

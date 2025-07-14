@@ -1,10 +1,11 @@
 import roleRepository from '../../../repositories/role.repository.js';
 import logger from '../../../config/logger.js';
+import translation from '../../../config/translation.js';
 
 export class CreateRoleCommandHandler {
   async execute(command) {
     try {
-      logger.info('CreateRoleCommand executing', { name: command.name });
+      logger.info(translation('cqrs.commands.role.createRole.logs.executing'), { name: command.name });
       const roleData = {
         name: command.name,
         description: command.description,
@@ -23,10 +24,10 @@ export class CreateRoleCommandHandler {
         updatedAt: role.updatedAt
       };
       
-      logger.info('CreateRoleCommand completed successfully', { roleId: role._id });
+      logger.info(translation('cqrs.commands.role.createRole.logs.success'), { roleId: role._id });
       return result;
     } catch (error) {
-      logger.error('CreateRoleCommand failed', { error, command });
+      logger.error(translation('cqrs.commands.role.createRole.logs.fail'), { error, command });
       throw error;
     }
   }

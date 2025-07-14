@@ -1,44 +1,45 @@
 import { PermissionModel } from '../models/permission.model.js';
 import logger from '../config/logger.js';
+import translation from '../config/translation.js';
 
 class PermissionRepository {
   async createPermission(permissionData) {
     try {
-      logger.info('Creating permission', { permissionData });
+      logger.info(translation('repositories.permissionRepository.logs.creating'), { permissionData });
       const permission = new PermissionModel(permissionData);
       const savedPermission = await permission.save();
-      logger.info('Permission created successfully', { permission: savedPermission });
+      logger.info(translation('repositories.permissionRepository.logs.created'), { permission: savedPermission });
       return savedPermission;
     } catch (err) {
-      logger.error('Error creating permission', { error: err, permissionData });
+      logger.error(translation('repositories.permissionRepository.logs.errorCreating'), { error: err, permissionData });
       throw err;
     }
   }
 
   async findPermissionById(id) {
     try {
-      logger.info('Finding permission by ID', { id });
+      logger.info(translation('repositories.permissionRepository.logs.finding'), { id });
       const permission = await PermissionModel.findById(id);
       if (!permission) {
-        logger.info('Permission not found by ID', { id });
+        logger.info(translation('repositories.permissionRepository.logs.notFound'), { id });
       }
       return permission;
     } catch (err) {
-      logger.error('Error finding permission by ID', { error: err, id });
+      logger.error(translation('repositories.permissionRepository.logs.errorCreating'), { error: err, id });
       throw err;
     }
   }
 
   async findPermissionByCode(code) {
     try {
-      logger.info('Finding permission by code', { code });
+      logger.info(translation('repositories.permissionRepository.logs.finding'), { code });
       const permission = await PermissionModel.findOne({ code, isDeleted: false });
       if (!permission) {
-        logger.info('Permission not found by code', { code });
+        logger.info(translation('repositories.permissionRepository.logs.notFound'), { code });
       }
       return permission;
     } catch (err) {
-      logger.error('Error finding permission by code', { error: err, code });
+      logger.error(translation('repositories.permissionRepository.logs.errorCreating'), { error: err, code });
       throw err;
     }
   }
@@ -46,7 +47,7 @@ class PermissionRepository {
   async findAllPermissions(options = {}) {
     try {
       const { page = 1, limit = 10, search, category, isActive } = options;
-      logger.info('Finding all permissions', { page, limit, search, category, isActive });
+      logger.info(translation('repositories.permissionRepository.logs.finding'), { page, limit, search, category, isActive });
       const query = { isDeleted: false };
       
       if (isActive !== undefined) {
@@ -78,63 +79,55 @@ class PermissionRepository {
         totalPages: Math.ceil(total / limit)
       };
       
-      logger.info('Permissions found from MongoDB', { 
-        count: permissions.length, 
-        total, 
-        page, 
-        limit, 
-        search, 
-        category, 
-        isActive 
-      });
+      logger.info(translation('repositories.permissionRepository.logs.found'), { count: permissions.length, total, page, limit, search, category, isActive });
       return result;
     } catch (err) {
-      logger.error('Error finding all permissions', { error: err, options });
+      logger.error(translation('repositories.permissionRepository.logs.errorCreating'), { error: err, options });
       throw err;
     }
   }
 
   async updatePermission(id, updateData) {
     try {
-      logger.info('Updating permission', { id, updateData });
+      logger.info(translation('repositories.permissionRepository.logs.updating'), { id, updateData });
       const permission = await PermissionModel.findByIdAndUpdate(id, updateData, { new: true });
       if (!permission) {
-        logger.info('Permission not found for update', { id });
+        logger.info(translation('repositories.permissionRepository.logs.notFound'), { id });
       }
       return permission;
     } catch (err) {
-      logger.error('Error updating permission', { error: err, id, updateData });
+      logger.error(translation('repositories.permissionRepository.logs.errorUpdating'), { error: err, id, updateData });
       throw err;
     }
   }
 
   async deletePermission(id) {
     try {
-      logger.info('Soft deleting permission', { id });
+      logger.info(translation('repositories.permissionRepository.logs.deleting'), { id });
       const permission = await PermissionModel.findByIdAndUpdate(
         id,
         { isDeleted: true, deletedAt: new Date() },
         { new: true }
       );
       if (!permission) {
-        logger.info('Permission not found for deletion', { id });
+        logger.info(translation('repositories.permissionRepository.logs.notFound'), { id });
       }
       return permission;
     } catch (err) {
-      logger.error('Error deleting permission', { error: err, id });
+      logger.error(translation('repositories.permissionRepository.logs.errorDeleting'), { error: err, id });
       throw err;
     }
   }
 
   async getActivePermissions() {
     try {
-      logger.info('Getting active permissions');
+      logger.info(translation('repositories.permissionRepository.logs.finding'));
       const permissions = await PermissionModel.find({ isActive: true, isDeleted: false })
         .sort({ category: 1, name: 1 });
-      logger.info('Active permissions found', { count: permissions.length });
+      logger.info(translation('repositories.permissionRepository.logs.found'), { count: permissions.length });
       return permissions;
     } catch (err) {
-      logger.error('Error getting active permissions', { error: err });
+      logger.error(translation('repositories.permissionRepository.logs.errorCreating'), { error: err });
       throw err;
     }
   }

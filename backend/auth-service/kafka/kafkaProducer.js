@@ -1,4 +1,4 @@
-import kafkaService from '../config/kafka.js';
+import { kafkaService } from '../config/index.js';
 
 export async function sendUserRegisteredEvent(user) {
   try {

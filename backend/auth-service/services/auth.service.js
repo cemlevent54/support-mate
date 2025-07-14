@@ -19,6 +19,7 @@ import {
 import userRepository from '../repositories/user.repository.js';
 import roleService from './role.service.js';
 import { sendUserRegisteredEvent, sendPasswordResetEvent } from '../kafka/kafkaProducer.js';
+import translation from '../config/translation.js';
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
 const REFRESH_TOKEN_EXPIRES = process.env.JWT_REFRESH_EXPIRES_IN;
@@ -31,21 +32,18 @@ export const AUTH_PERMISSIONS = [
 
 class AuthService {
   constructor() {
-    // Handler kayıtları (CQRS)
-    commandHandler.register(COMMAND_TYPES.CREATE_USER, new CreateUserCommandHandler());
-    queryHandler.register(QUERY_TYPES.GET_USER_BY_EMAIL, new GetUserByEmailQueryHandler());
-    // GET_USER_BY_ID handler'ı UserService'de kaydediliyor
+    // Handler kayıtları constructor'dan çıkarıldı.
   }
 
   async register(req, res) {
     try {
-      logger.info('Register request received', { body: req.body });
+      logger.info(translation('services.authService.logs.registerRequest'), { body: req.body });
       // isDeleted filtresi olmadan kullanıcıyı bul
       const existingUser = await userRepository.findAnyUserByEmail(req.body.email);
       if (existingUser) {
         if (existingUser.isDeleted) {
           // Soft deleted kullanıcıyı tekrar aktif et ve bilgilerini güncelle
-          logger.info('Reactivating soft deleted user', { email: req.body.email });
+          logger.info(translation('services.authService.logs.userReactivated'), { email: req.body.email });
           existingUser.firstName = req.body.firstName;
           existingUser.lastName = req.body.lastName;
           existingUser.password = req.body.password;
@@ -63,12 +61,12 @@ class AuthService {
           existingUser.isDeleted = false;
           existingUser.deletedAt = null;
           await existingUser.save();
-          logger.info('Soft deleted user reactivated', { user: existingUser });
+          logger.info(translation('services.authService.logs.userReactivated'), { user: existingUser });
           await sendUserRegisteredEvent(existingUser);
           apiSuccess(res, existingUser, 'User registered successfully (reactivated)', 201);
           return;
         } else {
-          logger.warn('Register failed: email already in use', { email: req.body.email });
+          logger.warn(translation('services.authService.logs.registerConflict'), { email: req.body.email });
           conflictError(res, 'Email already in use');
           return;
         }
@@ -90,11 +88,11 @@ class AuthService {
         roleName: roleName
       };
       const user = await commandHandler.dispatch(COMMAND_TYPES.CREATE_USER, createUserCommand);
-      logger.info('Register success', { user });
+      logger.info(translation('services.authService.logs.registerSuccess'), { user });
       await sendUserRegisteredEvent(user);
       apiSuccess(res, user, 'User registered successfully', 201);
     } catch (err) {
-      logger.error('Register internal server error', { error: err, body: req.body });
+      logger.error(translation('services.authService.logs.registerError'), { error: err, body: req.body });
       internalServerError(res);
     }
   }
@@ -104,24 +102,24 @@ class AuthService {
       logger.info('JWT_EXPIRES_IN', { JWT_EXPIRES_IN });
       logger.info('REFRESH_TOKEN_EXPIRES', { REFRESH_TOKEN_EXPIRES });
       logger.info('JWT_SECRET', { JWT_SECRET });
-      logger.info('Login request received', { body: req.body });
+      logger.info(translation('services.authService.logs.loginRequest'), { body: req.body });
       const { email, password } = req.body;
       const getUserQuery = { email };
       const user = await queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_EMAIL, getUserQuery);
       if (!user) {
-        logger.warn('Login failed: user not found', { email });
+        logger.warn(translation('services.authService.logs.loginFailed'), { email });
         unauthorizedError(res, 'Invalid email or password');
         return;
       }
       const isMatch = await bcrypt.compare(password, user.password || '');
       if (!isMatch) {
-        logger.warn('Login failed: password mismatch', { email });
+        logger.warn(translation('services.authService.logs.loginFailed'), { email });
         unauthorizedError(res, 'Invalid email or password');
         return;
       }
       const activeSession = await JWTService.findActiveSession(user.id);
       if (activeSession) {
-        logger.warn('Login failed: user already logged in', { userId: user.id });
+        logger.warn(translation('services.authService.logs.loginFailed'), { userId: user.id });
         conflictError(res, 'User already logged in');
         return;
       }
@@ -150,7 +148,7 @@ class AuthService {
           expires: new Date(Date.now() + TimeHelper.parseDuration(REFRESH_TOKEN_EXPIRES))
         });
         logger.info('Refresh token set as httpOnly cookie');
-        logger.info('Login success', { user, accessToken, expireAt });
+        logger.info(translation('services.authService.logs.loginSuccess'), { user, accessToken, expireAt });
         // Response'da sadece accessToken ve user dön
         apiSuccess(res, { user, accessToken, expireAt }, 'Login successful', 200);
       } else {
@@ -158,14 +156,14 @@ class AuthService {
         return { user, accessToken, refreshToken, expireAt };
       }
     } catch (err) {
-      logger.error('Login internal server error', { error: err, body: req.body });
+      logger.error(translation('services.authService.logs.loginError'), { error: err, body: req.body });
       if (res) internalServerError(res);
       else throw err;
     }
   }
 
   async logout(req, res) {
-    logger.info('Logout request received', { user: req.user });
+    logger.info(translation('services.authService.logs.logoutRequest'), { user: req.user });
     const userId = req.user?.id;
     if (!userId) {
       unauthorizedError(res, 'User ID is required');
@@ -178,29 +176,29 @@ class AuthService {
       if (res) {
         res.clearCookie('refreshToken');
       }
-      logger.info(`User logged out successfully - User ID: ${userId}`);
+      logger.info(translation('services.authService.logs.logoutSuccess'), { userId });
       apiSuccess(res, null, 'Logged out successfully', 200);
-      logger.info('Logout fonksiyonu başarıyla tamamlandı', { userId });
+      logger.info(translation('services.authService.logs.logoutRequest'), { userId });
     } catch (error) {
-      logger.error(`Error in logoutUser - Error: ${error.message}, User ID: ${userId}`);
+      logger.error(translation('services.authService.logs.logoutError'), { error: error.message, userId });
       internalServerError(res, error.message);
     }
   }
 
   async refreshToken(req, res) {
     try {
-      logger.info('Refresh token process started', { body: req.body, cookies: req.cookies });
+      logger.info(translation('services.authService.logs.refreshRequest'), { body: req.body, cookies: req.cookies });
       // Refresh token'ı önce cookie'den, yoksa body'den al
       let refreshToken = req.cookies?.refreshToken;
       if (!refreshToken) {
         refreshToken = req.body?.refreshToken;
       }
-      logger.info('Refresh token (from cookie/body)', { refreshToken });
+      logger.info(translation('services.authService.logs.refreshRequest'), { refreshToken });
       logger.info('JWT_SECRET', { JWT_SECRET });
       logger.info('JWT_SECRET used for verify', { JWT_SECRET });
 
       if (!refreshToken) {
-        logger.error('Refresh token missing');
+        logger.error(translation('services.authService.logs.refreshError'));
         unauthorizedError(res, 'Refresh token is required');
         return;
       }
@@ -209,25 +207,25 @@ class AuthService {
       try {
         logger.info('Trying to verify refresh token', { refreshToken, JWT_SECRET });
         decoded = JWTService.verifyRefreshToken(refreshToken);
-        logger.info('Refresh token verified', { decoded });
+        logger.info(translation('services.authService.logs.refreshSuccess'), { decoded });
       } catch (verifyErr) {
-        logger.warn('Refresh token verification failed', { error: verifyErr.message, refreshToken, JWT_SECRET });
+        logger.warn(translation('services.authService.logs.refreshError'), { error: verifyErr.message, refreshToken, JWT_SECRET });
         unauthorizedError(res, 'Invalid refresh token');
         return;
       }
 
       // CQRS ile kullanıcıyı bul
-      logger.info('Dispatching GET_USER_BY_ID for refresh', { userId: decoded.id });
+      logger.info(translation('services.authService.logs.refreshRequest'), { userId: decoded.id });
       const user = await queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_ID, { id: decoded.id });
-      logger.info('User found for refresh', { user });
+      logger.info(translation('services.authService.logs.refreshSuccess'), { user });
       if (!user) {
-        logger.warn('Refresh token failed - User not found', { userId: decoded.id });
+        logger.warn(translation('services.authService.logs.refreshError'), { userId: decoded.id });
         conflictError(res, 'User not found');
         return;
       }
 
       // Eski session'ı sil
-      logger.info('Removing old active session for user', { userId: user.id });
+      logger.info(translation('services.authService.logs.refreshRequest'), { userId: user.id });
       await JWTService.removeActiveSession(user.id);
 
       // Yeni token'lar üret
@@ -245,7 +243,7 @@ class AuthService {
         roleId: user.role?.toString ? user.role.toString() : user.role,
         roleName: user.roleName
       });
-      logger.info('New tokens generated', { accessToken, newRefreshToken });
+      logger.info(translation('services.authService.logs.refreshSuccess'), { accessToken, newRefreshToken });
 
       // Cookie'ye yeni refresh token'ı yaz (HTTP endpoint ise)
       if (res) {
@@ -281,7 +279,7 @@ class AuthService {
         };
       }
     } catch (error) {
-      logger.error('Error in refreshToken', { error: error.message, stack: error.stack });
+      logger.error(translation('services.authService.logs.refreshError'), { error: error.message, stack: error.stack });
       if (res) internalServerError(res, error.message);
       else throw error;
     }
@@ -291,14 +289,14 @@ class AuthService {
     try {
       const { email } = req.body;
       if (!email) {
-        logger.error('Forgot password failed - Email missing');
+        logger.error(translation('services.authService.logs.forgotPasswordError'));
         return unauthorizedError(res, 'Email is required');
       }
 
       // Kullanıcıyı CQRS ile bul
       const user = await queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_EMAIL, { email });
       if (!user) {
-        logger.warn(`Forgot password - User not found: ${email}`);
+        logger.warn(translation('services.authService.logs.forgotPasswordError'), { email });
         // Güvenlik için her zaman aynı mesajı döndür
         return apiSuccess(res, null, 'If the email exists, a password reset link will be sent', 200);
       }
@@ -313,10 +311,10 @@ class AuthService {
       // Kafka ile event gönder
       await sendPasswordResetEvent({ email, resetLink });
 
-      logger.info(`Password reset event sent to Kafka - Email: ${email}, Link: ${resetLink}`);
+      logger.info(translation('services.authService.logs.forgotPasswordSuccess'), { email, resetLink });
       return apiSuccess(res, null, 'If the email exists, a password reset link will be sent', 200);
     } catch (error) {
-      logger.error(`Error in forgotPassword - Error: ${error.message}, Email: ${req.body?.email}`);
+      logger.error(translation('services.authService.logs.forgotPasswordError'), { error: error.message, email: req.body?.email });
       return internalServerError(res, error.message);
     }
   }
@@ -325,15 +323,15 @@ class AuthService {
     try {
       const { token, password, confirmPassword } = req.body;
       if (!token || !password || !confirmPassword) {
-        logger.error('Reset password failed - Missing required fields');
+        logger.error(translation('services.authService.logs.resetPasswordError'));
         return unauthorizedError(res, 'Token, password, and confirm password are required');
       }
       if (password !== confirmPassword) {
-        logger.error('Reset password failed - Passwords do not match');
+        logger.error(translation('services.authService.logs.resetPasswordError'));
         return unauthorizedError(res, 'Passwords do not match');
       }
       if (password.length < 8) {
-        logger.error('Reset password failed - Password too short');
+        logger.error(translation('services.authService.logs.resetPasswordError'));
         return unauthorizedError(res, 'Password must be at least 8 characters long');
       }
 
@@ -341,9 +339,9 @@ class AuthService {
       let decoded;
       try {
         decoded = JWTService.verifyPasswordResetToken(token);
-        logger.info(`Password reset token verified - User ID: ${decoded.id}`);
+        logger.info(translation('services.authService.logs.resetPasswordSuccess'), { userId: decoded.id });
       } catch (verifyErr) {
-        logger.warn(`Password reset token verification failed - Error: ${verifyErr.message}`);
+        logger.warn(translation('services.authService.logs.resetPasswordError'), { userId: decoded.id });
         return unauthorizedError(res, 'Invalid or expired reset token');
       }
 
@@ -358,14 +356,14 @@ class AuthService {
       const updatedUser = await commandHandler.dispatch(COMMAND_TYPES.UPDATE_USER, updateUserCommand);
 
       if (!updatedUser) {
-        logger.warn(`Password reset failed - User not found - User ID: ${decoded.id}`);
+        logger.warn(translation('services.authService.logs.resetPasswordError'), { userId: decoded.id });
         return unauthorizedError(res, 'User not found');
       }
 
-      logger.info(`Password reset successful - User ID: ${updatedUser.id}, Email: ${updatedUser.email}`);
+      logger.info(translation('services.authService.logs.resetPasswordSuccess'), { userId: updatedUser.id, email: updatedUser.email });
       return apiSuccess(res, null, 'Password updated successfully', 200);
     } catch (error) {
-      logger.error(`Error in resetPassword - Error: ${error.message}`);
+      logger.error(translation('services.authService.logs.resetPasswordError'), { error: error.message });
       return internalServerError(res, error.message);
     }
   }
@@ -406,4 +404,12 @@ class AuthService {
   }
 }
 
-export default new AuthService(); 
+const authService = new AuthService();
+
+export function registerAuthHandlers() {
+  commandHandler.register(COMMAND_TYPES.CREATE_USER, new CreateUserCommandHandler());
+  queryHandler.register(QUERY_TYPES.GET_USER_BY_EMAIL, new GetUserByEmailQueryHandler());
+  // Diğer handler kayıtları gerekiyorsa buraya eklenir
+}
+
+export default authService; 

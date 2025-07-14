@@ -1,10 +1,11 @@
 import permissionRepository from '../../../repositories/permission.repository.js';
 import logger from '../../../config/logger.js';
+import translation from '../../../config/translation.js';
 
 export class UpdatePermissionCommandHandler {
   async execute(command) {
     try {
-      logger.info('UpdatePermissionCommand executing', { id: command.id });
+      logger.info(translation('cqrs.commands.permission.updatePermission.logs.executing'), { id: command.id });
       const updateData = {};
       
       if (command.name !== undefined) updateData.name = command.name;
@@ -16,7 +17,7 @@ export class UpdatePermissionCommandHandler {
       const permission = await permissionRepository.updatePermission(command.id, updateData);
       
       if (!permission) {
-        throw new Error('Permission not found');
+        throw new Error(translation('cqrs.commands.permission.updatePermission.logs.notFound'));
       }
       
       // MongoDB'den gelen _id'yi id olarak normalize et
@@ -31,10 +32,10 @@ export class UpdatePermissionCommandHandler {
         updatedAt: permission.updatedAt
       };
       
-      logger.info('UpdatePermissionCommand completed successfully', { permissionId: permission._id });
+      logger.info(translation('cqrs.commands.permission.updatePermission.logs.success'), { permissionId: permission._id });
       return result;
     } catch (error) {
-      logger.error('UpdatePermissionCommand failed', { error, command });
+      logger.error(translation('cqrs.commands.permission.updatePermission.logs.fail'), { error, command });
       throw error;
     }
   }

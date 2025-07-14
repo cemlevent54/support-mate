@@ -1,10 +1,11 @@
 import logger from '../../../config/logger.js';
 import roleRepository from '../../../repositories/role.repository.js';
+import translation from '../../../config/translation.js';
 
 export class GetAllRolesQueryHandler {
   async execute(query) {
     try {
-      logger.info('GetAllRolesQuery executing', { query });
+      logger.info(translation('cqrs.queries.role.getAllRoles.logs.executing'), { query });
       
       const options = {
         page: query.page || 1,
@@ -34,15 +35,11 @@ export class GetAllRolesQueryHandler {
         totalPages: result.totalPages
       };
       
-      logger.info('GetAllRolesQuery completed successfully', { 
-        count: normalizedRoles.length, 
-        total: result.total,
-        page: result.page 
-      });
+      logger.info(translation('cqrs.queries.role.getAllRoles.logs.success'), { count: normalizedRoles.length, total: result.total, page: result.page });
       
       return normalizedResult;
     } catch (error) {
-      logger.error('GetAllRolesQuery failed', { error, query });
+      logger.error(translation('cqrs.queries.role.getAllRoles.logs.fail'), { error, query });
       throw error;
     }
   }

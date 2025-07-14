@@ -15,6 +15,7 @@ import { createdResponse } from '../responseHandlers/successfulResponses/created
 import { okResponse } from '../responseHandlers/successfulResponses/ok.response.js';
 import { noContentResponse } from '../responseHandlers/successfulResponses/nocontent.response.js';
 import logger from '../config/logger.js';
+import translation from '../config/translation.js';
 
 // Role servisinde kullanılacak izinler
 export const ROLE_PERMISSIONS = [
@@ -25,7 +26,7 @@ export const ROLE_PERMISSIONS = [
 
 class RoleService {
   async getAllRoles(req, res) {
-    logger.info('[RoleService][getAllRoles] Request received', { query: req.query, user: req.user });
+    logger.info(translation('services.roleService.logs.getAllRequest'), { query: req.query, user: req.user });
     try {
       const query = {
         page: parseInt(req.query.page) || 1,
@@ -38,44 +39,44 @@ class RoleService {
       const result = await handler.execute(query);
       logger.debug('[RoleService][getAllRoles] Handler result', { result });
       if (!result.roles || result.roles.length === 0) {
-        logger.warn('[RoleService][getAllRoles] No roles found', { query });
-        return notFoundError(res, 'No roles found');
+        logger.warn(translation('services.roleService.logs.getAllNotFound'), { query });
+        return notFoundError(res, translation('services.roleService.logs.getAllNotFound'));
       }
-      logger.info('[RoleService][getAllRoles] Roles fetched successfully', { count: result.roles.length });
-      return okResponse(res, 'Roles fetched successfully', result);
+      logger.info(translation('services.roleService.logs.getAllSuccess'), { count: result.roles.length });
+      return okResponse(res, translation('services.roleService.logs.getAllSuccess'), result);
     } catch (error) {
-      logger.error('[RoleService][getAllRoles] Error occurred', { error, query: req.query });
-      return internalServerError(res, 'An error occurred while fetching roles');
+      logger.error(translation('services.roleService.logs.getAllError'), { error, query: req.query });
+      return internalServerError(res, translation('services.roleService.logs.getAllError'));
     }
   }
 
   async getRoleById(req, res) {
-    logger.info('[RoleService][getRoleById] Request received', { id: req.params.id, user: req.user });
+    logger.info(translation('services.roleService.logs.getByIdRequest'), { id: req.params.id, user: req.user });
     try {
       const query = { id: req.params.id };
       logger.debug('[RoleService][getRoleById] Query created', { query });
       const handler = new GetRoleByIdQueryHandler();
       const result = await handler.execute(query);
       logger.debug('[RoleService][getRoleById] Handler result', { result });
-      logger.info('[RoleService][getRoleById] Rol fetched successfully', { id: req.params.id });
-      return okResponse(res, 'Rol fetched successfully', result);
+      logger.info(translation('services.roleService.logs.getByIdSuccess'), { id: req.params.id });
+      return okResponse(res, translation('services.roleService.logs.getByIdSuccess'), result);
     } catch (error) {
-      logger.error('[RoleService][getRoleById] Error occurred', { error, id: req.params.id });
+      logger.error(translation('services.roleService.logs.getByIdError'), { error, id: req.params.id });
       if (error.message === 'Role not found') {
-        logger.warn('[RoleService][getRoleById] Rol not found', { id: req.params.id });
-        return notFoundError(res, 'Rol not found');
+        logger.warn(translation('services.roleService.logs.getByIdNotFound'), { id: req.params.id });
+        return notFoundError(res, translation('services.roleService.logs.getByIdNotFound'));
       }
-      return internalServerError(res, 'An error occurred while fetching role');
+      return internalServerError(res, translation('services.roleService.logs.getByIdError'));
     }
   }
 
   async createRole(req, res) {
-    logger.info('[RoleService][createRole] Request received', { body: req.body, user: req.user });
+    logger.info(translation('services.roleService.logs.createRequest'), { body: req.body, user: req.user });
     try {
       const { name, description, permissions } = req.body;
       if (!name) {
-        logger.warn('[RoleService][createRole] Rol name is required', { body: req.body });
-        return badRequestError(res, 'Rol name is required');
+        logger.warn(translation('services.roleService.logs.createRequest'), { body: req.body });
+        return badRequestError(res, translation('services.roleService.logs.createRequest'));
       }
       const command = {
         name,
@@ -85,20 +86,20 @@ class RoleService {
       logger.debug('[RoleService][createRole] Command created', { command });
       const handler = new CreateRoleCommandHandler();
       const result = await handler.execute(command);
-      logger.info('[RoleService][createRole] Rol created successfully', { role: result });
-      return createdResponse(res, 'Rol created successfully', result);
+      logger.info(translation('services.roleService.logs.createSuccess'), { role: result });
+      return createdResponse(res, translation('services.roleService.logs.createSuccess'), result);
     } catch (error) {
-      logger.error('[RoleService][createRole] Error occurred', { error, body: req.body });
+      logger.error(translation('services.roleService.logs.createError'), { error, body: req.body });
       if (error.code === 11000) {
-        logger.warn('[RoleService][createRole] Rol with same name already exists', { body: req.body });
-        return conflictError(res, 'A role with the same name already exists');
+        logger.warn(translation('services.roleService.logs.createConflict'), { body: req.body });
+        return conflictError(res, translation('services.roleService.logs.createConflict'));
       }
-      return internalServerError(res, 'An error occurred while creating role');
+      return internalServerError(res, translation('services.roleService.logs.createError'));
     }
   }
 
   async updateRole(req, res) {
-    logger.info('[RoleService][updateRole] Request received', { id: req.params.id, body: req.body, user: req.user });
+    logger.info(translation('services.roleService.logs.updateRequest'), { id: req.params.id, body: req.body, user: req.user });
     try {
       const { name, description, permissions, isActive } = req.body;
       const command = {
@@ -111,64 +112,64 @@ class RoleService {
       logger.debug('[RoleService][updateRole] Command created', { command });
       const handler = new UpdateRoleCommandHandler();
       const result = await handler.execute(command);
-      logger.info('[RoleService][updateRole] Rol updated successfully', { id: req.params.id, result });
-      return okResponse(res, 'Rol updated successfully', result);
+      logger.info(translation('services.roleService.logs.updateSuccess'), { id: req.params.id, result });
+      return okResponse(res, translation('services.roleService.logs.updateSuccess'), result);
     } catch (error) {
-      logger.error('[RoleService][updateRole] Error occurred', { error, id: req.params.id, body: req.body });
+      logger.error(translation('services.roleService.logs.updateError'), { error, id: req.params.id, body: req.body });
       if (error.message === 'Role not found') {
-        logger.warn('[RoleService][updateRole] Rol not found', { id: req.params.id });
-        return notFoundError(res, 'Rol not found');
+        logger.warn(translation('services.roleService.logs.updateNotFound'), { id: req.params.id });
+        return notFoundError(res, translation('services.roleService.logs.updateNotFound'));
       }
       if (error.code === 11000) {
-        logger.warn('[RoleService][updateRole] Rol with same name already exists', { id: req.params.id, body: req.body });
-        return conflictError(res, 'A role with the same name already exists');
+        logger.warn(translation('services.roleService.logs.updateConflict'), { id: req.params.id, body: req.body });
+        return conflictError(res, translation('services.roleService.logs.updateConflict'));
       }
-      return internalServerError(res, 'An error occurred while updating role');
+      return internalServerError(res, translation('services.roleService.logs.updateError'));
     }
   }
 
   async deleteRole(req, res) {
-    logger.info('[RoleService][deleteRole] Request received', { id: req.params.id, user: req.user });
+    logger.info(translation('services.roleService.logs.deleteRequest'), { id: req.params.id, user: req.user });
     try {
       const command = { id: req.params.id };
       logger.debug('[RoleService][deleteRole] Command created', { command });
       const handler = new DeleteRoleCommandHandler();
       const result = await handler.execute(command);
-      logger.info('[RoleService][deleteRole] Rol deleted successfully', { id: req.params.id, result });
-      return noContentResponse(res, 'Rol deleted successfully');
+      logger.info(translation('services.roleService.logs.deleteSuccess'), { id: req.params.id, result });
+      return noContentResponse(res, translation('services.roleService.logs.deleteSuccess'));
     } catch (error) {
-      logger.error('[RoleService][deleteRole] Error occurred', { error, id: req.params.id });
+      logger.error(translation('services.roleService.logs.deleteError'), { error, id: req.params.id });
       if (error.message === 'Role not found') {
-        logger.warn('[RoleService][deleteRole] Rol not found', { id: req.params.id });
-        return notFoundError(res, 'Rol not found');
+        logger.warn(translation('services.roleService.logs.deleteNotFound'), { id: req.params.id });
+        return notFoundError(res, translation('services.roleService.logs.deleteNotFound'));
       }
-      return internalServerError(res, 'An error occurred while deleting role');
+      return internalServerError(res, translation('services.roleService.logs.deleteError'));
     }
   }
 
   async getUserRoles(req, res) {
-    logger.info('[RoleService][getUserRoles] Request received', { user: req.user });
+    logger.info(translation('services.roleService.logs.getUserRolesRequest'), { user: req.user });
     try {
       const userId = req.user.id;
       const roleId = req.user.roleId;
       
       if (!roleId) {
-        logger.warn('[RoleService][getUserRoles] User role not found', { userId });
-        return notFoundError(res, 'User role not found');
+        logger.warn(translation('services.roleService.logs.getUserRolesNotFound'), { userId });
+        return notFoundError(res, translation('services.roleService.logs.getUserRolesNotFound'));
       }
 
       const handler = new GetRoleByIdQueryHandler();
       const result = await handler.execute({ id: roleId });
       
-      logger.info('[RoleService][getUserRoles] User role fetched successfully', { userId, role: result });
-      return okResponse(res, 'User role fetched successfully', { role: result });
+      logger.info(translation('services.roleService.logs.getUserRolesSuccess'), { userId, role: result });
+      return okResponse(res, translation('services.roleService.logs.getUserRolesSuccess'), { role: result });
     } catch (error) {
-      logger.error('[RoleService][getUserRoles] Error occurred', { error, user: req.user });
+      logger.error(translation('services.roleService.logs.getUserRolesError'), { error, user: req.user });
       if (error.message === 'Role not found') {
-        logger.warn('[RoleService][getUserRoles] Rol not found', { user: req.user });
-        return notFoundError(res, 'Rol not found');
+        logger.warn(translation('services.roleService.logs.getUserRolesNotFound'), { user: req.user });
+        return notFoundError(res, translation('services.roleService.logs.getUserRolesNotFound'));
       }
-      return internalServerError(res, 'An error occurred while fetching user role');
+      return internalServerError(res, translation('services.roleService.logs.getUserRolesError'));
     }
   }
 
@@ -179,13 +180,13 @@ class RoleService {
 
   // Role yetkilerini güncelleme (sadece yetkiler)
   async updateRolePermissions(req, res) {
-    logger.info('[RoleService][updateRolePermissions] Request received', { id: req.params.id, body: req.body, user: req.user });
+    logger.info(translation('services.roleService.logs.updatePermissionsRequest'), { id: req.params.id, body: req.body, user: req.user });
     try {
       const { permissions } = req.body;
       
       if (!permissions || !Array.isArray(permissions)) {
-        logger.warn('[RoleService][updateRolePermissions] Invalid permission list', { body: req.body });
-        return badRequestError(res, 'A valid permission list must be sent');
+        logger.warn(translation('services.roleService.logs.updatePermissionsRequest'), { body: req.body });
+        return badRequestError(res, translation('services.roleService.logs.updatePermissionsRequest'));
       }
 
       const command = {
@@ -196,15 +197,15 @@ class RoleService {
       logger.debug('[RoleService][updateRolePermissions] Command created', { command });
       const handler = new UpdateRoleCommandHandler();
       const result = await handler.execute(command);
-      logger.info('[RoleService][updateRolePermissions] Rol permissions updated successfully', { id: req.params.id, result });
-      return okResponse(res, 'Rol permissions updated successfully', result);
+      logger.info(translation('services.roleService.logs.updatePermissionsSuccess'), { id: req.params.id, result });
+      return okResponse(res, translation('services.roleService.logs.updatePermissionsSuccess'), result);
     } catch (error) {
-      logger.error('[RoleService][updateRolePermissions] Error occurred', { error, id: req.params.id, body: req.body });
+      logger.error(translation('services.roleService.logs.updatePermissionsError'), { error, id: req.params.id, body: req.body });
       if (error.message === 'Role not found') {
-        logger.warn('[RoleService][updateRolePermissions] Rol not found', { id: req.params.id });
-        return notFoundError(res, 'Rol not found');
+        logger.warn(translation('services.roleService.logs.updatePermissionsNotFound'), { id: req.params.id });
+        return notFoundError(res, translation('services.roleService.logs.updatePermissionsNotFound'));
       }
-      return internalServerError(res, 'An error occurred while updating role permissions');
+      return internalServerError(res, translation('services.roleService.logs.updatePermissionsError'));
     }
   }
 }

@@ -1,10 +1,11 @@
 import logger from '../../../config/logger.js';
 import roleRepository from '../../../repositories/role.repository.js';
+import translation from '../../../config/translation.js';
 
 export class GetRoleByIdQueryHandler {
   async execute(query) {
     try {
-      logger.info('GetRoleByIdQuery executing', { id: query.id });
+      logger.info(translation('cqrs.queries.role.getRoleById.logs.executing'), { id: query.id });
       
       const role = await roleRepository.findRoleById(query.id);
       
@@ -23,10 +24,10 @@ export class GetRoleByIdQueryHandler {
         updatedAt: role.updatedAt
       };
       
-      logger.info('GetRoleByIdQuery completed successfully', { roleId: role._id });
+      logger.info(translation('cqrs.queries.role.getRoleById.logs.success'), { roleId: role._id });
       return result;
     } catch (error) {
-      logger.error('GetRoleByIdQuery failed', { error, query });
+      logger.error(translation('cqrs.queries.role.getRoleById.logs.fail'), { error, query });
       throw error;
     }
   }

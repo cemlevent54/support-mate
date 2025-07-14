@@ -15,6 +15,7 @@ import { createdResponse } from '../responseHandlers/successfulResponses/created
 import { okResponse } from '../responseHandlers/successfulResponses/ok.response.js';
 import { noContentResponse } from '../responseHandlers/successfulResponses/nocontent.response.js';
 import logger from '../config/logger.js';
+import translation from '../config/translation.js';
 
 // Permission servisinde kullanılacak izinler
 export const PERMISSION_PERMISSIONS = [
@@ -23,7 +24,7 @@ export const PERMISSION_PERMISSIONS = [
 
 class PermissionService {
   async getAllPermissions(req, res) {
-    logger.info('[PermissionService][getAllPermissions] Request received', { query: req.query, user: req.user });
+    logger.info(translation('services.permissionService.logs.getAllRequest'), { query: req.query, user: req.user });
     try {
       const query = {
         page: parseInt(req.query.page) || 1,
@@ -37,44 +38,44 @@ class PermissionService {
       const result = await handler.execute(query);
       logger.debug('[PermissionService][getAllPermissions] Handler result', { result });
       if (!result.permissions || result.permissions.length === 0) {
-        logger.warn('[PermissionService][getAllPermissions] No permissions found', { query });
-        return notFoundError(res, 'No permissions found');
+        logger.warn(translation('services.permissionService.logs.getAllNotFound'), { query });
+        return notFoundError(res, translation('services.permissionService.logs.getAllNotFound'));
       }
-      logger.info('[PermissionService][getAllPermissions] Permissions fetched successfully', { count: result.permissions.length });
-      return okResponse(res, 'Permissions fetched successfully', result);
+      logger.info(translation('services.permissionService.logs.getAllSuccess'), { count: result.permissions.length });
+      return okResponse(res, translation('services.permissionService.logs.getAllSuccess'), result);
     } catch (error) {
-      logger.error('[PermissionService][getAllPermissions] Error occurred', { error, query: req.query });
-      return internalServerError(res, 'An error occurred while fetching permissions');
+      logger.error(translation('services.permissionService.logs.getAllError'), { error, query: req.query });
+      return internalServerError(res, translation('services.permissionService.logs.getAllError'));
     }
   }
 
   async getPermissionById(req, res) {
-    logger.info('[PermissionService][getPermissionById] Request received', { id: req.params.id, user: req.user });
+    logger.info(translation('services.permissionService.logs.getByIdRequest'), { id: req.params.id, user: req.user });
     try {
       const query = { id: req.params.id };
       logger.debug('[PermissionService][getPermissionById] Query created', { query });
       const handler = new GetPermissionByIdQueryHandler();
       const result = await handler.execute(query);
       logger.debug('[PermissionService][getPermissionById] Handler result', { result });
-      logger.info('[PermissionService][getPermissionById] Permission fetched successfully', { id: req.params.id });
-      return okResponse(res, 'Permission fetched successfully', result);
+      logger.info(translation('services.permissionService.logs.getByIdSuccess'), { id: req.params.id });
+      return okResponse(res, translation('services.permissionService.logs.getByIdSuccess'), result);
     } catch (error) {
-      logger.error('[PermissionService][getPermissionById] Error occurred', { error, id: req.params.id });
+      logger.error(translation('services.permissionService.logs.getByIdError'), { error, id: req.params.id });
       if (error.message === 'Permission not found') {
-        logger.warn('[PermissionService][getPermissionById] Permission not found', { id: req.params.id });
-        return notFoundError(res, 'Permission not found');
+        logger.warn(translation('services.permissionService.logs.getByIdNotFound'), { id: req.params.id });
+        return notFoundError(res, translation('services.permissionService.logs.getByIdNotFound'));
       }
-      return internalServerError(res, 'An error occurred while fetching permission');
+      return internalServerError(res, translation('services.permissionService.logs.getByIdError'));
     }
   }
 
   async createPermission(req, res) {
-    logger.info('[PermissionService][createPermission] Request received', { body: req.body, user: req.user });
+    logger.info(translation('services.permissionService.logs.createRequest'), { body: req.body, user: req.user });
     try {
       const { name, code, description, category } = req.body;
       if (!name || !code) {
-        logger.warn('[PermissionService][createPermission] Permission name and code are required', { body: req.body });
-        return badRequestError(res, 'Permission name and code are required');
+        logger.warn(translation('services.permissionService.logs.createRequest'), { body: req.body });
+        return badRequestError(res, translation('services.permissionService.logs.createRequest'));
       }
       const command = {
         name,
@@ -85,20 +86,20 @@ class PermissionService {
       logger.debug('[PermissionService][createPermission] Command created', { command });
       const handler = new CreatePermissionCommandHandler();
       const result = await handler.execute(command);
-      logger.info('[PermissionService][createPermission] Permission created successfully', { permission: result });
-      return createdResponse(res, 'Permission created successfully', result);
+      logger.info(translation('services.permissionService.logs.createSuccess'), { permission: result });
+      return createdResponse(res, translation('services.permissionService.logs.createSuccess'), result);
     } catch (error) {
-      logger.error('[PermissionService][createPermission] Error occurred', { error, body: req.body });
+      logger.error(translation('services.permissionService.logs.createError'), { error, body: req.body });
       if (error.code === 11000) {
-        logger.warn('[PermissionService][createPermission] Permission already exists', { body: req.body });
-        return conflictError(res, 'Permission with the same code already exists');
+        logger.warn(translation('services.permissionService.logs.createConflict'), { body: req.body });
+        return conflictError(res, translation('services.permissionService.logs.createConflict'));
       }
-      return internalServerError(res, 'An error occurred while creating permission');
+      return internalServerError(res, translation('services.permissionService.logs.createError'));
     }
   }
 
   async updatePermission(req, res) {
-    logger.info('[PermissionService][updatePermission] Request received', { id: req.params.id, body: req.body, user: req.user });
+    logger.info(translation('services.permissionService.logs.updateRequest'), { id: req.params.id, body: req.body, user: req.user });
     try {
       const { name, code, description, category, isActive } = req.body;
       const command = {
@@ -112,51 +113,51 @@ class PermissionService {
       logger.debug('[PermissionService][updatePermission] Command created', { command });
       const handler = new UpdatePermissionCommandHandler();
       const result = await handler.execute(command);
-      logger.info('[PermissionService][updatePermission] Permission updated successfully', { id: req.params.id, result });
-      return okResponse(res, 'Permission updated successfully', result);
+      logger.info(translation('services.permissionService.logs.updateSuccess'), { id: req.params.id, result });
+      return okResponse(res, translation('services.permissionService.logs.updateSuccess'), result);
     } catch (error) {
-      logger.error('[PermissionService][updatePermission] Error occurred', { error, id: req.params.id, body: req.body });
+      logger.error(translation('services.permissionService.logs.updateError'), { error, id: req.params.id, body: req.body });
       if (error.message === 'Permission not found') {
-        logger.warn('[PermissionService][updatePermission] Permission not found', { id: req.params.id });
-        return notFoundError(res, 'Permission not found');
+        logger.warn(translation('services.permissionService.logs.updateNotFound'), { id: req.params.id });
+        return notFoundError(res, translation('services.permissionService.logs.updateNotFound'));
       }
       if (error.code === 11000) {
-        logger.warn('[PermissionService][updatePermission] Permission already exists', { id: req.params.id, body: req.body });
-        return conflictError(res, 'Permission with the same code already exists');
+        logger.warn(translation('services.permissionService.logs.updateConflict'), { id: req.params.id, body: req.body });
+        return conflictError(res, translation('services.permissionService.logs.updateConflict'));
       }
-      return internalServerError(res, 'An error occurred while updating permission');
+      return internalServerError(res, translation('services.permissionService.logs.updateError'));
     }
   }
 
   async deletePermission(req, res) {
-    logger.info('[PermissionService][deletePermission] Request received', { id: req.params.id, user: req.user });
+    logger.info(translation('services.permissionService.logs.deleteRequest'), { id: req.params.id, user: req.user });
     try {
       const command = { id: req.params.id };
       logger.debug('[PermissionService][deletePermission] Command created', { command });
       const handler = new DeletePermissionCommandHandler();
       const result = await handler.execute(command);
-      logger.info('[PermissionService][deletePermission] Permission deleted successfully', { id: req.params.id, result });
-      return noContentResponse(res, 'Permission deleted successfully');
+      logger.info(translation('services.permissionService.logs.deleteSuccess'), { id: req.params.id, result });
+      return noContentResponse(res, translation('services.permissionService.logs.deleteSuccess'));
     } catch (error) {
-      logger.error('[PermissionService][deletePermission] Error occurred', { error, id: req.params.id });
+      logger.error(translation('services.permissionService.logs.deleteError'), { error, id: req.params.id });
       if (error.message === 'Permission not found') {
-        logger.warn('[PermissionService][deletePermission] Permission not found', { id: req.params.id });
-        return notFoundError(res, 'Permission not found');
+        logger.warn(translation('services.permissionService.logs.deleteNotFound'), { id: req.params.id });
+        return notFoundError(res, translation('services.permissionService.logs.deleteNotFound'));
       }
-      return internalServerError(res, 'An error occurred while deleting permission');
+      return internalServerError(res, translation('services.permissionService.logs.deleteError'));
     }
   }
 
   async getActivePermissions(req, res) {
-    logger.info('[PermissionService][getActivePermissions] Request received', { user: req.user });
+    logger.info(translation('services.permissionService.logs.getActiveRequest'), { user: req.user });
     try {
       const handler = new GetAllPermissionsQueryHandler();
       const result = await handler.execute({ isActive: true });
-      logger.info('[PermissionService][getActivePermissions] Active permissions fetched successfully', { count: result.permissions?.length || 0 });
-      return okResponse(res, 'Active permissions fetched successfully', result);
+      logger.info(translation('services.permissionService.logs.getActiveSuccess'), { count: result.permissions?.length || 0 });
+      return okResponse(res, translation('services.permissionService.logs.getActiveSuccess'), result);
     } catch (error) {
-      logger.error('[PermissionService][getActivePermissions] Error occurred', { error });
-      return internalServerError(res, 'An error occurred while fetching active permissions');
+      logger.error(translation('services.permissionService.logs.getActiveError'), { error });
+      return internalServerError(res, translation('services.permissionService.logs.getActiveError'));
     }
   }
 

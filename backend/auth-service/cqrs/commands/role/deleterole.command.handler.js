@@ -1,15 +1,17 @@
 import roleRepository from '../../../repositories/role.repository.js';
 import logger from '../../../config/logger.js';
+import translation from '../../../config/translation.js';
 
 export class DeleteRoleCommandHandler {
   async execute(command) {
     try {
-      logger.info('DeleteRoleCommand executing', { id: command.id });
+      logger.info(translation('cqrs.commands.role.deleteRole.logs.executing'), { id: command.id });
       
       const role = await roleRepository.deleteRole(command.id);
       
       if (!role) {
-        throw new Error('Role not found');
+        logger.error(translation('cqrs.commands.role.deleteRole.logs.notFound'), { id: command.id });
+        throw new Error(translation('cqrs.commands.role.deleteRole.logs.notFound'));
       }
       
       // MongoDB'den gelen _id'yi id olarak normalize et
@@ -25,10 +27,10 @@ export class DeleteRoleCommandHandler {
         updatedAt: role.updatedAt
       };
       
-      logger.info('DeleteRoleCommand completed successfully', { roleId: role._id });
+      logger.info(translation('cqrs.commands.role.deleteRole.logs.success'), { roleId: role._id });
       return result;
     } catch (error) {
-      logger.error('DeleteRoleCommand failed', { error, command });
+      logger.error(translation('cqrs.commands.role.deleteRole.logs.fail'), { error, command });
       throw error;
     }
   }

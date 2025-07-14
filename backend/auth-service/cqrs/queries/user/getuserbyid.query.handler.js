@@ -1,10 +1,11 @@
 import logger from '../../../config/logger.js';
 import userRepository from '../../../repositories/user.repository.js';
+import translation from '../../../config/translation.js';
 
 export class GetUserByIdQueryHandler {
   async execute(query) {
     try {
-      logger.info('GetUserByIdQuery executing', { query });
+      logger.info(translation('cqrs.queries.user.getUserById.logs.executing'), { id: query.id });
       
       // "me" kontrolü - bu durumda service katmanında JWT'den user ID alınmalı
       if (query.id === 'me') {
@@ -33,10 +34,10 @@ export class GetUserByIdQueryHandler {
         phoneNumber: user.phoneNumber
       };
       
-      logger.info('GetUserByIdQuery completed successfully', { userId: user._id });
+      logger.info(translation('cqrs.queries.user.getUserById.logs.success'), { userId: user._id });
       return result;
     } catch (error) {
-      logger.error('GetUserByIdQuery failed', { error, query });
+      logger.error(translation('cqrs.queries.user.getUserById.logs.fail'), { error, query });
       throw error;
     }
   }

@@ -1,13 +1,14 @@
 import userRepository from '../../../repositories/user.repository.js';
 import logger from '../../../config/logger.js';
+import translation from '../../../config/translation.js';
 
 export class DeleteUserCommandHandler {
   async execute(command) {
     try {
-      logger.info('DeleteUserCommand executing', { userId: command.id });
+      logger.info(translation('cqrs.commands.user.deleteUser.logs.executing'), { userId: command.id });
       const user = await userRepository.deleteUser(command.id);
       if (!user) {
-        logger.warn('DeleteUserCommand: user not found', { userId: command.id });
+        logger.warn(translation('cqrs.commands.user.deleteUser.logs.notFound'), { userId: command.id });
         return null;
       }
       
@@ -22,10 +23,10 @@ export class DeleteUserCommandHandler {
         updatedAt: user.updatedAt
       };
       
-      logger.info('DeleteUserCommand completed successfully', { userId: command.id });
+      logger.info(translation('cqrs.commands.user.deleteUser.logs.success'), { userId: command.id });
       return result;
     } catch (error) {
-      logger.error('DeleteUserCommand failed', { error, command });
+      logger.error(translation('cqrs.commands.user.deleteUser.logs.fail'), { error, command });
       throw error;
     }
   }

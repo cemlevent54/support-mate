@@ -1,10 +1,11 @@
 import logger from '../../../config/logger.js';
 import permissionRepository from '../../../repositories/permission.repository.js';
+import translation from '../../../config/translation.js';
 
 export class GetAllPermissionsQueryHandler {
   async execute(query) {
     try {
-      logger.info('GetAllPermissionsQuery executing', { query });
+      logger.info(translation('cqrs.queries.permission.getAllPermissions.logs.executing'), { query });
       
       const options = {
         page: query.page || 1,
@@ -36,7 +37,7 @@ export class GetAllPermissionsQueryHandler {
         totalPages: result.totalPages
       };
       
-      logger.info('GetAllPermissionsQuery completed successfully', { 
+      logger.info(translation('cqrs.queries.permission.getAllPermissions.logs.success'), { 
         count: normalizedPermissions.length, 
         total: result.total,
         page: result.page 
@@ -44,7 +45,7 @@ export class GetAllPermissionsQueryHandler {
       
       return normalizedResult;
     } catch (error) {
-      logger.error('GetAllPermissionsQuery failed', { error, query });
+      logger.error(translation('cqrs.queries.permission.getAllPermissions.logs.fail'), { error, query });
       throw error;
     }
   }

@@ -1,44 +1,45 @@
 import { RoleModel } from '../models/role.model.js';
 import logger from '../config/logger.js';
+import translation from '../config/translation.js';
 
 class RoleRepository {
   async createRole(roleData) {
     try {
-      logger.info('Creating role', { roleData });
+      logger.info(translation('repositories.roleRepository.logs.creating'), { roleData });
       const role = new RoleModel(roleData);
       const savedRole = await role.save();
-      logger.info('Role created successfully', { role: savedRole });
+      logger.info(translation('repositories.roleRepository.logs.created'), { role: savedRole });
       return savedRole;
     } catch (err) {
-      logger.error('Error creating role', { error: err, roleData });
+      logger.error(translation('repositories.roleRepository.logs.errorCreating'), { error: err, roleData });
       throw err;
     }
   }
 
   async findRoleById(id) {
     try {
-      logger.info('Finding role by ID', { id });
+      logger.info(translation('repositories.roleRepository.logs.finding'), { id });
       const role = await RoleModel.findById(id);
       if (!role) {
-        logger.info('Role not found by ID', { id });
+        logger.info(translation('repositories.roleRepository.logs.notFound'), { id });
       }
       return role;
     } catch (err) {
-      logger.error('Error finding role by ID', { error: err, id });
+      logger.error(translation('repositories.roleRepository.logs.errorCreating'), { error: err, id });
       throw err;
     }
   }
 
   async findRoleByName(name) {
     try {
-      logger.info('Finding role by name', { name });
+      logger.info(translation('repositories.roleRepository.logs.finding'), { name });
       const role = await RoleModel.findOne({ name, isDeleted: false });
       if (!role) {
-        logger.info('Role not found by name', { name });
+        logger.info(translation('repositories.roleRepository.logs.notFound'), { name });
       }
       return role;
     } catch (err) {
-      logger.error('Error finding role by name', { error: err, name });
+      logger.error(translation('repositories.roleRepository.logs.errorCreating'), { error: err, name });
       throw err;
     }
   }
@@ -51,7 +52,7 @@ class RoleRepository {
   async findAllRoles(options = {}) {
     try {
       const { page = 1, limit = 10, search, isActive } = options;
-      logger.info('Finding all roles', { page, limit, search, isActive });
+      logger.info(translation('repositories.roleRepository.logs.finding'));
       const query = { isDeleted: false };
       if (isActive !== undefined) {
         query.isActive = isActive;
@@ -75,49 +76,42 @@ class RoleRepository {
         limit,
         totalPages: Math.ceil(total / limit)
       };
-      logger.info('Roles found from MongoDB', { 
-        count: roles.length, 
-        total, 
-        page, 
-        limit, 
-        search, 
-        isActive 
-      });
+      logger.info(translation('repositories.roleRepository.logs.found'), { count: roles.length, total, page, limit, search, isActive });
       return result;
     } catch (err) {
-      logger.error('Error finding all roles', { error: err, options });
+      logger.error(translation('repositories.roleRepository.logs.errorCreating'), { error: err, options });
       throw err;
     }
   }
 
   async updateRole(id, updateData) {
     try {
-      logger.info('Updating role', { id, updateData });
+      logger.info(translation('repositories.roleRepository.logs.updating'), { id, updateData });
       const role = await RoleModel.findByIdAndUpdate(id, updateData, { new: true });
       if (!role) {
-        logger.info('Role not found for update', { id });
+        logger.info(translation('repositories.roleRepository.logs.notFound'), { id });
       }
       return role;
     } catch (err) {
-      logger.error('Error updating role', { error: err, id, updateData });
+      logger.error(translation('repositories.roleRepository.logs.errorUpdating'), { error: err, id, updateData });
       throw err;
     }
   }
 
   async deleteRole(id) {
     try {
-      logger.info('Soft deleting role', { id });
+      logger.info(translation('repositories.roleRepository.logs.deleting'), { id });
       const role = await RoleModel.findByIdAndUpdate(
         id,
         { isDeleted: true, deletedAt: new Date() },
         { new: true }
       );
       if (!role) {
-        logger.info('Role not found for deletion', { id });
+        logger.info(translation('repositories.roleRepository.logs.notFound'), { id });
       }
       return role;
     } catch (err) {
-      logger.error('Error deleting role', { error: err, id });
+      logger.error(translation('repositories.roleRepository.logs.errorDeleting'), { error: err, id });
       throw err;
     }
   }

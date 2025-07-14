@@ -1,10 +1,11 @@
 import logger from '../../../config/logger.js';
 import permissionRepository from '../../../repositories/permission.repository.js';
+import translation from '../../../config/translation.js';
 
 export class GetPermissionByIdQueryHandler {
   async execute(query) {
     try {
-      logger.info('GetPermissionByIdQuery executing', { id: query.id });
+      logger.info(translation('cqrs.queries.permission.getPermissionById.logs.executing'), { id: query.id });
       
       const permission = await permissionRepository.findPermissionById(query.id);
       
@@ -24,10 +25,10 @@ export class GetPermissionByIdQueryHandler {
         updatedAt: permission.updatedAt
       };
       
-      logger.info('GetPermissionByIdQuery completed successfully', { permissionId: permission._id });
+      logger.info(translation('cqrs.queries.permission.getPermissionById.logs.success'), { permissionId: permission._id });
       return result;
     } catch (error) {
-      logger.error('GetPermissionByIdQuery failed', { error, query });
+      logger.error(translation('cqrs.queries.permission.getPermissionById.logs.fail'), { error, query });
       throw error;
     }
   }

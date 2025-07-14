@@ -1,10 +1,11 @@
 import userRepository from '../../../repositories/user.repository.js';
 import logger from '../../../config/logger.js';
+import translation from '../../../config/translation.js';
 
 export class GetUserByEmailQueryHandler {
   async execute(query) {
     try {
-      logger.info('GetUserByEmailQuery executing', { email: query.email });
+      logger.info(translation('cqrs.queries.user.getUserByEmail.logs.executing'), { email: query.email });
       const user = await userRepository.findUserByEmail(query.email);
       if (!user) {
         logger.info('GetUserByEmailQuery: user not found', { email: query.email });
@@ -23,10 +24,10 @@ export class GetUserByEmailQueryHandler {
         updatedAt: user.updatedAt,
         phoneNumber: user.phoneNumber // <-- Telefon numarası eklendi
       };
-      logger.info('GetUserByEmailQuery completed successfully', { userId: user._id });
+      logger.info(translation('cqrs.queries.user.getUserByEmail.logs.success'), { user });
       return result;
     } catch (error) {
-      logger.error('GetUserByEmailQuery failed', { error, query });
+      logger.error(translation('cqrs.queries.user.getUserByEmail.logs.fail'), { error, query });
       throw error;
     }
   }

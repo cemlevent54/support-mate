@@ -1,17 +1,18 @@
 import JWTUtils from './jwt.service.js';
 import logger from '../config/logger.js';
+import translation from '../config/translation.js';
 
 export function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    logger.warn('Authorization header eksik veya Bearer ile başlamıyor', { authHeader });
-    res.status(401).json({ success: false, message: 'No token provided (Authorization header eksik veya hatalı)' });
+    logger.warn(translation('middlewares.authMiddleware.logs.missingAuthHeader'), { authHeader });
+    res.status(401).json({ success: false, message: translation('middlewares.authMiddleware.logs.missingAuthHeader') });
     return;
   }
   const token = authHeader.split(' ')[1];
   try {
     const decoded = JWTUtils.verifyAccessToken(token);
-    logger.info('Token payload:', { decoded });
+    logger.info(translation('middlewares.authMiddleware.logs.tokenVerified'), { decoded });
     
     if (!decoded.role && decoded.roleName) {
       decoded.role = decoded.roleName;
@@ -20,8 +21,8 @@ export function authMiddleware(req, res, next) {
     req.user = decoded;
     next();
   } catch (err) {
-    logger.warn('Token doğrulama hatası', { error: err.message, token });
-    res.status(401).json({ success: false, message: 'Invalid or expired token', detail: err.message });
+    logger.warn(translation('middlewares.authMiddleware.logs.invalidToken'), { error: err.message, token });
+    res.status(401).json({ success: false, message: translation('middlewares.authMiddleware.logs.invalidToken'), detail: err.message });
     return;
   }
 }
@@ -29,8 +30,8 @@ export function authMiddleware(req, res, next) {
 export function requireRole(role) {
   return (req, res, next) => {
     if (!req.user) {
-      logger.warn('Kullanıcı doğrulanmamış, role kontrolü başarısız');
-      res.status(401).json({ success: false, message: 'Authentication required' });
+      logger.warn(translation('middlewares.authMiddleware.logs.userNotAuthenticated'));
+      res.status(401).json({ success: false, message: translation('middlewares.authMiddleware.logs.userNotAuthenticated') });
       return;
     }
     
@@ -38,10 +39,11 @@ export function requireRole(role) {
     logger.info('Role kontrolü:', { required: role, userRole, user: req.user });
     
     if (userRole !== role) {
-      logger.warn('Kullanıcı rolü yetersiz', { required: role, actual: userRole, user: req.user });
-      res.status(403).json({ success: false, message: `Access denied. ${role} role required` });
+      logger.warn(translation('middlewares.authMiddleware.logs.insufficientRole'), { required: role, actual: userRole, user: req.user });
+      res.status(403).json({ success: false, message: translation('middlewares.authMiddleware.logs.insufficientRole') });
       return;
     }
+    logger.info(translation('middlewares.authMiddleware.logs.accessGranted'), { user: req.user, required: role });
     next();
   };
 } 

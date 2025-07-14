@@ -2,6 +2,7 @@ import { createClient } from 'redis';
 import logger from './logger.js';
 import dotenv from 'dotenv';
 import fetch from 'node-fetch';
+import translation from './translation.js';
 dotenv.config();
 
 class CacheService {
@@ -18,11 +19,11 @@ class CacheService {
 
   setupEventListeners() {
     this.client.on('connect', () => {
-      logger.info('Redis connection successful');
+      logger.info(translation('config.cache.logs.connectSuccess'));
     });
 
     this.client.on('error', (err) => {
-      logger.error('Redis connection error:', err);
+      logger.error(translation('config.cache.logs.connectError'), err);
     });
   }
 
@@ -45,10 +46,10 @@ class CacheService {
     try {
       const cachedData = await this.client.get(cacheKey);
       if (cachedData) {
-        logger.info('Data found in Redis cache', { cacheKey });
+        logger.info(translation('config.cache.logs.dataFound'), { cacheKey });
         return JSON.parse(cachedData);
       }
-      logger.info('Data not found in Redis cache', { cacheKey });
+      logger.info(translation('config.cache.logs.dataNotFound'), { cacheKey });
       return null;
     } catch (error) {
       logger.error('Error getting data from Redis cache', { error, cacheKey });
@@ -60,9 +61,9 @@ class CacheService {
   async setToCache(cacheKey, data, ttl = 3600) { // 1 saat default TTL
     try {
       await this.client.set(cacheKey, JSON.stringify(data), 'EX', ttl);
-      logger.info('Data saved to Redis cache', { cacheKey, ttl });
+      logger.info(translation('config.cache.logs.dataSaved'), { cacheKey, ttl });
     } catch (error) {
-      logger.error('Error saving data to Redis cache', { error, cacheKey });
+      logger.error(translation('config.cache.logs.dataSaveError'), { error, cacheKey });
     }
   }
 
@@ -70,9 +71,9 @@ class CacheService {
   async deleteFromCache(cacheKey) {
     try {
       await this.client.del(cacheKey);
-      logger.info('Data deleted from Redis cache', { cacheKey });
+      logger.info(translation('config.cache.logs.dataDeleted'), { cacheKey });
     } catch (error) {
-      logger.error('Error deleting data from Redis cache', { error, cacheKey });
+      logger.error(translation('config.cache.logs.dataDeleteError'), { error, cacheKey });
     }
   }
 
@@ -81,10 +82,10 @@ class CacheService {
     try {
       if (cacheKeys.length > 0) {
         await this.client.del(cacheKeys);
-        logger.info('Multiple data deleted from Redis cache', { cacheKeys });
+        logger.info(translation('config.cache.logs.multipleDataDeleted'), { cacheKeys });
       }
     } catch (error) {
-      logger.error('Error deleting multiple data from Redis cache', { error, cacheKeys });
+      logger.error(translation('config.cache.logs.multipleDataDeleteError'), { error, cacheKeys });
     }
   }
 
@@ -94,7 +95,7 @@ class CacheService {
       const exists = await this.client.exists(cacheKey);
       return exists === 1;
     } catch (error) {
-      logger.error('Error checking cache existence', { error, cacheKey });
+      logger.error(translation('config.cache.logs.existsError'), { error, cacheKey });
       return false;
     }
   }
@@ -103,10 +104,10 @@ class CacheService {
   async getKeysByPattern(pattern) {
     try {
       const keys = await this.client.keys(pattern);
-      logger.info('Keys found by pattern', { pattern, count: keys.length });
+      logger.info(translation('config.cache.logs.keysFound'), { pattern, count: keys.length });
       return keys;
     } catch (error) {
-      logger.error('Error getting keys by pattern', { error, pattern });
+      logger.error(translation('config.cache.logs.keysError'), { error, pattern });
       return [];
     }
   }
@@ -115,9 +116,9 @@ class CacheService {
   async clearCache() {
     try {
       await this.client.flushAll();
-      logger.info('All cache data cleared');
+      logger.info(translation('config.cache.logs.clearSuccess'));
     } catch (error) {
-      logger.error('Error clearing cache', { error });
+      logger.error(translation('config.cache.logs.clearError'), { error });
     }
   }
 
@@ -125,10 +126,10 @@ class CacheService {
   async getCacheStats() {
     try {
       const info = await this.client.info();
-      logger.info('Cache stats retrieved');
+      logger.info(translation('config.cache.logs.statsRetrieved'));
       return info;
     } catch (error) {
-      logger.error('Error getting cache stats', { error });
+      logger.error(translation('config.cache.logs.statsError'), { error });
       return null;
     }
   }
@@ -137,9 +138,9 @@ class CacheService {
   async disconnect() {
     try {
       await this.client.quit();
-      logger.info('Redis connection closed');
+      logger.info(translation('config.cache.logs.disconnectSuccess'));
     } catch (error) {
-      logger.error('Error closing Redis connection', { error });
+      logger.error(translation('config.cache.logs.disconnectError'), { error });
     }
   }
 }

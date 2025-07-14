@@ -1,10 +1,11 @@
 import roleRepository from '../../../repositories/role.repository.js';
 import logger from '../../../config/logger.js';
+import translation from '../../../config/translation.js';
 
 export class UpdateRoleCommandHandler {
   async execute(command) {
     try {
-      logger.info('UpdateRoleCommand executing', { id: command.id });
+      logger.info(translation('cqrs.commands.role.updateRole.logs.executing'), { id: command.id });
       const updateData = {};
       
       if (command.name !== undefined) updateData.name = command.name;
@@ -15,7 +16,8 @@ export class UpdateRoleCommandHandler {
       const role = await roleRepository.updateRole(command.id, updateData);
       
       if (!role) {
-        throw new Error('Role not found');
+        logger.error(translation('cqrs.commands.role.updateRole.logs.notFound'), { id: command.id });
+        throw new Error(translation('cqrs.commands.role.updateRole.logs.notFound'));
       }
       
       // MongoDB'den gelen _id'yi id olarak normalize et
@@ -29,10 +31,10 @@ export class UpdateRoleCommandHandler {
         updatedAt: role.updatedAt
       };
       
-      logger.info('UpdateRoleCommand completed successfully', { roleId: role._id });
+      logger.info(translation('cqrs.commands.role.updateRole.logs.success'), { roleId: role._id });
       return result;
     } catch (error) {
-      logger.error('UpdateRoleCommand failed', { error, command });
+      logger.error(translation('cqrs.commands.role.updateRole.logs.fail'), { error, command });
       throw error;
     }
   }

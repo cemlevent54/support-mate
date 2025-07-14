@@ -1,0 +1,436 @@
+{
+  "cqrs": {
+    "commands": {
+      "permission": {
+        "createPermission": {
+          "logs": {
+            "executing": "Yetki oluşturma işlemi başlatıldı",
+            "success": "Yetki başarıyla oluşturuldu",
+            "fail": "Yetki oluşturulurken hata oluştu"
+          }
+        },
+        "deletePermission": {
+          "logs": {
+            "executing": "Yetki silme işlemi başlatıldı",
+            "success": "Yetki başarıyla silindi",
+            "fail": "Yetki silinirken hata oluştu",
+            "notFound": "Yetki bulunamadı"
+          }
+        },
+        "updatePermission": {
+          "logs": {
+            "executing": "Yetki güncelleme işlemi başlatıldı",
+            "success": "Yetki başarıyla güncellendi",
+            "fail": "Yetki güncellenirken hata oluştu",
+            "notFound": "Yetki bulunamadı"
+          }
+        }
+      },
+      "role": {
+        "createRole": {
+          "logs": {
+            "executing": "Rol oluşturma işlemi başlatıldı",
+            "success": "Rol başarıyla oluşturuldu",
+            "fail": "Rol oluşturulurken hata oluştu"
+          }
+        },
+        "deleteRole": {
+          "logs": {
+            "executing": "Rol silme işlemi başlatıldı",
+            "success": "Rol başarıyla silindi",
+            "fail": "Rol silinirken hata oluştu",
+            "notFound": "Rol bulunamadı"
+          }
+        },
+        "updateRole": {
+          "logs": {
+            "executing": "Rol güncelleme işlemi başlatıldı",
+            "success": "Rol başarıyla güncellendi",
+            "fail": "Rol güncellenirken hata oluştu",
+            "notFound": "Rol bulunamadı"
+          }
+        }
+      },
+      "user": {
+        "createUser": {
+          "logs": {
+            "executing": "Kullanıcı oluşturma işlemi başlatıldı",
+            "success": "Kullanıcı başarıyla oluşturuldu",
+            "fail": "Kullanıcı oluşturulurken hata oluştu"
+          }
+        },
+        "deleteUser": {
+          "logs": {
+            "executing": "Kullanıcı silme işlemi başlatıldı",
+            "success": "Kullanıcı başarıyla silindi",
+            "fail": "Kullanıcı silinirken hata oluştu",
+            "notFound": "Kullanıcı bulunamadı"
+          }
+        },
+        "updateUser": {
+          "logs": {
+            "executing": "Kullanıcı güncelleme işlemi başlatıldı",
+            "success": "Kullanıcı başarıyla güncellendi",
+            "fail": "Kullanıcı güncellenirken hata oluştu",
+            "notFound": "Kullanıcı bulunamadı"
+          }
+        }
+      }
+    },
+    "handler": {
+      "command": {
+        "logs": {
+          "registered": "Komut işleyici kaydedildi",
+          "noHandler": "Komut için işleyici bulunamadı",
+          "dispatching": "Komut işleniyor",
+          "executing": "Komut işleyici çalıştırılıyor",
+          "success": "Komut başarıyla işlendi",
+          "fail": "Komut işlenirken hata oluştu"
+        }
+      },
+      "query": {
+        "logs": {
+          "registered": "Sorgu işleyici kaydedildi",
+          "noHandler": "Sorgu için işleyici bulunamadı",
+          "dispatching": "Sorgu işleniyor",
+          "executing": "Sorgu işleyici çalıştırılıyor",
+          "success": "Sorgu başarıyla işlendi",
+          "fail": "Sorgu işlenirken hata oluştu"
+        }
+      }
+    },
+    "queries": {
+      "permission": {
+        "getAllPermissions": {
+          "logs": {
+            "executing": "Tüm yetkiler sorgusu başlatıldı",
+            "success": "Tüm yetkiler başarıyla getirildi",
+            "fail": "Tüm yetkiler getirilirken hata oluştu"
+          }
+        },
+        "getPermissionById": {
+          "logs": {
+            "executing": "ID ile yetki sorgusu başlatıldı",
+            "success": "Yetki başarıyla getirildi",
+            "fail": "Yetki getirilirken hata oluştu"
+          }
+        },
+        "getPermissionByCode": {
+          "logs": {
+            "executing": "Kod ile yetki sorgusu başlatıldı",
+            "success": "Yetki başarıyla getirildi",
+            "fail": "Yetki getirilirken hata oluştu"
+          }
+        }
+      },
+      "role": {
+        "getAllRoles": {
+          "logs": {
+            "executing": "Tüm roller sorgusu başlatıldı",
+            "success": "Tüm roller başarıyla getirildi",
+            "fail": "Tüm roller getirilirken hata oluştu"
+          }
+        },
+        "getRoleById": {
+          "logs": {
+            "executing": "ID ile rol sorgusu başlatıldı",
+            "success": "Rol başarıyla getirildi",
+            "fail": "Rol getirilirken hata oluştu"
+          }
+        },
+        "getRoleByName": {
+          "logs": {
+            "executing": "İsim ile rol sorgusu başlatıldı",
+            "success": "Rol başarıyla getirildi",
+            "fail": "Rol getirilirken hata oluştu"
+          }
+        }
+      },
+      "user": {
+        "getAllUsers": {
+          "logs": {
+            "executing": "Tüm kullanıcılar sorgusu başlatıldı",
+            "success": "Tüm kullanıcılar başarıyla getirildi",
+            "fail": "Tüm kullanıcılar getirilirken hata oluştu"
+          }
+        },
+        "getUserById": {
+          "logs": {
+            "executing": "ID ile kullanıcı sorgusu başlatıldı",
+            "success": "Kullanıcı başarıyla getirildi",
+            "fail": "Kullanıcı getirilirken hata oluştu"
+          }
+        },
+        "getUserByEmail": {
+          "logs": {
+            "executing": "Email ile kullanıcı sorgusu başlatıldı",
+            "success": "Kullanıcı başarıyla getirildi",
+            "fail": "Kullanıcı getirilirken hata oluştu"
+          }
+        },
+        "getUsersByRole": {
+          "logs": {
+            "executing": "Rol ile kullanıcılar sorgusu başlatıldı",
+            "success": "Kullanıcılar başarıyla getirildi",
+            "fail": "Kullanıcılar getirilirken hata oluştu"
+          }
+        }
+      }
+    }
+  },
+  "middlewares": {
+    "authMiddleware": {
+      "logs": {
+        "missingAuthHeader": "Authorization header eksik veya Bearer ile başlamıyor",
+        "invalidToken": "Geçersiz veya süresi dolmuş token",
+        "tokenVerified": "Token doğrulandı",
+        "userNotAuthenticated": "Kullanıcı doğrulanmamış, role kontrolü başarısız",
+        "insufficientRole": "Kullanıcı rolü yetersiz",
+        "accessGranted": "Erişim izni verildi"
+      }
+    },
+    "jwtService": {
+      "logs": {
+        "userAddedToBlacklist": "Kullanıcı kara listeye eklendi",
+        "userRemovedFromBlacklist": "Kullanıcı kara listeden çıkarıldı",
+        "activeSessionAdded": "Aktif oturum eklendi",
+        "activeSessionRemoved": "Aktif oturum kaldırıldı",
+        "accessTokenGenerated": "Erişim token'ı oluşturuldu",
+        "refreshTokenGenerated": "Yenileme token'ı oluşturuldu",
+        "accessTokenVerified": "Erişim token'ı doğrulandı",
+        "refreshTokenVerified": "Yenileme token'ı doğrulandı",
+        "jwtTokenGenerated": "JWT token'ı oluşturuldu",
+        "jwtTokenVerified": "JWT token'ı doğrulandı",
+        "secureTokenGenerated": "Güvenli token oluşturuldu",
+        "passwordResetTokenGenerated": "Şifre sıfırlama token'ı oluşturuldu",
+        "passwordResetTokenVerified": "Şifre sıfırlama token'ı doğrulandı",
+        "jwtVerificationFailed": "JWT doğrulama başarısız",
+        "blacklisted": "Kullanıcı kara listede",
+        "tokenMismatch": "Token uyuşmazlığı",
+        "noActiveSession": "Aktif oturum bulunamadı",
+        "sessionRecreated": "Oturum yeniden oluşturuldu",
+        "invalidTokenType": "Geçersiz token tipi"
+      }
+    }
+  },
+  "repositories": {
+    "permissionRepository": {
+      "logs": {
+        "creating": "Yetki oluşturuluyor",
+        "created": "Yetki başarıyla oluşturuldu",
+        "errorCreating": "Yetki oluşturulurken hata oluştu",
+        "finding": "Yetki aranıyor",
+        "found": "Yetki bulundu",
+        "notFound": "Yetki bulunamadı",
+        "updating": "Yetki güncelleniyor",
+        "updated": "Yetki başarıyla güncellendi",
+        "errorUpdating": "Yetki güncellenirken hata oluştu",
+        "deleting": "Yetki siliniyor",
+        "deleted": "Yetki başarıyla silindi",
+        "errorDeleting": "Yetki silinirken hata oluştu"
+      }
+    },
+    "roleRepository": {
+      "logs": {
+        "creating": "Rol oluşturuluyor",
+        "created": "Rol başarıyla oluşturuldu",
+        "errorCreating": "Rol oluşturulurken hata oluştu",
+        "finding": "Rol aranıyor",
+        "found": "Rol bulundu",
+        "notFound": "Rol bulunamadı",
+        "updating": "Rol güncelleniyor",
+        "updated": "Rol başarıyla güncellendi",
+        "errorUpdating": "Rol güncellenirken hata oluştu",
+        "deleting": "Rol siliniyor",
+        "deleted": "Rol başarıyla silindi",
+        "errorDeleting": "Rol silinirken hata oluştu"
+      }
+    },
+    "userRepository": {
+      "logs": {
+        "creating": "Kullanıcı oluşturuluyor",
+        "created": "Kullanıcı başarıyla oluşturuldu",
+        "errorCreating": "Kullanıcı oluşturulurken hata oluştu",
+        "finding": "Kullanıcı aranıyor",
+        "found": "Kullanıcı bulundu",
+        "notFound": "Kullanıcı bulunamadı",
+        "updating": "Kullanıcı güncelleniyor",
+        "updated": "Kullanıcı başarıyla güncellendi",
+        "errorUpdating": "Kullanıcı güncellenirken hata oluştu",
+        "deleting": "Kullanıcı siliniyor",
+        "deleted": "Kullanıcı başarıyla silindi",
+        "errorDeleting": "Kullanıcı silinirken hata oluştu"
+      }
+    }
+  },
+  "services": {
+    "authService": {
+      "logs": {
+        "registerRequest": "Kayıt isteği alındı",
+        "userExists": "Kullanıcı zaten mevcut",
+        "userReactivated": "Soft silinmiş kullanıcı yeniden aktifleştirildi",
+        "registerSuccess": "Kayıt işlemi başarılı",
+        "registerConflict": "Kayıt başarısız: email zaten kullanımda",
+        "registerError": "Kayıt sırasında hata oluştu",
+        "loginRequest": "Giriş isteği alındı",
+        "loginSuccess": "Giriş başarılı",
+        "loginFailed": "Giriş başarısız",
+        "loginError": "Giriş sırasında hata oluştu",
+        "logoutRequest": "Çıkış isteği alındı",
+        "logoutSuccess": "Çıkış başarılı",
+        "logoutError": "Çıkış sırasında hata oluştu",
+        "refreshRequest": "Token yenileme isteği alındı",
+        "refreshSuccess": "Token başarıyla yenilendi",
+        "refreshError": "Token yenileme sırasında hata oluştu",
+        "forgotPasswordRequest": "Şifremi unuttum isteği alındı",
+        "forgotPasswordSuccess": "Şifre sıfırlama başarılı",
+        "forgotPasswordError": "Şifre sıfırlama sırasında hata oluştu",
+        "resetPasswordRequest": "Şifre sıfırlama isteği alındı",
+        "resetPasswordSuccess": "Şifre başarıyla güncellendi",
+        "resetPasswordError": "Şifre sıfırlama sırasında hata oluştu",
+        "changePasswordRequest": "Şifre değiştirme isteği alındı",
+        "changePasswordSuccess": "Şifre başarıyla değiştirildi",
+        "changePasswordError": "Şifre değiştirme sırasında hata oluştu"
+      }
+    },
+    "permissionService": {
+      "logs": {
+        "getAllRequest": "Tüm yetkiler için istek alındı",
+        "getAllSuccess": "Tüm yetkiler başarıyla getirildi",
+        "getAllNotFound": "Hiç yetki bulunamadı",
+        "getAllError": "Tüm yetkiler getirilirken hata oluştu",
+        "getByIdRequest": "ID ile yetki sorgulama isteği alındı",
+        "getByIdSuccess": "Yetki başarıyla getirildi",
+        "getByIdNotFound": "Yetki bulunamadı",
+        "getByIdError": "Yetki getirilirken hata oluştu",
+        "createRequest": "Yetki oluşturma isteği alındı",
+        "createSuccess": "Yetki başarıyla oluşturuldu",
+        "createConflict": "Aynı koda sahip yetki zaten mevcut",
+        "createError": "Yetki oluşturulurken hata oluştu",
+        "updateRequest": "Yetki güncelleme isteği alındı",
+        "updateSuccess": "Yetki başarıyla güncellendi",
+        "updateConflict": "Aynı koda sahip yetki zaten mevcut",
+        "updateNotFound": "Güncellenecek yetki bulunamadı",
+        "updateError": "Yetki güncellenirken hata oluştu",
+        "deleteRequest": "Yetki silme isteği alındı",
+        "deleteSuccess": "Yetki başarıyla silindi",
+        "deleteNotFound": "Silinecek yetki bulunamadı",
+        "deleteError": "Yetki silinirken hata oluştu",
+        "getActiveRequest": "Aktif yetkiler için istek alındı",
+        "getActiveSuccess": "Aktif yetkiler başarıyla getirildi",
+        "getActiveError": "Aktif yetkiler getirilirken hata oluştu"
+      }
+    },
+    "roleService": {
+      "logs": {
+        "getAllRequest": "Tüm roller için istek alındı",
+        "getAllSuccess": "Tüm roller başarıyla getirildi",
+        "getAllNotFound": "Hiç rol bulunamadı",
+        "getAllError": "Tüm roller getirilirken hata oluştu",
+        "getByIdRequest": "ID ile rol sorgulama isteği alındı",
+        "getByIdSuccess": "Rol başarıyla getirildi",
+        "getByIdNotFound": "Rol bulunamadı",
+        "getByIdError": "Rol getirilirken hata oluştu",
+        "createRequest": "Rol oluşturma isteği alındı",
+        "createSuccess": "Rol başarıyla oluşturuldu",
+        "createConflict": "Aynı isme sahip rol zaten mevcut",
+        "createError": "Rol oluşturulurken hata oluştu",
+        "updateRequest": "Rol güncelleme isteği alındı",
+        "updateSuccess": "Rol başarıyla güncellendi",
+        "updateConflict": "Aynı isme sahip rol zaten mevcut",
+        "updateNotFound": "Güncellenecek rol bulunamadı",
+        "updateError": "Rol güncellenirken hata oluştu",
+        "deleteRequest": "Rol silme isteği alındı",
+        "deleteSuccess": "Rol başarıyla silindi",
+        "deleteNotFound": "Silinecek rol bulunamadı",
+        "deleteError": "Rol silinirken hata oluştu",
+        "getUserRolesRequest": "Kullanıcı rolleri için istek alındı",
+        "getUserRolesSuccess": "Kullanıcı rolleri başarıyla getirildi",
+        "getUserRolesNotFound": "Kullanıcı rolü bulunamadı",
+        "getUserRolesError": "Kullanıcı rolleri getirilirken hata oluştu",
+        "updatePermissionsRequest": "Rol yetkileri güncelleme isteği alındı",
+        "updatePermissionsSuccess": "Rol yetkileri başarıyla güncellendi",
+        "updatePermissionsNotFound": "Güncellenecek rol bulunamadı",
+        "updatePermissionsError": "Rol yetkileri güncellenirken hata oluştu"
+      }
+    },
+    "userService": {
+      "logs": {
+        "getByIdRequest": "ID ile kullanıcı sorgulama isteği alındı",
+        "getByIdSuccess": "Kullanıcı başarıyla getirildi",
+        "getByIdNotFound": "Kullanıcı bulunamadı",
+        "getByIdError": "Kullanıcı getirilirken hata oluştu",
+        "getAllRequest": "Tüm kullanıcılar için istek alındı",
+        "getAllSuccess": "Tüm kullanıcılar başarıyla getirildi",
+        "getAllError": "Tüm kullanıcılar getirilirken hata oluştu",
+        "getByRoleRequest": "Rol ile kullanıcı sorgulama isteği alındı",
+        "getByRoleSuccess": "Rol ile kullanıcılar başarıyla getirildi",
+        "getByRoleError": "Rol ile kullanıcılar getirilirken hata oluştu",
+        "updateRequest": "Kullanıcı güncelleme isteği alındı",
+        "updateSuccess": "Kullanıcı başarıyla güncellendi",
+        "updateNotFound": "Güncellenecek kullanıcı bulunamadı",
+        "updateError": "Kullanıcı güncellenirken hata oluştu",
+        "deleteRequest": "Kullanıcı silme isteği alındı",
+        "deleteSuccess": "Kullanıcı başarıyla silindi",
+        "deleteNotFound": "Silinecek kullanıcı bulunamadı",
+        "deleteError": "Kullanıcı silinirken hata oluştu",
+        "getAuthenticatedRequest": "Kimliği doğrulanmış kullanıcı isteği alındı",
+        "getAuthenticatedSuccess": "Kimliği doğrulanmış kullanıcı başarıyla getirildi",
+        "getAuthenticatedNotFound": "Kimliği doğrulanmış kullanıcı bulunamadı",
+        "getAuthenticatedError": "Kimliği doğrulanmış kullanıcı getirilirken hata oluştu"
+      }
+    }
+  },
+  "config": {
+    "cache": {
+      "logs": {
+        "connectSuccess": "Redis bağlantısı başarılı",
+        "connectError": "Redis bağlantı hatası",
+        "dataFound": "Veri Redis cache'de bulundu",
+        "dataNotFound": "Veri Redis cache'de bulunamadı",
+        "dataSaved": "Veri Redis cache'e kaydedildi",
+        "dataSaveError": "Veri Redis cache'e kaydedilirken hata oluştu",
+        "dataDeleted": "Veri Redis cache'den silindi",
+        "dataDeleteError": "Veri Redis cache'den silinirken hata oluştu",
+        "multipleDataDeleted": "Birden fazla veri Redis cache'den silindi",
+        "multipleDataDeleteError": "Birden fazla veri Redis cache'den silinirken hata oluştu",
+        "existsError": "Cache varlığı kontrol edilirken hata oluştu",
+        "keysFound": "Pattern ile anahtarlar bulundu",
+        "keysError": "Pattern ile anahtarlar getirilirken hata oluştu",
+        "clearSuccess": "Tüm cache verisi temizlendi",
+        "clearError": "Cache temizlenirken hata oluştu",
+        "statsRetrieved": "Cache istatistikleri alındı",
+        "statsError": "Cache istatistikleri alınırken hata oluştu",
+        "disconnectSuccess": "Redis bağlantısı kapatıldı",
+        "disconnectError": "Redis bağlantısı kapatılırken hata oluştu"
+      }
+    },
+    "database": {
+      "logs": {
+        "connectSuccess": "MongoDB bağlantısı başarılı",
+        "connectError": "MongoDB bağlantı hatası",
+        "connectionInfo": "MongoDB bağlantı bilgisi",
+        "testSuccess": "MongoDB bağlantı testi başarılı",
+        "testError": "MongoDB bağlantı testi başarısız"
+      }
+    },
+    "kafka": {
+      "logs": {
+        "brokers": "Kafka broker adresleri",
+        "producerConnectSuccess": "Kafka producer bağlantısı başarılı",
+        "producerConnectError": "Kafka producer bağlantı hatası",
+        "producerDisconnectSuccess": "Kafka producer bağlantısı kapatıldı",
+        "producerDisconnectError": "Kafka producer bağlantısı kapatılırken hata oluştu",
+        "testMessageSent": "Kafka test mesajı gönderildi",
+        "testConnectionFailed": "Kafka bağlantı testi başarısız"
+      }
+    }
+  },
+  "migrations": {
+    "logs": {
+      "added": "[Permission Migration] Eklendi: {{code}}",
+      "alreadyExists": "[Permission Migration] Zaten mevcut: {{code}}",
+      "allMigrated": "[Permission Migration] Tüm statik yetkiler migrate edildi."
+    }
+  }
+}

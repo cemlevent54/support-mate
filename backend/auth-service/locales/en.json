@@ -1,0 +1,436 @@
+{
+  "cqrs": {
+    "commands": {
+      "permission": {
+        "createPermission": {
+          "logs": {
+            "executing": "Create permission command started",
+            "success": "Permission created successfully",
+            "fail": "An error occurred while creating permission"
+          }
+        },
+        "deletePermission": {
+          "logs": {
+            "executing": "Delete permission command started",
+            "success": "Permission deleted successfully",
+            "fail": "An error occurred while deleting permission",
+            "notFound": "Permission not found"
+          }
+        },
+        "updatePermission": {
+          "logs": {
+            "executing": "Update permission command started",
+            "success": "Permission updated successfully",
+            "fail": "An error occurred while updating permission",
+            "notFound": "Permission not found"
+          }
+        }
+      },
+      "role": {
+        "createRole": {
+          "logs": {
+            "executing": "Create role command started",
+            "success": "Role created successfully",
+            "fail": "An error occurred while creating role"
+          }
+        },
+        "deleteRole": {
+          "logs": {
+            "executing": "Delete role command started",
+            "success": "Role deleted successfully",
+            "fail": "An error occurred while deleting role",
+            "notFound": "Role not found"
+          }
+        },
+        "updateRole": {
+          "logs": {
+            "executing": "Update role command started",
+            "success": "Role updated successfully",
+            "fail": "An error occurred while updating role",
+            "notFound": "Role not found"
+          }
+        }
+      },
+      "user": {
+        "createUser": {
+          "logs": {
+            "executing": "Create user command started",
+            "success": "User created successfully",
+            "fail": "An error occurred while creating user"
+          }
+        },
+        "deleteUser": {
+          "logs": {
+            "executing": "Delete user command started",
+            "success": "User deleted successfully",
+            "fail": "An error occurred while deleting user",
+            "notFound": "User not found"
+          }
+        },
+        "updateUser": {
+          "logs": {
+            "executing": "Update user command started",
+            "success": "User updated successfully",
+            "fail": "An error occurred while updating user",
+            "notFound": "User not found"
+          }
+        }
+      }
+    },
+    "handler": {
+      "command": {
+        "logs": {
+          "registered": "Command handler registered",
+          "noHandler": "No handler registered for command",
+          "dispatching": "Dispatching command",
+          "executing": "Command handler executing",
+          "success": "Command handled successfully",
+          "fail": "An error occurred while handling command"
+        }
+      },
+      "query": {
+        "logs": {
+          "registered": "Query handler registered",
+          "noHandler": "No handler registered for query",
+          "dispatching": "Dispatching query",
+          "executing": "Query handler executing",
+          "success": "Query handled successfully",
+          "fail": "An error occurred while handling query"
+        }
+      }
+    },
+    "queries": {
+      "permission": {
+        "getAllPermissions": {
+          "logs": {
+            "executing": "Get all permissions query started",
+            "success": "All permissions fetched successfully",
+            "fail": "Error occurred while fetching all permissions"
+          }
+        },
+        "getPermissionById": {
+          "logs": {
+            "executing": "Get permission by ID query started",
+            "success": "Permission fetched successfully",
+            "fail": "Error occurred while fetching permission by ID"
+          }
+        },
+        "getPermissionByCode": {
+          "logs": {
+            "executing": "Get permission by code query started",
+            "success": "Permission fetched successfully",
+            "fail": "Error occurred while fetching permission by code"
+          }
+        }
+      },
+      "role": {
+        "getAllRoles": {
+          "logs": {
+            "executing": "Get all roles query started",
+            "success": "All roles fetched successfully",
+            "fail": "Error occurred while fetching all roles"
+          }
+        },
+        "getRoleById": {
+          "logs": {
+            "executing": "Get role by ID query started",
+            "success": "Role fetched successfully",
+            "fail": "Error occurred while fetching role by ID"
+          }
+        },
+        "getRoleByName": {
+          "logs": {
+            "executing": "Get role by name query started",
+            "success": "Role fetched successfully",
+            "fail": "Error occurred while fetching role by name"
+          }
+        }
+      },
+      "user": {
+        "getAllUsers": {
+          "logs": {
+            "executing": "Get all users query started",
+            "success": "All users fetched successfully",
+            "fail": "Error occurred while fetching all users"
+          }
+        },
+        "getUserById": {
+          "logs": {
+            "executing": "Get user by ID query started",
+            "success": "User fetched successfully",
+            "fail": "Error occurred while fetching user by ID"
+          }
+        },
+        "getUserByEmail": {
+          "logs": {
+            "executing": "Get user by email query started",
+            "success": "User fetched successfully",
+            "fail": "Error occurred while fetching user by email"
+          }
+        },
+        "getUsersByRole": {
+          "logs": {
+            "executing": "Get users by role query started",
+            "success": "Users fetched successfully",
+            "fail": "Error occurred while fetching users by role"
+          }
+        }
+      }
+    }
+  },
+  "middlewares": {
+    "authMiddleware": {
+      "logs": {
+        "missingAuthHeader": "Authorization header is missing or does not start with Bearer",
+        "invalidToken": "Invalid or expired token",
+        "tokenVerified": "Token verified",
+        "userNotAuthenticated": "User not authenticated, role check failed",
+        "insufficientRole": "User role insufficient",
+        "accessGranted": "Access granted"
+      }
+    },
+    "jwtService": {
+      "logs": {
+        "userAddedToBlacklist": "User added to blacklist",
+        "userRemovedFromBlacklist": "User removed from blacklist",
+        "activeSessionAdded": "Active session added",
+        "activeSessionRemoved": "Active session removed",
+        "accessTokenGenerated": "Access token generated",
+        "refreshTokenGenerated": "Refresh token generated",
+        "accessTokenVerified": "Access token verified",
+        "refreshTokenVerified": "Refresh token verified",
+        "jwtTokenGenerated": "JWT token generated",
+        "jwtTokenVerified": "JWT token verified",
+        "secureTokenGenerated": "Secure token generated",
+        "passwordResetTokenGenerated": "Password reset token generated",
+        "passwordResetTokenVerified": "Password reset token verified",
+        "jwtVerificationFailed": "JWT verification failed",
+        "blacklisted": "User is blacklisted",
+        "tokenMismatch": "Token mismatch",
+        "noActiveSession": "No active session found",
+        "sessionRecreated": "Session recreated",
+        "invalidTokenType": "Invalid token type"
+      }
+    }
+  },
+  "repositories": {
+    "permissionRepository": {
+      "logs": {
+        "creating": "Creating permission",
+        "created": "Permission created successfully",
+        "errorCreating": "Error creating permission",
+        "finding": "Finding permission",
+        "found": "Permission found",
+        "notFound": "Permission not found",
+        "updating": "Updating permission",
+        "updated": "Permission updated successfully",
+        "errorUpdating": "Error updating permission",
+        "deleting": "Deleting permission",
+        "deleted": "Permission deleted successfully",
+        "errorDeleting": "Error deleting permission"
+      }
+    },
+    "roleRepository": {
+      "logs": {
+        "creating": "Creating role",
+        "created": "Role created successfully",
+        "errorCreating": "Error creating role",
+        "finding": "Finding role",
+        "found": "Role found",
+        "notFound": "Role not found",
+        "updating": "Updating role",
+        "updated": "Role updated successfully",
+        "errorUpdating": "Error updating role",
+        "deleting": "Deleting role",
+        "deleted": "Role deleted successfully",
+        "errorDeleting": "Error deleting role"
+      }
+    },
+    "userRepository": {
+      "logs": {
+        "creating": "Creating user",
+        "created": "User created successfully",
+        "errorCreating": "Error creating user",
+        "finding": "Finding user",
+        "found": "User found",
+        "notFound": "User not found",
+        "updating": "Updating user",
+        "updated": "User updated successfully",
+        "errorUpdating": "Error updating user",
+        "deleting": "Deleting user",
+        "deleted": "User deleted successfully",
+        "errorDeleting": "Error deleting user"
+      }
+    }
+  },
+  "services": {
+    "authService": {
+      "logs": {
+        "registerRequest": "Register request received",
+        "userExists": "User already exists",
+        "userReactivated": "Soft deleted user reactivated",
+        "registerSuccess": "Registration successful",
+        "registerConflict": "Registration failed: email already in use",
+        "registerError": "Error during registration",
+        "loginRequest": "Login request received",
+        "loginSuccess": "Login successful",
+        "loginFailed": "Login failed",
+        "loginError": "Error during login",
+        "logoutRequest": "Logout request received",
+        "logoutSuccess": "Logout successful",
+        "logoutError": "Error during logout",
+        "refreshRequest": "Token refresh request received",
+        "refreshSuccess": "Token refreshed successfully",
+        "refreshError": "Error during token refresh",
+        "forgotPasswordRequest": "Forgot password request received",
+        "forgotPasswordSuccess": "Password reset successful",
+        "forgotPasswordError": "Error during password reset",
+        "resetPasswordRequest": "Reset password request received",
+        "resetPasswordSuccess": "Password updated successfully",
+        "resetPasswordError": "Error during password reset",
+        "changePasswordRequest": "Change password request received",
+        "changePasswordSuccess": "Password changed successfully",
+        "changePasswordError": "Error during password change"
+      }
+    },
+    "permissionService": {
+      "logs": {
+        "getAllRequest": "Get all permissions request received",
+        "getAllSuccess": "All permissions fetched successfully",
+        "getAllNotFound": "No permissions found",
+        "getAllError": "Error occurred while fetching all permissions",
+        "getByIdRequest": "Get permission by ID request received",
+        "getByIdSuccess": "Permission fetched successfully",
+        "getByIdNotFound": "Permission not found",
+        "getByIdError": "Error occurred while fetching permission by ID",
+        "createRequest": "Create permission request received",
+        "createSuccess": "Permission created successfully",
+        "createConflict": "Permission with the same code already exists",
+        "createError": "Error occurred while creating permission",
+        "updateRequest": "Update permission request received",
+        "updateSuccess": "Permission updated successfully",
+        "updateConflict": "Permission with the same code already exists",
+        "updateNotFound": "Permission to update not found",
+        "updateError": "Error occurred while updating permission",
+        "deleteRequest": "Delete permission request received",
+        "deleteSuccess": "Permission deleted successfully",
+        "deleteNotFound": "Permission to delete not found",
+        "deleteError": "Error occurred while deleting permission",
+        "getActiveRequest": "Get active permissions request received",
+        "getActiveSuccess": "Active permissions fetched successfully",
+        "getActiveError": "Error occurred while fetching active permissions"
+      }
+    },
+    "roleService": {
+      "logs": {
+        "getAllRequest": "Get all roles request received",
+        "getAllSuccess": "All roles fetched successfully",
+        "getAllNotFound": "No roles found",
+        "getAllError": "Error occurred while fetching all roles",
+        "getByIdRequest": "Get role by ID request received",
+        "getByIdSuccess": "Role fetched successfully",
+        "getByIdNotFound": "Role not found",
+        "getByIdError": "Error occurred while fetching role by ID",
+        "createRequest": "Create role request received",
+        "createSuccess": "Role created successfully",
+        "createConflict": "A role with the same name already exists",
+        "createError": "Error occurred while creating role",
+        "updateRequest": "Update role request received",
+        "updateSuccess": "Role updated successfully",
+        "updateConflict": "A role with the same name already exists",
+        "updateNotFound": "Role to update not found",
+        "updateError": "Error occurred while updating role",
+        "deleteRequest": "Delete role request received",
+        "deleteSuccess": "Role deleted successfully",
+        "deleteNotFound": "Role to delete not found",
+        "deleteError": "Error occurred while deleting role",
+        "getUserRolesRequest": "Get user roles request received",
+        "getUserRolesSuccess": "User roles fetched successfully",
+        "getUserRolesNotFound": "User role not found",
+        "getUserRolesError": "Error occurred while fetching user roles",
+        "updatePermissionsRequest": "Update role permissions request received",
+        "updatePermissionsSuccess": "Role permissions updated successfully",
+        "updatePermissionsNotFound": "Role to update not found",
+        "updatePermissionsError": "Error occurred while updating role permissions"
+      }
+    },
+    "userService": {
+      "logs": {
+        "getByIdRequest": "Get user by ID request received",
+        "getByIdSuccess": "User fetched successfully",
+        "getByIdNotFound": "User not found",
+        "getByIdError": "Error occurred while fetching user by ID",
+        "getAllRequest": "Get all users request received",
+        "getAllSuccess": "All users fetched successfully",
+        "getAllError": "Error occurred while fetching all users",
+        "getByRoleRequest": "Get users by role request received",
+        "getByRoleSuccess": "Users by role fetched successfully",
+        "getByRoleError": "Error occurred while fetching users by role",
+        "updateRequest": "Update user request received",
+        "updateSuccess": "User updated successfully",
+        "updateNotFound": "User to update not found",
+        "updateError": "Error occurred while updating user",
+        "deleteRequest": "Delete user request received",
+        "deleteSuccess": "User deleted successfully",
+        "deleteNotFound": "User to delete not found",
+        "deleteError": "Error occurred while deleting user",
+        "getAuthenticatedRequest": "Get authenticated user request received",
+        "getAuthenticatedSuccess": "Authenticated user fetched successfully",
+        "getAuthenticatedNotFound": "Authenticated user not found",
+        "getAuthenticatedError": "Error occurred while fetching authenticated user"
+      }
+    }
+  },
+  "config": {
+    "cache": {
+      "logs": {
+        "connectSuccess": "Redis connection successful",
+        "connectError": "Redis connection error",
+        "dataFound": "Data found in Redis cache",
+        "dataNotFound": "Data not found in Redis cache",
+        "dataSaved": "Data saved to Redis cache",
+        "dataSaveError": "Error saving data to Redis cache",
+        "dataDeleted": "Data deleted from Redis cache",
+        "dataDeleteError": "Error deleting data from Redis cache",
+        "multipleDataDeleted": "Multiple data deleted from Redis cache",
+        "multipleDataDeleteError": "Error deleting multiple data from Redis cache",
+        "existsError": "Error checking cache existence",
+        "keysFound": "Keys found by pattern",
+        "keysError": "Error getting keys by pattern",
+        "clearSuccess": "All cache data cleared",
+        "clearError": "Error clearing cache",
+        "statsRetrieved": "Cache stats retrieved",
+        "statsError": "Error getting cache stats",
+        "disconnectSuccess": "Redis connection closed",
+        "disconnectError": "Error closing Redis connection"
+      }
+    },
+    "database": {
+      "logs": {
+        "connectSuccess": "MongoDB connection successful",
+        "connectError": "MongoDB connection error",
+        "connectionInfo": "MongoDB connection info",
+        "testSuccess": "MongoDB connection test successful",
+        "testError": "MongoDB connection test failed"
+      }
+    },
+    "kafka": {
+      "logs": {
+        "brokers": "Kafka broker addresses",
+        "producerConnectSuccess": "Kafka producer connection successful",
+        "producerConnectError": "Kafka producer connection error",
+        "producerDisconnectSuccess": "Kafka producer disconnected",
+        "producerDisconnectError": "Kafka producer disconnect error",
+        "testMessageSent": "Kafka test message sent",
+        "testConnectionFailed": "Kafka test connection failed"
+      }
+    }
+  },
+  "migrations": {
+    "logs": {
+      "added": "[Permission Migration] Added: {{code}}",
+      "alreadyExists": "[Permission Migration] Already exists: {{code}}",
+      "allMigrated": "[Permission Migration] All static permissions migrated."
+    }
+  }
+}

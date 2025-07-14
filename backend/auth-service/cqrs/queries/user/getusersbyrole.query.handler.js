@@ -1,10 +1,11 @@
 import logger from '../../../config/logger.js';
 import userRepository from '../../../repositories/user.repository.js';
+import translation from '../../../config/translation.js';
 
 export class GetUsersByRoleQueryHandler {
   async execute(query) {
     try {
-      logger.info('GetUsersByRoleQuery executing', { query });
+      logger.info(translation('cqrs.queries.user.getUsersByRole.logs.executing'), { role: query.role });
       const options = {
         page: query.page || 1,
         limit: query.limit || 10,
@@ -35,14 +36,10 @@ export class GetUsersByRoleQueryHandler {
         limit: result.limit,
         totalPages: result.totalPages
       };
-      logger.info('GetUsersByRoleQuery completed successfully', { 
-        count: normalizedUsers.length, 
-        total: result.total,
-        page: result.page 
-      });
+      logger.info(translation('cqrs.queries.user.getUsersByRole.logs.success'), { count: normalizedUsers.length, total: result.total, page: result.page });
       return normalizedResult;
     } catch (error) {
-      logger.error('GetUsersByRoleQuery failed', { error, query });
+      logger.error(translation('cqrs.queries.user.getUsersByRole.logs.fail'), { error, query });
       throw error;
     }
   }

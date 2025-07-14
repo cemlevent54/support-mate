@@ -1,3 +1,4 @@
+import translation from './translation.js';
 import { Kafka } from 'kafkajs';
 import logger from './logger.js';
 
@@ -6,7 +7,7 @@ class KafkaService {
     const brokers = process.env.KAFKA_BROKERS
      ? process.env.KAFKA_BROKERS.split(',').map(b => b.trim())
      : ['kafka:9092'];
-    logger.info('Kafka brokers:', brokers); // Dizi olarak loglanacak
+    logger.info(translation('config.kafka.logs.brokers'), { brokers }); // Dizi olarak loglanacak
     const kafka = new Kafka({ brokers });
     this.kafka = kafka;
     this.producer = this.kafka.producer();
@@ -16,9 +17,9 @@ class KafkaService {
   async connectProducer() {
     try {
       await this.producer.connect();
-      logger.info('Kafka producer connection successful');
+      logger.info(translation('config.kafka.logs.producerConnectSuccess'));
     } catch (error) {
-      logger.error('Kafka producer connection error:', error);
+      logger.error(translation('config.kafka.logs.producerConnectError'), error);
       throw error;
     }
   }
@@ -26,9 +27,9 @@ class KafkaService {
   async disconnectProducer() {
     try {
       await this.producer.disconnect();
-      logger.info('Kafka producer disconnected');
+      logger.info(translation('config.kafka.logs.producerDisconnectSuccess'));
     } catch (error) {
-      logger.error('Kafka producer disconnect error:', error);
+      logger.error(translation('config.kafka.logs.producerDisconnectError'), error);
     }
   }
 
@@ -39,16 +40,15 @@ class KafkaService {
         topic: 'test-connection',
         messages: [{ value: 'ping' }],
       });
-      logger.info('Kafka test message sent');
+      logger.info(translation('config.kafka.logs.testMessageSent'));
       await this.disconnectProducer();
       return true;
     } catch (error) {
-      logger.error('Kafka test connection failed:', error);
+      logger.error(translation('config.kafka.logs.testConnectionFailed'), error);
       return false;
     }
   }
 }
 
-const kafkaService = new KafkaService();
-export default kafkaService;
-export const testKafkaConnection = () => kafkaService.testConnection();
+export { KafkaService };
+export const testKafkaConnection = (kafkaServiceInstance) => kafkaServiceInstance.testConnection();
