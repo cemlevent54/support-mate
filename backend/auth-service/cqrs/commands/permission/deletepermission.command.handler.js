@@ -16,9 +16,11 @@ export class DeletePermissionCommandHandler {
       // MongoDB'den gelen _id'yi id olarak normalize et
       const result = {
         id: permission._id,
-        name: permission.name,
+        name_tr: permission.name_tr,
+        name_en: permission.name_en,
         code: permission.code,
-        description: permission.description,
+        description_tr: permission.description_tr,
+        description_en: permission.description_en,
         category: permission.category,
         isActive: permission.isActive,
         createdAt: permission.createdAt,

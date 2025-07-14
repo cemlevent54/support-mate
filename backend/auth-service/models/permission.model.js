@@ -1,20 +1,20 @@
 import mongoose from 'mongoose';
 
 const permissionSchema = new mongoose.Schema({
-  name: {
+  name_tr: {
     type: String,
     required: true,
-    unique: true,
+    trim: true
+  },
+  name_en: {
+    type: String,
+    required: true,
     trim: true
   },
   code: {
     type: String,
     required: true,
     unique: true,
-    trim: true
-  },
-  description: {
-    type: String,
     trim: true
   },
   category: {

@@ -13,7 +13,7 @@ export default function AdminRolePermissions() {
   const [search, setSearch] = useState('');
   const [openModal, setOpenModal] = useState(false);
   const [modalType, setModalType] = useState('add'); // 'add' | 'edit'
-  const [modalPerm, setModalPerm] = useState({ id: '', name: '', code: '', description: '', category: '' });
+  const [modalPerm, setModalPerm] = useState({ id: '', name_tr: '', name_en: '', code: '', category: '' });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const { isAdmin } = usePermissions();
 
@@ -32,13 +32,13 @@ export default function AdminRolePermissions() {
   }, []);
 
   const filteredPermissions = permissions.filter(p =>
-    (p.name?.toLowerCase().includes(search.toLowerCase()) ||
+    (p.name_tr?.toLowerCase().includes(search.toLowerCase()) ||
+      p.name_en?.toLowerCase().includes(search.toLowerCase()) ||
       p.code?.toLowerCase().includes(search.toLowerCase()) ||
-      p.description?.toLowerCase().includes(search.toLowerCase()) ||
       p.category?.toLowerCase().includes(search.toLowerCase()))
   );
 
-  const handleOpenModal = (type, perm = { id: '', name: '', code: '', description: '', category: '' }) => {
+  const handleOpenModal = (type, perm = { id: '', name_tr: '', name_en: '', code: '', category: '' }) => {
     setModalType(type);
     setModalPerm(perm);
     setOpenModal(true);
@@ -50,17 +50,17 @@ export default function AdminRolePermissions() {
     try {
       if (modalType === 'add') {
         await axiosInstance.post('/api/auth/permissions', {
-          name: modalPerm.name,
+          name_tr: modalPerm.name_tr,
+          name_en: modalPerm.name_en,
           code: modalPerm.code,
-          description: modalPerm.description,
           category: modalPerm.category
         });
         setSnackbar({ open: true, message: 'Yetki başarıyla eklendi', severity: 'success' });
       } else {
         await axiosInstance.patch(`/api/auth/permissions/${modalPerm.id}`, {
-          name: modalPerm.name,
+          name_tr: modalPerm.name_tr,
+          name_en: modalPerm.name_en,
           code: modalPerm.code,
-          description: modalPerm.description,
           category: modalPerm.category
         });
         setSnackbar({ open: true, message: 'Yetki başarıyla güncellendi', severity: 'success' });
@@ -105,9 +105,9 @@ export default function AdminRolePermissions() {
           <TableHead>
             <TableRow>
               <TableCell><strong>ID</strong></TableCell>
-              <TableCell><strong>İzin Adı</strong></TableCell>
+              <TableCell><strong>İzin Adı (TR)</strong></TableCell>
+              <TableCell><strong>İzin Adı (EN)</strong></TableCell>
               <TableCell><strong>Kod</strong></TableCell>
-              <TableCell><strong>Açıklama</strong></TableCell>
               <TableCell><strong>Kategori</strong></TableCell>
               <TableCell align="center"><strong>İşlemler</strong></TableCell>
             </TableRow>
@@ -116,9 +116,9 @@ export default function AdminRolePermissions() {
             {filteredPermissions.map(perm => (
               <TableRow key={perm.id}>
                 <TableCell>{perm.id}</TableCell>
-                <TableCell>{perm.name}</TableCell>
+                <TableCell>{perm.name_tr}</TableCell>
+                <TableCell>{perm.name_en}</TableCell>
                 <TableCell>{perm.code}</TableCell>
-                <TableCell>{perm.description}</TableCell>
                 <TableCell>{perm.category}</TableCell>
                 <TableCell align="center">
                   <IconButton color="primary" onClick={() => handleOpenModal('edit', perm)}><EditIcon /></IconButton>
@@ -141,21 +141,21 @@ export default function AdminRolePermissions() {
         <DialogContent>
           <Stack spacing={2} mt={1}>
             <TextField
-              label="İzin Adı"
-              value={modalPerm.name}
-              onChange={e => setModalPerm({ ...modalPerm, name: e.target.value })}
+              label="İzin Adı (TR)"
+              value={modalPerm.name_tr}
+              onChange={e => setModalPerm({ ...modalPerm, name_tr: e.target.value })}
+              fullWidth
+            />
+            <TextField
+              label="İzin Adı (EN)"
+              value={modalPerm.name_en}
+              onChange={e => setModalPerm({ ...modalPerm, name_en: e.target.value })}
               fullWidth
             />
             <TextField
               label="Kod"
               value={modalPerm.code}
               onChange={e => setModalPerm({ ...modalPerm, code: e.target.value })}
-              fullWidth
-            />
-            <TextField
-              label="Açıklama"
-              value={modalPerm.description}
-              onChange={e => setModalPerm({ ...modalPerm, description: e.target.value })}
               fullWidth
             />
             <TextField

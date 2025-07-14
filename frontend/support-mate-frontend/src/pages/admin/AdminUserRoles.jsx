@@ -130,7 +130,9 @@ export default function AdminUserRoles() {
   const getPermissionDisplayName = (permObj) => {
     // permObj bir nesne ise adı ve kodu birlikte göster
     if (typeof permObj === 'object' && permObj !== null) {
-      return `${permObj.name} (${permObj.code})`;
+      // Öncelik: name_tr > name_en > name
+      const displayName = permObj.name_tr || permObj.name_en || permObj.name || '';
+      return `${displayName} (${permObj.code})`;
     }
     // string ise sadece kodu göster
     return permObj;
@@ -208,7 +210,7 @@ export default function AdminUserRoles() {
         <DialogContent>
           <Stack spacing={1} mt={1}>
             {permissions.map(perm => (
-              <Tooltip key={perm.code} title={`Açıklama: ${perm.description || '-'} | Kategori: ${perm.category || '-'}`} placement="right">
+              <Tooltip key={perm.code} title={`Kategori: ${perm.category || '-'}`} placement="right">
                 <FormControlLabel
                   control={
                     <Checkbox

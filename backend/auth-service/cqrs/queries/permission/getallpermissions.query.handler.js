@@ -20,9 +20,9 @@ export class GetAllPermissionsQueryHandler {
       // MongoDB'den gelen _id'leri id olarak normalize et
       const normalizedPermissions = result.permissions.map(permission => ({
         id: permission._id,
-        name: permission.name,
+        name_tr: permission.name_tr,
+        name_en: permission.name_en,
         code: permission.code,
-        description: permission.description,
         category: permission.category,
         isActive: permission.isActive,
         createdAt: permission.createdAt,

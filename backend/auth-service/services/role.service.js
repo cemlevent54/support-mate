@@ -19,9 +19,9 @@ import translation from '../config/translation.js';
 
 // Role servisinde kullanılacak izinler
 export const ROLE_PERMISSIONS = [
-  { code: 'role:read', name: 'Rolleri Görüntüle', description: 'Rol listesini görüntüleme', category: 'role' },
-  { code: 'role:write', name: 'Rol Ekle/Düzenle', description: 'Rol oluşturma/güncelleme', category: 'role' },
-  { code: 'role:delete', name: 'Rol Sil', description: 'Rol silme', category: 'role' }
+  { code: 'role:read', name_tr: 'Rolleri Görüntüle', name_en: 'View Roles', category: 'role' },
+  { code: 'role:write', name_tr: 'Rol Ekle/Düzenle', name_en: 'Add/Edit Role', category: 'role' },
+  { code: 'role:delete', name_tr: 'Rol Sil', name_en: 'Delete Role', category: 'role' }
 ];
 
 class RoleService {

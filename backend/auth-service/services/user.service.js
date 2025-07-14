@@ -15,9 +15,9 @@ import translation from '../config/translation.js';
 
 // User servisinde kullanılacak izinler
 export const USER_PERMISSIONS = [
-  { code: 'user:read', name: 'Kullanıcıları Görüntüle', description: 'Kullanıcı listesini görüntüleme', category: 'user' },
-  { code: 'user:write', name: 'Kullanıcı Ekle/Düzenle', description: 'Kullanıcı oluşturma/güncelleme', category: 'user' },
-  { code: 'user:delete', name: 'Kullanıcı Sil', description: 'Kullanıcı silme', category: 'user' }
+  { code: 'user:read', name_tr: 'Kullanıcıları Görüntüle', name_en: 'View Users', category: 'user' },
+  { code: 'user:write', name_tr: 'Kullanıcı Ekle/Düzenle', name_en: 'Add/Edit User', category: 'user' },
+  { code: 'user:delete', name_tr: 'Kullanıcı Sil', name_en: 'Delete User', category: 'user' }
 ];
 
 class UserService {

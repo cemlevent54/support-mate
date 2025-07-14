@@ -72,15 +72,15 @@ class PermissionService {
   async createPermission(req, res) {
     logger.info(translation('services.permissionService.logs.createRequest'), { body: req.body, user: req.user });
     try {
-      const { name, code, description, category } = req.body;
-      if (!name || !code) {
+      const { name_tr, name_en, code, category } = req.body;
+      if (!name_tr || !name_en || !code) {
         logger.warn(translation('services.permissionService.logs.createRequest'), { body: req.body });
         return badRequestError(res, translation('services.permissionService.logs.createRequest'));
       }
       const command = {
-        name,
+        name_tr,
+        name_en,
         code,
-        description,
         category: category || 'general'
       };
       logger.debug('[PermissionService][createPermission] Command created', { command });
@@ -101,12 +101,12 @@ class PermissionService {
   async updatePermission(req, res) {
     logger.info(translation('services.permissionService.logs.updateRequest'), { id: req.params.id, body: req.body, user: req.user });
     try {
-      const { name, code, description, category, isActive } = req.body;
+      const { name_tr, name_en, code, category, isActive } = req.body;
       const command = {
         id: req.params.id,
-        name,
+        name_tr,
+        name_en,
         code,
-        description,
         category,
         isActive
       };
