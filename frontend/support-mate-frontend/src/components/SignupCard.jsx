@@ -10,11 +10,13 @@ import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import Paper from '@mui/material/Paper';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
-import { register } from '../api/authApi';
+import { register, googleRegister } from '../api/authApi';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from './LanguageProvider';
+import { GoogleLogin } from '@react-oauth/google';
+import { useNavigate } from 'react-router-dom';
 
 export default function SignupCard() {
   const [showPassword, setShowPassword] = useState(false);
@@ -31,6 +33,9 @@ export default function SignupCard() {
   const [snackbarMsg, setSnackbarMsg] = useState('');
   const { t } = useTranslation();
   const { language, onLanguageChange } = useLanguage();
+  const navigate = useNavigate();
+
+  const localLang = localStorage.getItem('language') || 'tr';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -152,10 +157,45 @@ export default function SignupCard() {
           >
             {t('pages.signup.button')}
           </Button>
+          {/* Google ile Kayıt Ol butonu */}
+          <GoogleLogin
+            onSuccess={async credentialResponse => {
+              try {
+                const result = await googleRegister(credentialResponse.credential);
+                const accessToken = result?.accessToken || result?.data?.accessToken;
+                if (accessToken) {
+                  localStorage.setItem('jwt', accessToken);
+                  setSnackbarType('success');
+                  setSnackbarMsg(t('pages.signup.success'));
+                  setOpenSnackbar(true);
+                  setTimeout(() => window.location.href = '/', 1000);
+                } else {
+                  setSnackbarType('error');
+                  setSnackbarMsg(t('pages.signup.error'));
+                  setOpenSnackbar(true);
+                  console.log('Google register response:', result);
+                }
+              } catch (err) {
+                setSnackbarType('error');
+                setSnackbarMsg(t('pages.signup.error'));
+                setOpenSnackbar(true);
+                console.error('Google register error:', err);
+              }
+            }}
+            onError={() => {
+              setSnackbarType('error');
+              setSnackbarMsg(t('pages.signup.error'));
+              setOpenSnackbar(true);
+            }}
+            text="signup_with"
+            shape="rectangular"
+            size="large"
+            locale={localLang}
+          />
           <Box mt={1.5} textAlign="center">
             <Typography variant="body2">
               {t('pages.signup.alreadyUser')}{' '}
-              <Link href="#" color="primary" underline="hover">
+              <Link href="#" color="primary" underline="hover" onClick={() => navigate('/login')}>
                 {t('pages.signup.login')}
               </Link>
             </Typography>

@@ -21,6 +21,8 @@
       "title": "Login",
       "subtitle": "Welcome back! Please login to your account.",
       "email": "Email Address",
+      "googleLogin": "Login with Google",
+      "googleRegister": "Sign up with Google",
       "password": "Password",
       "button": "Login",
       "noAccount": "Don't have an account?",

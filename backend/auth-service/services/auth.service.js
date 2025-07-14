@@ -20,10 +20,15 @@ import userRepository from '../repositories/user.repository.js';
 import roleService from './role.service.js';
 import { sendUserRegisteredEvent, sendPasswordResetEvent } from '../kafka/kafkaProducer.js';
 import translation from '../config/translation.js';
+import { OAuth2Client } from 'google-auth-library';
+import crypto from 'crypto';
+import { UserModel } from '../models/user.model.js';
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
 const REFRESH_TOKEN_EXPIRES = process.env.JWT_REFRESH_EXPIRES_IN;
 const JWT_SECRET = process.env.JWT_SECRET;
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 // Auth servisinde kullanılacak izinler
 export const AUTH_PERMISSIONS = [
@@ -404,6 +409,132 @@ class AuthService {
       return apiSuccess(res, null, 'Password updated successfully', 200);
     } catch (error) {
       return internalServerError(res, error.message);
+    }
+  }
+
+  async googleLogin(req, res) {
+    try {
+      logger.info(translation('services.authService.logs.loginRequest'), { provider: 'google', body: req.body });
+      const { credential } = req.body;
+      if (!credential) {
+        logger.warn(translation('services.authService.logs.loginFailed'), { provider: 'google', reason: 'No credential' });
+        return unauthorizedError(res, translation('services.authService.logs.loginFailed'));
+      }
+      // Google token'ı doğrula
+      const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: GOOGLE_CLIENT_ID,
+      });
+      const payload = ticket.getPayload();
+      if (!payload) {
+        logger.warn(translation('services.authService.logs.loginFailed'), { provider: 'google', reason: 'Token doğrulanamadı' });
+        return unauthorizedError(res, translation('services.authService.logs.loginFailed'));
+      }
+      // Kullanıcıyı googleId ile bul, yoksa email ile bul
+      let user = await userRepository.findAnyUserByEmail(payload.email);
+      if (!user && payload.sub) {
+        user = await userRepository.model.findOne({ googleId: payload.sub });
+      }
+      // Kullanıcı yoksa hata döndür
+      if (!user) {
+        logger.warn(translation('services.authService.logs.loginFailed'), { provider: 'google', email: payload.email });
+        return unauthorizedError(res, translation('repositories.userRepository.logs.notFound'));
+      }
+      // Kullanıcıda googleId yoksa ekle
+      if (!user.googleId && payload.sub) {
+        user.googleId = payload.sub;
+        await user.save();
+      }
+      // JWT üret
+      const payloadJwt = {
+        id: user.id,
+        email: user.email,
+        roleId: user.role?.toString ? user.role.toString() : user.role,
+        roleName: user.roleName
+      };
+      const accessToken = JWTService.generateAccessToken(payloadJwt, JWT_EXPIRES_IN);
+      const expiresInMs = typeof JWT_EXPIRES_IN === 'string' && JWT_EXPIRES_IN.endsWith('m')
+        ? parseInt(JWT_EXPIRES_IN) * 60 * 1000
+        : typeof JWT_EXPIRES_IN === 'string' && JWT_EXPIRES_IN.endsWith('h')
+          ? parseInt(JWT_EXPIRES_IN) * 60 * 60 * 1000
+          : 15 * 60 * 1000; // default 15m
+      const expireAt = new Date(Date.now() + expiresInMs);
+      // Aktif oturumu kaydet
+      await JWTService.addActiveSession(user.id, accessToken, expireAt);
+      logger.info(translation('services.authService.logs.loginSuccess'), { provider: 'google', user, accessToken, expireAt });
+      // Yanıt
+      apiSuccess(res, { user, accessToken, expireAt }, translation('services.authService.logs.loginSuccess'), 200);
+    } catch (err) {
+      logger.error(translation('services.authService.logs.loginError'), { provider: 'google', error: err.message });
+      internalServerError(res, translation('services.authService.logs.loginError'));
+    }
+  }
+
+  async googleRegister(req, res) {
+    try {
+      logger.info(translation('services.authService.logs.registerRequest'), { provider: 'google', body: req.body });
+      const { credential } = req.body;
+      if (!credential) {
+        logger.warn(translation('services.authService.logs.registerConflict'), { provider: 'google', reason: 'No credential' });
+        return unauthorizedError(res, translation('services.authService.logs.registerConflict'));
+      }
+      // Google token'ı doğrula
+      const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: GOOGLE_CLIENT_ID,
+      });
+      const payload = ticket.getPayload();
+      if (!payload) {
+        logger.warn(translation('services.authService.logs.registerConflict'), { provider: 'google', reason: 'Token doğrulanamadı' });
+        return unauthorizedError(res, translation('services.authService.logs.registerConflict'));
+      }
+      // Kullanıcıyı googleId ile bul, yoksa email ile bul
+      let user = await UserModel.findOne({ googleId: payload.sub });
+      if (!user) {
+        user = await userRepository.findAnyUserByEmail(payload.email);
+      }
+      // Kullanıcı zaten varsa hata döndür
+      if (user) {
+        logger.warn(translation('services.authService.logs.registerConflict'), { provider: 'google', email: payload.email });
+        return conflictError(res, translation('services.authService.logs.registerConflict'));
+      }
+      // Varsayılan rolü bul
+      const userRole = await roleService.getRoleByName('User');
+      const randomPassword = crypto.randomBytes(32).toString('hex');
+      // Kullanıcıyı oluştur
+      const createUserCommand = {
+        email: payload.email,
+        password: randomPassword, // dummy password
+        firstName: payload.name || payload.given_name || 'Google',
+        lastName: payload.family_name || 'Google',
+        role: userRole ? userRole._id : null,
+        roleName: userRole ? userRole.name : null,
+        googleId: payload.sub,
+        isEmailVerified: payload.email_verified || false
+      };
+      user = await commandHandler.dispatch(COMMAND_TYPES.CREATE_USER, createUserCommand);
+      // Kullanıcı başarıyla oluşturulursa mail eventi gönder
+      await sendUserRegisteredEvent(user);
+      // JWT üret
+      const payloadJwt = {
+        id: user.id,
+        email: user.email,
+        roleId: user.role?.toString ? user.role.toString() : user.role,
+        roleName: user.roleName
+      };
+      const accessToken = JWTService.generateAccessToken(payloadJwt, JWT_EXPIRES_IN);
+      const expiresInMs = typeof JWT_EXPIRES_IN === 'string' && JWT_EXPIRES_IN.endsWith('m')
+        ? parseInt(JWT_EXPIRES_IN) * 60 * 1000
+        : typeof JWT_EXPIRES_IN === 'string' && JWT_EXPIRES_IN.endsWith('h')
+          ? parseInt(JWT_EXPIRES_IN) * 60 * 60 * 1000
+          : 15 * 60 * 1000; // default 15m
+      const expireAt = new Date(Date.now() + expiresInMs);
+      await JWTService.addActiveSession(user.id, accessToken, expireAt);
+      logger.info(translation('services.authService.logs.registerSuccess'), { provider: 'google', user, accessToken, expireAt });
+      apiSuccess(res, { user, accessToken, expireAt }, translation('services.authService.logs.registerSuccess'), 201);
+    } catch (err) {
+      logger.error(translation('services.authService.logs.registerError'), { provider: 'google', error: err.message });
+      internalServerError(res, translation('services.authService.logs.registerError'));
     }
   }
 }

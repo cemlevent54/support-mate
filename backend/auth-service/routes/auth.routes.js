@@ -12,5 +12,11 @@ router.post('/forgot-password', authController.forgotPassword);
 router.post('/reset-password', authController.resetPassword);
 router.patch('/change-password', authMiddleware, authController.changePassword);
 
+// Google Auth
+router.post('/google-login', authController.googleLogin);
+
+// Google Auth Register
+router.post('/google-register', authController.googleRegister);
+
 
 export default router; 

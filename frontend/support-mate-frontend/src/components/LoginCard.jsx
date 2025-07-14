@@ -11,12 +11,13 @@ import Paper from '@mui/material/Paper';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import { useNavigate } from 'react-router-dom';
-import { login } from '../api/authApi';
+import { login, googleLogin } from '../api/authApi';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from './LanguageProvider';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import { jwtDecode } from "jwt-decode";
+import { GoogleLogin } from '@react-oauth/google';
 
 export default function LoginCard({ onUserLogin }) {
   const [showPassword, setShowPassword] = useState(false);
@@ -67,6 +68,8 @@ export default function LoginCard({ onUserLogin }) {
     }
   };
 
+  const localLang = localStorage.getItem('language') || 'tr';
+
   return (
     <Box display="flex" justifyContent="center" alignItems="flex-start" sx={{ background: '#f5f5f5', minHeight: '100vh' }}>
       <Paper elevation={6} sx={{ mt: 6, p: 2.5, borderRadius: 3, width: '100%', maxWidth: 500 }}>
@@ -116,10 +119,43 @@ export default function LoginCard({ onUserLogin }) {
           >
             {t('pages.login.button')}
           </Button>
+          {/* Google ile Giriş Yap butonu */}
+          <GoogleLogin
+            onSuccess={async credentialResponse => {
+              try {
+                const result = await googleLogin(credentialResponse.credential);
+                const accessToken = result?.accessToken || result?.data?.accessToken;
+                if (accessToken) {
+                  localStorage.setItem('jwt', accessToken);
+                  const decoded = jwtDecode(accessToken);
+                  const roleName = decoded.roleName;
+                  setSnackbar({ open: true, message: t('pages.login.success'), severity: 'success' });
+                  if (onUserLogin) onUserLogin(roleName || 'User');
+                  if (roleName === 'Admin') navigate('/admin');
+                  else if (roleName === 'Customer Supporter' || roleName === 'Support') navigate('/support');
+                  else if (roleName === 'Employee') navigate('/employee');
+                  else setTimeout(() => navigate('/'), 1000);
+                } else {
+                  setSnackbar({ open: true, message: t('pages.login.error'), severity: 'error' });
+                  console.log('Google login response:', result);
+                }
+              } catch (err) {
+                setSnackbar({ open: true, message: t('pages.login.error'), severity: 'error' });
+                console.error('Google login error:', err);
+              }
+            }}
+            onError={() => {
+              setSnackbar({ open: true, message: t('pages.login.error'), severity: 'error' });
+            }}
+            text="signin_with"
+            shape="rectangular"
+            size="large"
+            locale={localLang}
+          />
           <Box mt={1.5} textAlign="center">
             <Typography variant="body2">
               {t('pages.login.noAccount')}{' '}
-              <Link href="#" color="primary" underline="hover">
+              <Link href="#" color="primary" underline="hover" onClick={() => navigate('/signup')}>
                 {t('pages.login.signup')}
               </Link>
             </Typography>

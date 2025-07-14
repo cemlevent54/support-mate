@@ -59,3 +59,15 @@ export async function changePassword({ newPassword, confirmPassword }) {
   });
   return response.data;
 }
+
+// Google ile giriş
+export async function googleLogin(credential) {
+  const response = await axiosInstance.post(`${API_BASE_URL}/google-login`, { credential });
+  return response.data;
+}
+
+// Google ile kayıt
+export async function googleRegister(credential) {
+  const response = await axiosInstance.post(`${API_BASE_URL}/google-register`, { credential });
+  return response.data;
+}

@@ -20,6 +20,8 @@
       "title": "Giriş Yap",
       "subtitle": "Tekrar hoş geldin! Lütfen hesabına giriş yap.",
       "email": "E-posta Adresi",
+      "googleLogin": "Google ile Giriş Yap",
+      "googleRegister": "Google ile Kayıt Ol",
       "password": "Şifre",
       "button": "Giriş Yap",
       "noAccount": "Hesabın yok mu?",

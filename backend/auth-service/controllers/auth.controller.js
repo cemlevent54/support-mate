@@ -8,6 +8,8 @@ class AuthController {
   forgotPassword = authService.forgotPassword.bind(authService);
   resetPassword = authService.resetPassword.bind(authService);
   changePassword = authService.changePassword.bind(authService);
+  googleLogin = authService.googleLogin.bind(authService);
+  googleRegister = authService.googleRegister.bind(authService);
 }
 
 export default new AuthController(); 

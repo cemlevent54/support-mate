@@ -424,6 +424,12 @@
         "testMessageSent": "Kafka test message sent",
         "testConnectionFailed": "Kafka test connection failed"
       }
+    },
+    "google": {
+      "logs": {
+        "connectSuccess": "Google connection test successful (token verify function works)",
+        "connectError": "Google connection test failed"
+      }
     }
   },
   "migrations": {

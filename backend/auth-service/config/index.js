@@ -4,6 +4,7 @@ import cacheService from './cache.js';
 import { KafkaService } from './kafka.js';
 import i18n from './i18n.js';
 import translation from './translation.js';
+import { testGoogleConnection } from './google.js';
 
 // Locale (dil) ayarı ve logu server.js dosyasında yapılmaktadır.
 // initializeApp fonksiyonu içinde tekrar locale ayarı yapılmamalı ve handler kayıtları burada yer almamalı.
@@ -47,6 +48,13 @@ export const initializeApp = async () => {
       }
     } catch (err) {
       logger.error(translation('config.kafka.logs.producerConnectError'), err);
+    }
+
+    // Google bağlantı testi
+    try {
+      await testGoogleConnection(logger);
+    } catch (err) {
+      logger.error('Google bağlantı testi başarısız', err);
     }
   } catch (error) {
     logger.error(translation('config.database.logs.connectError'), error);

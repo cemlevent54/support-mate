@@ -9,6 +9,7 @@ import AppLogo from './components/AppLogo';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 import { appRoutes } from './routes';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 function AppContent() {
   const [drawerOpen, setDrawerOpen] = React.useState(false);
@@ -116,11 +117,13 @@ function AppContent() {
 
 function App() {
   return (
-    <LanguageProvider>
-      <Router>
-        <AppContent />
-      </Router>
-    </LanguageProvider>
+    <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID}>
+      <LanguageProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </LanguageProvider>
+    </GoogleOAuthProvider>
   );
 }
 
