@@ -24,7 +24,10 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
 const REFRESH_TOKEN_EXPIRES = process.env.JWT_REFRESH_EXPIRES_IN;
 const JWT_SECRET = process.env.JWT_SECRET;
 
-
+// Auth servisinde kullanılacak izinler
+export const AUTH_PERMISSIONS = [
+  // Örnek: { code: 'auth:login', name: 'Giriş', description: 'Kullanıcı girişi', category: 'auth' }
+];
 
 class AuthService {
   constructor() {

@@ -33,11 +33,13 @@ import {
 import { getAllUsers, updateUser, deleteUser } from '../../api/userApi';
 import * as roleApi from '../../api/roleApi';
 import ConfirmModal from '../../components/ConfirmModal';
+import { usePermissions } from '../../hooks/usePermissions';
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
+  const { hasPermission, isAdmin, loading: permissionsLoading, userRole } = usePermissions();
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [openDialog, setOpenDialog] = useState(false);
@@ -186,6 +188,11 @@ export default function AdminUsers() {
 
   const paginatedUsers = filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
+  // Her kullanıcı için debug logu
+  paginatedUsers.forEach(user => {
+    console.log("user:", user, "isDeleted:", user.isDeleted, "isAdmin:", isAdmin());
+  });
+
   const getRoleColor = (role) => {
     const roleName = typeof role === 'object' ? role.name : role;
     switch (roleName) {
@@ -316,7 +323,8 @@ export default function AdminUsers() {
                       size="small"
                       onClick={() => handleEditUser(user)}
                       sx={{ color: '#1976d2' }}
-                      disabled={user.is_deleted}
+                      disabled={permissionsLoading || user.isDeleted || (!isAdmin() && !hasPermission('user:write'))}
+                      title={(!isAdmin() && !hasPermission('user:write')) ? 'Kullanıcı düzenleme yetkiniz yok' : ''}
                     >
                       <EditIcon />
                     </IconButton>
@@ -324,7 +332,8 @@ export default function AdminUsers() {
                       size="small"
                       onClick={() => handleDeleteUser(user.id)}
                       sx={{ color: '#d32f2f' }}
-                      disabled={user.is_deleted}
+                      disabled={permissionsLoading || user.isDeleted || (!isAdmin() && !hasPermission('user:delete'))}
+                      title={(!isAdmin() && !hasPermission('user:delete')) ? 'Kullanıcı silme yetkiniz yok' : ''}
                     >
                       <DeleteIcon />
                     </IconButton>

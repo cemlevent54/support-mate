@@ -27,3 +27,20 @@ export const getUserRole = async () => {
   const res = await axiosInstance.get(`${BASE_URL}/user`);
   return res.data.data;
 };
+
+// Tüm mevcut yetkileri getir
+export const getAllPermissions = async () => {
+  try {
+    const res = await axiosInstance.get(process.env.REACT_APP_API_BASE_URL + '/api/auth/permissions/active');
+    return res.data.message?.permissions || [];
+  } catch (error) {
+    console.error('Yetkiler getirilirken hata:', error);
+    return [];
+  }
+};
+
+// Role yetkilerini güncelle
+export const updateRolePermissions = async (roleId, permissions) => {
+  const res = await axiosInstance.patch(`${BASE_URL}/${roleId}/permissions`, { permissions });
+  return res.data.data;
+};

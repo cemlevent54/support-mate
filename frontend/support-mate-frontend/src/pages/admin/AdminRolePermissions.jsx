@@ -1,52 +1,86 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Button, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Stack, InputAdornment
+  Button, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Stack, InputAdornment, Snackbar, Alert
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon, Search as SearchIcon } from '@mui/icons-material';
-
-const INITIAL_PERMISSIONS = [
-  { id: 1, name: 'Kullanıcıları Görüntüle', code: 'user:read' },
-  { id: 2, name: 'Kullanıcı Ekle', code: 'user:write' },
-  { id: 3, name: 'Kullanıcı Sil', code: 'user:delete' },
-  { id: 4, name: 'Rol Görüntüle', code: 'role:read' },
-  { id: 5, name: 'Rol Ekle', code: 'role:write' },
-  { id: 6, name: 'Rol Sil', code: 'role:delete' },
-  { id: 7, name: 'Ticket Görüntüle', code: 'ticket:read' },
-  { id: 8, name: 'Ticket Ekle', code: 'ticket:write' },
-  { id: 9, name: 'Ticket Sil', code: 'ticket:delete' },
-];
+import * as roleApi from '../../api/roleApi';
+import axiosInstance from '../../api/axiosInstance';
+import { usePermissions } from '../../hooks/usePermissions';
 
 export default function AdminRolePermissions() {
-  const [permissions, setPermissions] = useState(INITIAL_PERMISSIONS);
+  const [permissions, setPermissions] = useState([]);
   const [search, setSearch] = useState('');
   const [openModal, setOpenModal] = useState(false);
   const [modalType, setModalType] = useState('add'); // 'add' | 'edit'
-  const [modalPerm, setModalPerm] = useState({ id: '', name: '', code: '' });
+  const [modalPerm, setModalPerm] = useState({ id: '', name: '', code: '', description: '', category: '' });
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const { isAdmin } = usePermissions();
+
+  // Yetkileri API'den çek
+  const fetchPermissions = async () => {
+    try {
+      const data = await roleApi.getAllPermissions();
+      setPermissions(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setPermissions([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchPermissions();
+  }, []);
 
   const filteredPermissions = permissions.filter(p =>
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.code.toLowerCase().includes(search.toLowerCase())
+    (p.name?.toLowerCase().includes(search.toLowerCase()) ||
+      p.code?.toLowerCase().includes(search.toLowerCase()) ||
+      p.description?.toLowerCase().includes(search.toLowerCase()) ||
+      p.category?.toLowerCase().includes(search.toLowerCase()))
   );
 
-  const handleOpenModal = (type, perm = { id: '', name: '', code: '' }) => {
+  const handleOpenModal = (type, perm = { id: '', name: '', code: '', description: '', category: '' }) => {
     setModalType(type);
     setModalPerm(perm);
     setOpenModal(true);
   };
   const handleCloseModal = () => setOpenModal(false);
 
-  const handleSave = () => {
-    if (modalType === 'add') {
-      setPermissions([...permissions, { ...modalPerm, id: Date.now() }]);
-    } else {
-      setPermissions(permissions.map(p => p.id === modalPerm.id ? modalPerm : p));
+  // Yetki ekle/güncelle
+  const handleSave = async () => {
+    try {
+      if (modalType === 'add') {
+        await axiosInstance.post('/api/auth/permissions', {
+          name: modalPerm.name,
+          code: modalPerm.code,
+          description: modalPerm.description,
+          category: modalPerm.category
+        });
+        setSnackbar({ open: true, message: 'Yetki başarıyla eklendi', severity: 'success' });
+      } else {
+        await axiosInstance.patch(`/api/auth/permissions/${modalPerm.id}`, {
+          name: modalPerm.name,
+          code: modalPerm.code,
+          description: modalPerm.description,
+          category: modalPerm.category
+        });
+        setSnackbar({ open: true, message: 'Yetki başarıyla güncellendi', severity: 'success' });
+      }
+      setOpenModal(false);
+      fetchPermissions();
+    } catch (error) {
+      setSnackbar({ open: true, message: 'Yetki kaydedilirken hata oluştu', severity: 'error' });
     }
-    setOpenModal(false);
   };
 
-  const handleDelete = (id) => {
-    setPermissions(permissions.filter(p => p.id !== id));
+  // Yetki sil
+  const handleDelete = async (id) => {
+    try {
+      await axiosInstance.delete(`/api/auth/permissions/${id}`);
+      setSnackbar({ open: true, message: 'Yetki başarıyla silindi', severity: 'success' });
+      fetchPermissions();
+    } catch (error) {
+      setSnackbar({ open: true, message: 'Yetki silinirken hata oluştu', severity: 'error' });
+    }
   };
 
   return (
@@ -57,7 +91,7 @@ export default function AdminRolePermissions() {
       </Box>
       <Box mb={2}>
         <TextField
-          placeholder="İzin adı veya kodu ara..."
+          placeholder="İzin adı, kodu, açıklama veya kategori ara..."
           value={search}
           onChange={e => setSearch(e.target.value)}
           InputProps={{
@@ -73,6 +107,8 @@ export default function AdminRolePermissions() {
               <TableCell><strong>ID</strong></TableCell>
               <TableCell><strong>İzin Adı</strong></TableCell>
               <TableCell><strong>Kod</strong></TableCell>
+              <TableCell><strong>Açıklama</strong></TableCell>
+              <TableCell><strong>Kategori</strong></TableCell>
               <TableCell align="center"><strong>İşlemler</strong></TableCell>
             </TableRow>
           </TableHead>
@@ -82,6 +118,8 @@ export default function AdminRolePermissions() {
                 <TableCell>{perm.id}</TableCell>
                 <TableCell>{perm.name}</TableCell>
                 <TableCell>{perm.code}</TableCell>
+                <TableCell>{perm.description}</TableCell>
+                <TableCell>{perm.category}</TableCell>
                 <TableCell align="center">
                   <IconButton color="primary" onClick={() => handleOpenModal('edit', perm)}><EditIcon /></IconButton>
                   <IconButton color="error" onClick={() => handleDelete(perm.id)}><DeleteIcon /></IconButton>
@@ -90,7 +128,7 @@ export default function AdminRolePermissions() {
             ))}
             {filteredPermissions.length === 0 && (
               <TableRow>
-                <TableCell colSpan={4} align="center">Kayıt bulunamadı</TableCell>
+                <TableCell colSpan={6} align="center">Kayıt bulunamadı</TableCell>
               </TableRow>
             )}
           </TableBody>
@@ -114,6 +152,18 @@ export default function AdminRolePermissions() {
               onChange={e => setModalPerm({ ...modalPerm, code: e.target.value })}
               fullWidth
             />
+            <TextField
+              label="Açıklama"
+              value={modalPerm.description}
+              onChange={e => setModalPerm({ ...modalPerm, description: e.target.value })}
+              fullWidth
+            />
+            <TextField
+              label="Kategori"
+              value={modalPerm.category}
+              onChange={e => setModalPerm({ ...modalPerm, category: e.target.value })}
+              fullWidth
+            />
           </Stack>
         </DialogContent>
         <DialogActions>
@@ -121,6 +171,21 @@ export default function AdminRolePermissions() {
           <Button onClick={handleSave} variant="contained">Kaydet</Button>
         </DialogActions>
       </Dialog>
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 } 

@@ -1,21 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Button, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Checkbox, FormControlLabel, Stack, Snackbar, Alert
+  Button, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Checkbox, FormControlLabel, Stack, Snackbar, Alert, Tooltip
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon, List as ListIcon, Settings as SettingsIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import * as roleApi from '../../api/roleApi';
 import ConfirmModal from '../../components/ConfirmModal';
-
-const DUMMY_PERMISSIONS = [
-  'user:read', 'user:write', 'user:delete',
-  'role:read', 'role:write', 'role:delete',
-  'ticket:read', 'ticket:write', 'ticket:delete'
-];
+import { usePermissions } from '../../hooks/usePermissions';
 
 export default function AdminUserRoles() {
   const [roles, setRoles] = useState([]);
+  const [permissions, setPermissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openModal, setOpenModal] = useState(false);
   const [modalRole, setModalRole] = useState(null);
@@ -26,21 +22,27 @@ export default function AdminUserRoles() {
   const [confirmDelete, setConfirmDelete] = useState({ open: false, roleId: null });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const navigate = useNavigate();
+  const { isAdmin } = usePermissions();
 
-  // Rolleri API'den çek
-  const fetchRoles = async () => {
+  // Rolleri ve yetkileri API'den çek
+  const fetchData = async () => {
     setLoading(true);
     try {
-      const data = await roleApi.getRoles();
-      setRoles(Array.isArray(data) ? data : []);
+      const [rolesData, permissionsData] = await Promise.all([
+        roleApi.getRoles(),
+        roleApi.getAllPermissions()
+      ]);
+      setRoles(Array.isArray(rolesData) ? rolesData : []);
+      setPermissions(Array.isArray(permissionsData) ? permissionsData : []);
     } catch (err) {
       setRoles([]);
+      setPermissions([]);
     }
     setLoading(false);
   };
 
   useEffect(() => {
-    fetchRoles();
+    fetchData();
     // eslint-disable-next-line
   }, []);
 
@@ -55,7 +57,9 @@ export default function AdminUserRoles() {
   // Permission modalı aç
   const handleOpenPermModal = (role) => {
     setPermRole(role);
-    setPermChecked(role.permissions);
+    // Eğer role.permissions nesne ise, code array'e çevir
+    const codes = (role.permissions || []).map(p => typeof p === 'string' ? p : p.code);
+    setPermChecked(codes);
     setOpenPermModal(true);
   };
   const handleClosePermModal = () => setOpenPermModal(false);
@@ -75,7 +79,7 @@ export default function AdminUserRoles() {
         showSnackbar('Rol başarıyla güncellendi', 'success');
       }
       setOpenModal(false);
-      fetchRoles();
+      fetchData();
     } catch (error) {
       console.error('Rol kaydedilirken hata:', error);
       showSnackbar('Rol kaydedilirken hata oluştu', 'error');
@@ -93,7 +97,7 @@ export default function AdminUserRoles() {
       await roleApi.deleteRole(confirmDelete.roleId);
       showSnackbar('Rol başarıyla silindi', 'success');
       setConfirmDelete({ open: false, roleId: null });
-      fetchRoles();
+      fetchData();
     } catch (error) {
       console.error('Rol silinirken hata:', error);
       showSnackbar('Rol silinirken hata oluştu', 'error');
@@ -107,10 +111,10 @@ export default function AdminUserRoles() {
   // Permissionları kaydet
   const handleSavePermissions = async () => {
     try {
-      await roleApi.updateRole(permRole.id, { ...permRole, permissions: permChecked });
+      await roleApi.updateRolePermissions(permRole.id, permChecked);
       showSnackbar('İzinler başarıyla güncellendi', 'success');
       setOpenPermModal(false);
-      fetchRoles();
+      fetchData();
     } catch (error) {
       console.error('İzinler kaydedilirken hata:', error);
       showSnackbar('İzinler kaydedilirken hata oluştu', 'error');
@@ -118,8 +122,18 @@ export default function AdminUserRoles() {
   };
 
   // Permission checkbox değişimi
-  const handlePermChange = (perm) => {
-    setPermChecked(prev => prev.includes(perm) ? prev.filter(p => p !== perm) : [...prev, perm]);
+  const handlePermChange = (permCode) => {
+    setPermChecked(prev => prev.includes(permCode) ? prev.filter(p => p !== permCode) : [...prev, permCode]);
+  };
+
+  // Yetki adını güzel gösterme
+  const getPermissionDisplayName = (permObj) => {
+    // permObj bir nesne ise adı ve kodu birlikte göster
+    if (typeof permObj === 'object' && permObj !== null) {
+      return `${permObj.name} (${permObj.code})`;
+    }
+    // string ise sadece kodu göster
+    return permObj;
   };
 
   return (
@@ -155,7 +169,7 @@ export default function AdminUserRoles() {
                   <TableCell>{role.name}</TableCell>
                   <TableCell>
                     <Button size="small" variant="outlined" startIcon={<ListIcon />} onClick={() => handleOpenPermModal(role)}>
-                      İzinleri Görüntüle
+                      İzinleri Görüntüle ({role.permissions?.length || 0})
                     </Button>
                   </TableCell>
                   <TableCell align="center">
@@ -189,21 +203,22 @@ export default function AdminUserRoles() {
       </Dialog>
 
       {/* Permission Modal */}
-      <Dialog open={openPermModal} onClose={handleClosePermModal} maxWidth="xs" fullWidth>
-        <DialogTitle>İzinler</DialogTitle>
+      <Dialog open={openPermModal} onClose={handleClosePermModal} maxWidth="sm" fullWidth>
+        <DialogTitle>İzinler - {permRole?.name}</DialogTitle>
         <DialogContent>
           <Stack spacing={1} mt={1}>
-            {DUMMY_PERMISSIONS.map(perm => (
-              <FormControlLabel
-                key={perm}
-                control={
-                  <Checkbox
-                    checked={permChecked.includes(perm)}
-                    onChange={() => handlePermChange(perm)}
-                  />
-                }
-                label={perm}
-              />
+            {permissions.map(perm => (
+              <Tooltip key={perm.code} title={`Açıklama: ${perm.description || '-'} | Kategori: ${perm.category || '-'}`} placement="right">
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={permChecked.includes(perm.code)}
+                      onChange={() => handlePermChange(perm.code)}
+                    />
+                  }
+                  label={getPermissionDisplayName(perm)}
+                />
+              </Tooltip>
             ))}
           </Stack>
         </DialogContent>

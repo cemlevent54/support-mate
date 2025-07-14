@@ -16,9 +16,16 @@ import { okResponse } from '../responseHandlers/successfulResponses/ok.response.
 import { noContentResponse } from '../responseHandlers/successfulResponses/nocontent.response.js';
 import logger from '../config/logger.js';
 
+// Role servisinde kullanılacak izinler
+export const ROLE_PERMISSIONS = [
+  { code: 'role:read', name: 'Rolleri Görüntüle', description: 'Rol listesini görüntüleme', category: 'role' },
+  { code: 'role:write', name: 'Rol Ekle/Düzenle', description: 'Rol oluşturma/güncelleme', category: 'role' },
+  { code: 'role:delete', name: 'Rol Sil', description: 'Rol silme', category: 'role' }
+];
+
 class RoleService {
   async getAllRoles(req, res) {
-    logger.info('[RoleService][getAllRoles] İstek alındı', { query: req.query, user: req.user });
+    logger.info('[RoleService][getAllRoles] Request received', { query: req.query, user: req.user });
     try {
       const query = {
         page: parseInt(req.query.page) || 1,
@@ -26,72 +33,72 @@ class RoleService {
         search: req.query.search,
         isActive: req.query.isActive !== undefined ? req.query.isActive === 'true' : undefined
       };
-      logger.debug('[RoleService][getAllRoles] Query oluşturuldu', { query });
+      logger.debug('[RoleService][getAllRoles] Query created', { query });
       const handler = new GetAllRolesQueryHandler();
       const result = await handler.execute(query);
-      logger.debug('[RoleService][getAllRoles] Handler sonucu', { result });
+      logger.debug('[RoleService][getAllRoles] Handler result', { result });
       if (!result.roles || result.roles.length === 0) {
-        logger.warn('[RoleService][getAllRoles] Hiç rol bulunamadı', { query });
-        return notFoundError(res, 'Hiç rol bulunamadı');
+        logger.warn('[RoleService][getAllRoles] No roles found', { query });
+        return notFoundError(res, 'No roles found');
       }
-      logger.info('[RoleService][getAllRoles] Roller başarıyla getirildi', { count: result.roles.length });
-      return okResponse(res, 'Roller başarıyla getirildi', result);
+      logger.info('[RoleService][getAllRoles] Roles fetched successfully', { count: result.roles.length });
+      return okResponse(res, 'Roles fetched successfully', result);
     } catch (error) {
-      logger.error('[RoleService][getAllRoles] Hata oluştu', { error, query: req.query });
-      return internalServerError(res, 'Roller getirilirken bir hata oluştu');
+      logger.error('[RoleService][getAllRoles] Error occurred', { error, query: req.query });
+      return internalServerError(res, 'An error occurred while fetching roles');
     }
   }
 
   async getRoleById(req, res) {
-    logger.info('[RoleService][getRoleById] İstek alındı', { id: req.params.id, user: req.user });
+    logger.info('[RoleService][getRoleById] Request received', { id: req.params.id, user: req.user });
     try {
       const query = { id: req.params.id };
-      logger.debug('[RoleService][getRoleById] Query oluşturuldu', { query });
+      logger.debug('[RoleService][getRoleById] Query created', { query });
       const handler = new GetRoleByIdQueryHandler();
       const result = await handler.execute(query);
-      logger.debug('[RoleService][getRoleById] Handler sonucu', { result });
-      logger.info('[RoleService][getRoleById] Rol başarıyla getirildi', { id: req.params.id });
-      return okResponse(res, 'Rol başarıyla getirildi', result);
+      logger.debug('[RoleService][getRoleById] Handler result', { result });
+      logger.info('[RoleService][getRoleById] Rol fetched successfully', { id: req.params.id });
+      return okResponse(res, 'Rol fetched successfully', result);
     } catch (error) {
-      logger.error('[RoleService][getRoleById] Hata oluştu', { error, id: req.params.id });
+      logger.error('[RoleService][getRoleById] Error occurred', { error, id: req.params.id });
       if (error.message === 'Role not found') {
-        logger.warn('[RoleService][getRoleById] Rol bulunamadı', { id: req.params.id });
-        return notFoundError(res, 'Rol bulunamadı');
+        logger.warn('[RoleService][getRoleById] Rol not found', { id: req.params.id });
+        return notFoundError(res, 'Rol not found');
       }
-      return internalServerError(res, 'Rol getirilirken bir hata oluştu');
+      return internalServerError(res, 'An error occurred while fetching role');
     }
   }
 
   async createRole(req, res) {
-    logger.info('[RoleService][createRole] İstek alındı', { body: req.body, user: req.user });
+    logger.info('[RoleService][createRole] Request received', { body: req.body, user: req.user });
     try {
       const { name, description, permissions } = req.body;
       if (!name) {
-        logger.warn('[RoleService][createRole] Rol adı zorunlu', { body: req.body });
-        return badRequestError(res, 'Rol adı zorunludur');
+        logger.warn('[RoleService][createRole] Rol name is required', { body: req.body });
+        return badRequestError(res, 'Rol name is required');
       }
       const command = {
         name,
         description,
         permissions: permissions || []
       };
-      logger.debug('[RoleService][createRole] Command oluşturuldu', { command });
+      logger.debug('[RoleService][createRole] Command created', { command });
       const handler = new CreateRoleCommandHandler();
       const result = await handler.execute(command);
-      logger.info('[RoleService][createRole] Rol başarıyla oluşturuldu', { role: result });
-      return createdResponse(res, 'Rol başarıyla oluşturuldu', result);
+      logger.info('[RoleService][createRole] Rol created successfully', { role: result });
+      return createdResponse(res, 'Rol created successfully', result);
     } catch (error) {
-      logger.error('[RoleService][createRole] Hata oluştu', { error, body: req.body });
+      logger.error('[RoleService][createRole] Error occurred', { error, body: req.body });
       if (error.code === 11000) {
-        logger.warn('[RoleService][createRole] Aynı isimde rol mevcut', { body: req.body });
-        return conflictError(res, 'Bu rol adı zaten kullanılıyor');
+        logger.warn('[RoleService][createRole] Rol with same name already exists', { body: req.body });
+        return conflictError(res, 'A role with the same name already exists');
       }
-      return internalServerError(res, 'Rol oluşturulurken bir hata oluştu');
+      return internalServerError(res, 'An error occurred while creating role');
     }
   }
 
   async updateRole(req, res) {
-    logger.info('[RoleService][updateRole] İstek alındı', { id: req.params.id, body: req.body, user: req.user });
+    logger.info('[RoleService][updateRole] Request received', { id: req.params.id, body: req.body, user: req.user });
     try {
       const { name, description, permissions, isActive } = req.body;
       const command = {
@@ -101,73 +108,104 @@ class RoleService {
         permissions,
         isActive
       };
-      logger.debug('[RoleService][updateRole] Command oluşturuldu', { command });
+      logger.debug('[RoleService][updateRole] Command created', { command });
       const handler = new UpdateRoleCommandHandler();
       const result = await handler.execute(command);
-      logger.info('[RoleService][updateRole] Rol başarıyla güncellendi', { id: req.params.id, result });
-      return okResponse(res, 'Rol başarıyla güncellendi', result);
+      logger.info('[RoleService][updateRole] Rol updated successfully', { id: req.params.id, result });
+      return okResponse(res, 'Rol updated successfully', result);
     } catch (error) {
-      logger.error('[RoleService][updateRole] Hata oluştu', { error, id: req.params.id, body: req.body });
+      logger.error('[RoleService][updateRole] Error occurred', { error, id: req.params.id, body: req.body });
       if (error.message === 'Role not found') {
-        logger.warn('[RoleService][updateRole] Rol bulunamadı', { id: req.params.id });
-        return notFoundError(res, 'Rol bulunamadı');
+        logger.warn('[RoleService][updateRole] Rol not found', { id: req.params.id });
+        return notFoundError(res, 'Rol not found');
       }
       if (error.code === 11000) {
-        logger.warn('[RoleService][updateRole] Aynı isimde rol mevcut', { id: req.params.id, body: req.body });
-        return conflictError(res, 'Bu rol adı zaten kullanılıyor');
+        logger.warn('[RoleService][updateRole] Rol with same name already exists', { id: req.params.id, body: req.body });
+        return conflictError(res, 'A role with the same name already exists');
       }
-      return internalServerError(res, 'Rol güncellenirken bir hata oluştu');
+      return internalServerError(res, 'An error occurred while updating role');
     }
   }
 
   async deleteRole(req, res) {
-    logger.info('[RoleService][deleteRole] İstek alındı', { id: req.params.id, user: req.user });
+    logger.info('[RoleService][deleteRole] Request received', { id: req.params.id, user: req.user });
     try {
       const command = { id: req.params.id };
-      logger.debug('[RoleService][deleteRole] Command oluşturuldu', { command });
+      logger.debug('[RoleService][deleteRole] Command created', { command });
       const handler = new DeleteRoleCommandHandler();
       const result = await handler.execute(command);
-      logger.info('[RoleService][deleteRole] Rol başarıyla silindi', { id: req.params.id, result });
-      return noContentResponse(res, 'Rol başarıyla silindi');
+      logger.info('[RoleService][deleteRole] Rol deleted successfully', { id: req.params.id, result });
+      return noContentResponse(res, 'Rol deleted successfully');
     } catch (error) {
-      logger.error('[RoleService][deleteRole] Hata oluştu', { error, id: req.params.id });
+      logger.error('[RoleService][deleteRole] Error occurred', { error, id: req.params.id });
       if (error.message === 'Role not found') {
-        logger.warn('[RoleService][deleteRole] Rol bulunamadı', { id: req.params.id });
-        return notFoundError(res, 'Rol bulunamadı');
+        logger.warn('[RoleService][deleteRole] Rol not found', { id: req.params.id });
+        return notFoundError(res, 'Rol not found');
       }
-      return internalServerError(res, 'Rol silinirken bir hata oluştu');
+      return internalServerError(res, 'An error occurred while deleting role');
     }
   }
 
   async getUserRoles(req, res) {
-    logger.info('[RoleService][getUserRoles] İstek alındı', { user: req.user });
+    logger.info('[RoleService][getUserRoles] Request received', { user: req.user });
     try {
       const userId = req.user.id;
       const roleId = req.user.roleId;
       
       if (!roleId) {
-        logger.warn('[RoleService][getUserRoles] Kullanıcının rolü yok', { userId });
-        return notFoundError(res, 'Kullanıcının rolü bulunamadı');
+        logger.warn('[RoleService][getUserRoles] User role not found', { userId });
+        return notFoundError(res, 'User role not found');
       }
 
       const handler = new GetRoleByIdQueryHandler();
       const result = await handler.execute({ id: roleId });
       
-      logger.info('[RoleService][getUserRoles] Kullanıcının rolü başarıyla getirildi', { userId, role: result });
-      return okResponse(res, 'Kullanıcının rolü başarıyla getirildi', { role: result });
+      logger.info('[RoleService][getUserRoles] User role fetched successfully', { userId, role: result });
+      return okResponse(res, 'User role fetched successfully', { role: result });
     } catch (error) {
-      logger.error('[RoleService][getUserRoles] Hata oluştu', { error, user: req.user });
+      logger.error('[RoleService][getUserRoles] Error occurred', { error, user: req.user });
       if (error.message === 'Role not found') {
-        logger.warn('[RoleService][getUserRoles] Rol bulunamadı', { user: req.user });
-        return notFoundError(res, 'Rol bulunamadı');
+        logger.warn('[RoleService][getUserRoles] Rol not found', { user: req.user });
+        return notFoundError(res, 'Rol not found');
       }
-      return internalServerError(res, 'Kullanıcının rolü getirilirken bir hata oluştu');
+      return internalServerError(res, 'An error occurred while fetching user role');
     }
   }
 
   async getRoleByName(name) {
     const handler = new GetRoleByNameQueryHandler();
     return await handler.execute({ name });
+  }
+
+  // Role yetkilerini güncelleme (sadece yetkiler)
+  async updateRolePermissions(req, res) {
+    logger.info('[RoleService][updateRolePermissions] Request received', { id: req.params.id, body: req.body, user: req.user });
+    try {
+      const { permissions } = req.body;
+      
+      if (!permissions || !Array.isArray(permissions)) {
+        logger.warn('[RoleService][updateRolePermissions] Invalid permission list', { body: req.body });
+        return badRequestError(res, 'A valid permission list must be sent');
+      }
+
+      const command = {
+        id: req.params.id,
+        permissions
+      };
+      
+      logger.debug('[RoleService][updateRolePermissions] Command created', { command });
+      const handler = new UpdateRoleCommandHandler();
+      const result = await handler.execute(command);
+      logger.info('[RoleService][updateRolePermissions] Rol permissions updated successfully', { id: req.params.id, result });
+      return okResponse(res, 'Rol permissions updated successfully', result);
+    } catch (error) {
+      logger.error('[RoleService][updateRolePermissions] Error occurred', { error, id: req.params.id, body: req.body });
+      if (error.message === 'Role not found') {
+        logger.warn('[RoleService][updateRolePermissions] Rol not found', { id: req.params.id });
+        return notFoundError(res, 'Rol not found');
+      }
+      return internalServerError(res, 'An error occurred while updating role permissions');
+    }
   }
 }
 

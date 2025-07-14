@@ -6,6 +6,7 @@ import router from './routes/index.routes.js';
 import { healthCheck } from './config/health.js';
 import { corsMiddleware } from './middlewares/cors.middleware.js';
 import { errorHandler } from './middlewares/error.handler.js';
+import { seedPermissions } from './migrations/seedPermissions.js';
 
 dotenv.config();
 
@@ -29,12 +30,13 @@ app.get('/health', healthCheck);
 const PORT = process.env.PORT;
 
 initializeApp()
-  .then(() => {
+  .then(async () => {
+    await seedPermissions();
     app.listen(PORT, () => {
       logger.info(`🚀 Server is listening on port ${PORT}`);
     });
   })
   .catch((error) => {
-    logger.error('Uygulama başlatılamadı:', error);
+    logger.error('Application could not be started:', error);
     process.exit(1);
   }); 

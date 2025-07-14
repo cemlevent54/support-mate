@@ -20,6 +20,7 @@ router.delete('/:id', authMiddleware, requireRole('Admin'), roleController.delet
 // GET /roles/:id
 router.get('/:id', authMiddleware, requireRole('Admin'), roleController.getRoleById);
 
-
+// PATCH /roles/:id/permissions - Sadece yetkileri güncelle
+router.patch('/:id/permissions', authMiddleware, requireRole('Admin'), roleController.updateRolePermissions);
 
 export default router;

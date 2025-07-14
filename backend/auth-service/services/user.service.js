@@ -12,6 +12,13 @@ import {
 } from '../cqrs/index.js';
 import { commandHandler, COMMAND_TYPES, UpdateUserCommandHandler, DeleteUserCommandHandler } from '../cqrs/index.js';
 
+// User servisinde kullanılacak izinler
+export const USER_PERMISSIONS = [
+  { code: 'user:read', name: 'Kullanıcıları Görüntüle', description: 'Kullanıcı listesini görüntüleme', category: 'user' },
+  { code: 'user:write', name: 'Kullanıcı Ekle/Düzenle', description: 'Kullanıcı oluşturma/güncelleme', category: 'user' },
+  { code: 'user:delete', name: 'Kullanıcı Sil', description: 'Kullanıcı silme', category: 'user' }
+];
+
 class UserService {
   constructor() {
     queryHandler.register(QUERY_TYPES.GET_USER_BY_ID, new GetUserByIdQueryHandler());

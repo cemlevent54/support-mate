@@ -7,6 +7,7 @@ class RoleController {
     deleteRole = roleService.deleteRole.bind(roleService);
     getRoleById = roleService.getRoleById.bind(roleService);
     getUserRoles = roleService.getUserRoles.bind(roleService);
+    updateRolePermissions = roleService.updateRolePermissions.bind(roleService);
 }
 
 export default new RoleController();
