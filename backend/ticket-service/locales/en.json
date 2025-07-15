@@ -1,0 +1,23 @@
+{
+    "config": {
+        "health_check": {
+            "memory_info": "Memory info retrieved.",
+            "uptime_info": "Uptime: {seconds} seconds"
+        },
+        "database": {
+            "mongo_connection_success": "MongoDB connection successful. DB: {db}",
+            "mongo_connection_error": "MongoDB connection error: {error}"
+        },
+        "redis": {
+            "redis_connection_success": "Redis connection successful.",
+            "redis_connection_error": "Redis connection error: {error}"
+        },
+        "kafka": {
+            "kafka_connection_success": "Kafka connection successful.",
+            "kafka_connection_error": "Kafka connection error: {error}"
+        }
+    },
+    "api_started": "API started",
+    "api_running": "Ticket Service API is running",
+    "service_starting": "Ticket Service is starting"
+}

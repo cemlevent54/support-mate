@@ -1,0 +1,23 @@
+{
+    "config": {
+        "health_check": {
+            "memory_info": "Bellek bilgisi alındı.",
+            "uptime_info": "Çalışma süresi: {seconds} saniye"
+        },
+        "database": {
+            "mongo_connection_success": "MongoDB bağlantısı başarılı. DB: {db}",
+            "mongo_connection_error": "MongoDB bağlantı hatası: {error}"
+        },
+        "redis": {
+            "redis_connection_success": "Redis bağlantısı başarılı.",
+            "redis_connection_error": "Redis bağlantı hatası: {error}"
+        },
+        "kafka": {
+            "kafka_connection_success": "Kafka bağlantısı başarılı.",
+            "kafka_connection_error": "Kafka bağlantı hatası: {error}"
+        }
+    },
+    "api_started": "API başlatıldı",
+    "api_running": "Ticket Service API çalışıyor",
+    "service_starting": "Ticket Service başlatılıyor"
+}
