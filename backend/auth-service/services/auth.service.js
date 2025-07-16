@@ -149,8 +149,8 @@ class AuthService {
       const payload = {
         id: user.id,
         email: user.email,
-        roleId: user.role?.toString ? user.role.toString() : user.role,
-        roleName: user.roleName
+        roleId: user.role && user.role._id ? user.role._id.toString() : user.role?.toString ? user.role.toString() : user.role,
+        roleName: user.role && user.role.name ? user.role.name : user.roleName
       };
       const accessToken = JWTService.generateAccessToken(payload, JWT_EXPIRES_IN);
       const expiresInMs = typeof JWT_EXPIRES_IN === 'string' && JWT_EXPIRES_IN.endsWith('m')
@@ -256,15 +256,15 @@ class AuthService {
       const accessToken = JWTService.generateAccessToken({
         id: user.id,
         email: user.email,
-        roleId: user.role?.toString ? user.role.toString() : user.role,
-        roleName: user.roleName
+        roleId: user.role && user.role._id ? user.role._id.toString() : user.role?.toString ? user.role.toString() : user.role,
+        roleName: user.role && user.role.name ? user.role.name : user.roleName
       }, JWT_EXPIRES_IN);
 
       const newRefreshToken = JWTService.generateRefreshToken({
         id: user.id,
         email: user.email,
-        roleId: user.role?.toString ? user.role.toString() : user.role,
-        roleName: user.roleName
+        roleId: user.role && user.role._id ? user.role._id.toString() : user.role?.toString ? user.role.toString() : user.role,
+        roleName: user.role && user.role.name ? user.role.name : user.roleName
       });
       logger.info(translation('services.authService.logs.refreshSuccess'), { accessToken, newRefreshToken });
 
@@ -283,8 +283,8 @@ class AuthService {
           user: {
             id: user.id,
             email: user.email,
-            role: user.role?.toString ? user.role.toString() : user.role,
-            roleName: user.roleName
+            role: user.role && user.role._id ? user.role._id.toString() : user.role?.toString ? user.role.toString() : user.role,
+            roleName: user.role && user.role.name ? user.role.name : user.roleName
           }
         }, 'Tokens refreshed successfully', 200);
       } else {
@@ -296,8 +296,8 @@ class AuthService {
           user: {
             id: user.id,
             email: user.email,
-            role: user.role?.toString ? user.role.toString() : user.role,
-            roleName: user.roleName
+            role: user.role && user.role._id ? user.role._id.toString() : user.role?.toString ? user.role.toString() : user.role,
+            roleName: user.role && user.role.name ? user.role.name : user.roleName
           }
         };
       }
@@ -467,8 +467,8 @@ class AuthService {
       const payloadJwt = {
         id: user.id,
         email: user.email,
-        roleId: user.role?.toString ? user.role.toString() : user.role,
-        roleName: user.roleName
+        roleId: user.role && user.role._id ? user.role._id.toString() : user.role?.toString ? user.role.toString() : user.role,
+        roleName: user.role && user.role.name ? user.role.name : user.roleName
       };
       const accessToken = JWTService.generateAccessToken(payloadJwt, JWT_EXPIRES_IN);
       const expiresInMs = typeof JWT_EXPIRES_IN === 'string' && JWT_EXPIRES_IN.endsWith('m')
@@ -540,8 +540,8 @@ class AuthService {
       const payloadJwt = {
         id: user.id,
         email: user.email,
-        roleId: user.role?.toString ? user.role.toString() : user.role,
-        roleName: user.roleName
+        roleId: user.role && user.role._id ? user.role._id.toString() : user.role?.toString ? user.role.toString() : user.role,
+        roleName: user.role && user.role.name ? user.role.name : user.roleName
       };
       const accessToken = JWTService.generateAccessToken(payloadJwt, JWT_EXPIRES_IN);
       const expiresInMs = typeof JWT_EXPIRES_IN === 'string' && JWT_EXPIRES_IN.endsWith('m')

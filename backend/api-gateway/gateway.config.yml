@@ -1,5 +1,5 @@
 http:
-  port: 8080
+  port: 9000
 admin:
   port: 9876
   hostname: localhost
@@ -9,11 +9,11 @@ apiEndpoints:
     paths: '/api/*'
 serviceEndpoints:
   authService:
-    url: 'http://localhost:8080'
-  userService:
-    url: 'http://localhost:8086'
+    url: 'http://localhost:8080'  
   notificationService:
     url: 'http://localhost:8082'
+  ticketService:
+    url: 'http://localhost:8086'
 pipelines:
   basic:
     apiEndpoints:
@@ -24,7 +24,7 @@ pipelines:
               serviceEndpoint: authService
               changeOrigin: true
           - action:
-              serviceEndpoint: userService
+              serviceEndpoint: ticketService
               changeOrigin: true
           - action:
               serviceEndpoint: notificationService

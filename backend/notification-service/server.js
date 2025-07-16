@@ -58,11 +58,26 @@ async function handleUserVerified(data) {
   }
 }
 
+async function handleTicketCreated(data) {
+  logger.info('Ticket created event received (notification-service):', { email: data.email });
+  try {
+    await emailService.send({
+      to: data.email,
+      subject: 'Ticket Created',
+      text: `Your ticket has been created.`,
+      html: data.html
+    });
+    logger.info('Ticket created email sent', { email: data.email });
+  } catch (err) {
+    logger.error('Ticket created email could not be sent', { email: data.email, error: err });
+  }
+}
+
 app.get('/health', healthCheck);
 
 initializeApp()
   .then(() => {
-    startKafkaConsumer(handleUserRegistered, handlePasswordReset, handleUserVerified);
+    startKafkaConsumer(handleUserRegistered, handlePasswordReset, handleUserVerified, handleTicketCreated);
     app.listen(PORT, () => {
       logger.info(`Notification Service listening on port ${PORT}`);
     });

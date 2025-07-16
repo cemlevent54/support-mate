@@ -7,13 +7,13 @@ const services = [
     url: getServiceUrl('authService')
   },
   {
-    name: 'userService',
-    url: getServiceUrl('userService')
-  },
-  {
     name: 'notificationService',
     url: getServiceUrl('notificationService')
-  }
+  },
+  {
+    name: 'ticketService',
+    url: getServiceUrl('ticketService')
+  },
 ];
 
 async function checkServiceHealth(service) {

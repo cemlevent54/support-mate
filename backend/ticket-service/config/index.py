@@ -5,10 +5,12 @@ from .health_check import health_check
 from .database import get_mongo_uri
 from .redis import get_redis_url
 from .kafka import get_kafka_brokers
+from .socketio import socket_manager
 from fastapi import APIRouter
 import pymongo
 import redis
 from kafka import KafkaProducer
+import logging
 
 logger = get_logger()
 
@@ -17,6 +19,9 @@ router = APIRouter()
 @router.get("/health")
 def health():
     return health_check()
+
+# SocketIO log
+logging.getLogger("socketio").info("Socket.IO config imported in index.py")
 
 # Bağlantı testleri
 

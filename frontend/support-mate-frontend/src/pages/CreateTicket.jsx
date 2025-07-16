@@ -13,6 +13,7 @@ import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import ChatDialog from './ChatDialog';
+import { createTicket } from '../api/ticketApi';
 
 // Örnek kategori verisi
 const categories = [
@@ -118,7 +119,7 @@ const CreateTicket = () => {
     setSelectedPreview(null);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
@@ -126,20 +127,26 @@ const CreateTicket = () => {
       setError(t('pages.createTicket.validationError'));
       return;
     }
-    // Kategori label'ı bul
-    const categoryLabel = categories.find(c => c.value === form.category)?.labelKey ? t(categories.find(c => c.value === form.category).labelKey) : form.category;
-    // Dosya url'leri
-    const files = (previews || []).map(f => ({ name: f.name, url: f.url, type: f.type }));
-    setTicketData({
-      title: form.title,
-      description: form.description,
-      category: form.category,
-      categoryLabel,
-      files
-    });
-    setChatOpen(true);
-    setSuccess(t('pages.createTicket.success'));
-    setForm({ title: "", description: "", category: "", files: [] });
+    try {
+      // Dosya yükleme desteği için files alanı
+      const ticketPayload = {
+        title: form.title,
+        description: form.description,
+        category: form.category,
+        files: form.files || []
+      };
+      const response = await createTicket(ticketPayload);
+      if (response.success) {
+        setTicketData(response.data);
+        setChatOpen(true);
+        setSuccess(t('pages.createTicket.success'));
+        setForm({ title: "", description: "", category: "", files: [] });
+      } else {
+        setError(response.message || t('pages.createTicket.error'));
+      }
+    } catch (err) {
+      setError(err?.response?.data?.message || t('pages.createTicket.error'));
+    }
   };
 
   return (

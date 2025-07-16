@@ -1,3 +1,7 @@
 backend/auth-service/logs/
 backend/auth-service/node_modules/
 socket-io-chat-app-frontend/
+.pdf
+.png
+.jpeg
+uploads/
