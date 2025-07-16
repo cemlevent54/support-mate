@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import { MdSend } from "react-icons/md";
 import "./ChatDialog.css";
+import { useTranslation } from 'react-i18next';
 
 const ChatDialog = ({ ticket, onBack }) => {
+  const { t } = useTranslation();
   // ticket: { title, description, category, files: [{name, url, type}], ... }
   const [detailOpen, setDetailOpen] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -78,14 +80,14 @@ const ChatDialog = ({ ticket, onBack }) => {
                     <div className="chat-title">{msg.title}</div>
                     <div className="chat-desc">{msg.description}</div>
                     <button className="chat-detail-btn" onClick={() => setDetailOpen(v => !v)}>
-                      {detailOpen ? 'Detayı Gizle' : 'Detay'}
+                      {detailOpen ? t('chatDialog.hideDetail') : t('chatDialog.detail')}
                     </button>
                     {detailOpen && (
                       <div className="chat-detail">
-                        <div><b>Kategori:</b> {msg.category}</div>
+                        <div><b>{t('chatDialog.category')}:</b> {msg.category}</div>
                         {msg.files && msg.files.length > 0 && (
                           <div className="chat-files">
-                            <b>Yüklenen Dosyalar:</b>
+                            <b>{t('chatDialog.uploadedFiles')}:</b>
                             <ul>
                               {msg.files.map((file, fidx) => (
                                 <li key={fidx}>
@@ -131,7 +133,7 @@ const ChatDialog = ({ ticket, onBack }) => {
           className="chat-input"
           value={input}
           onChange={e => setInput(e.target.value)}
-          placeholder="Mesaj yazın..."
+          placeholder={t('chatDialog.placeholder')}
           autoComplete="off"
         />
         <button className="chat-send-btn" type="submit"><MdSend size={22} /></button>
@@ -145,7 +147,7 @@ const ChatDialog = ({ ticket, onBack }) => {
               <iframe src={previewFile.url} title={previewFile.name} width="100%" height="600px" style={{ border: 'none' }} />
             ) : null}
             <div className="chat-preview-name">{previewFile.name}</div>
-            <button className="chat-preview-close" onClick={() => setPreviewOpen(false)}>Kapat</button>
+            <button className="chat-preview-close" onClick={() => setPreviewOpen(false)}>{t('chatDialog.close')}</button>
           </div>
         </div>
       )}

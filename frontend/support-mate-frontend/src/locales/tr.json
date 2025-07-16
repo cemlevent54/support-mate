@@ -222,8 +222,11 @@
   "supportDashboard": {
     "sidebar": {
       "requests": "Destek Talepleri",
+      "chats": "Sohbetler",
       "profile": "Profil"
     },
+    "chatsTitle": "Sohbetler",
+
     "requestsTitle": "Destek Talepleri",
     "requestsDesc": "Destek talepleri burada görünecek.",
     "profileTitle": "Profil",
@@ -239,5 +242,18 @@
     "tasksDesc": "Çalışana atanmış görevler burada görünecek.",
     "profileTitle": "Profil",
     "profileDesc": "Profil bilgileri burada görünecek."
+  },
+  "chatArea": {
+    "placeholder": "Mesaj yazın...",
+    "createTask": "Görev Oluştur"
+  },
+  "chatDialog": {
+    "detail": "Detay",
+    "hideDetail": "Detayı Gizle",
+    "category": "Kategori",
+    "uploadedFiles": "Yüklenen Dosyalar",
+    "close": "Kapat",
+    "placeholder": "Mesaj yazın...",
+    "send": "Gönder"
   }
 } 
