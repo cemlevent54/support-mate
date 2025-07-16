@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { logout as apiLogout } from '../api/authApi';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
+import { useNavigate } from 'react-router-dom';
 
 export default function Navbar({
   title = '',
@@ -32,6 +33,7 @@ export default function Navbar({
   const { language, onLanguageChange } = useLanguage();
   const { t } = useTranslation();
   const [snackbar, setSnackbar] = React.useState({ open: false, message: '', severity: 'info' });
+  const navigate = useNavigate();
 
   const handleSnackbarClose = () => setSnackbar({ ...snackbar, open: false });
   const handleLogout = async () => {
@@ -50,8 +52,8 @@ export default function Navbar({
   if (userRole === 'user' && isAuth) {
     rightContent = (
       <>
-        <Button color="inherit" sx={{ ml: 2, '&:hover': { background: '#1565c0' }, textTransform: 'none' }}>{t('components.navbar.requests')}</Button>
-        <Button color="inherit" sx={{ ml: 2, '&:hover': { background: '#1565c0' }, textTransform: 'none' }}>{t('components.navbar.createRequest')}</Button>
+        <Button color="inherit" sx={{ ml: 2, '&:hover': { background: '#1565c0' }, textTransform: 'none' }} onClick={() => navigate('/my-requests')}>{t('components.navbar.requests')}</Button>
+        <Button color="inherit" sx={{ ml: 2, '&:hover': { background: '#1565c0' }, textTransform: 'none' }} onClick={() => navigate('/create-ticket')}>{t('components.navbar.createRequest')}</Button>
         <Button color="inherit" sx={{ ml: 2, '&:hover': { background: '#1565c0' }, textTransform: 'none' }}>{t('components.navbar.liveChat')}</Button>
         <Button color="inherit" sx={{ ml: 2, '&:hover': { background: '#1565c0' }, textTransform: 'none' }} onClick={onMyAccount}>{t('components.navbar.myAccount')}</Button>
         <Button color="inherit" sx={{ ml: 1, '&:hover': { background: '#1565c0' }, textTransform: 'none' }} onClick={handleLogout}>{t('components.navbar.logout')}</Button>

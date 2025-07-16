@@ -48,7 +48,7 @@ function AppContent() {
       try {
         const decoded = JSON.parse(atob(token.split('.')[1]));
         const roleName = decoded.roleName;
-        setUserRole(roleName || 'user');
+        setUserRole(roleName ? roleName.toLowerCase() : 'user');
         // Eğer Customer Supporter ise support paneline yönlendir
         if (roleName === 'Customer Supporter' && location.pathname !== '/support') {
           navigate('/support');
