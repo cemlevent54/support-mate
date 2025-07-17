@@ -290,7 +290,9 @@
         "resetPasswordError": "Şifre sıfırlama sırasında hata oluştu",
         "changePasswordRequest": "Şifre değiştirme isteği alındı",
         "changePasswordSuccess": "Şifre başarıyla değiştirildi",
-        "changePasswordError": "Şifre değiştirme sırasında hata oluştu"
+        "changePasswordError": "Şifre değiştirme sırasında hata oluştu",
+        "customerSupporterOnline": "Customer Supporter online kaydedildi",
+        "customerSupporterOnlineError": "Customer Supporter online kaydedilemedi"
       }
     },
     "permissionService": {

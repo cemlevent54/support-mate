@@ -8,9 +8,9 @@ class TicketController:
     def __init__(self):
         self.ticket_service = TicketService()
 
-    def create_ticket_endpoint(self, ticket, user):
+    def create_ticket_endpoint(self, ticket, user, token=None):
         logger.info(f"[CONTROLLER] create_ticket called. user={user.get('id')}, title={ticket.get('title')}")
-        result = self.ticket_service.create_ticket(ticket, user)
+        result = self.ticket_service.create_ticket(ticket, user, token)
 
         ticket_id = result.get('data').get('id') if isinstance(result.get('data'), dict) else None
         logger.info(f"[CONTROLLER] create_ticket result: {result.get('success')}, ticket_id={ticket_id}")

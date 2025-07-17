@@ -5,7 +5,7 @@ import { io } from "socket.io-client";
 const SOCKET_URL = "http://localhost:9000"; // veya sunucu adresiniz
 
 const socket = io(SOCKET_URL, {
-  path: "/ws", // ticket-service'de mount edilen path
+  path: "/ws/socket.io/", // ticket-service'de mount edilen path + socket.io default path
   transports: ["websocket"], // opsiyonel, fallback istemiyorsanız
   withCredentials: true,     // gerekiyorsa
 });

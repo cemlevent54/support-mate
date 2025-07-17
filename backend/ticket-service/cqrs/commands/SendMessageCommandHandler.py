@@ -18,7 +18,8 @@ class SendMessageCommandHandler:
                 text=message_data.get("text"),
                 attachments=message_data.get("attachments", []),
                 timestamp=datetime.utcnow(),
-                isDeleted=False
+                isDeleted=False,
+                is_delivered=message_data.get("is_delivered", False)
             )
             saved_message = self.message_repository.create(message)
             return {"success": True, "data": saved_message, "message": "Message sent successfully."}

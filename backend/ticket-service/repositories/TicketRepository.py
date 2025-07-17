@@ -4,6 +4,7 @@ from typing import List, Optional
 from pymongo import MongoClient
 from config.database import get_mongo_uri
 from datetime import datetime
+from bson import ObjectId
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +56,7 @@ class TicketRepository:
 
     def update(self, ticket_id: str, updated: dict) -> Optional[Ticket]:
         try:
-            result = self.collection.update_one({"_id": ticket_id}, {"$set": updated})
+            result = self.collection.update_one({"_id": ObjectId(ticket_id)}, {"$set": updated})
             logger.info(f"[REPO] TicketRepository.update: ticket_id={ticket_id}, modified={result.modified_count}")
             if result.modified_count:
                 return self.get_by_id(ticket_id)
@@ -66,7 +67,7 @@ class TicketRepository:
 
     def soft_delete(self, ticket_id: str) -> bool:
         try:
-            result = self.collection.update_one({"_id": ticket_id}, {"$set": {"isDeleted": True, "deletedAt": datetime.utcnow()}})
+            result = self.collection.update_one({"_id": ObjectId(ticket_id)}, {"$set": {"isDeleted": True, "deletedAt": datetime.utcnow()}})
             logger.info(f"[REPO] TicketRepository.soft_delete: ticket_id={ticket_id}, modified={result.modified_count}")
             return result.modified_count > 0
         except Exception as e:

@@ -4,13 +4,16 @@ from .env import get_default_language
 from .health_check import health_check
 from .database import get_mongo_uri
 from .redis import get_redis_url
-from .kafka import get_kafka_brokers
+from .kafka import get_kafka_brokers, get_kafka_producer, get_kafka_consumer
 from .socketio import socket_manager
+from .cors import CORS_CONFIG
 from fastapi import APIRouter
 import pymongo
 import redis
 from kafka import KafkaProducer
 import logging
+from kafka_files.kafkaConsumer import start_agent_online_consumer
+import threading
 
 logger = get_logger()
 
@@ -35,7 +38,8 @@ def test_mongo():
 
 def test_redis():
     try:
-        r = redis.from_url(get_redis_url())
+        #r = redis.from_url(get_redis_url())
+        r = redis.from_url('redis://127.0.0.1:6379')
         r.ping()
         logger.success("Redis bağlantısı başarılı.")
     except Exception as e:
@@ -43,7 +47,7 @@ def test_redis():
 
 def test_kafka():
     try:
-        producer = KafkaProducer(bootstrap_servers=get_kafka_brokers(), request_timeout_ms=2000)
+        producer = get_kafka_producer()
         producer.close()
         logger.success("Kafka bağlantısı başarılı.")
     except Exception as e:
@@ -57,3 +61,6 @@ def test_all_connections():
     test_kafka()
 
 test_all_connections()
+
+# Kafka consumer'ı arka planda başlat
+threading.Thread(target=start_agent_online_consumer, daemon=True).start()

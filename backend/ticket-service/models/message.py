@@ -10,5 +10,6 @@ class Message(BaseModel):
     text: str  # AES encrypted
     attachments: List[str] = []
     timestamp: Optional[datetime] = None
-    isDeleted: bool = False
+    isDeleted: bool = False 
+    is_delivered: bool = False 
     deletedAt: Optional[datetime] = None 

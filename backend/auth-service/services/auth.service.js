@@ -18,7 +18,7 @@ import {
 } from '../cqrs/index.js';
 import userRepository from '../repositories/user.repository.js';
 import roleService from './role.service.js';
-import { sendUserRegisteredEvent, sendPasswordResetEvent, sendUserVerifiedEvent } from '../kafka/kafkaProducer.js';
+import { sendUserRegisteredEvent, sendPasswordResetEvent, sendUserVerifiedEvent, sendAgentOnlineEvent } from '../kafka/kafkaProducer.js';
 import translation from '../config/translation.js';
 import { OAuth2Client } from 'google-auth-library';
 import crypto from 'crypto';
@@ -26,6 +26,7 @@ import { UserModel } from '../models/user.model.js';
 import jwt from 'jsonwebtoken';
 import path from 'path';
 import fs from 'fs';
+import cacheService from '../config/cache.js';
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
 const REFRESH_TOKEN_EXPIRES = process.env.JWT_REFRESH_EXPIRES_IN;
@@ -162,6 +163,21 @@ class AuthService {
       const refreshToken = JWTService.generateRefreshToken(payload);
       // Aktif oturumu kaydet
       await JWTService.addActiveSession(user.id, accessToken, expireAt);
+      // CUSTOMER SUPPORTER ONLINE KAYDI
+      logger.info(`[ONLINE] User roleName: ${user.roleName}`);
+      if (user.roleName === 'Customer Supporter') {
+        try {
+          logger.info(`[ONLINE] Customer Supporter login detected. userId=${user.id}, email=${user.email}`);
+          await cacheService.client.rPush('online_users_queue', user.id);
+          logger.info(`[ONLINE] Redis rPush('online_users_queue', ${user.id}) sonucu:`);
+          const currentOnline = await cacheService.client.lRange('online_users_queue', 0, -1);
+          logger.info(`[ONLINE] Şu anda online Customer Supporter userId'leri (queue):`, currentOnline);
+          // KAFKA EVENT: agent_online
+          await sendAgentOnlineEvent(user.id);
+        } catch (err) {
+          logger.error(`[ONLINE] Customer Supporter online kaydedilemedi! userId=${user.id}, email=${user.email}, error=`, err);
+        }
+      }
       // Eğer response objesi varsa (HTTP endpoint)
       if (res) {
         res.cookie('refreshToken', refreshToken, {
@@ -198,6 +214,17 @@ class AuthService {
       JWTService.addToBlacklist(userId);
       if (res) {
         res.clearCookie('refreshToken');
+      }
+      // CUSTOMER SUPPORTER ONLINE KAYDI (Logout)
+      logger.info(`[ONLINE] (Logout) User roleName: ${req.user?.roleName}`);
+      if (req.user?.roleName === 'Customer Supporter') {
+        try {
+          logger.info(`[ONLINE] (Logout) Customer Supporter logout detected. userId=${req.user.id}`);
+          await cacheService.client.lRem('online_users_queue', 0, req.user.id);
+          logger.info(`[ONLINE] (Logout) Redis lRem('online_users_queue', 0, ${req.user.id}) sonucu:`);
+        } catch (err) {
+          logger.error(`[ONLINE] (Logout) Customer Supporter online kaydedilemedi! userId=${req.user.id}, error=`, err);
+        }
       }
       logger.info(translation('services.authService.logs.logoutSuccess'), { userId });
       apiSuccess(res, null, 'Logged out successfully', 200);
@@ -479,6 +506,22 @@ class AuthService {
       const expireAt = new Date(Date.now() + expiresInMs);
       // Aktif oturumu kaydet
       await JWTService.addActiveSession(user.id, accessToken, expireAt);
+      // CUSTOMER SUPPORTER ONLINE KAYDI (Google Login)
+      logger.info(`[ONLINE] (Google) User roleName: ${user.roleName}`);
+      if (user.roleName === 'Customer Supporter') {
+        try {
+          logger.info(`[ONLINE] (Google) Customer Supporter login detected. userId=${user.id}, email=${user.email}`);
+          // Kuyruğun sonuna ekle (FIFO)
+          await cacheService.client.rPush('online_users_queue', user.id);
+          logger.info(`[ONLINE] (Google) Redis rPush('online_users_queue', ${user.id}) sonucu:`);
+          const currentOnline = await cacheService.client.lRange('online_users_queue', 0, -1);
+          logger.info(`[ONLINE] (Google) Şu anda online Customer Supporter userId'leri (queue):`, currentOnline);
+          // KAFKA EVENT: agent_online
+          await sendAgentOnlineEvent(user.id);
+        } catch (err) {
+          logger.error(`[ONLINE] (Google) Customer Supporter online kaydedilemedi! userId=${user.id}, email=${user.email}, error=`, err);
+        }
+      }
       logger.info(translation('services.authService.logs.loginSuccess'), { provider: 'google', user, accessToken, expireAt });
       // Yanıt
       apiSuccess(res, { user, accessToken, expireAt }, translation('services.authService.logs.loginSuccess'), 200);

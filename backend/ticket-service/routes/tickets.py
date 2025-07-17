@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, UploadFile, File, Form
+from fastapi import APIRouter, Depends, status, UploadFile, File, Form, Request
 from typing import List
 from models.ticket import Ticket, APIResponse
 from middlewares.auth import get_current_user
@@ -17,7 +17,8 @@ async def create_ticket_route(
     description: str = Form(...),
     category: str = Form(...),
     files: List[UploadFile] = File([]),
-    user=Depends(get_current_user)
+    user=Depends(get_current_user),
+    request: Request = None
 ):
     attachments = []
     for file in files:
@@ -36,7 +37,12 @@ async def create_ticket_route(
         "attachments": attachments,
         "customerId": user["id"]
     }
-    return ticket_controller.create_ticket_endpoint(ticket_data, user)
+    token = None
+    if request:
+        auth_header = request.headers.get("authorization")
+        if auth_header and auth_header.lower().startswith("bearer "):
+            token = auth_header[7:]
+    return ticket_controller.create_ticket_endpoint(ticket_data, user, token)
 
 @router.get("/", response_model=APIResponse)
 def list_tickets(user=Depends(get_current_user)):

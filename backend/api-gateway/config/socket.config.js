@@ -4,13 +4,13 @@ const { io: Client } = require('socket.io-client');
 function setupSocketProxy(httpServer) {
   // Socket.io server (frontend için)
   const io = new Server(httpServer, {
-    path: '/ws',
+    path: '/ws/socket.io/',
     cors: { origin: '*' }
   });
 
   // Ticket-service socket.io client (backend için)
   const ticketServiceSocket = Client('ws://localhost:8086', {
-    path: '/ws',
+    path: '/ws/socket.io/',
     transports: ['websocket']
   });
 

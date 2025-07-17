@@ -5,11 +5,13 @@ import { requireRole } from '../middlewares/role.middleware.js';
 
 const router = Router();
 
+// GET /users/:id/internal
+
 // GET /users/profile
 router.get('/profile', authMiddleware, userController.getAuthenticatedUser);
 
 // GET /users/:id
-router.get('/:id', authMiddleware, requireRole('Admin'), userController.getUserById);
+router.get('/:id', authMiddleware, userController.getUserById);
 router.get('/', authMiddleware, requireRole('Admin'), userController.getAllUsers);
 router.get('/role/:role', authMiddleware, requireRole('Admin'), userController.getUsersByRole);
 

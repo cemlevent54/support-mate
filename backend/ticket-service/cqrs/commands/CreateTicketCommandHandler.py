@@ -23,7 +23,8 @@ class CreateTicketCommandHandler:
                 category=ticket_data.get("category"),
                 status="OPEN",
                 createdAt=datetime.utcnow(),
-                isDeleted=False
+                isDeleted=False,
+                assignedAgentId=ticket_data.get("assignedAgentId")
             )
             logger.info(f"[COMMAND] Ticket object created: {ticket_id}")
             saved_ticket = self.ticket_repository.create(ticket)

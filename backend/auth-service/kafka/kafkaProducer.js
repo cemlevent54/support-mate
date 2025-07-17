@@ -85,3 +85,22 @@ export async function sendUserVerifiedEvent({ email, firstName, language = 'tr' 
     console.error('Kafka user-verified event could not be sent:', error);
   }
 }
+
+export async function sendAgentOnlineEvent(agentId) {
+  try {
+    const event = {
+      event: 'agent_online',
+      agentId: agentId,
+      timestamp: new Date().toISOString()
+    };
+    await kafkaService.connectProducer();
+    await kafkaService.producer.send({
+      topic: 'agent-events',
+      messages: [{ value: JSON.stringify(event) }]
+    });
+    logger.info(`[KAFKA] agent_online event sent for agentId=${agentId}`);
+    await kafkaService.disconnectProducer();
+  } catch (err) {
+    logger.error(`[KAFKA] Failed to send agent_online event:`, err);
+  }
+}
