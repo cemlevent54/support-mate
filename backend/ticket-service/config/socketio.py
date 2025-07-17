@@ -60,77 +60,98 @@ class SocketManager:
     def register_events(self):
         @self.sio.event
         async def connect(sid, environ):
-            logger.info(f"Client connected: {sid}")
+            logger.info(f"[SOCKET][CONNECT] Client connected: {sid}. Total connections: {len(self.sio.manager.rooms['/']) if hasattr(self.sio, 'manager') and '/' in self.sio.manager.rooms else 'N/A'}")
 
         @self.sio.event
         async def disconnect(sid):
             user_id = getattr(self.sio, 'user_sid_map', {}).get(sid)
             if user_id:
                 self.set_user_offline(user_id)
-                logger.info(f"User {user_id} is now offline (sid: {sid})")
+                logger.info(f"[SOCKET][DISCONNECT] User {user_id} is now offline (sid: {sid})")
                 await self.sio.emit("user_offline", {"userId": user_id}, skip_sid=sid)
-            logger.info(f"Client disconnected: {sid}")
+            logger.info(f"[SOCKET][DISCONNECT] Client disconnected: {sid}. Total connections: {len(self.sio.manager.rooms['/']) if hasattr(self.sio, 'manager') and '/' in self.sio.manager.rooms else 'N/A'}")
 
         @self.sio.event
         async def join_room(sid, data):
-            chat_id = data.get("chatId")
-            user = data.get("user")
-            user_id = user.get("id") if isinstance(user, dict) else user
-            await self.sio.enter_room(sid, chat_id)
-            logger.info(f"User {user_id} joined room {chat_id} (sid: {sid})")
-            self.set_user_online(user_id)
-            if not hasattr(self.sio, 'user_sid_map'):
-                self.sio.user_sid_map = {}
-            self.sio.user_sid_map[sid] = user_id
-            await self.sio.emit("user_online", {"user": user, "chatId": chat_id}, room=chat_id, skip_sid=sid)
-            await self.sio.emit("user_joined", {"user": user, "chatId": chat_id}, room=chat_id, skip_sid=sid)
+            try:
+                chat_id = data.get("chatId")
+                user = data.get("user")
+                user_id = user.get("id") if isinstance(user, dict) else user
+                await self.sio.enter_room(sid, chat_id)
+                logger.info(f"[SOCKET][JOIN_ROOM] User {user_id} joined room {chat_id} (sid: {sid}) | Payload: {data} | Room members: {self.sio.manager.rooms['/'].get(chat_id, set()) if hasattr(self.sio, 'manager') and '/' in self.sio.manager.rooms and chat_id in self.sio.manager.rooms['/'] else 'N/A'}")
+                self.set_user_online(user_id)
+                if not hasattr(self.sio, 'user_sid_map'):
+                    self.sio.user_sid_map = {}
+                self.sio.user_sid_map[sid] = user_id
+                await self.sio.emit("user_online", {"user": user, "chatId": chat_id}, room=chat_id, skip_sid=sid)
+                await self.sio.emit("user_joined", {"user": user, "chatId": chat_id}, room=chat_id, skip_sid=sid)
+            except Exception as e:
+                logger.error(f"[SOCKET][JOIN_ROOM][ERROR] {e} | Payload: {data}")
 
         @self.sio.event
         async def leave_room(sid, data):
-            chat_id = data.get("chatId")
-            user = data.get("user")
-            user_id = user.get("id") if isinstance(user, dict) else user
-            await self.sio.leave_room(sid, chat_id)
-            logger.info(f"User {user_id} left room {chat_id} (sid: {sid})")
-            await self.sio.emit("user_left", {"user": user, "chatId": chat_id}, room=chat_id, skip_sid=sid)
+            try:
+                chat_id = data.get("chatId")
+                user = data.get("user")
+                user_id = user.get("id") if isinstance(user, dict) else user
+                await self.sio.leave_room(sid, chat_id)
+                logger.info(f"[SOCKET][LEAVE_ROOM] User {user_id} left room {chat_id} (sid: {sid}) | Payload: {data} | Room members after leave: {self.sio.manager.rooms['/'].get(chat_id, set()) if hasattr(self.sio, 'manager') and '/' in self.sio.manager.rooms and chat_id in self.sio.manager.rooms['/'] else 'N/A'}")
+                await self.sio.emit("user_left", {"user": user, "chatId": chat_id}, room=chat_id, skip_sid=sid)
+            except Exception as e:
+                logger.error(f"[SOCKET][LEAVE_ROOM][ERROR] {e} | Payload: {data}")
 
         @self.sio.event
         async def send_message(sid, data):
-            chat_id = data.get("chatId")
-            user = data.get("user")
-            message = data.get("message")
-            logger.info(f"Message from {user} in chat {chat_id}: {message}")
-            await self.sio.emit("new_message", {"user": user, "message": message, "chatId": chat_id}, room=chat_id, skip_sid=None)
+            try:
+                chat_id = data.get("chatId")
+                user = data.get("user")
+                message = data.get("message")
+                logger.info(f"[SOCKET][SEND_MESSAGE] Message from {user} in chat {chat_id}: {message} | Payload: {data}")
+                await self.sio.emit("new_message", {"user": user, "message": message, "chatId": chat_id}, room=chat_id, skip_sid=None)
+            except Exception as e:
+                logger.error(f"[SOCKET][SEND_MESSAGE][ERROR] {e} | Payload: {data}")
 
         @self.sio.event
         async def typing(sid, data):
-            chat_id = data.get("chatId")
-            user = data.get("user")
-            logger.info(f"{user} is typing in chat {chat_id}")
-            await self.sio.emit("typing", {"user": user, "chatId": chat_id}, room=chat_id, skip_sid=sid)
+            try:
+                chat_id = data.get("chatId")
+                user = data.get("user")
+                logger.info(f"[SOCKET][TYPING] {user} is typing in chat {chat_id} | Payload: {data}")
+                await self.sio.emit("typing", {"user": user, "chatId": chat_id}, room=chat_id, skip_sid=sid)
+            except Exception as e:
+                logger.error(f"[SOCKET][TYPING][ERROR] {e} | Payload: {data}")
 
         @self.sio.event
         async def stop_typing(sid, data):
-            chat_id = data.get("chatId")
-            user = data.get("user")
-            logger.info(f"{user} stopped typing in chat {chat_id}")
-            await self.sio.emit("stop_typing", {"user": user, "chatId": chat_id}, room=chat_id, skip_sid=sid)
+            try:
+                chat_id = data.get("chatId")
+                user = data.get("user")
+                logger.info(f"[SOCKET][STOP_TYPING] {user} stopped typing in chat {chat_id} | Payload: {data}")
+                await self.sio.emit("stop_typing", {"user": user, "chatId": chat_id}, room=chat_id, skip_sid=sid)
+            except Exception as e:
+                logger.error(f"[SOCKET][STOP_TYPING][ERROR] {e} | Payload: {data}")
 
         @self.sio.event
         async def delivered(sid, data):
-            chat_id = data.get("chatId")
-            message_id = data.get("messageId")
-            user = data.get("user")
-            logger.info(f"Message {message_id} delivered to {user} in chat {chat_id}")
-            await self.sio.emit("delivered", {"messageId": message_id, "user": user, "chatId": chat_id}, room=chat_id, skip_sid=sid)
+            try:
+                chat_id = data.get("chatId")
+                message_id = data.get("messageId")
+                user = data.get("user")
+                logger.info(f"[SOCKET][DELIVERED] Message {message_id} delivered to {user} in chat {chat_id} | Payload: {data}")
+                await self.sio.emit("delivered", {"messageId": message_id, "user": user, "chatId": chat_id}, room=chat_id, skip_sid=sid)
+            except Exception as e:
+                logger.error(f"[SOCKET][DELIVERED][ERROR] {e} | Payload: {data}")
 
         @self.sio.event
         async def seen(sid, data):
-            chat_id = data.get("chatId")
-            message_id = data.get("messageId")
-            user = data.get("user")
-            logger.info(f"Message {message_id} seen by {user} in chat {chat_id}")
-            await self.sio.emit("seen", {"messageId": message_id, "user": user, "chatId": chat_id}, room=chat_id, skip_sid=sid)
+            try:
+                chat_id = data.get("chatId")
+                message_id = data.get("messageId")
+                user = data.get("user")
+                logger.info(f"[SOCKET][SEEN] Message {message_id} seen by {user} in chat {chat_id} | Payload: {data}")
+                await self.sio.emit("seen", {"messageId": message_id, "user": user, "chatId": chat_id}, room=chat_id, skip_sid=sid)
+            except Exception as e:
+                logger.error(f"[SOCKET][SEEN][ERROR] {e} | Payload: {data}")
 
 # SocketIO ve FastAPI birlikte root ASGI app olarak kullanılacak
 socket_manager = SocketManager()

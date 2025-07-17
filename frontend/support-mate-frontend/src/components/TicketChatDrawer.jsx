@@ -7,13 +7,31 @@ import Divider from '@mui/material/Divider';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import { listMessages, sendMessage, listMessagesByTicketId } from '../api/messagesApi';
+import socket from '../socket/socket';
+
+// JWT çözümleyici yardımcı fonksiyon
+function decodeJWT(token) {
+  if (!token) return null;
+  try {
+    const payload = token.split('.')[1];
+    const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+    return decoded;
+  } catch (e) {
+    return null;
+  }
+}
 
 const TicketChatDrawer = ({ ticket, onClose, useTicketIdForMessages }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [someoneTyping, setSomeoneTyping] = useState(false);
   const messagesEndRef = useRef(null);
+  const token = localStorage.getItem('jwt');
+  const decoded = decodeJWT(token);
+  const myUserId = decoded && (decoded.userId || decoded.id || decoded.sub) ? (decoded.userId || decoded.id || decoded.sub) : 'unknown';
+  const myUserName = localStorage.getItem('userName') || 'Kullanıcı';
 
   // Chat mesajlarını çek
   useEffect(() => {
@@ -52,6 +70,62 @@ const TicketChatDrawer = ({ ticket, onClose, useTicketIdForMessages }) => {
     }
   }, [messages]);
 
+  // Odaya katıl/ayrıl (join_room/leave_room)
+  useEffect(() => {
+    if (!ticket || !ticket.chatId) return;
+    const user = { id: myUserId, name: myUserName };
+    console.log('[SOCKET][JOIN_ROOM] Odaya katılıyor:', { chatId: ticket.chatId, user });
+    socket.emit('join_room', { chatId: ticket.chatId, user });
+    return () => {
+      console.log('[SOCKET][LEAVE_ROOM] Odadan ayrılıyor:', { chatId: ticket.chatId, user });
+      socket.emit('leave_room', { chatId: ticket.chatId, user });
+    };
+  }, [ticket?.chatId, myUserId, myUserName]);
+
+  // new_message eventini dinle
+  useEffect(() => {
+    if (!ticket || !ticket.chatId) return;
+    const handleNewMessage = (data) => {
+      if (data.chatId === ticket.chatId) {
+        console.log('[SOCKET][NEW_MESSAGE] Yeni mesaj alındı:', data);
+        setMessages(prev => [
+          ...prev,
+          {
+            _id: data._id || Math.random().toString(36),
+            senderId: data.user?.id,
+            text: data.message,
+            createdAt: new Date().toISOString()
+          }
+        ]);
+      }
+    };
+    socket.on('new_message', handleNewMessage);
+    return () => socket.off('new_message', handleNewMessage);
+  }, [ticket?.chatId]);
+
+  // typing ve stop_typing eventlerini dinle (sadece başkası yazıyorsa göster)
+  useEffect(() => {
+    if (!ticket || !ticket.chatId) return;
+    const handleTyping = (data) => {
+      if (data.chatId === ticket.chatId && data.user?.id !== myUserId) {
+        console.log('[SOCKET][TYPING] Başkası yazıyor:', data);
+        setSomeoneTyping(true);
+      }
+    };
+    const handleStopTyping = (data) => {
+      if (data.chatId === ticket.chatId && data.user?.id !== myUserId) {
+        console.log('[SOCKET][STOP_TYPING] Başkası yazmayı bıraktı:', data);
+        setSomeoneTyping(false);
+      }
+    };
+    socket.on('typing', handleTyping);
+    socket.on('stop_typing', handleStopTyping);
+    return () => {
+      socket.off('typing', handleTyping);
+      socket.off('stop_typing', handleStopTyping);
+    };
+  }, [ticket?.chatId, myUserId]);
+
   // Mesaj gönder
   const handleSend = async () => {
     if (!input.trim() || !ticket || !ticket.chatId) return;
@@ -60,18 +134,35 @@ const TicketChatDrawer = ({ ticket, onClose, useTicketIdForMessages }) => {
       const payload = {
         chatId: ticket.chatId,
         text: input,
-        senderId: ticket.customerId, // veya login olan userId
-        // senderRole: ...
+        senderId: myUserId, // login olan userId
       };
+      console.log('[SOCKET][SEND_MESSAGE] Mesaj gönderiliyor:', payload);
       const res = await sendMessage(payload);
       if (res.success) {
         setMessages(prev => [...prev, res.data]);
         setInput("");
+        setSomeoneTyping(false);
+        console.log('[SOCKET][STOP_TYPING] Yazma durumu bildiriliyor:', { chatId: ticket.chatId, user: { id: myUserId, name: myUserName } });
+        socket.emit('stop_typing', { chatId: ticket.chatId, user: { id: myUserId, name: myUserName } });
       }
     } catch (e) {
-      // Hata yönetimi eklenebilir
+      console.error('[SOCKET][SEND_MESSAGE][HATA] Mesaj gönderilemedi:', e);
     } finally {
       setSending(false);
+    }
+  };
+
+  // Kullanıcı yazarken typing eventini gönder
+  const handleInputChange = (e) => {
+    setInput(e.target.value);
+    if (!ticket || !ticket.chatId) return;
+    const user = { id: myUserId, name: myUserName };
+    if (e.target.value) {
+      console.log('[SOCKET][TYPING] Yazıyor event gönderiliyor:', { chatId: ticket.chatId, user });
+      socket.emit('typing', { chatId: ticket.chatId, user });
+    } else {
+      console.log('[SOCKET][STOP_TYPING] Yazmayı bıraktı event gönderiliyor:', { chatId: ticket.chatId, user });
+      socket.emit('stop_typing', { chatId: ticket.chatId, user });
     }
   };
 
@@ -98,6 +189,11 @@ const TicketChatDrawer = ({ ticket, onClose, useTicketIdForMessages }) => {
           ))
         )}
         <div ref={messagesEndRef} />
+        {someoneTyping && (
+          <Typography color="primary" fontSize={13} mt={1} mb={0.5}>
+            Yazıyor...
+          </Typography>
+        )}
       </Box>
       <Divider />
       <Box display="flex" gap={1} mt={2}>
@@ -106,7 +202,7 @@ const TicketChatDrawer = ({ ticket, onClose, useTicketIdForMessages }) => {
           size="small"
           placeholder="Mesaj yaz..."
           value={input}
-          onChange={e => setInput(e.target.value)}
+          onChange={handleInputChange}
           onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
           disabled={sending}
         />

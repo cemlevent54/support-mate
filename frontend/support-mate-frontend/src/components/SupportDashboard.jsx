@@ -25,46 +25,11 @@ const sidebarItems = [
 
 export default function SupportDashboard() {
   const [selected, setSelected] = useState('requests');
-  const [activeChat, setActiveChat] = useState(0);
+  const [activeChatTicketId, setActiveChatTicketId] = useState(null);
+  const [activeChatTicketTitle, setActiveChatTicketTitle] = useState("");
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { language, onLanguageChange } = useLanguage();
-
-  // Örnek chat listesi ve mesajlar
-  const chatList = [
-    { id: 1, name: 'Kullanıcı 1', last: 'Merhaba, bir sorum var.' },
-    { id: 2, name: 'Kullanıcı 2', last: 'Teşekkürler, iyi çalışmalar.' },
-    { id: 3, name: 'Kullanıcı 3', last: 'Destek talebim var.' },
-  ];
-  const [chatMessages, setChatMessages] = useState([
-    [
-      { from: 'user', text: 'Merhaba, bir sorum var.', time: '10:00' },
-      { from: 'support', text: 'Tabii, nasıl yardımcı olabilirim?', time: '10:01' },
-    ],
-    [
-      { from: 'user', text: 'Teşekkürler, iyi çalışmalar.', time: '09:30' },
-      { from: 'support', text: 'Size de iyi günler!', time: '09:31' },
-    ],
-    [
-      { from: 'user', text: 'Destek talebim var.', time: '11:00' },
-      { from: 'support', text: 'Talebinizi iletebilirsiniz.', time: '11:01' },
-    ],
-  ]);
-  const [input, setInput] = useState("");
-  const handleSend = (e) => {
-    e.preventDefault();
-    if (!input.trim()) return;
-    const now = new Date();
-    const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    setChatMessages(prev =>
-      prev.map((arr, idx) =>
-        idx === activeChat
-          ? [...arr, { from: 'support', text: input, time }]
-          : arr
-      )
-    );
-    setInput("");
-  };
 
   const handleLogout = async () => {
     try {
@@ -76,6 +41,19 @@ export default function SupportDashboard() {
       navigate('/login');
       setTimeout(() => { window.location.reload(); }, 100);
     }
+  };
+
+  // Chat başlat callback'i
+  const handleStartChat = (ticketId, title) => {
+    setActiveChatTicketId(ticketId);
+    setActiveChatTicketTitle(title);
+    setSelected('chats');
+  };
+
+  // ChatList'te bir chat seçilirse aktif chat güncellensin
+  const handleSelectChat = (ticketId, title) => {
+    setActiveChatTicketId(ticketId);
+    setActiveChatTicketTitle(title);
   };
 
   return (
@@ -124,7 +102,7 @@ export default function SupportDashboard() {
       </Paper>
       {/* İçerik */}
       {selected === 'requests' && (
-        <SupportRequests />
+        <SupportRequests onStartChat={handleStartChat} />
       )}
       {selected === 'profile' && (
         <Box flex={1} p={4} height="100vh" bgcolor="#f5f5f5">
@@ -134,11 +112,14 @@ export default function SupportDashboard() {
       )}
       {selected === 'chats' && (
         <>
-          <ChatList chatList={chatList} activeChat={activeChat} setActiveChat={setActiveChat} />
+          <ChatList chatList={[]} activeChatTicketId={activeChatTicketId} onSelectChat={handleSelectChat} />
           <Box flex={1} height="100vh" bgcolor="#f5f5f5">
-            <ChatArea messages={chatMessages[activeChat] || []} input={input} setInput={setInput} handleSend={handleSend} />
+            {activeChatTicketId ? (
+              <ChatArea ticketId={activeChatTicketId} ticketTitle={activeChatTicketTitle} />
+            ) : (
+              <Typography mt={4} ml={4} color="text.secondary">Bir talep seçin ve chat başlatın.</Typography>
+            )}
           </Box>
-          
         </>
       )}
     </Box>

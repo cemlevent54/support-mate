@@ -24,4 +24,4 @@ fastapi_app.add_middleware(
 
 if __name__ == "__main__":
     start_agent_online_consumer()
-    uvicorn.run("server:socket_app", host="127.0.0.1", port=8086, reload=True)
+    uvicorn.run("server:socket_app", host="0.0.0.0", port=8086, reload=True)

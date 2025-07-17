@@ -30,7 +30,7 @@ const modalStyle = {
   p: 4,
 };
 
-const SupportRequests = () => {
+const SupportRequests = ({ onStartChat }) => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -95,6 +95,7 @@ const SupportRequests = () => {
             color="primary"
             size="small"
             startIcon={<ChatIcon />}
+            onClick={() => onStartChat && onStartChat(params.row.raw._id, params.row.raw.title)}
           >
             Chat
           </Button>
