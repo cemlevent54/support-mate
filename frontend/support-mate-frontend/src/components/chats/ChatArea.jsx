@@ -1,12 +1,15 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import { MdSend } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
+import socket from '../../socket/socket';
 
 export default function ChatArea({ messages, input, setInput, handleSend, openTaskModal }) {
   const messagesEndRef = useRef(null);
   const { t } = useTranslation();
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeout = useRef(null);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -19,6 +22,52 @@ export default function ChatArea({ messages, input, setInput, handleSend, openTa
     console.log('ChatArea render: messages', messages);
     console.log('ChatArea render: input', input);
   });
+
+  useEffect(() => {
+    // Yeni mesaj eventini dinle
+    socket.on('new_message', (data) => {
+      console.log('Yeni mesaj geldi:', data);
+      // Burada üst componentten gelen bir setMessages fonksiyonu varsa onu çağırabilirsiniz
+      // veya bir callback ile parent'a iletebilirsiniz
+      // Örnek: setMessages(prev => [...prev, data]);
+    });
+    // Temizlik
+    return () => {
+      socket.off('new_message');
+    };
+  }, []);
+
+  // Diğer kullanıcıdan gelen typing eventlerini dinle
+  useEffect(() => {
+    socket.on('typing', (data) => {
+      setIsTyping(true);
+    });
+    socket.on('stop_typing', (data) => {
+      setIsTyping(false);
+    });
+    return () => {
+      socket.off('typing');
+      socket.off('stop_typing');
+    };
+  }, []);
+
+  // Kullanıcı inputa yazdıkça typing eventini gönder
+  const handleInputChange = (e) => {
+    setInput(e.target.value);
+    // Typing eventini gönder
+    socket.emit('typing', {
+      chatId: 'ornekChatId', // Gerçek chatId ile değiştirin
+      user: { id: 'kullanici_id', name: 'Kullanıcı Adı' }, // Gerçek kullanıcı ile değiştirin
+    });
+    // Kullanıcı yazmayı bırakınca stop_typing eventini gönder (ör: 1 sn sonra)
+    if (typingTimeout.current) clearTimeout(typingTimeout.current);
+    typingTimeout.current = setTimeout(() => {
+      socket.emit('stop_typing', {
+        chatId: 'ornekChatId',
+        user: { id: 'kullanici_id', name: 'Kullanıcı Adı' },
+      });
+    }, 1000);
+  };
 
   return (
     <Box flex={1} display="flex" flexDirection="column" justifyContent="flex-end" height="100%">
@@ -39,14 +88,31 @@ export default function ChatArea({ messages, input, setInput, handleSend, openTa
           </Box>
         ))}
         <div ref={messagesEndRef} />
+        {isTyping && (
+          <Box fontSize={14} color="#888" mb={1}>
+            Kullanıcı yazıyor...
+          </Box>
+        )}
       </Box>
       <Box p={2} borderTop="1px solid #eee" bgcolor="#fafafa">
-        <form onSubmit={e => { console.log('Form submit'); handleSend(e); }} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <form onSubmit={e => {
+          e.preventDefault();
+          // Socket ile mesaj gönderme örneği
+          socket.emit('send_message', {
+            chatId: 'ornekChatId', // Gerçek chatId ile değiştirin
+            user: { id: 'kullanici_id', name: 'Kullanıcı Adı' }, // Gerçek kullanıcı ile değiştirin
+            message: input,
+          });
+          handleSend(e); // Mevcut prop fonksiyonunu da çağırmaya devam edin
+        }} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <input
             value={input}
-            onChange={e => {
-              setInput(e.target.value);
-              console.log('Input değişti:', e.target.value);
+            onChange={handleInputChange}
+            onBlur={() => {
+              socket.emit('stop_typing', {
+                chatId: 'ornekChatId',
+                user: { id: 'kullanici_id', name: 'Kullanıcı Adı' },
+              });
             }}
             placeholder={t('chatArea.placeholder')}
             style={{ flex: 1, border: '1px solid #ddd', borderRadius: 22, padding: '10px 16px', fontSize: 16, outline: 'none', background: '#fff', marginRight: 8 }}
