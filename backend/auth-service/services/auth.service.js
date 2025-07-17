@@ -168,12 +168,22 @@ class AuthService {
       if (user.roleName === 'Customer Supporter') {
         try {
           logger.info(`[ONLINE] Customer Supporter login detected. userId=${user.id}, email=${user.email}`);
-          await cacheService.client.rPush('online_users_queue', user.id);
-          logger.info(`[ONLINE] Redis rPush('online_users_queue', ${user.id}) sonucu:`);
+          // Önce queue'da var mı kontrol et
           const currentOnline = await cacheService.client.lRange('online_users_queue', 0, -1);
-          logger.info(`[ONLINE] Şu anda online Customer Supporter userId'leri (queue):`, currentOnline);
-          // KAFKA EVENT: agent_online
-          await sendAgentOnlineEvent(user.id);
+          const isAlreadyOnline = currentOnline.includes(user.id);
+          
+          if (!isAlreadyOnline) {
+            // Yoksa ekle
+            await cacheService.client.rPush('online_users_queue', user.id);
+            logger.info(`[ONLINE] Redis rPush('online_users_queue', ${user.id}) sonucu:`);
+            const updatedOnline = await cacheService.client.lRange('online_users_queue', 0, -1);
+            logger.info(`[ONLINE] Şu anda online Customer Supporter userId'leri (queue):`, updatedOnline);
+            // KAFKA EVENT: agent_online
+            await sendAgentOnlineEvent(user.id);
+          } else {
+            logger.info(`[ONLINE] Customer Supporter zaten online: ${user.id}`);
+            logger.info(`[ONLINE] Şu anda online Customer Supporter userId'leri (queue):`, currentOnline);
+          }
         } catch (err) {
           logger.error(`[ONLINE] Customer Supporter online kaydedilemedi! userId=${user.id}, email=${user.email}, error=`, err);
         }
@@ -511,13 +521,22 @@ class AuthService {
       if (user.roleName === 'Customer Supporter') {
         try {
           logger.info(`[ONLINE] (Google) Customer Supporter login detected. userId=${user.id}, email=${user.email}`);
-          // Kuyruğun sonuna ekle (FIFO)
-          await cacheService.client.rPush('online_users_queue', user.id);
-          logger.info(`[ONLINE] (Google) Redis rPush('online_users_queue', ${user.id}) sonucu:`);
+          // Önce queue'da var mı kontrol et
           const currentOnline = await cacheService.client.lRange('online_users_queue', 0, -1);
-          logger.info(`[ONLINE] (Google) Şu anda online Customer Supporter userId'leri (queue):`, currentOnline);
-          // KAFKA EVENT: agent_online
-          await sendAgentOnlineEvent(user.id);
+          const isAlreadyOnline = currentOnline.includes(user.id);
+          
+          if (!isAlreadyOnline) {
+            // Yoksa ekle
+            await cacheService.client.rPush('online_users_queue', user.id);
+            logger.info(`[ONLINE] (Google) Redis rPush('online_users_queue', ${user.id}) sonucu:`);
+            const updatedOnline = await cacheService.client.lRange('online_users_queue', 0, -1);
+            logger.info(`[ONLINE] (Google) Şu anda online Customer Supporter userId'leri (queue):`, updatedOnline);
+            // KAFKA EVENT: agent_online
+            await sendAgentOnlineEvent(user.id);
+          } else {
+            logger.info(`[ONLINE] (Google) Customer Supporter zaten online: ${user.id}`);
+            logger.info(`[ONLINE] (Google) Şu anda online Customer Supporter userId'leri (queue):`, currentOnline);
+          }
         } catch (err) {
           logger.error(`[ONLINE] (Google) Customer Supporter online kaydedilemedi! userId=${user.id}, email=${user.email}, error=`, err);
         }
