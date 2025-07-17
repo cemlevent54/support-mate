@@ -40,4 +40,49 @@ class TicketController:
         logger.info(f"[CONTROLLER] delete_ticket result: {result.get('success')}")
         return APIResponse(**result)
 
+    def list_tickets_endpoint_for_admin(self, user):
+        logger.info(f"[CONTROLLER] list_tickets_admin called. user={user.get('id')}")
+        # Burada admin için ticket listeleme servisi çağrılmalı (örnek)
+        result = self.ticket_service.list_tickets(user)  # Gerekirse filtre ekle
+        logger.info(f"[CONTROLLER] list_tickets_admin result: {len(result.get('data', [])) if result.get('success') else 'error'}")
+        return APIResponse(**result)
+
+    def get_ticket_endpoint_for_admin(self, ticket_id, user):
+        logger.info(f"[CONTROLLER] get_ticket_admin called. user={user.get('id')}, ticket_id={ticket_id}")
+        result = self.ticket_service.get_ticket(ticket_id, user)
+        logger.info(f"[CONTROLLER] get_ticket_admin result: {result.get('success')}")
+        return APIResponse(**result)
+
+    def soft_delete_ticket_endpoint_for_admin(self, ticket_id, user):
+        logger.info(f"[CONTROLLER] soft_delete_ticket_admin called. user={user.get('id')}, ticket_id={ticket_id}")
+        result = self.ticket_service.soft_delete_ticket(ticket_id, user)
+        logger.info(f"[CONTROLLER] soft_delete_ticket_admin result: {result.get('success')}")
+        return APIResponse(**result)
+
+    def list_tickets_endpoint_for_user(self, user):
+        logger.info(f"[CONTROLLER] list_tickets_user called. user={user.get('id')}")
+        # Burada user için ticket listeleme servisi çağrılmalı (örnek)
+        result = self.ticket_service.list_tickets(user)  # Gerekirse filtre ekle
+        logger.info(f"[CONTROLLER] list_tickets_user result: {len(result.get('data', [])) if result.get('success') else 'error'}")
+        return APIResponse(**result)
+
+    def get_ticket_endpoint_for_user(self, ticket_id, user):
+        logger.info(f"[CONTROLLER] get_ticket_user called. user={user.get('id')}, ticket_id={ticket_id}")
+        result = self.ticket_service.get_ticket(ticket_id, user)
+        logger.info(f"[CONTROLLER] get_ticket_user result: {result.get('success')}")
+        return APIResponse(**result)
+
+    def soft_delete_ticket_endpoint_for_user(self, ticket_id, user):
+        logger.info(f"[CONTROLLER] soft_delete_ticket_user called. user={user.get('id')}, ticket_id={ticket_id}")
+        result = self.ticket_service.soft_delete_ticket(ticket_id, user)
+        logger.info(f"[CONTROLLER] soft_delete_ticket_user result: {result.get('success')}")
+        return APIResponse(**result)
+
+    def list_tickets_endpoint_for_agent(self, user):
+        logger.info(f"[CONTROLLER] list_tickets_agent called. user={user.get('id')}")
+        # Burada agent için ticket listeleme servisi çağrılmalı (örnek)
+        result = self.ticket_service.list_tickets(user)  # Gerekirse filtre ekle
+        logger.info(f"[CONTROLLER] list_tickets_agent result: {len(result.get('data', [])) if result.get('success') else 'error'}")
+        return APIResponse(**result)
+
 

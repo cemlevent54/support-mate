@@ -33,7 +33,7 @@ class TicketRepository:
 
     def get_by_id(self, ticket_id: str) -> Optional[Ticket]:
         try:
-            doc = self.collection.find_one({"_id": ticket_id, "isDeleted": False})
+            doc = self.collection.find_one({"_id": ObjectId(ticket_id), "isDeleted": False})
             logger.info(f"[REPO] TicketRepository.get_by_id: ticket_id={ticket_id}, found={doc is not None}")
             if doc:
                 return Ticket.model_validate(doc)
@@ -49,7 +49,12 @@ class TicketRepository:
                 query.update(filter)
             docs = self.collection.find(query)
             logger.info(f"[REPO] TicketRepository.list: filter={filter}, count={self.collection.count_documents(query)}")
-            return [Ticket.model_validate(doc) for doc in docs]
+            result = []
+            for doc in docs:
+                if '_id' in doc:
+                    doc['_id'] = str(doc['_id'])
+                result.append(Ticket.model_validate(doc))
+            return result
         except Exception as e:
             logger.error(f"[REPO] TicketRepository.list error: {str(e)}")
             return []

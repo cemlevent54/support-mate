@@ -15,9 +15,10 @@ import { useTranslation } from 'react-i18next';
 import { useLanguage } from './LanguageProvider';
 import ChatList from './chats/ChatList';
 import ChatArea from './chats/ChatArea';
+import SupportRequests from './SupportRequests';
 
 const sidebarItems = [
-  { key: 'requests', label: 'Destek Talepleri' },
+  { key: 'requests', label: 'Requests' },
   { key: 'chats', label: 'Sohbetler' },
   { key: 'profile', label: 'Profil' },
 ];
@@ -123,10 +124,7 @@ export default function SupportDashboard() {
       </Paper>
       {/* İçerik */}
       {selected === 'requests' && (
-        <Box flex={1} p={4} height="100vh" bgcolor="#f5f5f5">
-          <Typography variant="h5" fontWeight={600} mb={2}>{t('supportDashboard.requestsTitle', 'Destek Talepleri')}</Typography>
-          <Typography>{t('supportDashboard.requestsDesc', 'Destek talepleri burada görünecek.')}</Typography>
-        </Box>
+        <SupportRequests />
       )}
       {selected === 'profile' && (
         <Box flex={1} p={4} height="100vh" bgcolor="#f5f5f5">

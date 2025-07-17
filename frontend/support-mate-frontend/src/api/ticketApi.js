@@ -44,3 +44,31 @@ export const deleteTicket = async (ticketId) => {
   const response = await axiosInstance.delete(`${BASE_URL}/${ticketId}`);
   return response.data;
 };
+
+export const listTicketsForAdmin = async () => {
+  const response = await axiosInstance.get(`${BASE_URL}/admin/tickets`);
+  return response.data;
+}
+
+export const listTicketsForUser = async () => {
+  const response = await axiosInstance.get(`${BASE_URL}/user/tickets`);
+  return response.data;
+}
+
+export const listTicketsForAgent = async () => {
+  const response = await axiosInstance.get(`${BASE_URL}/agent/tickets`);
+  return response.data;
+}
+
+export const getTicketForAdmin = async (ticketId) => {
+  const response = await axiosInstance.get(`${BASE_URL}/admin/tickets/${ticketId}`);
+  return response.data;
+}
+
+export const getTicketForUser = async (ticketId) => {
+  const response = await axiosInstance.get(`${BASE_URL}/user/tickets/${ticketId}`);
+  return response.data;
+}
+
+
+

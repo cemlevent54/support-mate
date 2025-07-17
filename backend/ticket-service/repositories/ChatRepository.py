@@ -3,6 +3,7 @@ from typing import List, Optional
 from pymongo import MongoClient
 from config.database import get_mongo_uri
 import logging
+from bson import ObjectId
 
 logger = logging.getLogger(__name__)
 
@@ -28,8 +29,20 @@ class ChatRepository:
             raise
 
     def get_by_id(self, chat_id: str) -> Optional[Chat]:
-        # Chat'i id ile getir
-        pass
+        doc = self.collection.find_one({"_id": ObjectId(chat_id)})
+        if doc:
+            return Chat.model_validate(doc)
+        return None
+
+    def find_chat_by_participants(self, user1_id: str, user2_id: str) -> Optional[Chat]:
+        query = {
+            "participants.userId": {"$all": [user1_id, user2_id]},
+            "isDeleted": False
+        }
+        doc = self.collection.find_one(query)
+        if doc:
+            return Chat.model_validate(doc)
+        return None
 
     def list(self, filter: dict = None) -> List[Chat]:
         # Chat listesini getir
@@ -41,4 +54,11 @@ class ChatRepository:
 
     def soft_delete(self, chat_id: str) -> bool:
         # Chat'i soft delete yap
-        pass 
+        pass
+
+    def find_by_ticket_id(self, ticket_id: str) -> Optional[Chat]:
+        doc = self.collection.find_one({"ticketId": ticket_id, "isDeleted": False})
+        if doc:
+            doc["_id"] = str(doc["_id"])
+            return Chat.model_validate(doc)
+        return None 

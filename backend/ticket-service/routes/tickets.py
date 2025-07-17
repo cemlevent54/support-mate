@@ -3,6 +3,7 @@ from typing import List
 from models.ticket import Ticket, APIResponse
 from middlewares.auth import get_current_user
 from controllers.TicketController import TicketController
+from fastapi import HTTPException
 
 router = APIRouter()
 ticket_controller = TicketController()
@@ -11,6 +12,52 @@ ticket_controller = TicketController()
 def test_auth(user=Depends(get_current_user)):
     return {"message": "Auth başarılı!", "user": user}
 
+# --- Admin routes ---
+@router.get("/admin/tickets", response_model=APIResponse)
+def list_tickets_admin(user=Depends(get_current_user)):
+    if user.get("roleName") != "Admin":
+        raise HTTPException(status_code=403, detail="Forbidden")
+    return ticket_controller.list_tickets_endpoint_for_admin(user)
+
+@router.get("/admin/tickets/{ticket_id}", response_model=APIResponse)
+def get_ticket_admin(ticket_id: str, user=Depends(get_current_user)):
+    if user.get("roleName") != "Admin":
+        raise HTTPException(status_code=403, detail="Forbidden")
+    return ticket_controller.get_ticket_endpoint_for_admin(ticket_id, user)
+
+@router.delete("/admin/tickets/{ticket_id}", status_code=status.HTTP_204_NO_CONTENT)
+def soft_delete_ticket_admin(ticket_id: str, user=Depends(get_current_user)):
+    if user.get("roleName") != "Admin":
+        raise HTTPException(status_code=403, detail="Forbidden")
+    return ticket_controller.soft_delete_ticket_endpoint_for_admin(ticket_id, user)
+
+# --- User routes ---
+@router.get("/user/tickets", response_model=APIResponse)
+def list_tickets_user(user=Depends(get_current_user)):
+    if user.get("roleName") != "User":
+        raise HTTPException(status_code=403, detail="Forbidden")
+    return ticket_controller.list_tickets_endpoint_for_user(user)
+
+@router.get("/user/tickets/{ticket_id}", response_model=APIResponse)
+def get_ticket_user(ticket_id: str, user=Depends(get_current_user)):
+    if user.get("roleName") != "User":
+        raise HTTPException(status_code=403, detail="Forbidden")
+    return ticket_controller.get_ticket_endpoint_for_user(ticket_id, user)
+
+@router.delete("/user/tickets/{ticket_id}", status_code=status.HTTP_204_NO_CONTENT)
+def soft_delete_ticket_user(ticket_id: str, user=Depends(get_current_user)):
+    if user.get("roleName") != "User":
+        raise HTTPException(status_code=403, detail="Forbidden")
+    return ticket_controller.soft_delete_ticket_endpoint_for_user(ticket_id, user)
+
+# --- Agent (Customer Supporter) routes ---
+@router.get("/agent/tickets", response_model=APIResponse)
+def list_tickets_agent(user=Depends(get_current_user)):
+    if user.get("roleName") != "Customer Supporter":
+        raise HTTPException(status_code=403, detail="Forbidden")
+    return ticket_controller.list_tickets_endpoint_for_agent(user)
+
+# --- Genel routes ---
 @router.post("", response_model=APIResponse)
 async def create_ticket_route(
     title: str = Form(...),

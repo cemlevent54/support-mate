@@ -23,6 +23,7 @@ class MessageRepository:
     def get_by_id(self, message_id: str) -> Optional[Message]:
         doc = self.collection.find_one({"_id": message_id, "isDeleted": False})
         if doc:
+            doc["_id"] = str(doc["_id"])
             return Message.model_validate(doc)
         return None
 
@@ -31,7 +32,11 @@ class MessageRepository:
         if filter:
             query.update(filter)
         docs = self.collection.find(query)
-        return [Message.model_validate(doc) for doc in docs]
+        result = []
+        for doc in docs:
+            doc["_id"] = str(doc["_id"])
+            result.append(Message.model_validate(doc))
+        return result
 
     def update(self, message_id: str, updated: dict) -> Optional[Message]:
         result = self.collection.update_one({"_id": message_id}, {"$set": updated})
@@ -41,4 +46,12 @@ class MessageRepository:
 
     def soft_delete(self, message_id: str) -> bool:
         result = self.collection.update_one({"_id": message_id}, {"$set": {"isDeleted": True, "deletedAt": datetime.utcnow()}})
-        return result.modified_count > 0 
+        return result.modified_count > 0
+
+    def list_by_chat_id(self, chat_id: str):
+        docs = self.collection.find({"chatId": chat_id, "isDeleted": False})
+        result = []
+        for doc in docs:
+            doc["_id"] = str(doc["_id"])
+            result.append(Message.model_validate(doc))
+        return result 

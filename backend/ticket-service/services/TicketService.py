@@ -15,6 +15,7 @@ from config.redis import select_and_rotate_agent
 from middlewares.auth import get_user_by_id
 from repositories.TicketRepository import TicketRepository
 from repositories.ChatRepository import ChatRepository
+from bson import ObjectId
 
 logger = logging.getLogger(__name__)
 

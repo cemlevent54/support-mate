@@ -1,5 +1,5 @@
 from cqrs.commands.SendMessageCommandHandler import SendMessageCommandHandler
-from cqrs.queries.ListMessagesQueryHandler import ListMessagesQueryHandler
+from cqrs.queries.ListMessagesQueryHandler import ListMessagesQueryHandler, ListMessagesBetweenUsersQueryHandler
 from utils.crypto import encrypt_message, decrypt_message
 
 class MessageService:
@@ -30,3 +30,23 @@ class MessageService:
                 if "text" in msg:
                     msg["text"] = decrypt_message(msg["text"])
         return result
+
+    def list_messages_between_users(self, user1_id, user2_id, user):
+        handler = ListMessagesBetweenUsersQueryHandler()
+        return handler.execute(user1_id, user2_id, user)
+
+    def list_messages_by_ticket_id(self, ticket_id, user):
+        from repositories.ChatRepository import ChatRepository
+        from repositories.MessageRepository import MessageRepository
+        chat_repo = ChatRepository()
+        message_repo = MessageRepository()
+        chat = chat_repo.find_by_ticket_id(ticket_id)
+        if not chat:
+            return {"success": False, "data": [], "message": "Chat bulunamadı."}
+        messages = message_repo.list_by_chat_id(chat.id)
+        # Mesajları AES ile çöz
+        for msg in messages:
+            if hasattr(msg, "text"):
+                msg.text = decrypt_message(msg.text)
+        messages_dict = [msg.model_dump(by_alias=True) for msg in messages]
+        return {"success": True, "data": messages_dict, "message": "Messages retrieved successfully."}
