@@ -12,4 +12,5 @@ class Message(BaseModel):
     timestamp: Optional[datetime] = None
     isDeleted: bool = False 
     is_delivered: bool = False 
-    deletedAt: Optional[datetime] = None 
+    deletedAt: Optional[datetime] = None
+    receiverId: Optional[str] = None

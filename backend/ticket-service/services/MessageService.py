@@ -18,6 +18,26 @@ class MessageService:
         if user:
             message_data["senderId"] = user.get("id")
             message_data["senderRole"] = user.get("roleName", "customer")
+        # receiverId zorunluysa kontrol et
+        if "receiverId" not in message_data or not message_data["receiverId"]:
+            # Eğer chat'te tek bir karşı taraf varsa otomatik ata
+            chat_id = message_data.get("chatId")
+            sender_id = message_data.get("senderId")
+            if chat_id and sender_id:
+                from repositories.ChatRepository import ChatRepository
+                chat_repo = ChatRepository()
+                chat = chat_repo.get_by_id(chat_id)
+                if chat and hasattr(chat, 'participants'):
+                    # senderId dışındaki ilk userId'yi receiverId olarak ata
+                    receiver = next((p.userId for p in chat.participants if p.userId != sender_id), None)
+                    if receiver:
+                        message_data["receiverId"] = receiver
+                    else:
+                        return {"success": False, "data": None, "message": "receiverId bulunamadı (chat'te başka participant yok)"}
+                else:
+                    return {"success": False, "data": None, "message": "Chat bulunamadı veya participants yok"}
+            else:
+                return {"success": False, "data": None, "message": "receiverId ve chatId zorunlu"}
         # is_delivered parametresini ayarla
         message_data["is_delivered"] = is_delivered
         return self.send_handler.execute(message_data, user)
@@ -49,4 +69,5 @@ class MessageService:
             if hasattr(msg, "text"):
                 msg.text = decrypt_message(msg.text)
         messages_dict = [msg.model_dump(by_alias=True) for msg in messages]
-        return {"success": True, "data": messages_dict, "message": "Messages retrieved successfully."}
+        # chat_id'yi de response'a ekle
+        return {"success": True, "data": {"messages": messages_dict, "chatId": chat.id}, "message": "Messages retrieved successfully."}

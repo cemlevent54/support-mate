@@ -1,67 +1,121 @@
-import React, { useState } from 'react';
-import ChatList from './ChatList';
+import React, { useState, useEffect } from 'react';
 import ChatArea from './ChatArea';
 import TaskCreateModal from './TaskCreateModal';
 import Box from '@mui/material/Box';
+import { listMessagesByTicketId, sendMessage } from '../../api/messagesApi';
+import { getUserIdFromJWT } from '../../utils/jwt';
 
-export default function SupportChats() {
-  // Örnek chat listesi ve mesajlar
-  const chatList = [
-    { id: 1, name: 'Kullanıcı 1', last: 'Merhaba, bir sorum var.' },
-    { id: 2, name: 'Kullanıcı 2', last: 'Teşekkürler, iyi çalışmalar.' },
-    { id: 3, name: 'Kullanıcı 3', last: 'Destek talebim var.' },
-  ];
-  const initialMessages = [
-    [
-      { from: 'user', text: 'Merhaba, bir sorum var.', time: '10:00' },
-      { from: 'support', text: 'Tabii, nasıl yardımcı olabilirim?', time: '10:01' },
-    ],
-    [
-      { from: 'user', text: 'Teşekkürler, iyi çalışmalar.', time: '09:30' },
-      { from: 'support', text: 'Size de iyi günler!', time: '09:31' },
-    ],
-    [
-      { from: 'user', text: 'Destek talebim var.', time: '11:00' },
-      { from: 'support', text: 'Talebinizi iletebilirsiniz.', time: '11:01' },
-    ],
-  ];
-  const [activeChat, setActiveChat] = useState(0);
+export default function SupportChats({ ticketId, ticketTitle }) {
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState(initialMessages);
   const [taskModalOpen, setTaskModalOpen] = useState(false);
 
-  const handleSend = (e) => {
+  useEffect(() => {
+    if (!ticketId) {
+      setMessages([]);
+      return;
+    }
+    const fetchMessages = async () => {
+      try {
+        const res = await listMessagesByTicketId(ticketId);
+        console.log('API response:', res);
+        if (res && res.success && res.data && Array.isArray(res.data.messages)) {
+          setMessages(res.data.messages);
+        } else {
+          setMessages([]);
+        }
+      } catch (e) {
+        setMessages([]);
+      }
+    };
+    fetchMessages();
+  }, [ticketId]);
+
+  // messages değiştiğinde logla
+  useEffect(() => {
+    console.log('SupportChats - Ekranda gösterilecek messages:', messages);
+  }, [messages]);
+
+  // ChatArea'ya gönderilen props'u render sırasında logla
+  useEffect(() => {
+    console.log('SupportChats render: ChatArea props', {
+      messages,
+      input,
+      ticketId,
+      ticketTitle
+    });
+  });
+
+  // Render debug
+  console.log('SupportChats ticketId:', ticketId, 'messages:', messages);
+
+  const handleSend = async (e) => {
     e.preventDefault();
-    if (!input.trim()) return;
-    const now = new Date();
-    const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    setMessages(prev =>
-      prev.map((arr, idx) =>
-        idx === activeChat
-          ? [...arr, { from: 'support', text: input, time }]
-          : arr
-      )
-    );
-    setInput("");
+    if (!input.trim() || !ticketId) return;
+    
+    try {
+      // JWT token'dan kullanıcı ID'sini al
+      const userId = getUserIdFromJWT();
+      
+      if (!userId) {
+        console.error('Kullanıcı ID bulunamadı');
+        return;
+      }
+      
+      // Önce ticket ID'si ile chat'i bul
+      const chatResponse = await listMessagesByTicketId(ticketId);
+      console.log('Chat response:', chatResponse);
+      
+      if (!chatResponse.success || !chatResponse.data || !chatResponse.data.chatId) {
+        console.error('Chat bulunamadı veya chatId yok');
+        return;
+      }
+      
+      const chatId = chatResponse.data.chatId;
+      console.log('Bulunan chat ID:', chatId);
+      
+      const messageData = {
+        chatId: chatId, // Gerçek chat ID'sini kullan
+        text: input,
+        senderId: userId,
+        senderRole: 'Support' // Agent/Support rolü
+      };
+      
+      console.log('Gönderilecek mesaj:', messageData);
+      console.log('Ticket ID:', ticketId);
+      console.log('Chat ID:', chatId);
+      console.log('User ID:', userId);
+      
+      const response = await sendMessage(messageData);
+      console.log('Send message response:', response);
+      
+      if (response.success) {
+        // Yeni mesajı listeye ekle
+        setMessages(prev => [...prev, response.data]);
+        setInput("");
+      } else {
+        console.error('Mesaj gönderilemedi:', response.message);
+        console.error('Response details:', response);
+      }
+    } catch (error) {
+      console.error('Mesaj gönderme hatası:', error);
+      console.error('Error response:', error.response?.data);
+    }
   };
 
   const openTaskModal = () => setTaskModalOpen(true);
   const closeTaskModal = () => setTaskModalOpen(false);
 
-  // Render sırasında logla
-  console.log("SupportChats render: messages", messages);
-  console.log("SupportChats render: activeChat", activeChat);
-  console.log("SupportChats render: currentChatMessages", messages[activeChat]);
-
   return (
     <Box display="flex" height="100%" boxShadow={2} borderRadius={2} bgcolor="#fff" overflow="hidden">
-      <ChatList chatList={chatList} activeChat={activeChat} setActiveChat={setActiveChat} />
       <ChatArea
-        messages={messages[activeChat] || []}
+        messages={messages || []}
         input={input}
         setInput={setInput}
         handleSend={handleSend}
         openTaskModal={openTaskModal}
+        ticketId={ticketId}
+        ticketTitle={ticketTitle}
       />
       <TaskCreateModal open={taskModalOpen} onClose={closeTaskModal} />
     </Box>

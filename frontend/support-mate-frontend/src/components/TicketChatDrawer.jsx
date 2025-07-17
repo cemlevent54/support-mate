@@ -27,6 +27,7 @@ const TicketChatDrawer = ({ ticket, onClose, useTicketIdForMessages }) => {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [someoneTyping, setSomeoneTyping] = useState(false);
+  const [currentChatId, setCurrentChatId] = useState(ticket?.chatId || null);
   const messagesEndRef = useRef(null);
   const token = localStorage.getItem('jwt');
   const decoded = decodeJWT(token);
@@ -47,15 +48,22 @@ const TicketChatDrawer = ({ ticket, onClose, useTicketIdForMessages }) => {
         } else {
           setMessages([]);
           setLoading(false);
+          setCurrentChatId(null);
           return;
         }
-        if (res.success && Array.isArray(res.data)) {
+        if (res.success && res.data && Array.isArray(res.data.messages)) {
+          setMessages(res.data.messages);
+          setCurrentChatId(res.data.chatId);
+        } else if (res.success && Array.isArray(res.data)) {
           setMessages(res.data);
+          setCurrentChatId(ticket.chatId || null);
         } else {
           setMessages([]);
+          setCurrentChatId(null);
         }
       } catch (e) {
         setMessages([]);
+        setCurrentChatId(null);
       } finally {
         setLoading(false);
       }
@@ -128,13 +136,13 @@ const TicketChatDrawer = ({ ticket, onClose, useTicketIdForMessages }) => {
 
   // Mesaj gönder
   const handleSend = async () => {
-    if (!input.trim() || !ticket || !ticket.chatId) return;
+    if (!input.trim() || !currentChatId) return;
     setSending(true);
     try {
       const payload = {
-        chatId: ticket.chatId,
+        chatId: currentChatId,
         text: input,
-        senderId: myUserId, // login olan userId
+        senderId: myUserId,
       };
       console.log('[SOCKET][SEND_MESSAGE] Mesaj gönderiliyor:', payload);
       const res = await sendMessage(payload);
@@ -142,8 +150,7 @@ const TicketChatDrawer = ({ ticket, onClose, useTicketIdForMessages }) => {
         setMessages(prev => [...prev, res.data]);
         setInput("");
         setSomeoneTyping(false);
-        console.log('[SOCKET][STOP_TYPING] Yazma durumu bildiriliyor:', { chatId: ticket.chatId, user: { id: myUserId, name: myUserName } });
-        socket.emit('stop_typing', { chatId: ticket.chatId, user: { id: myUserId, name: myUserName } });
+        socket.emit('stop_typing', { chatId: currentChatId, user: { id: myUserId, name: myUserName } });
       }
     } catch (e) {
       console.error('[SOCKET][SEND_MESSAGE][HATA] Mesaj gönderilemedi:', e);

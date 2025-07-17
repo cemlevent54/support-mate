@@ -27,6 +27,11 @@ export default function ChatArea({ messages, input, setInput, handleSend, openTa
   // Her render'da logla
   useEffect(() => {
     console.log('ChatArea render: messages', messages);
+    if (Array.isArray(messages)) {
+      messages.forEach((msg, idx) => {
+        console.log(`ChatArea - Gösterilecek mesaj[${idx}]:`, msg);
+      });
+    }
     console.log('ChatArea render: input', input);
   });
 
@@ -84,10 +89,11 @@ export default function ChatArea({ messages, input, setInput, handleSend, openTa
       .then(res => {
         if (res.success && Array.isArray(res.data)) {
           setBackendMessages(res.data.map(msg => ({
-            from: msg.senderRole === 'agent' ? 'support' : 'user',
+            from: msg.senderRole === 'Customer Supporter' ? 'support' : 'user',
             text: msg.text,
             time: msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
           })));
+          console.log('res:', res);
         } else {
           setBackendMessages([]);
         }
@@ -132,11 +138,11 @@ export default function ChatArea({ messages, input, setInput, handleSend, openTa
           loading ? (
             <div>Yükleniyor...</div>
           ) : (
-            backendMessages.map((msg, idx) => (
+            (messages || []).map((msg, idx) => (
               <Box
                 key={idx}
-                alignSelf={msg.from === 'support' ? 'flex-end' : 'flex-start'}
-                bgcolor={msg.from === 'support' ? '#e3f2fd' : '#f1f1f1'}
+                alignSelf={msg.senderRole === 'Customer Supporter' || msg.senderRole === 'Support' ? 'flex-end' : 'flex-start'}
+                bgcolor={msg.senderRole === 'Customer Supporter' || msg.senderRole === 'Support' ? '#e3f2fd' : '#f1f1f1'}
                 color="#222"
                 px={2} py={1.5} mb={1}
                 borderRadius={3}
@@ -144,12 +150,21 @@ export default function ChatArea({ messages, input, setInput, handleSend, openTa
                 maxWidth="70%"
               >
                 {msg.text}
-                <Box fontSize={12} color="#888" textAlign="right" mt={0.5}>{msg.time}</Box>
+                {msg.attachments && msg.attachments.length > 0 && (
+                  <ul style={{ margin: '8px 0 0 0', padding: 0, listStyle: 'none' }}>
+                    {msg.attachments.map((file, i) => (
+                      <li key={i}>
+                        <a href={`/${file}`} target="_blank" rel="noopener noreferrer">{file}</a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <Box fontSize={12} color="#888" textAlign="right" mt={0.5}>{msg.time ? new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</Box>
               </Box>
             ))
           )
         ) : (
-          messages.map((msg, idx) => (
+          (messages || []).map((msg, idx) => (
             <Box
               key={idx}
               alignSelf={msg.from === 'support' ? 'flex-end' : 'flex-start'}

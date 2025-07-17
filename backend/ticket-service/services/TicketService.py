@@ -69,7 +69,8 @@ class TicketService:
                 "participants": participants
             }
             chat_result, agent_online = self.chat_service.create_chat(chat_data, user, token)
-            logger.info(f"Chat created for ticket {ticket_obj.id}: {getattr(chat_result, 'id', None)}")
+            chat_id = getattr(chat_result, "id", None)
+            logger.info(f"Chat created for ticket {ticket_obj.id}: {chat_id}")
             # is_delivered mantığı güncellendi:
             if agent_id != None:
                 is_delivered = True
@@ -79,12 +80,13 @@ class TicketService:
             logger.info(f"is_delivered: {is_delivered}")
             # İlk mesaj olarak ticket bilgileri
             first_message = {
-                "chatId": getattr(chat_result, "id", None),
+                "chatId": chat_id,  # chat'in gerçek id'si
                 "text": f"Title: {ticket_obj.title}\nDescription: {ticket_obj.description}",
                 "attachments": [att["name"] for att in (ticket_obj.attachments or [])],
                 "is_delivered": is_delivered,
                 "senderId": user["id"],
-                "senderRole": get_user_by_id(user["id"], token).get("roleName")
+                "senderRole": get_user_by_id(user["id"], token).get("roleName"),
+                "receiverId": agent_id if agent_id else None
             }
             self.message_service.send_message(first_message, user, is_delivered=is_delivered)
             # Mail bildirimleri

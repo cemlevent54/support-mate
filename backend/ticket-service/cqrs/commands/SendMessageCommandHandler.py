@@ -14,6 +14,7 @@ class SendMessageCommandHandler:
                 id=message_id,
                 chatId=message_data.get("chatId"),
                 senderId=message_data.get("senderId", user.get("id")),
+                receiverId=message_data.get("receiverId"),
                 senderRole=message_data.get("senderRole", user.get("role", "customer")),
                 text=message_data.get("text"),
                 attachments=message_data.get("attachments", []),

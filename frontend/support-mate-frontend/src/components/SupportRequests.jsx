@@ -77,6 +77,10 @@ const SupportRequests = ({ onStartChat }) => {
     setSelectedTicket(null);
   };
 
+  const handleGoChat = (ticket) => {
+    onStartChat && onStartChat(ticket.raw._id, ticket.raw.title);
+  };
+
   const columns = [
     { field: 'id', headerName: 'ID', width: 70, hide: true },
     { field: 'title', headerName: 'Başlık', width: 200 },
@@ -95,7 +99,7 @@ const SupportRequests = ({ onStartChat }) => {
             color="primary"
             size="small"
             startIcon={<ChatIcon />}
-            onClick={() => onStartChat && onStartChat(params.row.raw._id, params.row.raw.title)}
+            onClick={() => handleGoChat(params.row)}
           >
             Chat
           </Button>

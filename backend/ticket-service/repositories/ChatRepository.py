@@ -31,6 +31,7 @@ class ChatRepository:
     def get_by_id(self, chat_id: str) -> Optional[Chat]:
         doc = self.collection.find_one({"_id": ObjectId(chat_id)})
         if doc:
+            doc["_id"] = str(doc["_id"])
             return Chat.model_validate(doc)
         return None
 

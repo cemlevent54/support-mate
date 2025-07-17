@@ -14,7 +14,7 @@ import Select from '@mui/material/Select';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from './LanguageProvider';
 import ChatList from './chats/ChatList';
-import ChatArea from './chats/ChatArea';
+import SupportChats from './chats/SupportChats';
 import SupportRequests from './SupportRequests';
 
 const sidebarItems = [
@@ -115,7 +115,7 @@ export default function SupportDashboard() {
           <ChatList chatList={[]} activeChatTicketId={activeChatTicketId} onSelectChat={handleSelectChat} />
           <Box flex={1} height="100vh" bgcolor="#f5f5f5">
             {activeChatTicketId ? (
-              <ChatArea ticketId={activeChatTicketId} ticketTitle={activeChatTicketTitle} />
+              <SupportChats ticketId={activeChatTicketId} ticketTitle={activeChatTicketTitle} />
             ) : (
               <Typography mt={4} ml={4} color="text.secondary">Bir talep seçin ve chat başlatın.</Typography>
             )}
