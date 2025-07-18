@@ -6,154 +6,182 @@ load_dotenv()
 from fastapi import FastAPI
 from routes import api_router
 from config.language import _
-try:
-    import redis
-    REDIS_AVAILABLE = True
-    REDIS_URL = os.getenv("REDIS_URL")
-except ImportError:
-    REDIS_AVAILABLE = False
 
 logger = logging.getLogger("socketio")
 
-REDIS_URL = os.getenv("REDIS_URL")
+# Aktif kullanıcılar: socket_id -> {user_id, user_role, receiver_id, chat_id, rooms}
+active_users = {}
+rooms = {}
 
 sio = socketio.AsyncServer(
     async_mode="asgi",
     cors_allowed_origins="*",
-    engineio_logger=True,  # Hata ayıklama için
+    engineio_logger=True,
     allow_upgrades=True,
-    transports=["websocket"]  # Sadece websocket
+    transports=["websocket"]
 )
 
 fastapi_app = FastAPI()
 fastapi_app.include_router(api_router)
 
-class SocketManager:
-    def __init__(self):
-        self.sio = sio
-        self.online_users = set()
-        if REDIS_AVAILABLE and REDIS_URL:
-            self.redis = redis.from_url(REDIS_URL)
-        else:
-            self.redis = None
-            if REDIS_AVAILABLE:
-                logger.warning("REDIS_URL environment variable is not set! Redis bağlantısı yapılmadı.")
-        self.register_events()
-        logger.info(_("services.socketio.server_initialized"))
+# Socket.IO event handling
+@sio.event
+async def connect(sid, environ):
+    logger.info(f"[SOCKET][CONNECT] Client connected: {sid}")
 
-    def set_user_online(self, user_id):
-        if self.redis:
-            self.redis.rpush("online_users_queue", user_id)
-        else:
-            self.online_users.add(user_id)
+@sio.event
+async def disconnect(sid):
+    for chat_id, room in list(rooms.items()):
+        for user_id, info in list(room["activeUsers"].items()):
+            if info["socketId"] == sid:
+                del room["activeUsers"][user_id]
+                logger.info(f"[SOCKET][DISCONNECT] chatId={chat_id} aktif kullanıcılar: {room['activeUsers']}")
+        if not room["activeUsers"]:
+            del rooms[chat_id]
+    logger.info(f"[SOCKET][DISCONNECT] User disconnected: {sid}")
 
-    def set_user_offline(self, user_id):
-        if self.redis:
-            self.redis.lrem("online_users_queue", 0, user_id)
-        else:
-            self.online_users.discard(user_id)
+@sio.event
+async def authenticate_and_join(sid, data):
+    user_id = data.get('userId')
+    user_role = data.get('userRole')
+    if not user_id or not user_role:
+        await sio.emit('error', {'message': 'userId ve userRole gereklidir'}, to=sid)
+        return
+    chat_id = '_'.join(sorted([user_id, user_id]))
+    await sio.enter_room(sid, chat_id)
+    active_users[sid] = {
+        'user_id': user_id,
+        'user_role': user_role,
+        'chat_id': chat_id,
+        'rooms': [chat_id]
+    }
+    logger.info(f"[SOCKET][JOIN] User {user_id} ({user_role}) joined chat with {user_id}: {chat_id}")
+    await sio.emit("user_joined_chat", {
+        "userId": user_id,
+        "userRole": user_role,
+        "timestamp": str_now()
+    }, room=chat_id, skip_sid=sid)
+    await sio.emit("chat_joined", {
+        "chatId": chat_id,
+        "userId": user_id,
+        "userRole": user_role,
+        "timestamp": str_now()
+    }, to=sid)
 
-    def is_user_online(self, user_id):
-        if self.redis:
-            return self.redis.sismember("online_users", user_id)
-        return user_id in self.online_users
+@sio.event
+async def send_chat_message(sid, data):
+    chat_id = data.get("chatId")
+    user_id = data.get("userId")
+    content = data.get("content")
+    if not chat_id or not user_id or not content:
+        await sio.emit('error', {'message': 'chatId, userId ve content gereklidir'}, to=sid)
+        return
+    await sio.emit("receive_chat_message", {"chatId": chat_id, "message": content, "userId": user_id}, room=chat_id)
+    logger.info(f"[SOCKET][MESSAGE] chatId={chat_id} userId={user_id}: {content}")
 
-    def register_events(self):
-        @self.sio.event
-        async def connect(sid, environ):
-            logger.info(_("services.socketio.client_connected").format(sid=sid, count=len(self.sio.manager.rooms['/']) if hasattr(self.sio, 'manager') and '/' in self.sio.manager.rooms else 'N/A'))
+@sio.event
+async def typing(sid, data):
+    chat_id = data.get("chatId")
+    user_id = data.get("userId")
+    receiver_id = data.get("receiverId")
+    is_typing = data.get("isTyping", True)
+    if not chat_id or not user_id:
+        return
+    logger.info(f"[SOCKET][TYPING] chatId={chat_id} userId={user_id} receiverId={receiver_id}: {is_typing}")
+    if receiver_id and chat_id in rooms and receiver_id in rooms[chat_id]["activeUsers"]:
+        receiver_sid = rooms[chat_id]["activeUsers"][receiver_id]["socketId"]
+        await sio.emit("typing", {"chatId": chat_id, "userId": user_id, "isTyping": is_typing, "timestamp": str_now()}, to=receiver_sid)
+    else:
+        await sio.emit("typing", {"chatId": chat_id, "userId": user_id, "isTyping": is_typing, "timestamp": str_now()}, room=chat_id, skip_sid=sid)
 
-        @self.sio.event
-        async def disconnect(sid):
-            user_id = getattr(self.sio, 'user_sid_map', {}).get(sid)
-            if user_id:
-                self.set_user_offline(user_id)
-                logger.info(_("services.socketio.user_offline").format(user_id=user_id, sid=sid))
-                await self.sio.emit("user_offline", {"userId": user_id}, skip_sid=sid)
-            logger.info(_("services.socketio.client_disconnected").format(sid=sid, count=len(self.sio.manager.rooms['/']) if hasattr(self.sio, 'manager') and '/' in self.sio.manager.rooms else 'N/A'))
+@sio.event
+async def stop_typing(sid, data):
+    chat_id = data.get("chatId")
+    user_id = data.get("userId")
+    receiver_id = data.get("receiverId")
+    if not chat_id or not user_id:
+        return
+    logger.info(f"[SOCKET][STOP_TYPING] chatId={chat_id} userId={user_id} receiverId={receiver_id}")
+    if receiver_id and chat_id in rooms and receiver_id in rooms[chat_id]["activeUsers"]:
+        receiver_sid = rooms[chat_id]["activeUsers"][receiver_id]["socketId"]
+        await sio.emit("stop_typing", {"chatId": chat_id, "userId": user_id, "isTyping": False, "timestamp": str_now()}, to=receiver_sid)
+    else:
+        await sio.emit("stop_typing", {"chatId": chat_id, "userId": user_id, "isTyping": False, "timestamp": str_now()}, room=chat_id, skip_sid=sid)
 
-        @self.sio.event
-        async def join_room(sid, data):
-            try:
-                chat_id = data.get("chatId")
-                user = data.get("user")
-                user_id = user.get("id") if isinstance(user, dict) else user
-                await self.sio.enter_room(sid, chat_id)
-                logger.info(_("services.socketio.join_room").format(user_id=user_id, chat_id=chat_id, sid=sid, data=data, members=self.sio.manager.rooms['/'].get(chat_id, set()) if hasattr(self.sio, 'manager') and '/' in self.sio.manager.rooms and chat_id in self.sio.manager.rooms['/'] else 'N/A'))
-                self.set_user_online(user_id)
-                if not hasattr(self.sio, 'user_sid_map'):
-                    self.sio.user_sid_map = {}
-                self.sio.user_sid_map[sid] = user_id
-                await self.sio.emit("user_online", {"user": user, "chatId": chat_id}, room=chat_id, skip_sid=sid)
-                await self.sio.emit("user_joined", {"user": user, "chatId": chat_id}, room=chat_id, skip_sid=sid)
-            except Exception as e:
-                logger.error(_("services.socketio.join_room_error").format(error=e, data=data))
+@sio.event
+async def leave_chat(sid, data):
+    user_info = active_users.get(sid)
+    if not user_info:
+        return
+    user_id = user_info['user_id']
+    user_role = user_info['user_role']
+    chat_id = '_'.join(sorted([user_id, user_id]))
+    logger.info(f"[SOCKET][LEAVE] {user_id} leaving chat {chat_id}")
+    await sio.emit("user_left_chat", {
+        "userId": user_id,
+        "userRole": user_role,
+        "timestamp": str_now()
+    }, room=chat_id, skip_sid=sid)
+    await sio.leave_room(sid, chat_id)
+    if sid in active_users:
+        del active_users[sid]
 
-        @self.sio.event
-        async def leave_room(sid, data):
-            try:
-                chat_id = data.get("chatId")
-                user = data.get("user")
-                user_id = user.get("id") if isinstance(user, dict) else user
-                await self.sio.leave_room(sid, chat_id)
-                logger.info(_("services.socketio.leave_room").format(user_id=user_id, chat_id=chat_id, sid=sid, data=data, members=self.sio.manager.rooms['/'].get(chat_id, set()) if hasattr(self.sio, 'manager') and '/' in self.sio.manager.rooms and chat_id in self.sio.manager.rooms['/'] else 'N/A'))
-                await self.sio.emit("user_left", {"user": user, "chatId": chat_id}, room=chat_id, skip_sid=sid)
-            except Exception as e:
-                logger.error(_("services.socketio.leave_room_error").format(error=e, data=data))
+@sio.event
+async def mark_message_read(sid, data):
+    chat_id = data.get('chatId')
+    user_id = data.get('userId')
+    message_id = data.get('messageId')
+    if not chat_id or not user_id or not message_id:
+        return
+    await sio.emit("message_read", {"chatId": chat_id, "userId": user_id, "messageId": message_id, "timestamp": str_now()}, room=chat_id, skip_sid=sid)
 
-        @self.sio.event
-        async def send_message(sid, data):
-            try:
-                chat_id = data.get("chatId")
-                user = data.get("user")
-                message = data.get("message")
-                logger.info(_("services.socketio.send_message").format(user=user, chat_id=chat_id, message=message, data=data))
-                await self.sio.emit("new_message", {"user": user, "message": message, "chatId": chat_id}, room=chat_id, skip_sid=None)
-            except Exception as e:
-                logger.error(_("services.socketio.send_message_error").format(error=e, data=data))
+@sio.event
+async def join_room(sid, data):
+    chat_id = data.get("chatId")
+    user_id = data.get("userId")
+    if not chat_id or not user_id:
+        await sio.emit('error', {'message': 'chatId ve userId gereklidir'}, to=sid)
+        return
+    if chat_id not in rooms:
+        rooms[chat_id] = {"activeUsers": {}}
+    rooms[chat_id]["activeUsers"][user_id] = {"socketId": sid}
+    await sio.enter_room(sid, chat_id)
+    logger.info(f"[SOCKET][JOIN_ROOM] chatId={chat_id} aktif kullanıcılar: {rooms[chat_id]['activeUsers']}")
+    await sio.emit("user_joined", {"chatId": chat_id, "userId": user_id}, room=chat_id)
 
-        @self.sio.event
-        async def typing(sid, data):
-            try:
-                chat_id = data.get("chatId")
-                user = data.get("user")
-                logger.info(_("services.socketio.typing").format(user=user, chat_id=chat_id, data=data))
-                await self.sio.emit("typing", {"user": user, "chatId": chat_id}, room=chat_id, skip_sid=sid)
-            except Exception as e:
-                logger.error(_("services.socketio.typing_error").format(error=e, data=data))
+@sio.event
+async def leave_room(sid, data):
+    chat_id = data.get("chatId")
+    user_id = data.get("userId")
+    if chat_id in rooms and user_id in rooms[chat_id]["activeUsers"]:
+        del rooms[chat_id]["activeUsers"][user_id]
+        await sio.leave_room(sid, chat_id)
+        logger.info(f"[SOCKET][LEAVE_ROOM] chatId={chat_id} aktif kullanıcılar: {rooms[chat_id]['activeUsers']}")
+        if not rooms[chat_id]["activeUsers"]:
+            del rooms[chat_id]
 
-        @self.sio.event
-        async def stop_typing(sid, data):
-            try:
-                chat_id = data.get("chatId")
-                user = data.get("user")
-                logger.info(_("services.socketio.stop_typing").format(user=user, chat_id=chat_id, data=data))
-                await self.sio.emit("stop_typing", {"user": user, "chatId": chat_id}, room=chat_id, skip_sid=sid)
-            except Exception as e:
-                logger.error(_("services.socketio.stop_typing_error").format(error=e, data=data))
+def str_now():
+    from datetime import datetime
+    return datetime.utcnow().isoformat()
 
-        @self.sio.event
-        async def delivered(sid, data):
-            try:
-                chat_id = data.get("chatId")
-                message_id = data.get("messageId")
-                user = data.get("user")
-                logger.info(_("services.socketio.delivered").format(message_id=message_id, user=user, chat_id=chat_id, data=data))
-                await self.sio.emit("delivered", {"messageId": message_id, "user": user, "chatId": chat_id}, room=chat_id, skip_sid=sid)
-            except Exception as e:
-                logger.error(_("services.socketio.delivered_error").format(error=e, data=data))
+# Yardımcı fonksiyonlar (örnek, memory'den aktif kullanıcıları ve odadaki kullanıcıları getirir)
+def get_active_users():
+    return active_users
 
-        @self.sio.event
-        async def seen(sid, data):
-            try:
-                chat_id = data.get("chatId")
-                message_id = data.get("messageId")
-                user = data.get("user")
-                logger.info(_("services.socketio.seen").format(message_id=message_id, user=user, chat_id=chat_id, data=data))
-                await self.sio.emit("seen", {"messageId": message_id, "user": user, "chatId": chat_id}, room=chat_id, skip_sid=sid)
-            except Exception as e:
-                logger.error(_("services.socketio.seen_error").format(error=e, data=data))
+def get_users_in_room(room):
+    users = []
+    for sid, user_info in active_users.items():
+        if room in user_info.get('rooms', []):
+            users.append({
+                'socketId': sid,
+                'userId': user_info['user_id'],
+                'userRole': user_info['user_role'],
+                'rooms': user_info['rooms']
+            })
+    return users
 
-# SocketIO ve FastAPI birlikte root ASGI app olarak kullanılacak
-socket_manager = SocketManager()
+def get_users_in_chat(chat_id):
+    return get_users_in_room(chat_id)
+
+# ASGI app
 socket_app = socketio.ASGIApp(sio, other_asgi_app=fastapi_app)

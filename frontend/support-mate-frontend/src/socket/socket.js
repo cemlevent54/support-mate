@@ -1,6 +1,8 @@
 // src/socket.js
 import { io } from "socket.io-client";
 
+
+
 // API Gateway'in dışarıya açılan portu (9000) kullanılacak!
 const SOCKET_URL = "http://localhost:9000"; // veya sunucu adresiniz
 

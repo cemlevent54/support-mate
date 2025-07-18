@@ -1,106 +1,157 @@
-import React, { useState, useEffect } from 'react';
-import ChatArea from './ChatArea';
+import React, { useState, useEffect, useRef } from 'react';
 import TaskCreateModal from './TaskCreateModal';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import { MdSend } from 'react-icons/md';
 import { listMessagesByTicketId, sendMessage } from '../../api/messagesApi';
 import { getUserIdFromJWT } from '../../utils/jwt';
+import { useTranslation } from 'react-i18next';
+import socket from '../../socket/socket';
 
 export default function SupportChats({ ticketId, ticketTitle }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [chatId, setChatId] = useState(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const typingTimeout = useRef(null);
+  const messagesEndRef = useRef(null);
+  const { t } = useTranslation();
+  const userId = getUserIdFromJWT();
 
   useEffect(() => {
     if (!ticketId) {
       setMessages([]);
+      setChatId(null);
       return;
     }
     const fetchMessages = async () => {
       try {
         const res = await listMessagesByTicketId(ticketId);
-        console.log('API response:', res);
         if (res && res.success && res.data && Array.isArray(res.data.messages)) {
           setMessages(res.data.messages);
+          setChatId(res.data.chatId || null);
         } else {
           setMessages([]);
+          setChatId(null);
         }
       } catch (e) {
         setMessages([]);
+        setChatId(null);
       }
     };
     fetchMessages();
   }, [ticketId]);
 
-  // messages değiştiğinde logla
   useEffect(() => {
-    console.log('SupportChats - Ekranda gösterilecek messages:', messages);
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
 
-  // ChatArea'ya gönderilen props'u render sırasında logla
   useEffect(() => {
-    console.log('SupportChats render: ChatArea props', {
-      messages,
-      input,
-      ticketId,
-      ticketTitle
-    });
-  });
+    if (!chatId) return;
+    console.log('[SupportChats][SOCKET][JOIN_ROOM] Odaya katılıyor:', { chatId, userId });
+    socket.emit('join_room', { chatId, userId, userRole: 'Support' });
+    return () => {
+      console.log('[SupportChats][SOCKET][LEAVE_ROOM] Odadan ayrılıyor:', { chatId, userId });
+      socket.emit('leave_room', { chatId, userId });
+    };
+  }, [chatId, userId]);
 
-  // Render debug
-  console.log('SupportChats ticketId:', ticketId, 'messages:', messages);
+  useEffect(() => {
+    if (!chatId) return;
+    const handleNewMessage = (data) => {
+      if (data.chatId === chatId) {
+        setMessages(prev => [
+          ...prev,
+          {
+            senderId: data.userId,
+            text: data.message,
+            createdAt: new Date().toISOString()
+          }
+        ]);
+      }
+    };
+    socket.on('receive_chat_message', handleNewMessage);
+    return () => socket.off('receive_chat_message', handleNewMessage);
+  }, [chatId]);
+
+  useEffect(() => {
+    const handleTyping = (data) => {
+      console.log('[DEBUG][SupportChats][TYPING] Event geldi:', data, 'chatId:', chatId, 'userId:', userId);
+      if (data && data.chatId === chatId && data.userId !== userId) {
+        setIsTyping(true);
+      }
+    };
+    const handleStopTyping = (data) => {
+      if (data && data.chatId === chatId && data.userId !== userId) {
+        setIsTyping(false);
+      }
+    };
+    socket.on('typing', handleTyping);
+    socket.on('stop_typing', handleStopTyping);
+    return () => {
+      socket.off('typing', handleTyping);
+      socket.off('stop_typing', handleStopTyping);
+    };
+  }, [chatId, userId]);
+
+  useEffect(() => {
+    const handleUserJoined = (payload) => {
+      if (payload.chatId === chatId && payload.userId !== userId) {
+        // window.alert('Karşı taraf odaya katıldı!'); // kaldırıldı
+      }
+    };
+    const handleUserOnline = () => {};
+    socket.on('user_joined', handleUserJoined);
+    socket.on('user_online', handleUserOnline);
+    return () => {
+      socket.off('user_joined', handleUserJoined);
+      socket.off('user_online', handleUserOnline);
+    };
+  }, [chatId, userId]);
+
+  const handleInputChange = (e) => {
+    setInput(e.target.value);
+    if (!chatId) return;
+    let receiverId = null;
+    if (messages && messages.length > 0 && messages[0].senderId && messages[0].senderId !== userId) {
+      receiverId = messages[0].senderId;
+    } else if (messages && messages.length > 0 && messages[0].customerId) {
+      receiverId = messages[0].customerId;
+    }
+    if (e.target.value) {
+      socket.emit('typing', { chatId, userId, receiverId, isTyping: true });
+      if (typingTimeout.current) clearTimeout(typingTimeout.current);
+      typingTimeout.current = setTimeout(() => {
+        socket.emit('stop_typing', { chatId, userId, receiverId });
+      }, 1000);
+    } else {
+      socket.emit('stop_typing', { chatId, userId, receiverId });
+    }
+  };
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!input.trim() || !ticketId) return;
-    
-    try {
-      // JWT token'dan kullanıcı ID'sini al
-      const userId = getUserIdFromJWT();
-      
-      if (!userId) {
-        console.error('Kullanıcı ID bulunamadı');
-        return;
-      }
-      
-      // Önce ticket ID'si ile chat'i bul
-      const chatResponse = await listMessagesByTicketId(ticketId);
-      console.log('Chat response:', chatResponse);
-      
-      if (!chatResponse.success || !chatResponse.data || !chatResponse.data.chatId) {
-        console.error('Chat bulunamadı veya chatId yok');
-        return;
-      }
-      
-      const chatId = chatResponse.data.chatId;
-      console.log('Bulunan chat ID:', chatId);
-      
-      const messageData = {
-        chatId: chatId, // Gerçek chat ID'sini kullan
+    if (!input.trim() || !chatId) return;
+    setMessages(prev => [
+      ...prev,
+      {
         text: input,
         senderId: userId,
-        senderRole: 'Support' // Agent/Support rolü
-      };
-      
-      console.log('Gönderilecek mesaj:', messageData);
-      console.log('Ticket ID:', ticketId);
-      console.log('Chat ID:', chatId);
-      console.log('User ID:', userId);
-      
-      const response = await sendMessage(messageData);
-      console.log('Send message response:', response);
-      
-      if (response.success) {
-        // Yeni mesajı listeye ekle
-        setMessages(prev => [...prev, response.data]);
-        setInput("");
-      } else {
-        console.error('Mesaj gönderilemedi:', response.message);
-        console.error('Response details:', response);
+        senderRole: 'Support',
+        createdAt: new Date().toISOString(),
       }
+    ]);
+    socket.emit('send_message', { chatId, userId, message: input });
+    try {
+      await sendMessage({ chatId, userId, text: input });
     } catch (error) {
-      console.error('Mesaj gönderme hatası:', error);
-      console.error('Error response:', error.response?.data);
+      // Hata durumunda kullanıcıya bildirim eklenebilir
     }
+    setInput("");
   };
 
   const openTaskModal = () => setTaskModalOpen(true);
@@ -108,15 +159,68 @@ export default function SupportChats({ ticketId, ticketTitle }) {
 
   return (
     <Box display="flex" height="100%" boxShadow={2} borderRadius={2} bgcolor="#fff" overflow="hidden">
-      <ChatArea
-        messages={messages || []}
-        input={input}
-        setInput={setInput}
-        handleSend={handleSend}
-        openTaskModal={openTaskModal}
-        ticketId={ticketId}
-        ticketTitle={ticketTitle}
-      />
+      <Box flex={1} display="flex" flexDirection="column" justifyContent="flex-end" height="100%">
+        <Box flex={1} p={3} overflow="auto" display="flex" flexDirection="column">
+          {chatId ? (
+            loading ? (
+              <div>Yükleniyor...</div>
+            ) : (
+              (messages || []).map((msg, idx) => (
+                <Box
+                  key={idx}
+                  alignSelf={msg.senderRole === 'Customer Supporter' || msg.senderRole === 'Support' ? 'flex-end' : 'flex-start'}
+                  bgcolor={msg.senderRole === 'Customer Supporter' || msg.senderRole === 'Support' ? '#e3f2fd' : '#f1f1f1'}
+                  color="#222"
+                  px={2} py={1.5} mb={1}
+                  borderRadius={3}
+                  boxShadow={1}
+                  maxWidth="70%"
+                >
+                  {typeof msg.text === 'string' ? msg.text : JSON.stringify(msg.text)}
+                  {msg.attachments && msg.attachments.length > 0 && (
+                    <ul style={{ margin: '8px 0 0 0', padding: 0, listStyle: 'none' }}>
+                      {msg.attachments.map((file, i) => (
+                        <li key={i}>
+                          <a href={`/${file}`} target="_blank" rel="noopener noreferrer">{file}</a>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <Box fontSize={12} color="#888" textAlign="right" mt={0.5}>{msg.time ? new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</Box>
+                </Box>
+              ))
+            )
+          ) : (
+            <div>Chat başlatılmadı.</div>
+          )}
+          <div ref={messagesEndRef} />
+          {isTyping && (
+            <Box fontSize={14} color="#888" mb={1}>
+              Kullanıcı yazıyor...
+            </Box>
+          )}
+        </Box>
+        <Box p={2} borderTop="1px solid #eee" bgcolor="#fafafa">
+          <form onSubmit={handleSend} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input
+              value={input}
+              onChange={handleInputChange}
+              onBlur={() => {
+                if (!chatId) return;
+                socket.emit('stop_typing', { chatId, userId });
+              }}
+              placeholder={t('chatArea.placeholder')}
+              style={{ flex: 1, border: '1px solid #ddd', borderRadius: 22, padding: '10px 16px', fontSize: 16, outline: 'none', background: '#fff', marginRight: 8 }}
+            />
+            <Button type="submit" variant="contained" color="primary" sx={{ borderRadius: '50%', minWidth: 0, width: 44, height: 44, p: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <MdSend size={22} />
+            </Button>
+            <Button variant="outlined" color="primary" sx={{ height: 44, borderRadius: 22, fontWeight: 600, px: 2.5 }} onClick={openTaskModal}>
+              {t('chatArea.createTask')}
+            </Button>
+          </form>
+        </Box>
+      </Box>
       <TaskCreateModal open={taskModalOpen} onClose={closeTaskModal} />
     </Box>
   );

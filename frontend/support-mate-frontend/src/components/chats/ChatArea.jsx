@@ -5,8 +5,12 @@ import { MdSend } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import socket from '../../socket/socket';
 import { listMessagesByTicketId } from '../../api/messagesApi';
+import { getUserIdFromJWT } from '../../utils/jwt';
 
-export default function ChatArea({ messages, input, setInput, handleSend, openTaskModal, ticketId, ticketTitle }) {
+const userId = getUserIdFromJWT();
+const userName = localStorage.getItem('userName') || 'Kullanıcı';
+
+export default function ChatArea({ messages, input, setInput, handleSend, openTaskModal, ticketId, chatId, ticketTitle }) {
   const messagesEndRef = useRef(null);
   const { t } = useTranslation();
   const [isTyping, setIsTyping] = useState(false);
@@ -51,33 +55,37 @@ export default function ChatArea({ messages, input, setInput, handleSend, openTa
 
   // Diğer kullanıcıdan gelen typing eventlerini dinle
   useEffect(() => {
-    socket.on('typing', (data) => {
-      setIsTyping(true);
-    });
-    socket.on('stop_typing', (data) => {
-      setIsTyping(false);
-    });
-    return () => {
-      socket.off('typing');
-      socket.off('stop_typing');
+    const handleTyping = (data) => {
+      console.log('[DEBUG][ChatArea][TYPING] Event geldi:', data, 'chatId:', chatId, 'userId:', userId);
+      if (data && data.chatId === chatId && data.userId !== userId) {
+        setIsTyping(true);
+      }
     };
-  }, []);
+    const handleStopTyping = (data) => {
+      if (data && data.chatId === chatId && data.userId !== userId) {
+        setIsTyping(false);
+      }
+    };
+    socket.on('typing', handleTyping);
+    socket.on('stop_typing', handleStopTyping);
+    return () => {
+      socket.off('typing', handleTyping);
+      socket.off('stop_typing', handleStopTyping);
+    };
+  }, [chatId, userId]);
 
   // Kullanıcı inputa yazdıkça typing eventini gönder
   const handleInputChange = (e) => {
     effectiveSetInput(e.target.value);
-    // Typing eventini gönder
-    socket.emit('typing', {
-      chatId: 'ornekChatId', // Gerçek chatId ile değiştirin
-      user: { id: 'kullanici_id', name: 'Kullanıcı Adı' }, // Gerçek kullanıcı ile değiştirin
-    });
-    // Kullanıcı yazmayı bırakınca stop_typing eventini gönder (ör: 1 sn sonra)
+    if (!chatId) return;
+    if (e.target.value) {
+      socket.emit('typing', { chatId, userId });
+    } else {
+      socket.emit('stop_typing', { chatId, userId });
+    }
     if (typingTimeout.current) clearTimeout(typingTimeout.current);
     typingTimeout.current = setTimeout(() => {
-      socket.emit('stop_typing', {
-        chatId: 'ornekChatId',
-        user: { id: 'kullanici_id', name: 'Kullanıcı Adı' },
-      });
+      socket.emit('stop_typing', { chatId, userId });
     }, 1000);
   };
 
@@ -104,19 +112,20 @@ export default function ChatArea({ messages, input, setInput, handleSend, openTa
 
   // Odaya katıl/ayrıl (join_room/leave_room)
   useEffect(() => {
-    if (!ticketId) return;
-    const user = { id: localStorage.getItem('userId') || 'unknown', name: localStorage.getItem('userName') || 'Kullanıcı' };
-    socket.emit('join_room', { chatId: ticketId, user });
+    if (!chatId) return;
+    console.log('[ChatArea][SOCKET][JOIN_ROOM] Odaya katılıyor:', { chatId, userId });
+    socket.emit('join_room', { chatId, userId });
     return () => {
-      socket.emit('leave_room', { chatId: ticketId, user });
+      console.log('[ChatArea][SOCKET][LEAVE_ROOM] Odadan ayrılıyor:', { chatId, userId });
+      socket.emit('leave_room', { chatId, userId });
     };
-  }, [ticketId]);
+  }, [chatId, userId]);
 
   // new_message eventini dinle
   useEffect(() => {
-    if (!ticketId) return;
+    if (!chatId) return;
     const handleNewMessage = (data) => {
-      if (data.chatId === ticketId) {
+      if (data.chatId === chatId) {
         setBackendMessages(prev => [
           ...prev,
           {
@@ -129,12 +138,44 @@ export default function ChatArea({ messages, input, setInput, handleSend, openTa
     };
     socket.on('new_message', handleNewMessage);
     return () => socket.off('new_message', handleNewMessage);
-  }, [ticketId]);
+  }, [chatId]);
+
+  useEffect(() => {
+    const handleUserJoined = () => {};
+    const handleUserOnline = () => {};
+    socket.on('user_joined', handleUserJoined);
+    socket.on('user_online', handleUserOnline);
+    return () => {
+      socket.off('user_joined', handleUserJoined);
+      socket.off('user_online', handleUserOnline);
+    };
+  }, []);
+
+  // Mesaj gönderme fonksiyonu (optimistic update)
+  const handleFormSend = (e) => {
+    e.preventDefault();
+    if (!chatId || !effectiveInput.trim()) return;
+    // Optimistic update
+    setBackendMessages(prev => [
+      ...prev,
+      {
+        from: 'support',
+        text: effectiveInput,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }
+    ]);
+    socket.emit('send_message', {
+      chatId,
+      userId,
+      message: effectiveInput,
+    });
+    effectiveSetInput("");
+  };
 
   return (
     <Box flex={1} display="flex" flexDirection="column" justifyContent="flex-end" height="100%">
       <Box flex={1} p={3} overflow="auto" display="flex" flexDirection="column">
-        {ticketId ? (
+        {chatId ? (
           loading ? (
             <div>Yükleniyor...</div>
           ) : (
@@ -188,24 +229,13 @@ export default function ChatArea({ messages, input, setInput, handleSend, openTa
         )}
       </Box>
       <Box p={2} borderTop="1px solid #eee" bgcolor="#fafafa">
-        <form onSubmit={e => {
-          e.preventDefault();
-          // Socket ile mesaj gönderme örneği
-          socket.emit('send_message', {
-            chatId: 'ornekChatId', // Gerçek chatId ile değiştirin
-            user: { id: 'kullanici_id', name: 'Kullanıcı Adı' }, // Gerçek kullanıcı ile değiştirin
-            message: effectiveInput,
-          });
-          if (typeof handleSend === 'function') handleSend(e); // Mevcut prop fonksiyonunu da çağırmaya devam edin
-        }} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <form onSubmit={handleFormSend} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <input
             value={effectiveInput}
             onChange={handleInputChange}
             onBlur={() => {
-              socket.emit('stop_typing', {
-                chatId: 'ornekChatId',
-                user: { id: 'kullanici_id', name: 'Kullanıcı Adı' },
-              });
+              if (!chatId) return;
+              socket.emit('stop_typing', { chatId, userId });
             }}
             placeholder={t('chatArea.placeholder')}
             style={{ flex: 1, border: '1px solid #ddd', borderRadius: 22, padding: '10px 16px', fontSize: 16, outline: 'none', background: '#fff', marginRight: 8 }}

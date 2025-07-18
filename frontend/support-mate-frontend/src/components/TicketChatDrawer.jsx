@@ -27,7 +27,7 @@ const TicketChatDrawer = ({ ticket, onClose, useTicketIdForMessages }) => {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [someoneTyping, setSomeoneTyping] = useState(false);
-  const [currentChatId, setCurrentChatId] = useState(ticket?.chatId || null);
+  const [chatId, setChatId] = useState(ticket?.chatId || null);
   const messagesEndRef = useRef(null);
   const token = localStorage.getItem('jwt');
   const decoded = decodeJWT(token);
@@ -48,22 +48,22 @@ const TicketChatDrawer = ({ ticket, onClose, useTicketIdForMessages }) => {
         } else {
           setMessages([]);
           setLoading(false);
-          setCurrentChatId(null);
+          setChatId(null);
           return;
         }
         if (res.success && res.data && Array.isArray(res.data.messages)) {
           setMessages(res.data.messages);
-          setCurrentChatId(res.data.chatId);
+          setChatId(res.data.chatId || null);
         } else if (res.success && Array.isArray(res.data)) {
           setMessages(res.data);
-          setCurrentChatId(ticket.chatId || null);
+          setChatId(ticket.chatId || null);
         } else {
           setMessages([]);
-          setCurrentChatId(null);
+          setChatId(null);
         }
       } catch (e) {
         setMessages([]);
-        setCurrentChatId(null);
+        setChatId(null);
       } finally {
         setLoading(false);
       }
@@ -80,22 +80,20 @@ const TicketChatDrawer = ({ ticket, onClose, useTicketIdForMessages }) => {
 
   // Odaya katıl/ayrıl (join_room/leave_room)
   useEffect(() => {
-    if (!ticket || !ticket.chatId) return;
-    const user = { id: myUserId, name: myUserName };
-    console.log('[SOCKET][JOIN_ROOM] Odaya katılıyor:', { chatId: ticket.chatId, user });
-    socket.emit('join_room', { chatId: ticket.chatId, user });
+    if (!chatId) return;
+    console.log('[SOCKET][JOIN_ROOM] Odaya katılıyor:', { chatId, userId: myUserId });
+    socket.emit('join_room', { chatId, userId: myUserId });
     return () => {
-      console.log('[SOCKET][LEAVE_ROOM] Odadan ayrılıyor:', { chatId: ticket.chatId, user });
-      socket.emit('leave_room', { chatId: ticket.chatId, user });
+      console.log('[SOCKET][LEAVE_ROOM] Odadan ayrılıyor:', { chatId, userId: myUserId });
+      socket.emit('leave_room', { chatId, userId: myUserId });
     };
-  }, [ticket?.chatId, myUserId, myUserName]);
+  }, [chatId, myUserId]);
 
   // new_message eventini dinle
   useEffect(() => {
-    if (!ticket || !ticket.chatId) return;
+    if (!chatId) return;
     const handleNewMessage = (data) => {
-      if (data.chatId === ticket.chatId) {
-        console.log('[SOCKET][NEW_MESSAGE] Yeni mesaj alındı:', data);
+      if (data.chatId === chatId) {
         setMessages(prev => [
           ...prev,
           {
@@ -109,20 +107,19 @@ const TicketChatDrawer = ({ ticket, onClose, useTicketIdForMessages }) => {
     };
     socket.on('new_message', handleNewMessage);
     return () => socket.off('new_message', handleNewMessage);
-  }, [ticket?.chatId]);
+  }, [chatId]);
 
   // typing ve stop_typing eventlerini dinle (sadece başkası yazıyorsa göster)
   useEffect(() => {
-    if (!ticket || !ticket.chatId) return;
+    if (!chatId) return;
     const handleTyping = (data) => {
-      if (data.chatId === ticket.chatId && data.user?.id !== myUserId) {
-        console.log('[SOCKET][TYPING] Başkası yazıyor:', data);
+      console.log('[DEBUG][TicketChatDrawer][TYPING] Event geldi:', data, 'chatId:', chatId, 'myUserId:', myUserId);
+      if (data && data.chatId === chatId && data.userId !== myUserId) {
         setSomeoneTyping(true);
       }
     };
     const handleStopTyping = (data) => {
-      if (data.chatId === ticket.chatId && data.user?.id !== myUserId) {
-        console.log('[SOCKET][STOP_TYPING] Başkası yazmayı bıraktı:', data);
+      if (data && data.chatId === chatId && data.userId !== myUserId) {
         setSomeoneTyping(false);
       }
     };
@@ -132,28 +129,57 @@ const TicketChatDrawer = ({ ticket, onClose, useTicketIdForMessages }) => {
       socket.off('typing', handleTyping);
       socket.off('stop_typing', handleStopTyping);
     };
-  }, [ticket?.chatId, myUserId]);
+  }, [chatId, myUserId]);
+
+  // Kullanıcıların odaya katılıp/çıkışını dinle
+  useEffect(() => {
+    const handleUserJoined = () => {};
+    const handleUserOnline = () => {};
+    socket.on('user_joined', handleUserJoined);
+    socket.on('user_online', handleUserOnline);
+    return () => {
+      socket.off('user_joined', handleUserJoined);
+      socket.off('user_online', handleUserOnline);
+    };
+  }, []);
 
   // Mesaj gönder
   const handleSend = async () => {
-    if (!input.trim() || !currentChatId) return;
+    if (!input.trim() || !chatId) return;
     setSending(true);
-    try {
-      const payload = {
-        chatId: currentChatId,
-        text: input,
+    // Optimistic update: Mesajı hemen ekle
+    setMessages(prev => [
+      ...prev,
+      {
+        _id: Math.random().toString(36),
         senderId: myUserId,
-      };
-      console.log('[SOCKET][SEND_MESSAGE] Mesaj gönderiliyor:', payload);
-      const res = await sendMessage(payload);
-      if (res.success) {
-        setMessages(prev => [...prev, res.data]);
-        setInput("");
-        setSomeoneTyping(false);
-        socket.emit('stop_typing', { chatId: currentChatId, user: { id: myUserId, name: myUserName } });
+        senderRole: 'User',
+        text: input,
+        createdAt: new Date().toISOString()
       }
+    ]);
+    // Socket emit
+    socket.emit('send_message', {
+      chatId,
+      userId: myUserId,
+      message: input,
+      senderId: myUserId,
+      senderRole: 'User',
+    });
+    // API'ye de gönder (isteğe bağlı, backend ile uyumluysa)
+    try {
+      await sendMessage({
+        chatId,
+        userId: myUserId,
+        message: input,
+        senderId: myUserId,
+        senderRole: 'User',
+      });
+      setInput("");
+      setSomeoneTyping(false);
+      socket.emit('stop_typing', { chatId, userId: myUserId });
     } catch (e) {
-      console.error('[SOCKET][SEND_MESSAGE][HATA] Mesaj gönderilemedi:', e);
+      // Hata durumunda kullanıcıya bildirim eklenebilir
     } finally {
       setSending(false);
     }
@@ -162,14 +188,13 @@ const TicketChatDrawer = ({ ticket, onClose, useTicketIdForMessages }) => {
   // Kullanıcı yazarken typing eventini gönder
   const handleInputChange = (e) => {
     setInput(e.target.value);
-    if (!ticket || !ticket.chatId) return;
-    const user = { id: myUserId, name: myUserName };
+    if (!chatId) return;
     if (e.target.value) {
-      console.log('[SOCKET][TYPING] Yazıyor event gönderiliyor:', { chatId: ticket.chatId, user });
-      socket.emit('typing', { chatId: ticket.chatId, user });
+      console.log('[SOCKET][TYPING] Yazıyor event gönderiliyor:', { chatId, userId: myUserId });
+      socket.emit('typing', { chatId, userId: myUserId });
     } else {
-      console.log('[SOCKET][STOP_TYPING] Yazmayı bıraktı event gönderiliyor:', { chatId: ticket.chatId, user });
-      socket.emit('stop_typing', { chatId: ticket.chatId, user });
+      console.log('[SOCKET][STOP_TYPING] Yazmayı bıraktı event gönderiliyor:', { chatId, userId: myUserId });
+      socket.emit('stop_typing', { chatId, userId: myUserId });
     }
   };
 
