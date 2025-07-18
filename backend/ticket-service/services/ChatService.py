@@ -4,6 +4,8 @@ import uuid
 from datetime import datetime
 import logging
 from middlewares.auth import get_user_by_id
+from cqrs.commands.CreateChatCommandHandler import CreateChatCommandHandler
+from config.language import _
 
 logger = logging.getLogger(__name__)
 
@@ -23,9 +25,10 @@ class ChatService:
                 else:
                     user_detail = user
                 # Eğer user zaten participants'ta yoksa ekle
-                role = user_detail.get("roleName") or user_detail.get("role") or "customer"
+                role = user_detail.get("roleName")
                 if not any(p.get("userId") == user_detail["id"] for p in participants):
                     participants.append({"userId": user_detail["id"], "role": role})
+                    logger.info(_(f"services.chatService.logs.participant_added").format(user_id=user_detail["id"], role=role))
             chat = Chat(
                 id=chat_id,
                 ticketId=chat_data.get("ticketId"),
@@ -33,10 +36,13 @@ class ChatService:
                 createdAt=datetime.utcnow(),
                 isDeleted=False
             )
-            saved_chat = self.chat_repository.create(chat)
-            logger.info(f"Chat created: {chat_id} for ticket {chat.ticketId}")
-            agent_online = any(p.get("role") == "agent" for p in participants)
+            # CQRS ile chat oluştur
+            chat_handler = CreateChatCommandHandler()
+            saved_chat = chat_handler.execute(chat.model_dump(by_alias=True))
+            logger.info(_(f"services.chatService.logs.chat_created").format(chat_id=chat_id, ticket_id=chat.ticketId))
+            agent_online = any(p.get("roleName") == "Customer Supporter" for p in participants)
+            logger.info(_(f"services.chatService.logs.agent_online").format(agent_online=agent_online))
             return saved_chat, agent_online
         except Exception as e:
-            logger.error(f"Chat creation failed: {str(e)}")
+            logger.error(_(f"services.chatService.logs.chat_creation_failed").format(error=str(e)))
             return None, False 

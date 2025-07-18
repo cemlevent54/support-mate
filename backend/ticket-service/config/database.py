@@ -14,25 +14,22 @@ def get_mongo_uri():
 
 def ensure_db_and_collection():
     uri = get_mongo_uri()
+    logger.info(_(f"config.database.connecting").format(uri=uri))
     client = MongoClient(uri, serverSelectionTimeoutMS=2000)
     db_name = uri.rsplit('/', 1)[-1].split('?')[0]
     db = client[db_name]
     try:
         # Bağlantı testi
         client.server_info()
-        msg = _("config.database.mongo_connection_success", db=db_name)
-        if msg == "config.database.mongo_connection_success":
-            logger.success(f"MongoDB bağlantısı başarılı. DB: {db_name}")
-        else:
-            logger.success(msg)
+        logger.success(_(f"config.database.connected").format(db=db_name))
+        logger.success(_(f"config.database.mongo_connection_success").format(db=db_name))
     except Exception as e:
-        err_msg = _("config.database.mongo_connection_error", error=str(e))
-        if err_msg == "config.database.mongo_connection_error":
-            logger.error(f"MongoDB bağlantı hatası: {e}")
-        else:
-            logger.error(err_msg)
+        logger.error(_(f"config.database.connection_failed").format(error=str(e)))
+        logger.error(_(f"config.database.mongo_connection_error").format(error=str(e)))
     finally:
+        logger.info(_(f"config.database.closing"))
         client.close()
+        logger.info(_(f"config.database.closed"))
     return db_name
 
 # Modül yüklendiğinde otomatik çalıştır

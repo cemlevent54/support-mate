@@ -12,7 +12,7 @@ REDIS_ONLINE_QUEUE = 'online_users_queue'
 
 # Bağlantı
 #_redis_url = os.getenv('REDIS_URL')
-_redis_url = 'redis://127.0.0.1:6379'
+_redis_url = os.getenv('REDIS_URL')
 r = redis.from_url(_redis_url)
 
 def get_redis_url():
@@ -22,10 +22,10 @@ def get_redis_status():
     url = get_redis_url()
     try:
         r.ping()
-        logger.success(_("config.redis.redis_connection_success"))
+        logger.success(_(f"config.redis.redis_connection_success"))
         status = "up"
     except Exception as e:
-        logger.error(_("config.redis.redis_connection_error", error=str(e)))
+        logger.error(_(f"config.redis.redis_connection_error").format(error=str(e)))
         status = "down"
     return {
         "status": status,
@@ -36,14 +36,14 @@ def get_redis_status():
 def add_online_agent(user_id):
     if r:
         r.rpush(REDIS_ONLINE_QUEUE, user_id)
-        logger.info(f"[REDIS] Online temsilci eklendi: {user_id}")
+        logger.info(_(f"config.redis.agent_added").format(user_id=user_id))
 
 # Online temsilci çıkar
 # (offline olduğunda tamamen sil)
 def remove_online_agent(user_id):
     if r:
         r.lrem(REDIS_ONLINE_QUEUE, 0, user_id)
-        logger.info(f"[REDIS] Online temsilci çıkarıldı: {user_id}")
+        logger.info(_(f"config.redis.agent_removed").format(user_id=user_id))
 
 # Tüm online temsilcileri getir
 def get_all_online_agents():
@@ -55,9 +55,9 @@ def get_all_online_agents():
 def select_and_rotate_agent():
     if r:
         agent_id = r.lpop(REDIS_ONLINE_QUEUE)
-        logger.info(f"[REDIS] Temsilci seçildi: {agent_id}")
+        logger.info(_(f"config.redis.agent_selected").format(agent_id=agent_id))
         if agent_id:
             r.rpush(REDIS_ONLINE_QUEUE, agent_id)
-            logger.info(f"[REDIS] Temsilci sona eklendi (round robin): {agent_id}")
+            logger.info(_(f"config.redis.agent_rotated").format(agent_id=agent_id))
             return agent_id.decode() if isinstance(agent_id, bytes) else agent_id
     return None

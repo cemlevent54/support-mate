@@ -6,18 +6,138 @@
         },
         "database": {
             "mongo_connection_success": "MongoDB bağlantısı başarılı. DB: {db}",
-            "mongo_connection_error": "MongoDB bağlantı hatası: {error}"
+            "mongo_connection_error": "MongoDB bağlantı hatası: {error}",
+            "connecting": "MongoDB'ye bağlanılıyor... URI: {uri}",
+            "connected": "MongoDB'ye başarıyla bağlanıldı. DB: {db}",
+            "connection_failed": "MongoDB bağlantısı başarısız oldu: {error}",
+            "closing": "MongoDB bağlantısı kapatılıyor...",
+            "closed": "MongoDB bağlantısı kapatıldı."
         },
         "redis": {
             "redis_connection_success": "Redis bağlantısı başarılı.",
-            "redis_connection_error": "Redis bağlantı hatası: {error}"
+            "redis_connection_error": "Redis bağlantı hatası: {error}",
+            "connecting": "Redis'e bağlanılıyor... URL: {url}",
+            "connected": "Redis'e başarıyla bağlanıldı.",
+            "connection_failed": "Redis bağlantısı başarısız oldu: {error}",
+            "agent_added": "Online temsilci eklendi: {user_id}",
+            "agent_removed": "Online temsilci çıkarıldı: {user_id}",
+            "agent_selected": "Temsilci seçildi: {agent_id}",
+            "agent_rotated": "Temsilci sona eklendi (round robin): {agent_id}"
         },
         "kafka": {
             "kafka_connection_success": "Kafka bağlantısı başarılı.",
             "kafka_connection_error": "Kafka bağlantı hatası: {error}"
+        },
+        "language": {
+            "default_language": "Varsayılan dil: {lang}"
         }
     },
     "api_started": "API başlatıldı",
     "api_running": "Ticket Service API çalışıyor",
-    "service_starting": "Ticket Service başlatılıyor"
+    "service_starting": "Ticket Service başlatılıyor",
+
+    "services": {
+        "messageService": {
+            "logs": {
+                "plain_message_before_encryption": "Şifrelemeden önce düz mesaj: {text}",
+                "message_encrypted": "Mesaj şifrelendi.",
+                "message_sent": "Mesaj başarıyla gönderildi.",
+                "message_send_failed": "Mesaj gönderilemedi: {error}",
+                "message_listed": "Mesajlar başarıyla listelendi.",
+                "message_list_failed": "Mesajlar listelenemedi: {error}"
+            },
+            "responses": {
+                "receiver_not_found": "receiverId bulunamadı (chat'te başka participant yok)",
+                "chat_not_found": "Chat bulunamadı veya participants yok",
+                "receiver_and_chat_required": "receiverId ve chatId zorunlu",
+                "messages_retrieved": "Mesajlar başarıyla getirildi.",
+                "chat_not_found_simple": "Chat bulunamadı."
+            }
+        },
+        "ticketService": {
+            "logs": {
+                "creating_ticket": "Kullanıcı için ticket oluşturuluyor: {user_id}",
+                "ticket_created": "Ticket başarıyla oluşturuldu: {ticket_id}",
+                "agent_assigned": "Online temsilci bulundu ve atandı: {agent_id}",
+                "no_agent_found": "Online temsilci bulunamadı. Sadece müşteri ile chat oluşturulacak.",
+                "chat_created": "Ticket için chat oluşturuldu: {ticket_id} - {chat_id}",
+                "is_delivered": "is_delivered: {is_delivered}",
+                "ticket_event_sent": "ticket_created event Kafka'ya gönderildi: {ticket_id}",
+                "agent_mail_notify": "Temsilciye mail bildirimi gönderilmeli: {agent_id}",
+                "event_mail_failed": "ticket_created event veya mail gönderilemedi: {error}",
+                "listing_tickets": "Kullanıcı için ticket listeleniyor: {user_id}",
+                "getting_ticket": "Ticket getiriliyor: {ticket_id} kullanıcı: {user_id}",
+                "updating_ticket": "Ticket güncelleniyor: {ticket_id} kullanıcı: {user_id}",
+                "soft_deleting_ticket": "Ticket siliniyor: {ticket_id} kullanıcı: {user_id}",
+                "auto_assign": "[AUTO-ASSIGN] Agent {agent_id} pending ticket {ticket_id} için atandı",
+                "no_pending_ticket": "[AUTO-ASSIGN] Atanacak bekleyen ticket yok."
+            },
+            "responses": {
+                "unauthorized": "Kullanıcı doğrulanamadı.",
+                "bad_request": "Eksik veya hatalı parametre.",
+                "ticket_not_found": "Ticket bulunamadı.",
+                "ticket_created": "Ticket başarıyla oluşturuldu.",
+                "ticket_updated": "Ticket başarıyla güncellendi.",
+                "ticket_deleted": "Ticket başarıyla silindi.",
+                "agent_assigned": "Temsilci başarıyla atandı.",
+                "no_pending_ticket": "Atanacak bekleyen ticket yok."
+            }
+        },
+        "ticketRepository": {
+            "logs": {
+                "create": "[REPO] TicketRepository.create: ticket_id={ticket_id}",
+                "create_error": "[REPO] TicketRepository.create hata: {error}",
+                "get_by_id": "[REPO] TicketRepository.get_by_id: ticket_id={ticket_id}, bulundu={found}",
+                "get_by_id_error": "[REPO] TicketRepository.get_by_id hata: {error}",
+                "list": "[REPO] TicketRepository.list: filter={filter}, count={count}",
+                "list_error": "[REPO] TicketRepository.list hata: {error}",
+                "update": "[REPO] TicketRepository.update: ticket_id={ticket_id}, değişen={modified}",
+                "update_error": "[REPO] TicketRepository.update hata: {error}",
+                "soft_delete": "[REPO] TicketRepository.soft_delete: ticket_id={ticket_id}, değişen={modified}",
+                "soft_delete_error": "[REPO] TicketRepository.soft_delete hata: {error}"
+            }
+        },
+        "chatService": {
+            "logs": {
+                "chat_created": "Chat oluşturuldu: {chat_id} (ticket: {ticket_id})",
+                "chat_creation_failed": "Chat oluşturulamadı: {error}",
+                "participant_added": "Katılımcı eklendi: {user_id} rol: {role}",
+                "agent_online": "Agent online: {agent_online}"
+            }
+        },
+        "chatRepository": {
+            "logs": {
+                "create": "[REPO] ChatRepository.create: chat_id={chat_id}",
+                "create_error": "[REPO] ChatRepository.create hata: {error}",
+                "get_by_id": "[REPO] ChatRepository.get_by_id: chat_id={chat_id}, bulundu={found}",
+                "get_by_id_error": "[REPO] ChatRepository.get_by_id hata: {error}",
+                "find_by_ticket_id": "[REPO] ChatRepository.find_by_ticket_id: ticket_id={ticket_id}, bulundu={found}",
+                "find_by_ticket_id_error": "[REPO] ChatRepository.find_by_ticket_id hata: {error}",
+                "update": "[REPO] ChatRepository.update: chat_id={chat_id}, değişen={modified}",
+                "update_error": "[REPO] ChatRepository.update hata: {error}",
+                "soft_delete": "[REPO] ChatRepository.soft_delete: chat_id={chat_id}, değişen={modified}",
+                "soft_delete_error": "[REPO] ChatRepository.soft_delete hata: {error}"
+            }
+        },
+        "socketio": {
+            "server_initialized": "Socket.IO sunucusu başlatıldı.",
+            "client_connected": "[SOCKET][CONNECT] İstemci bağlandı: {sid}. Toplam bağlantı: {count}",
+            "client_disconnected": "[SOCKET][DISCONNECT] İstemci bağlantısı kesildi: {sid}. Toplam bağlantı: {count}",
+            "user_offline": "[SOCKET][DISCONNECT] Kullanıcı {user_id} artık çevrimdışı (sid: {sid})",
+            "join_room": "[SOCKET][JOIN_ROOM] Kullanıcı {user_id} oda {chat_id}'ye katıldı (sid: {sid}) | Payload: {data} | Oda üyeleri: {members}",
+            "join_room_error": "[SOCKET][JOIN_ROOM][HATA] {error} | Payload: {data}",
+            "leave_room": "[SOCKET][LEAVE_ROOM] Kullanıcı {user_id} oda {chat_id}'den ayrıldı (sid: {sid}) | Payload: {data} | Ayrıldıktan sonra oda üyeleri: {members}",
+            "leave_room_error": "[SOCKET][LEAVE_ROOM][HATA] {error} | Payload: {data}",
+            "send_message": "[SOCKET][SEND_MESSAGE] {user} kullanıcısından {chat_id} odasına mesaj: {message} | Payload: {data}",
+            "send_message_error": "[SOCKET][SEND_MESSAGE][HATA] {error} | Payload: {data}",
+            "typing": "[SOCKET][TYPING] {user} {chat_id} odasında yazıyor | Payload: {data}",
+            "typing_error": "[SOCKET][TYPING][HATA] {error} | Payload: {data}",
+            "stop_typing": "[SOCKET][STOP_TYPING] {user} {chat_id} odasında yazmayı bıraktı | Payload: {data}",
+            "stop_typing_error": "[SOCKET][STOP_TYPING][HATA] {error} | Payload: {data}",
+            "delivered": "[SOCKET][DELIVERED] Mesaj {message_id} {user} kullanıcısına {chat_id} odasında teslim edildi | Payload: {data}",
+            "delivered_error": "[SOCKET][DELIVERED][HATA] {error} | Payload: {data}",
+            "seen": "[SOCKET][SEEN] Mesaj {message_id} {user} tarafından {chat_id} odasında görüldü | Payload: {data}",
+            "seen_error": "[SOCKET][SEEN][HATA] {error} | Payload: {data}"
+        }
+    }
 }

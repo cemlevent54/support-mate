@@ -1,6 +1,7 @@
 import json
 import os
 from threading import local
+from config.env import get_default_language
 
 # Thread-local storage ile dil seçimi
 _thread_locals = local()
@@ -25,11 +26,27 @@ def set_language(lang):
         _thread_locals.language = 'en'
 
 def get_language():
-    return getattr(_thread_locals, 'language', 'en')
+    # Eğer thread-local'da language yoksa, env'den oku ve ayarla
+    lang = getattr(_thread_locals, 'language', None)
+    if lang is None:
+        lang = get_default_language()
+        _thread_locals.language = lang
+    return lang
 
 def _(key, **kwargs):
     lang = get_language()
-    text = TRANSLATIONS.get(lang, {}).get(key, key)
+    # Nokta ile ayrılmış anahtarları iç içe gez
+    def get_nested(dct, keys):
+        for k in keys:
+            if isinstance(dct, dict):
+                dct = dct.get(k, None)
+            else:
+                return None
+        return dct
+    keys = key.split('.')
+    text = get_nested(TRANSLATIONS.get(lang, {}), keys)
+    if not text:
+        text = key
     if kwargs:
         try:
             return text.format(**kwargs)

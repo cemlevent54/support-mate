@@ -14,6 +14,8 @@ from kafka import KafkaProducer
 import logging
 from kafka_files.kafkaConsumer import start_agent_online_consumer
 import threading
+from config.socketio import fastapi_app
+from starlette.middleware.cors import CORSMiddleware
 
 logger = get_logger()
 
@@ -64,3 +66,12 @@ test_all_connections()
 
 # Kafka consumer'ı arka planda başlat
 threading.Thread(target=start_agent_online_consumer, daemon=True).start()
+
+# CORS ayarlarını FastAPI app'ine uygula
+fastapi_app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_CONFIG["allow_origins"],
+    allow_credentials=CORS_CONFIG["allow_credentials"],
+    allow_methods=CORS_CONFIG["allow_methods"],
+    allow_headers=CORS_CONFIG["allow_headers"],
+)

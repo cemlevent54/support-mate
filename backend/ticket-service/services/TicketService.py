@@ -16,6 +16,11 @@ from middlewares.auth import get_user_by_id
 from repositories.TicketRepository import TicketRepository
 from repositories.ChatRepository import ChatRepository
 from bson import ObjectId
+from cqrs.commands.CreateChatCommandHandler import CreateChatCommandHandler
+from cqrs.commands.AssignAgentToChatCommandHandler import AssignAgentToChatCommandHandler
+from cqrs.queries.SelectAndRotateAgentQueryHandler import SelectAndRotateAgentQueryHandler
+from cqrs.commands.AssignAgentToPendingTicketCommandHandler import AssignAgentToPendingTicketCommandHandler
+from config.language import _
 
 logger = logging.getLogger(__name__)
 
@@ -31,20 +36,21 @@ class TicketService:
 
     def create_ticket(self, ticket, user, token=None):
         if not user:
-            logger.warning("Unauthorized access attempt while creating ticket.")
-            return unauthorized_error("User is not authenticated.")
+            logger.warning(_(f"services.ticketService.logs.unauthorized"))
+            return unauthorized_error(_(f"services.ticketService.responses.unauthorized"))
         if not ticket or not ticket.get("title") or not ticket.get("customerId"):
-            logger.warning("Bad request: Required fields are missing for ticket creation.")
-            return bad_request_error("Required fields are missing.")
-        logger.info(f"Creating ticket for user: {user.get('id', 'unknown')}")
-        # Online temsilci seçimi (FIFO round-robin)
-        agent_id = select_and_rotate_agent()
+            logger.warning(_(f"services.ticketService.logs.bad_request"))
+            return bad_request_error(_(f"services.ticketService.responses.bad_request"))
+        logger.info(_(f"services.ticketService.logs.creating_ticket").format(user_id=user.get('id', 'unknown')))
+        # Online temsilci seçimi CQRS ile
+        agent_selector = SelectAndRotateAgentQueryHandler()
+        agent_id = agent_selector.execute()
         if agent_id:
             ticket["assignedAgentId"] = agent_id
         result = self.create_handler.execute(ticket, user)
         data = result.get('data')
         ticket_id = data.get('id') if isinstance(data, dict) else getattr(data, 'id', None)
-        logger.info(f"Ticket created successfully: {ticket_id}")
+        logger.info(_(f"services.ticketService.logs.ticket_created").format(ticket_id=ticket_id))
         # Chat ve temsilci atama
         if result["success"]:
             ticket_obj = result["data"]
@@ -60,24 +66,25 @@ class TicketService:
                 else:
                     participants.append({"userId": agent_id, "role": "agent"})
                 is_delivered = True
-                logger.info(f"Online temsilci bulundu ve atandı: {agent_id}")
+                logger.info(_(f"services.ticketService.logs.agent_assigned").format(agent_id=agent_id))
                 agent_user = {"id": agent_id}  # Geliştirilebilir
             else:
-                logger.info("Online temsilci bulunamadı. Sadece müşteri ile chat oluşturulacak.")
+                logger.info(_(f"services.ticketService.logs.no_agent_found"))
             chat_data = {
                 "ticketId": ticket_obj.id,
                 "participants": participants
             }
-            chat_result, agent_online = self.chat_service.create_chat(chat_data, user, token)
+            # CQRS ile chat oluştur
+            chat_handler = CreateChatCommandHandler()
+            chat_result = chat_handler.execute(chat_data)
             chat_id = getattr(chat_result, "id", None)
-            logger.info(f"Chat created for ticket {ticket_obj.id}: {chat_id}")
+            logger.info(_(f"services.ticketService.logs.chat_created").format(ticket_id=ticket_obj.id, chat_id=chat_id))
+            # Temsilci atama (gerekirse CQRS ile)
+            if agent_id:
+                assign_handler = AssignAgentToChatCommandHandler()
+                assign_handler.execute(chat_id, agent_id, agent_detail.get("roleName") if token else "agent")
             # is_delivered mantığı güncellendi:
-            if agent_id != None:
-                is_delivered = True
-            else:
-                is_delivered = False
-            
-            logger.info(f"is_delivered: {is_delivered}")
+            logger.info(_(f"services.ticketService.logs.is_delivered").format(is_delivered=is_delivered))
             # İlk mesaj olarak ticket bilgileri
             first_message = {
                 "chatId": chat_id,  # chat'in gerçek id'si
@@ -93,67 +100,55 @@ class TicketService:
             try:
                 template_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates", "ticket_created.html")
                 send_ticket_created_event(ticket_obj, user, html_path=template_path)
-                logger.info(f"ticket_created event sent to Kafka for ticket {ticket_obj.id}")
-                if agent_user and agent_online:
-                    logger.info(f"Temsilciye mail bildirimi gönderilmeli: {agent_id}")
+                logger.info(_(f"services.ticketService.logs.ticket_event_sent").format(ticket_id=ticket_obj.id))
+                if agent_user and agent_id:
+                    logger.info(_(f"services.ticketService.logs.agent_mail_notify").format(agent_id=agent_id))
             except Exception as e:
-                logger.error(f"ticket_created event or mail could not be sent: {e}")
+                logger.error(_(f"services.ticketService.logs.event_mail_failed").format(error=e))
         return result
 
     def list_tickets(self, user):
         if not user:
-            logger.warning("Unauthorized access attempt while listing tickets.")
-            return unauthorized_error("User is not authenticated.")
-        logger.info(f"Listing tickets for user: {user.get('id', 'unknown')}")
+            logger.warning(_(f"services.ticketService.logs.unauthorized"))
+            return unauthorized_error(_(f"services.ticketService.responses.unauthorized"))
+        logger.info(_(f"services.ticketService.logs.listing_tickets").format(user_id=user.get('id', 'unknown')))
         return self.list_handler.execute(user)
 
     def get_ticket(self, ticket_id, user):
         if not user:
-            logger.warning("Unauthorized access attempt while getting ticket.")
-            return unauthorized_error("User is not authenticated.")
+            logger.warning(_(f"services.ticketService.logs.unauthorized"))
+            return unauthorized_error(_(f"services.ticketService.responses.unauthorized"))
         if not ticket_id:
-            logger.warning("Bad request: Ticket ID is required.")
-            return bad_request_error("Ticket ID is required.")
-        logger.info(f"Getting ticket with ID: {ticket_id} for user: {user.get('id', 'unknown')}")
+            logger.warning(_(f"services.ticketService.logs.bad_request"))
+            return bad_request_error(_(f"services.ticketService.responses.bad_request"))
+        logger.info(_(f"services.ticketService.logs.getting_ticket").format(ticket_id=ticket_id, user_id=user.get('id', 'unknown')))
         return self.get_handler.execute(ticket_id, user)
 
     def update_ticket(self, ticket_id, updated, user):
         if not user:
-            logger.warning("Unauthorized access attempt while updating ticket.")
-            return unauthorized_error("User is not authenticated.")
+            logger.warning(_(f"services.ticketService.logs.unauthorized"))
+            return unauthorized_error(_(f"services.ticketService.responses.unauthorized"))
         if not ticket_id or not updated:
-            logger.warning("Bad request: Ticket ID and update data are required.")
-            return bad_request_error("Missing parameters.")
-        logger.info(f"Updating ticket with ID: {ticket_id} for user: {user.get('id', 'unknown')}")
+            logger.warning(_(f"services.ticketService.logs.bad_request"))
+            return bad_request_error(_(f"services.ticketService.responses.bad_request"))
+        logger.info(_(f"services.ticketService.logs.updating_ticket").format(ticket_id=ticket_id, user_id=user.get('id', 'unknown')))
         return self.update_handler.execute(ticket_id, updated, user)
 
     def soft_delete_ticket(self, ticket_id, user):
         if not user:
-            logger.warning("Unauthorized access attempt while deleting ticket.")
-            return unauthorized_error("User is not authenticated.")
+            logger.warning(_(f"services.ticketService.logs.unauthorized"))
+            return unauthorized_error(_(f"services.ticketService.responses.unauthorized"))
         if not ticket_id:
-            logger.warning("Bad request: Ticket ID is required for deletion.")
-            return bad_request_error("Ticket ID is required.")
-        logger.info(f"Soft deleting ticket with ID: {ticket_id} for user: {user.get('id', 'unknown')}")
+            logger.warning(_(f"services.ticketService.logs.bad_request"))
+            return bad_request_error(_(f"services.ticketService.responses.bad_request"))
+        logger.info(_(f"services.ticketService.logs.soft_deleting_ticket").format(ticket_id=ticket_id, user_id=user.get('id', 'unknown')))
         return self.soft_delete_handler.execute(ticket_id, user)
 
     def assign_agent_to_pending_ticket(self, agent_id):
-        # 1. En eski, atanmamış ticket'ı bul
-        ticket_repo = TicketRepository()
-        chat_repo = ChatRepository()
-        pending_tickets = ticket_repo.collection.find({"assignedAgentId": None}).sort("createdAt", 1)
-        ticket = next(pending_tickets, None)
-        if ticket:
-            ticket_id = str(ticket["_id"])
-            ticket_repo.update(ticket_id, {"assignedAgentId": agent_id})
-            # 2. Chat participant'ına agent'ı ekle
-            chat = chat_repo.collection.find_one({"ticketId": ticket_id})
-            if chat:
-                participants = chat.get("participants", [])
-                if not any(p.get("userId") == agent_id for p in participants):
-                    participants.append({"userId": agent_id, "role": "Customer Supporter"})
-                    chat_repo.update(chat["_id"], {"participants": participants})
-            logger.info(f"[AUTO-ASSIGN] Agent {agent_id} assigned to pending ticket {ticket_id}")
-            return {"success": True, "ticketId": ticket_id}
-        logger.info("[AUTO-ASSIGN] No pending ticket found for agent assignment.")
-        return {"success": False, "message": "No pending ticket"}
+        handler = AssignAgentToPendingTicketCommandHandler()
+        result = handler.execute(agent_id)
+        if result.get("success"):
+            logger.info(_(f"services.ticketService.logs.auto_assign").format(agent_id=agent_id, ticket_id=result.get("ticketId")))
+        else:
+            logger.info(_(f"services.ticketService.logs.no_pending_ticket"))
+        return result

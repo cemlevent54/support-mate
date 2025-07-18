@@ -5,6 +5,7 @@ from pymongo import MongoClient
 from config.database import get_mongo_uri
 from datetime import datetime
 from bson import ObjectId
+from config.language import _
 
 logger = logging.getLogger(__name__)
 
@@ -25,21 +26,21 @@ class TicketRepository:
             result = self.collection.insert_one(ticket_dict)
             # MongoDB'nin oluşturduğu id'yi ticket objesine ata
             ticket.id = str(result.inserted_id)
-            logger.info(f"[REPO] TicketRepository.create: ticket_id={ticket.id}")
+            logger.info(_(f"services.ticketRepository.logs.create").format(ticket_id=ticket.id))
             return ticket
         except Exception as e:
-            logger.error(f"[REPO] TicketRepository.create error: {str(e)}")
+            logger.error(_(f"services.ticketRepository.logs.create_error").format(error=str(e)))
             raise
 
     def get_by_id(self, ticket_id: str) -> Optional[Ticket]:
         try:
             doc = self.collection.find_one({"_id": ObjectId(ticket_id), "isDeleted": False})
-            logger.info(f"[REPO] TicketRepository.get_by_id: ticket_id={ticket_id}, found={doc is not None}")
+            logger.info(_(f"services.ticketRepository.logs.get_by_id").format(ticket_id=ticket_id, found=doc is not None))
             if doc:
                 return Ticket.model_validate(doc)
             return None
         except Exception as e:
-            logger.error(f"[REPO] TicketRepository.get_by_id error: {str(e)}")
+            logger.error(_(f"services.ticketRepository.logs.get_by_id_error").format(error=str(e)))
             return None
 
     def list(self, filter: dict = None) -> List[Ticket]:
@@ -48,7 +49,8 @@ class TicketRepository:
             if filter:
                 query.update(filter)
             docs = self.collection.find(query)
-            logger.info(f"[REPO] TicketRepository.list: filter={filter}, count={self.collection.count_documents(query)}")
+            count = self.collection.count_documents(query)
+            logger.info(_(f"services.ticketRepository.logs.list").format(filter=filter, count=count))
             result = []
             for doc in docs:
                 if '_id' in doc:
@@ -56,25 +58,25 @@ class TicketRepository:
                 result.append(Ticket.model_validate(doc))
             return result
         except Exception as e:
-            logger.error(f"[REPO] TicketRepository.list error: {str(e)}")
+            logger.error(_(f"services.ticketRepository.logs.list_error").format(error=str(e)))
             return []
 
     def update(self, ticket_id: str, updated: dict) -> Optional[Ticket]:
         try:
             result = self.collection.update_one({"_id": ObjectId(ticket_id)}, {"$set": updated})
-            logger.info(f"[REPO] TicketRepository.update: ticket_id={ticket_id}, modified={result.modified_count}")
+            logger.info(_(f"services.ticketRepository.logs.update").format(ticket_id=ticket_id, modified=result.modified_count))
             if result.modified_count:
                 return self.get_by_id(ticket_id)
             return None
         except Exception as e:
-            logger.error(f"[REPO] TicketRepository.update error: {str(e)}")
+            logger.error(_(f"services.ticketRepository.logs.update_error").format(error=str(e)))
             return None
 
     def soft_delete(self, ticket_id: str) -> bool:
         try:
             result = self.collection.update_one({"_id": ObjectId(ticket_id)}, {"$set": {"isDeleted": True, "deletedAt": datetime.utcnow()}})
-            logger.info(f"[REPO] TicketRepository.soft_delete: ticket_id={ticket_id}, modified={result.modified_count}")
+            logger.info(_(f"services.ticketRepository.logs.soft_delete").format(ticket_id=ticket_id, modified=result.modified_count))
             return result.modified_count > 0
         except Exception as e:
-            logger.error(f"[REPO] TicketRepository.soft_delete error: {str(e)}")
+            logger.error(_(f"services.ticketRepository.logs.soft_delete_error").format(error=str(e)))
             return False 

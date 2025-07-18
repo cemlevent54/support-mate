@@ -6,18 +6,137 @@
         },
         "database": {
             "mongo_connection_success": "MongoDB connection successful. DB: {db}",
-            "mongo_connection_error": "MongoDB connection error: {error}"
+            "mongo_connection_error": "MongoDB connection error: {error}",
+            "connecting": "Connecting to MongoDB... URI: {uri}",
+            "connected": "Connected to MongoDB successfully. DB: {db}",
+            "connection_failed": "MongoDB connection failed: {error}",
+            "closing": "Closing MongoDB connection...",
+            "closed": "MongoDB connection closed."
         },
         "redis": {
             "redis_connection_success": "Redis connection successful.",
-            "redis_connection_error": "Redis connection error: {error}"
+            "redis_connection_error": "Redis connection error: {error}",
+            "connecting": "Connecting to Redis... URL: {url}",
+            "connected": "Connected to Redis successfully.",
+            "connection_failed": "Redis connection failed: {error}",
+            "agent_added": "Online agent added: {user_id}",
+            "agent_removed": "Online agent removed: {user_id}",
+            "agent_selected": "Agent selected: {agent_id}",
+            "agent_rotated": "Agent rotated to end (round robin): {agent_id}"
         },
         "kafka": {
             "kafka_connection_success": "Kafka connection successful.",
             "kafka_connection_error": "Kafka connection error: {error}"
+        },
+        "language": {
+            "default_language": "Default language: {lang}"
         }
     },
     "api_started": "API started",
     "api_running": "Ticket Service API is running",
-    "service_starting": "Ticket Service is starting"
+    "service_starting": "Ticket Service is starting",
+    "services": {
+        "messageService": {
+            "logs": {
+                "plain_message_before_encryption": "Plain message before encryption: {text}",
+                "message_encrypted": "Message encrypted.",
+                "message_sent": "Message sent successfully.",
+                "message_send_failed": "Message could not be sent: {error}",
+                "message_listed": "Messages listed successfully.",
+                "message_list_failed": "Failed to list messages: {error}"
+            },
+            "responses": {
+                "receiver_not_found": "receiverId not found (no other participant in chat)",
+                "chat_not_found": "Chat not found or participants missing",
+                "receiver_and_chat_required": "receiverId and chatId are required",
+                "messages_retrieved": "Messages retrieved successfully.",
+                "chat_not_found_simple": "Chat not found."
+            }
+        },
+        "ticketService": {
+            "logs": {
+                "creating_ticket": "Creating ticket for user: {user_id}",
+                "ticket_created": "Ticket created successfully: {ticket_id}",
+                "agent_assigned": "Online agent found and assigned: {agent_id}",
+                "no_agent_found": "No online agent found. Chat will be created with customer only.",
+                "chat_created": "Chat created for ticket {ticket_id}: {chat_id}",
+                "is_delivered": "is_delivered: {is_delivered}",
+                "ticket_event_sent": "ticket_created event sent to Kafka: {ticket_id}",
+                "agent_mail_notify": "Agent mail notification should be sent: {agent_id}",
+                "event_mail_failed": "ticket_created event or mail could not be sent: {error}",
+                "listing_tickets": "Listing tickets for user: {user_id}",
+                "getting_ticket": "Getting ticket with ID: {ticket_id} for user: {user_id}",
+                "updating_ticket": "Updating ticket with ID: {ticket_id} for user: {user_id}",
+                "soft_deleting_ticket": "Soft deleting ticket with ID: {ticket_id} for user: {user_id}",
+                "auto_assign": "[AUTO-ASSIGN] Agent {agent_id} assigned to pending ticket {ticket_id}",
+                "no_pending_ticket": "[AUTO-ASSIGN] No pending ticket found for agent assignment."
+            },
+            "responses": {
+                "unauthorized": "User is not authenticated.",
+                "bad_request": "Missing or invalid parameters.",
+                "ticket_not_found": "Ticket not found.",
+                "ticket_created": "Ticket created successfully.",
+                "ticket_updated": "Ticket updated successfully.",
+                "ticket_deleted": "Ticket deleted successfully.",
+                "agent_assigned": "Agent assigned successfully.",
+                "no_pending_ticket": "No pending ticket."
+            }
+        },
+        "ticketRepository": {
+            "logs": {
+                "create": "[REPO] TicketRepository.create: ticket_id={ticket_id}",
+                "create_error": "[REPO] TicketRepository.create error: {error}",
+                "get_by_id": "[REPO] TicketRepository.get_by_id: ticket_id={ticket_id}, found={found}",
+                "get_by_id_error": "[REPO] TicketRepository.get_by_id error: {error}",
+                "list": "[REPO] TicketRepository.list: filter={filter}, count={count}",
+                "list_error": "[REPO] TicketRepository.list error: {error}",
+                "update": "[REPO] TicketRepository.update: ticket_id={ticket_id}, modified={modified}",
+                "update_error": "[REPO] TicketRepository.update error: {error}",
+                "soft_delete": "[REPO] TicketRepository.soft_delete: ticket_id={ticket_id}, modified={modified}",
+                "soft_delete_error": "[REPO] TicketRepository.soft_delete error: {error}"
+            }
+        },
+        "chatService": {
+            "logs": {
+                "chat_created": "Chat created: {chat_id} (ticket: {ticket_id})",
+                "chat_creation_failed": "Chat creation failed: {error}",
+                "participant_added": "Participant added: {user_id} role: {role}",
+                "agent_online": "Agent online: {agent_online}"
+            }
+        },
+        "chatRepository": {
+            "logs": {
+                "create": "[REPO] ChatRepository.create: chat_id={chat_id}",
+                "create_error": "[REPO] ChatRepository.create error: {error}",
+                "get_by_id": "[REPO] ChatRepository.get_by_id: chat_id={chat_id}, found={found}",
+                "get_by_id_error": "[REPO] ChatRepository.get_by_id error: {error}",
+                "find_by_ticket_id": "[REPO] ChatRepository.find_by_ticket_id: ticket_id={ticket_id}, found={found}",
+                "find_by_ticket_id_error": "[REPO] ChatRepository.find_by_ticket_id error: {error}",
+                "update": "[REPO] ChatRepository.update: chat_id={chat_id}, modified={modified}",
+                "update_error": "[REPO] ChatRepository.update error: {error}",
+                "soft_delete": "[REPO] ChatRepository.soft_delete: chat_id={chat_id}, modified={modified}",
+                "soft_delete_error": "[REPO] ChatRepository.soft_delete error: {error}"
+            }
+        },
+        "socketio": {
+            "server_initialized": "Socket.IO server initialized.",
+            "client_connected": "[SOCKET][CONNECT] Client connected: {sid}. Total connections: {count}",
+            "client_disconnected": "[SOCKET][DISCONNECT] Client disconnected: {sid}. Total connections: {count}",
+            "user_offline": "[SOCKET][DISCONNECT] User {user_id} is now offline (sid: {sid})",
+            "join_room": "[SOCKET][JOIN_ROOM] User {user_id} joined room {chat_id} (sid: {sid}) | Payload: {data} | Room members: {members}",
+            "join_room_error": "[SOCKET][JOIN_ROOM][ERROR] {error} | Payload: {data}",
+            "leave_room": "[SOCKET][LEAVE_ROOM] User {user_id} left room {chat_id} (sid: {sid}) | Payload: {data} | Room members after leave: {members}",
+            "leave_room_error": "[SOCKET][LEAVE_ROOM][ERROR] {error} | Payload: {data}",
+            "send_message": "[SOCKET][SEND_MESSAGE] Message from {user} in chat {chat_id}: {message} | Payload: {data}",
+            "send_message_error": "[SOCKET][SEND_MESSAGE][ERROR] {error} | Payload: {data}",
+            "typing": "[SOCKET][TYPING] {user} is typing in chat {chat_id} | Payload: {data}",
+            "typing_error": "[SOCKET][TYPING][ERROR] {error} | Payload: {data}",
+            "stop_typing": "[SOCKET][STOP_TYPING] {user} stopped typing in chat {chat_id} | Payload: {data}",
+            "stop_typing_error": "[SOCKET][STOP_TYPING][ERROR] {error} | Payload: {data}",
+            "delivered": "[SOCKET][DELIVERED] Message {message_id} delivered to {user} in chat {chat_id} | Payload: {data}",
+            "delivered_error": "[SOCKET][DELIVERED][ERROR] {error} | Payload: {data}",
+            "seen": "[SOCKET][SEEN] Message {message_id} seen by {user} in chat {chat_id} | Payload: {data}",
+            "seen_error": "[SOCKET][SEEN][ERROR] {error} | Payload: {data}"
+        }
+    }
 }
