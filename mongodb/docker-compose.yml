@@ -16,6 +16,22 @@ services:
     networks:
       - mongodb-network
 
+  mongodb_ticket_service:
+    image: mongo:latest
+    container_name: mongodb_ticket_service
+    ports:
+      - "27018:27017"
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: ticket-service
+    volumes:
+      - ./data:/data/db_ticket
+      - ./init:/docker-entrypoint-initdb.d
+    networks:
+      - mongodb-network
+
   # MongoDB Admin UI (Opsional)
   mongo-express:
     image: mongo-express:latest

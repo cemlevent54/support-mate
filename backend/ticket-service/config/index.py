@@ -1,0 +1,66 @@
+from .logger import get_logger
+from .language import set_language, get_language, _
+from .env import get_default_language
+from .health_check import health_check
+from .database import get_mongo_uri
+from .redis import get_redis_url
+from .kafka import get_kafka_brokers, get_kafka_producer, get_kafka_consumer
+from .socketio import socket_manager
+from .cors import CORS_CONFIG
+from fastapi import APIRouter
+import pymongo
+import redis
+from kafka import KafkaProducer
+import logging
+from kafka_files.kafkaConsumer import start_agent_online_consumer
+import threading
+
+logger = get_logger()
+
+router = APIRouter()
+
+@router.get("/health")
+def health():
+    return health_check()
+
+# SocketIO log
+logging.getLogger("socketio").info("Socket.IO config imported in index.py")
+
+# Bağlantı testleri
+
+def test_mongo():
+    try:
+        client = pymongo.MongoClient(get_mongo_uri(), serverSelectionTimeoutMS=2000)
+        client.server_info()  # Bağlantı testi
+        logger.success("MongoDB bağlantısı başarılı.")
+    except Exception as e:
+        logger.error(f"MongoDB bağlantı hatası: {e}")
+
+def test_redis():
+    try:
+        #r = redis.from_url(get_redis_url())
+        r = redis.from_url('redis://127.0.0.1:6379')
+        r.ping()
+        logger.success("Redis bağlantısı başarılı.")
+    except Exception as e:
+        logger.error(f"Redis bağlantı hatası: {e}")
+
+def test_kafka():
+    try:
+        producer = get_kafka_producer()
+        producer.close()
+        logger.success("Kafka bağlantısı başarılı.")
+    except Exception as e:
+        logger.error(f"Kafka bağlantı hatası: {e}")
+
+# API başlatıldığında testleri otomatik çalıştır
+
+def test_all_connections():
+    test_mongo()
+    test_redis()
+    test_kafka()
+
+test_all_connections()
+
+# Kafka consumer'ı arka planda başlat
+threading.Thread(target=start_agent_online_consumer, daemon=True).start()

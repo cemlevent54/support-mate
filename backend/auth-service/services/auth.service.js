@@ -18,7 +18,7 @@ import {
 } from '../cqrs/index.js';
 import userRepository from '../repositories/user.repository.js';
 import roleService from './role.service.js';
-import { sendUserRegisteredEvent, sendPasswordResetEvent, sendUserVerifiedEvent } from '../kafka/kafkaProducer.js';
+import { sendUserRegisteredEvent, sendPasswordResetEvent, sendUserVerifiedEvent, sendAgentOnlineEvent } from '../kafka/kafkaProducer.js';
 import translation from '../config/translation.js';
 import { OAuth2Client } from 'google-auth-library';
 import crypto from 'crypto';
@@ -26,6 +26,7 @@ import { UserModel } from '../models/user.model.js';
 import jwt from 'jsonwebtoken';
 import path from 'path';
 import fs from 'fs';
+import cacheService from '../config/cache.js';
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
 const REFRESH_TOKEN_EXPIRES = process.env.JWT_REFRESH_EXPIRES_IN;
@@ -149,8 +150,8 @@ class AuthService {
       const payload = {
         id: user.id,
         email: user.email,
-        roleId: user.role?.toString ? user.role.toString() : user.role,
-        roleName: user.roleName
+        roleId: user.role && user.role._id ? user.role._id.toString() : user.role?.toString ? user.role.toString() : user.role,
+        roleName: user.role && user.role.name ? user.role.name : user.roleName
       };
       const accessToken = JWTService.generateAccessToken(payload, JWT_EXPIRES_IN);
       const expiresInMs = typeof JWT_EXPIRES_IN === 'string' && JWT_EXPIRES_IN.endsWith('m')
@@ -162,6 +163,31 @@ class AuthService {
       const refreshToken = JWTService.generateRefreshToken(payload);
       // Aktif oturumu kaydet
       await JWTService.addActiveSession(user.id, accessToken, expireAt);
+      // CUSTOMER SUPPORTER ONLINE KAYDI
+      logger.info(`[ONLINE] User roleName: ${user.roleName}`);
+      if (user.roleName === 'Customer Supporter') {
+        try {
+          logger.info(`[ONLINE] Customer Supporter login detected. userId=${user.id}, email=${user.email}`);
+          // Önce queue'da var mı kontrol et
+          const currentOnline = await cacheService.client.lRange('online_users_queue', 0, -1);
+          const isAlreadyOnline = currentOnline.includes(user.id);
+          
+          if (!isAlreadyOnline) {
+            // Yoksa ekle
+            await cacheService.client.rPush('online_users_queue', user.id);
+            logger.info(`[ONLINE] Redis rPush('online_users_queue', ${user.id}) sonucu:`);
+            const updatedOnline = await cacheService.client.lRange('online_users_queue', 0, -1);
+            logger.info(`[ONLINE] Şu anda online Customer Supporter userId'leri (queue):`, updatedOnline);
+            // KAFKA EVENT: agent_online
+            await sendAgentOnlineEvent(user.id);
+          } else {
+            logger.info(`[ONLINE] Customer Supporter zaten online: ${user.id}`);
+            logger.info(`[ONLINE] Şu anda online Customer Supporter userId'leri (queue):`, currentOnline);
+          }
+        } catch (err) {
+          logger.error(`[ONLINE] Customer Supporter online kaydedilemedi! userId=${user.id}, email=${user.email}, error=`, err);
+        }
+      }
       // Eğer response objesi varsa (HTTP endpoint)
       if (res) {
         res.cookie('refreshToken', refreshToken, {
@@ -198,6 +224,17 @@ class AuthService {
       JWTService.addToBlacklist(userId);
       if (res) {
         res.clearCookie('refreshToken');
+      }
+      // CUSTOMER SUPPORTER ONLINE KAYDI (Logout)
+      logger.info(`[ONLINE] (Logout) User roleName: ${req.user?.roleName}`);
+      if (req.user?.roleName === 'Customer Supporter') {
+        try {
+          logger.info(`[ONLINE] (Logout) Customer Supporter logout detected. userId=${req.user.id}`);
+          await cacheService.client.lRem('online_users_queue', 0, req.user.id);
+          logger.info(`[ONLINE] (Logout) Redis lRem('online_users_queue', 0, ${req.user.id}) sonucu:`);
+        } catch (err) {
+          logger.error(`[ONLINE] (Logout) Customer Supporter online kaydedilemedi! userId=${req.user.id}, error=`, err);
+        }
       }
       logger.info(translation('services.authService.logs.logoutSuccess'), { userId });
       apiSuccess(res, null, 'Logged out successfully', 200);
@@ -256,15 +293,15 @@ class AuthService {
       const accessToken = JWTService.generateAccessToken({
         id: user.id,
         email: user.email,
-        roleId: user.role?.toString ? user.role.toString() : user.role,
-        roleName: user.roleName
+        roleId: user.role && user.role._id ? user.role._id.toString() : user.role?.toString ? user.role.toString() : user.role,
+        roleName: user.role && user.role.name ? user.role.name : user.roleName
       }, JWT_EXPIRES_IN);
 
       const newRefreshToken = JWTService.generateRefreshToken({
         id: user.id,
         email: user.email,
-        roleId: user.role?.toString ? user.role.toString() : user.role,
-        roleName: user.roleName
+        roleId: user.role && user.role._id ? user.role._id.toString() : user.role?.toString ? user.role.toString() : user.role,
+        roleName: user.role && user.role.name ? user.role.name : user.roleName
       });
       logger.info(translation('services.authService.logs.refreshSuccess'), { accessToken, newRefreshToken });
 
@@ -283,8 +320,8 @@ class AuthService {
           user: {
             id: user.id,
             email: user.email,
-            role: user.role?.toString ? user.role.toString() : user.role,
-            roleName: user.roleName
+            role: user.role && user.role._id ? user.role._id.toString() : user.role?.toString ? user.role.toString() : user.role,
+            roleName: user.role && user.role.name ? user.role.name : user.roleName
           }
         }, 'Tokens refreshed successfully', 200);
       } else {
@@ -296,8 +333,8 @@ class AuthService {
           user: {
             id: user.id,
             email: user.email,
-            role: user.role?.toString ? user.role.toString() : user.role,
-            roleName: user.roleName
+            role: user.role && user.role._id ? user.role._id.toString() : user.role?.toString ? user.role.toString() : user.role,
+            roleName: user.role && user.role.name ? user.role.name : user.roleName
           }
         };
       }
@@ -467,8 +504,8 @@ class AuthService {
       const payloadJwt = {
         id: user.id,
         email: user.email,
-        roleId: user.role?.toString ? user.role.toString() : user.role,
-        roleName: user.roleName
+        roleId: user.role && user.role._id ? user.role._id.toString() : user.role?.toString ? user.role.toString() : user.role,
+        roleName: user.role && user.role.name ? user.role.name : user.roleName
       };
       const accessToken = JWTService.generateAccessToken(payloadJwt, JWT_EXPIRES_IN);
       const expiresInMs = typeof JWT_EXPIRES_IN === 'string' && JWT_EXPIRES_IN.endsWith('m')
@@ -479,6 +516,31 @@ class AuthService {
       const expireAt = new Date(Date.now() + expiresInMs);
       // Aktif oturumu kaydet
       await JWTService.addActiveSession(user.id, accessToken, expireAt);
+      // CUSTOMER SUPPORTER ONLINE KAYDI (Google Login)
+      logger.info(`[ONLINE] (Google) User roleName: ${user.roleName}`);
+      if (user.roleName === 'Customer Supporter') {
+        try {
+          logger.info(`[ONLINE] (Google) Customer Supporter login detected. userId=${user.id}, email=${user.email}`);
+          // Önce queue'da var mı kontrol et
+          const currentOnline = await cacheService.client.lRange('online_users_queue', 0, -1);
+          const isAlreadyOnline = currentOnline.includes(user.id);
+          
+          if (!isAlreadyOnline) {
+            // Yoksa ekle
+            await cacheService.client.rPush('online_users_queue', user.id);
+            logger.info(`[ONLINE] (Google) Redis rPush('online_users_queue', ${user.id}) sonucu:`);
+            const updatedOnline = await cacheService.client.lRange('online_users_queue', 0, -1);
+            logger.info(`[ONLINE] (Google) Şu anda online Customer Supporter userId'leri (queue):`, updatedOnline);
+            // KAFKA EVENT: agent_online
+            await sendAgentOnlineEvent(user.id);
+          } else {
+            logger.info(`[ONLINE] (Google) Customer Supporter zaten online: ${user.id}`);
+            logger.info(`[ONLINE] (Google) Şu anda online Customer Supporter userId'leri (queue):`, currentOnline);
+          }
+        } catch (err) {
+          logger.error(`[ONLINE] (Google) Customer Supporter online kaydedilemedi! userId=${user.id}, email=${user.email}, error=`, err);
+        }
+      }
       logger.info(translation('services.authService.logs.loginSuccess'), { provider: 'google', user, accessToken, expireAt });
       // Yanıt
       apiSuccess(res, { user, accessToken, expireAt }, translation('services.authService.logs.loginSuccess'), 200);
@@ -540,8 +602,8 @@ class AuthService {
       const payloadJwt = {
         id: user.id,
         email: user.email,
-        roleId: user.role?.toString ? user.role.toString() : user.role,
-        roleName: user.roleName
+        roleId: user.role && user.role._id ? user.role._id.toString() : user.role?.toString ? user.role.toString() : user.role,
+        roleName: user.role && user.role.name ? user.role.name : user.roleName
       };
       const accessToken = JWTService.generateAccessToken(payloadJwt, JWT_EXPIRES_IN);
       const expiresInMs = typeof JWT_EXPIRES_IN === 'string' && JWT_EXPIRES_IN.endsWith('m')

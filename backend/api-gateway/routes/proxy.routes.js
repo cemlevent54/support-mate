@@ -10,24 +10,16 @@ router.use('/api/auth', createProxyMiddleware({
   changeOrigin: true
 }));
 
-// /api/user -> user service (örnek, ileride eklenirse)
-router.use('/api/user', createProxyMiddleware({
-  target: SERVICES.user,
-  changeOrigin: true,
-  pathRewrite: { '^/api/user': '' }
-}));
-
 // /api/notification -> notification service
 router.use('/api/notification', createProxyMiddleware({
   target: SERVICES.notification,
   changeOrigin: true
 }));
 
-// /api/order -> order service (örnek, ileride eklenirse)
-// router.use('/api/order', createProxyMiddleware({
-//   target: SERVICES.order,
-//   changeOrigin: true,
-//   pathRewrite: { '^/api/order': '' }
-// }));
+// /api/tickets -> ticket service
+router.use('/api/tickets', createProxyMiddleware({
+  target: SERVICES.ticket,
+  changeOrigin: true
+}));
 
 module.exports = router;

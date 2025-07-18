@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Destek Talebiniz Oluşturuldu</title>
+    <!--
+      Bu şablon string.Template ile uyumludur.
+      Değişkenler $firstName, $ticketTitle, $ticketId şeklindedir.
+    -->
+    <style type="text/css">
+        body { font-family: Arial, sans-serif; background: #f7f7f7; color: #222; }
+        .container { background: #fff; padding: 32px; border-radius: 8px; max-width: 600px; margin: 40px auto; box-shadow: 0 2px 8px rgba(0,0,0,0.07);}
+        .header { color: #2a7ae2; font-size: 24px; margin-bottom: 16px; }
+        .info { margin: 16px 0; }
+        .footer { margin-top: 32px; font-size: 13px; color: #888; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">Destek Talebiniz Başarıyla Oluşturuldu</div>
+        <div class="info">
+            <p>Sayın <b>$firstName</b>,</p>
+            <p>
+                <b>$ticketTitle</b> başlıklı destek talebiniz başarıyla alınmıştır.<br>
+                En kısa sürede sizinle iletişime geçeceğiz.
+            </p>
+            <p>
+                Talep Numaranız: <b>$ticketId</b>
+            </p>
+        </div>
+        <div class="footer">
+            Bu e-posta otomatik olarak gönderilmiştir, lütfen yanıtlamayınız.<br>
+            Destek ekibimizle iletişime geçmek için <a href="mailto:support@example.com">support@example.com</a> adresine yazabilirsiniz.
+        </div>
+    </div>
+</body>
+</html>

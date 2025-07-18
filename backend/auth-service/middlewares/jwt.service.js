@@ -116,7 +116,7 @@ class JWTService {
   }
   static generateJWT(user) {
     logger.info(translation('middlewares.jwtService.logs.jwtTokenGenerated'), { userId: user.id });
-    const payload = { id: user.id, email: user.email, role: user.role };
+    const payload = { id: user.id, email: user.email, role: user.role && user.role._id ? user.role._id.toString() : user.role?.toString ? user.role.toString() : user.role };
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
     logger.info(translation('middlewares.jwtService.logs.jwtTokenGenerated'), { userId: user.id });
     return token;

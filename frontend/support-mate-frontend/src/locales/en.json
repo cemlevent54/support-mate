@@ -75,6 +75,26 @@
       "success": "Code verified!",
       "error": "Code could not be verified.",
       "button": "Verify"
+    },
+    "createTicket": {
+      "title": "Create Support Request",
+      "form": {
+        "title": "Title",
+        "description": "Description",
+        "category": "Category",
+        "file": "Attach File (Optional)",
+        "submit": "Submit",
+        "select": "Select"
+      },
+      "categories": {
+        "software": "Software",
+        "hardware": "Hardware",
+        "network": "Network",
+        "other": "Other"
+      },
+      "validationError": "Please fill in all required fields.",
+      "success": "Your support ticket has been created successfully!",
+      "noPermission": "You do not have permission to view this page."
     }
   },
   "confirm": {
@@ -203,8 +223,10 @@
   "supportDashboard": {
     "sidebar": {
       "requests": "Support Requests",
+      "chats": "Chats",
       "profile": "Profile"
     },
+    "chatsTitle": "Chats",
     "requestsTitle": "Support Requests",
     "requestsDesc": "Support requests will be shown here.",
     "profileTitle": "Profile",
@@ -220,5 +242,18 @@
     "tasksDesc": "Tasks assigned to the employee will be shown here.",
     "profileTitle": "Profile",
     "profileDesc": "Profile information will be shown here."
+  },
+  "chatArea": {
+    "placeholder": "Write a message...",
+    "createTask": "Create Task"
+  },
+  "chatDialog": {
+    "detail": "Detail",
+    "hideDetail": "Hide Detail",
+    "category": "Category",
+    "uploadedFiles": "Uploaded Files",
+    "close": "Close",
+    "placeholder": "Write a message...",
+    "send": "Send"
   }
 } 

@@ -143,6 +143,26 @@ class CacheService {
       logger.error(translation('config.cache.logs.disconnectError'), { error });
     }
   }
+
+  // Online agent ekle (FIFO)
+  async addOnlineAgent(userId) {
+    await this.client.rPush('online_users_queue', userId);
+  }
+
+  // Online agent çıkar (offline)
+  async removeOnlineAgent(userId) {
+    await this.client.lRem('online_users_queue', 0, userId);
+  }
+
+  // Sıradaki agentı çekip sona ekle (round robin)
+  async selectAndRotateAgent() {
+    const agentId = await this.client.lPop('online_users_queue');
+    if (agentId) {
+      await this.client.rPush('online_users_queue', agentId);
+      return agentId;
+    }
+    return null;
+  }
 }
 
 // Singleton instance oluştur

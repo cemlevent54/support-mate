@@ -74,6 +74,26 @@
       "success": "Kod doğrulandı!",
       "error": "Kod doğrulanamadı.",
       "button": "Onayla"
+    },
+    "createTicket": {
+      "title": "Destek Talebi Oluştur",
+      "form": {
+        "title": "Başlık",
+        "description": "Açıklama",
+        "category": "Kategori",
+        "file": "Dosya Ekle (İsteğe Bağlı)",
+        "submit": "Gönder",
+        "select": "Seçiniz"
+      },
+      "categories": {
+        "software": "Yazılım",
+        "hardware": "Donanım",
+        "network": "Ağ",
+        "other": "Diğer"
+      },
+      "validationError": "Lütfen tüm zorunlu alanları doldurun.",
+      "success": "Destek talebiniz başarıyla oluşturuldu!",
+      "noPermission": "Bu sayfayı görüntüleme yetkiniz yok."
     }
   },
   "confirm": {
@@ -202,8 +222,11 @@
   "supportDashboard": {
     "sidebar": {
       "requests": "Destek Talepleri",
+      "chats": "Sohbetler",
       "profile": "Profil"
     },
+    "chatsTitle": "Sohbetler",
+
     "requestsTitle": "Destek Talepleri",
     "requestsDesc": "Destek talepleri burada görünecek.",
     "profileTitle": "Profil",
@@ -219,5 +242,18 @@
     "tasksDesc": "Çalışana atanmış görevler burada görünecek.",
     "profileTitle": "Profil",
     "profileDesc": "Profil bilgileri burada görünecek."
+  },
+  "chatArea": {
+    "placeholder": "Mesaj yazın...",
+    "createTask": "Görev Oluştur"
+  },
+  "chatDialog": {
+    "detail": "Detay",
+    "hideDetail": "Detayı Gizle",
+    "category": "Kategori",
+    "uploadedFiles": "Yüklenen Dosyalar",
+    "close": "Kapat",
+    "placeholder": "Mesaj yazın...",
+    "send": "Gönder"
   }
 } 

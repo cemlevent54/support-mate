@@ -13,14 +13,20 @@ import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from './LanguageProvider';
+import ChatList from './chats/ChatList';
+import SupportChats from './chats/SupportChats';
+import SupportRequests from './SupportRequests';
 
 const sidebarItems = [
-  { key: 'requests', label: 'Destek Talepleri' },
+  { key: 'requests', label: 'Requests' },
+  { key: 'chats', label: 'Sohbetler' },
   { key: 'profile', label: 'Profil' },
 ];
 
 export default function SupportDashboard() {
   const [selected, setSelected] = useState('requests');
+  const [activeChatTicketId, setActiveChatTicketId] = useState(null);
+  const [activeChatTicketTitle, setActiveChatTicketTitle] = useState("");
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { language, onLanguageChange } = useLanguage();
@@ -37,8 +43,21 @@ export default function SupportDashboard() {
     }
   };
 
+  // Chat başlat callback'i
+  const handleStartChat = (ticketId, title) => {
+    setActiveChatTicketId(ticketId);
+    setActiveChatTicketTitle(title);
+    setSelected('chats');
+  };
+
+  // ChatList'te bir chat seçilirse aktif chat güncellensin
+  const handleSelectChat = (ticketId, title) => {
+    setActiveChatTicketId(ticketId);
+    setActiveChatTicketTitle(title);
+  };
+
   return (
-    <Box display="flex" minHeight="100vh" sx={{ background: '#f5f5f5' }}>
+    <Box display="flex" minHeight="100vh">
       {/* Sidebar */}
       <Paper elevation={3} sx={{ width: 220, minHeight: '100vh', borderRadius: 0, p: 2, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', bgcolor: '#111', color: '#fff' }}>
         <div>
@@ -67,7 +86,11 @@ export default function SupportDashboard() {
                     '&:hover': { bgcolor: '#222' },
                   }}
                 >
-                  <ListItemText primary={t(`supportDashboard.sidebar.${item.key}`, item.label)} sx={{ color: '#fff' }} />
+                  <ListItemText primary={
+                    item.key === 'chats'
+                      ? t('supportDashboard.chatsTitle')
+                      : t(`supportDashboard.sidebar.${item.key}`)
+                  } sx={{ color: '#fff' }} />
                 </ListItemButton>
               </ListItem>
             ))}
@@ -78,20 +101,27 @@ export default function SupportDashboard() {
         </Button>
       </Paper>
       {/* İçerik */}
-      <Box flex={1} p={4}>
-        {selected === 'requests' && (
-          <Box>
-            <Typography variant="h5" fontWeight={600} mb={2}>{t('supportDashboard.requestsTitle', 'Destek Talepleri')}</Typography>
-            <Typography>{t('supportDashboard.requestsDesc', 'Destek talepleri burada görünecek.')}</Typography>
+      {selected === 'requests' && (
+        <SupportRequests onStartChat={handleStartChat} />
+      )}
+      {selected === 'profile' && (
+        <Box flex={1} p={4} height="100vh" bgcolor="#f5f5f5">
+          <Typography variant="h5" fontWeight={600} mb={2}>{t('supportDashboard.profileTitle', 'Profil')}</Typography>
+          <Typography>{t('supportDashboard.profileDesc', 'Profil bilgileri burada görünecek.')}</Typography>
+        </Box>
+      )}
+      {selected === 'chats' && (
+        <>
+          <ChatList chatList={[]} activeChatTicketId={activeChatTicketId} onSelectChat={handleSelectChat} />
+          <Box flex={1} height="100vh" bgcolor="#f5f5f5">
+            {activeChatTicketId ? (
+              <SupportChats ticketId={activeChatTicketId} ticketTitle={activeChatTicketTitle} />
+            ) : (
+              <Typography mt={4} ml={4} color="text.secondary">Bir talep seçin ve chat başlatın.</Typography>
+            )}
           </Box>
-        )}
-        {selected === 'profile' && (
-          <Box>
-            <Typography variant="h5" fontWeight={600} mb={2}>{t('supportDashboard.profileTitle', 'Profil')}</Typography>
-            <Typography>{t('supportDashboard.profileDesc', 'Profil bilgileri burada görünecek.')}</Typography>
-          </Box>
-        )}
-      </Box>
+        </>
+      )}
     </Box>
   );
 } 

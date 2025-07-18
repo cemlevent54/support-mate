@@ -14,6 +14,10 @@ import AdminRolePermissions from './pages/admin/AdminRolePermissions';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import SixDigitVerifyEmail from './components/SixDigitVerifyEmail';
+import CreateTicket from './pages/CreateTicket';
+import MyRequests from './pages/MyRequests';
+import ChatDialog from './pages/ChatDialog';
+import { useLocation, Navigate } from 'react-router-dom';
 
 // Role bazlı erişim için örnek bir yapı
 export const appRoutes = [
@@ -84,9 +88,30 @@ export const appRoutes = [
     path: '/verify-email',
     element: <SixDigitVerifyEmail />,
   },
+  {
+    path: '/create-ticket',
+    element: <CreateTicket />,
+    roles: ['user'],
+  },
+  {
+    path: '/my-requests',
+    element: <MyRequests />,
+  },
+  {
+    path: '/my-requests/chat',
+    element: <ChatChatWrapper />,
+  },
   // {
   //   path: '/',
   //   element: <HomePage />,
   //   roles: ['guest', 'user', 'admin'],
   // },
-]; 
+];
+
+// ChatChatWrapper bileşeni
+function ChatChatWrapper() {
+  const location = useLocation();
+  const ticket = location.state?.ticket;
+  if (!ticket) return <Navigate to="/my-requests" />;
+  return <ChatDialog ticket={ticket} onBack={() => window.history.back()} />;
+} 

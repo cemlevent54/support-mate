@@ -3,3 +3,7 @@ auth-service/node_modules/
 auth-service/.env
 ticket-service/venv/
 ticket-service/__pycache__/
+__pycache__/
+logs/
+.env
+

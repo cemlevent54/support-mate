@@ -3,19 +3,22 @@ const logger = require('../config/logger.config.js').default;
 const { getServiceUrl } = require('../utils/gatewayConfigHelper.js');
 const { internalServerError } = require('../responseHandlers/serverErrors/internalServer.error.js');
 
-const userProxy = createProxyMiddleware({
-  target: getServiceUrl('userService'),
+const ticketProxy = createProxyMiddleware({
+  target: getServiceUrl('ticketService'),
   changeOrigin: true,
   pathRewrite: {
-    '^/api/users': '/api/users'
+    '^/api/tickets': '/api/tickets'
   },
   onProxyReq: (proxyReq, req, res) => {
-    logger.info(`[USERS] Proxying request: ${req.method} ${req.originalUrl}`);
+    logger.info(`[TICKETS] Proxying request: ${req.method} ${req.originalUrl}`);
+    if (req.headers['authorization']) {
+      proxyReq.setHeader('authorization', req.headers['authorization']);
+    }
   },
   onError: (err, req, res) => {
-    logger.error(`[USERS] Proxy error: ${err.message}`);
+    logger.error(`[TICKETS] Proxy error: ${err.message}`);
     internalServerError(res);
   }
 });
 
-module.exports = userProxy; 
+module.exports = ticketProxy; 

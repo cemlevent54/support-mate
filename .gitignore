@@ -1,6 +1,2 @@
 backend/auth-service/logs/
 backend/auth-service/node_modules/
-.pyc
-__pycache__/
-.env
-.log
