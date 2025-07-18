@@ -7,6 +7,7 @@ export function authMiddleware(req, res, next) {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     logger.warn(translation('middlewares.authMiddleware.logs.missingAuthHeader'), { authHeader });
     res.status(401).json({ success: false, message: translation('middlewares.authMiddleware.logs.missingAuthHeader') });
+    
     return;
   }
   const token = authHeader.split(' ')[1];
@@ -21,6 +22,10 @@ export function authMiddleware(req, res, next) {
     req.user = decoded;
     next();
   } catch (err) {
+    if (err.name === 'TokenExpiredError') {
+      logger.warn('Access token expired', { error: err.message, token });
+      return res.status(401).json({ success: false, message: 'token_expired' });
+    }
     logger.warn(translation('middlewares.authMiddleware.logs.invalidToken'), { error: err.message, token });
     res.status(401).json({ success: false, message: translation('middlewares.authMiddleware.logs.invalidToken'), detail: err.message });
     return;

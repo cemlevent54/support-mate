@@ -33,7 +33,12 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     console.error('[Axios][Response][Error]', error?.response?.status, error?.response?.data);
-    if (error.response && error.response.status === 401 && !originalRequest._retry) {
+    if (
+      error.response &&
+      error.response.status === 401 &&
+      (error.response.data?.message === 'token_expired' || error.response.data?.message === 'jwt expired') &&
+      !originalRequest._retry
+    ) {
       originalRequest._retry = true;
       try {
         const refreshToken = localStorage.getItem('refreshToken');

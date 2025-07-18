@@ -154,6 +154,27 @@ class JWTService {
     logger.debug(translation('middlewares.jwtService.logs.passwordResetTokenVerified'), { userId: decoded.id });
     return decoded;
   }
+  static generateEmailVerifyToken(email, code, expiresAt, secret) {
+    return jwt.sign({ email, code, exp: Math.floor(expiresAt / 1000) }, secret);
+  }
+  static buildJWTPayload(user) {
+    return {
+      id: user.id,
+      email: user.email,
+      roleId: user.role && user.role._id ? user.role._id.toString() : user.role?.toString ? user.role.toString() : user.role,
+      roleName: user.role && user.role.name ? user.role.name : user.roleName
+    };
+  }
+  static getTokenExpireDate(expiresIn) {
+    let expiresInMs;
+    if (typeof expiresIn === 'string' && expiresIn.endsWith('m'))
+      expiresInMs = parseInt(expiresIn) * 60 * 1000;
+    else if (typeof expiresIn === 'string' && expiresIn.endsWith('h'))
+      expiresInMs = parseInt(expiresIn) * 60 * 60 * 1000;
+    else
+      expiresInMs = 15 * 60 * 1000; // default 15m
+    return new Date(Date.now() + expiresInMs);
+  }
 }
 
 export default JWTService; 
