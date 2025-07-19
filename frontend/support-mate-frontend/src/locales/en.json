@@ -14,6 +14,14 @@
       "liveChat": "Live Chat",
       "logoutSuccess": "Logged out successfully.",
       "logoutError": "Logout failed."
+    },
+    "chatWidget": {
+      "title": "Live Support",
+      "placeholder": "Type your message...",
+      "sendButton": "Send",
+      "welcomeMessage": "Hello! How can I help you?",
+      "autoReply": "Your message has been received. We will get back to you as soon as possible.",
+      "keyboardHint": "Press Enter to send, Shift+Enter for new line"
     }
   },
   "pages": {
@@ -77,13 +85,14 @@
       "button": "Verify"
     },
     "createTicket": {
-      "title": "Create Support Request",
+      "title": "Create New Support Request",
       "form": {
         "title": "Title",
         "description": "Description",
         "category": "Category",
         "file": "Attach File (Optional)",
         "submit": "Submit",
+        "submitting": "Submitting...",
         "select": "Select"
       },
       "categories": {
@@ -94,6 +103,8 @@
       },
       "validationError": "Please fill in all required fields.",
       "success": "Your support ticket has been created successfully!",
+      "successNoAgent": "Your support ticket has been created successfully! There are currently no online customer representatives, we will send you an email when a representative comes online.",
+      "successWithRelogin": "Your support ticket has been created successfully! Your session may have expired.",
       "noPermission": "You do not have permission to view this page."
     }
   },
@@ -255,5 +266,52 @@
     "close": "Close",
     "placeholder": "Write a message...",
     "send": "Send"
+  },
+  "chatPanel": {
+    "title": "Chat: {{title}}",
+    "noMessages": "No messages yet.",
+    "typing": "Customer representative is typing...",
+    "placeholder": "Type a message...",
+    "send": "Send",
+    "noAgentAssigned": "There are currently no online customer representatives. When a representative comes online, we will send you an email and you can continue here."
+  },
+  "myRequests": {
+    "title": "My Requests",
+    "loading": "Loading...",
+    "error": "An error occurred while fetching requests.",
+    "noTickets": "Failed to load requests.",
+    "table": {
+      "id": "ID",
+      "title": "Title",
+      "category": "Category",
+      "status": "Status",
+      "createdAt": "Created At",
+      "actions": "Actions"
+    },
+    "buttons": {
+      "chat": "Chat",
+      "detail": "Detail"
+    },
+    "modal": {
+      "title": "Request Details",
+      "titleLabel": "Title:",
+      "descriptionLabel": "Description:",
+      "categoryLabel": "Category:",
+      "statusLabel": "Status:",
+      "createdAtLabel": "Created At:",
+      "customerIdLabel": "Customer ID:",
+      "agentIdLabel": "Agent ID:",
+      "attachmentsLabel": "Attachments:",
+      "noAttachments": "None"
+    },
+    "categories": {
+      "hardware": "Hardware",
+      "software": "Software",
+      "network": "Network",
+      "other": "Other"
+    }
+  },
+  "floatingButton": {
+    "createTicket": "Create New Request"
   }
 } 

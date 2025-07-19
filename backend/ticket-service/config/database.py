@@ -15,21 +15,39 @@ def get_mongo_uri():
 def ensure_db_and_collection():
     uri = get_mongo_uri()
     logger.info(_(f"config.database.connecting").format(uri=uri))
-    client = MongoClient(uri, serverSelectionTimeoutMS=2000)
+    
+    # URI'den veritabanı adını çıkar
     db_name = uri.rsplit('/', 1)[-1].split('?')[0]
-    db = client[db_name]
+    
+    # Önce MongoDB sunucusuna bağlan (veritabanı adı olmadan)
+    base_uri = uri.rsplit('/', 1)[0]
+    client = MongoClient(base_uri, serverSelectionTimeoutMS=2000)
+    
     try:
-        # Bağlantı testi
+        # MongoDB sunucusuna bağlantı testi
         client.server_info()
+        logger.success(_(f"config.database.mongo_server_connected"))
+        
+        # Veritabanını oluştur (eğer yoksa)
+        db = client[db_name]
+        
+        # Veritabanının varlığını kontrol etmek için bir koleksiyon listesi al
+        # Bu işlem veritabanını otomatik olarak oluşturur
+        db.list_collection_names()
+        
+        logger.success(_(f"config.database.db_created_or_exists").format(db=db_name))
         logger.success(_(f"config.database.connected").format(db=db_name))
         logger.success(_(f"config.database.mongo_connection_success").format(db=db_name))
+        
     except Exception as e:
         logger.error(_(f"config.database.connection_failed").format(error=str(e)))
         logger.error(_(f"config.database.mongo_connection_error").format(error=str(e)))
+        raise e
     finally:
         logger.info(_(f"config.database.closing"))
         client.close()
         logger.info(_(f"config.database.closed"))
+    
     return db_name
 
 # Modül yüklendiğinde otomatik çalıştır
@@ -40,11 +58,20 @@ def get_db_status():
     parsed = urlparse(uri)
     host = parsed.hostname
     port = parsed.port or 27017
-    client = MongoClient(uri, serverSelectionTimeoutMS=2000)
     db_name = uri.rsplit('/', 1)[-1].split('?')[0]
-    db = client[db_name]
+    
+    # Önce MongoDB sunucusuna bağlan (veritabanı adı olmadan)
+    base_uri = uri.rsplit('/', 1)[0]
+    client = MongoClient(base_uri, serverSelectionTimeoutMS=2000)
+    
     try:
+        # MongoDB sunucusuna bağlantı testi
         client.server_info()
+        
+        # Veritabanını oluştur (eğer yoksa)
+        db = client[db_name]
+        db.list_collection_names()  # Veritabanını oluşturur
+        
         status = "up"
         ready_state = 1
     except Exception:
@@ -52,6 +79,7 @@ def get_db_status():
         ready_state = 0
     finally:
         client.close()
+    
     return {
         "status": status,
         "host": host,

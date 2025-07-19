@@ -13,6 +13,14 @@
       "liveChat": "Canlı Chat",
       "logoutSuccess": "Başarıyla çıkış yapıldı.",
       "logoutError": "Çıkış yapılamadı."
+    },
+    "chatWidget": {
+      "title": "Canlı Destek",
+      "placeholder": "Mesajınızı yazın...",
+      "sendButton": "Gönder",
+      "welcomeMessage": "Merhaba! Size nasıl yardımcı olabilirim?",
+      "autoReply": "Mesajınız alındı. En kısa sürede size dönüş yapacağız.",
+      "keyboardHint": "Enter tuşu ile gönder, Shift+Enter ile yeni satır"
     }
   },
   "pages": {
@@ -76,13 +84,14 @@
       "button": "Onayla"
     },
     "createTicket": {
-      "title": "Destek Talebi Oluştur",
+      "title": "Yeni destek talebi oluştur",
       "form": {
         "title": "Başlık",
         "description": "Açıklama",
         "category": "Kategori",
         "file": "Dosya Ekle (İsteğe Bağlı)",
         "submit": "Gönder",
+        "submitting": "Gönderiliyor...",
         "select": "Seçiniz"
       },
       "categories": {
@@ -93,6 +102,8 @@
       },
       "validationError": "Lütfen tüm zorunlu alanları doldurun.",
       "success": "Destek talebiniz başarıyla oluşturuldu!",
+      "successNoAgent": "Destek talebiniz başarıyla oluşturuldu! Şu anda online müşteri temsilcimiz yok, müşteri temsilcisi online olunca email yollayacağız.",
+      "successWithRelogin": "Destek talebiniz başarıyla oluşturuldu! Oturum süreniz dolmuş olabilir.",
       "noPermission": "Bu sayfayı görüntüleme yetkiniz yok."
     }
   },
@@ -255,5 +266,52 @@
     "close": "Kapat",
     "placeholder": "Mesaj yazın...",
     "send": "Gönder"
+  },
+  "chatPanel": {
+    "title": "Chat: {{title}}",
+    "noMessages": "Henüz mesaj yok.",
+    "typing": "Müşteri temsilcisi yazıyor...",
+    "placeholder": "Mesaj yazın...",
+    "send": "Gönder",
+    "noAgentAssigned": "Şu anda online müşteri temsilcimiz yok. Müşteri temsilcisi online olunca size email yollayacağız ve buradan devam edebileceksiniz."
+  },
+  "myRequests": {
+    "title": "Taleplerim",
+    "loading": "Yükleniyor...",
+    "error": "Talepler alınırken bir hata oluştu.",
+    "noTickets": "Talepler alınamadı.",
+    "table": {
+      "id": "ID",
+      "title": "Başlık",
+      "category": "Kategori",
+      "status": "Durum",
+      "createdAt": "Oluşturulma",
+      "actions": "İşlemler"
+    },
+    "buttons": {
+      "chat": "Chat",
+      "detail": "Detay"
+    },
+    "modal": {
+      "title": "Talep Detayları",
+      "titleLabel": "Başlık:",
+      "descriptionLabel": "Açıklama:",
+      "categoryLabel": "Kategori:",
+      "statusLabel": "Durum:",
+      "createdAtLabel": "Oluşturulma:",
+      "customerIdLabel": "Müşteri ID:",
+      "agentIdLabel": "Agent ID:",
+      "attachmentsLabel": "Ekler:",
+      "noAttachments": "Yok"
+    },
+    "categories": {
+      "hardware": "Donanım",
+      "software": "Yazılım",
+      "network": "Ağ",
+      "other": "Diğer"
+    }
+  },
+  "floatingButton": {
+    "createTicket": "Yeni Talep Oluştur"
   }
 } 

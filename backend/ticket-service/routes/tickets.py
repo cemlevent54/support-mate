@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status, UploadFile, File, Form, Request
 from typing import List
 from models.ticket import Ticket, APIResponse
-from middlewares.auth import get_current_user
+from middlewares.auth import get_current_user, verify_agent_permission
 from controllers.TicketController import TicketController
 from fastapi import HTTPException
 
@@ -56,6 +56,8 @@ def list_tickets_agent(user=Depends(get_current_user)):
     if user.get("roleName") != "Customer Supporter":
         raise HTTPException(status_code=403, detail="Forbidden")
     return ticket_controller.list_tickets_endpoint_for_agent(user)
+
+
 
 # --- Genel routes ---
 @router.post("", response_model=APIResponse)

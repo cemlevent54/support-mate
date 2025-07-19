@@ -86,11 +86,12 @@ export async function sendUserVerifiedEvent({ email, firstName, language = 'tr' 
   }
 }
 
-export async function sendAgentOnlineEvent(agentId) {
+export async function sendAgentOnlineEvent(agentId, agentToken = null) {
   try {
     const event = {
       event: 'agent_online',
       agentId: agentId,
+      agentToken: agentToken,  // Agent token'ını da gönder
       timestamp: new Date().toISOString()
     };
     await kafkaService.connectProducer();

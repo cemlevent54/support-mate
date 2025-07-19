@@ -61,3 +61,19 @@ def select_and_rotate_agent():
             logger.info(_(f"config.redis.agent_rotated").format(agent_id=agent_id))
             return agent_id.decode() if isinstance(agent_id, bytes) else agent_id
     return None
+
+# Queue'yu tamamen temizle
+def clear_online_queue():
+    if r:
+        result = r.delete(REDIS_ONLINE_QUEUE)
+        logger.info(f"[REDIS] Online queue temizlendi. Silinen kayıt sayısı: {result}")
+        return result
+    return 0
+
+# Queue'daki tüm elemanları listele
+def list_all_online_agents():
+    if r:
+        agents = r.lrange(REDIS_ONLINE_QUEUE, 0, -1)
+        logger.info(f"[REDIS] Queue'daki tüm agent'lar: {agents}")
+        return [agent.decode() if isinstance(agent, bytes) else agent for agent in agents]
+    return []

@@ -156,6 +156,8 @@ class AuthService {
       await JWTService.addActiveSession(user.id, accessToken, expireAt);
       // CUSTOMER SUPPORTER ONLINE KAYDI
       logger.info(`[ONLINE] ${translation('services.authService.logs.onlineRoleName')}: ${user.roleName}`);
+      logger.info(`[ONLINE] User detayları - ID: ${user.id}, Email: ${user.email}, Role: ${user.roleName}, Role Object: ${JSON.stringify(user.role)}`);
+      
       if (user.roleName === 'Customer Supporter') {
         try {
           logger.info(`[ONLINE] ${translation('services.authService.logs.customerSupportLoginDetected')}. userId=${user.id}, email=${user.email}`);
@@ -163,21 +165,28 @@ class AuthService {
           const currentOnline = await cacheService.client.lRange('online_users_queue', 0, -1);
           const isAlreadyOnline = currentOnline.includes(user.id);
           
+          logger.info(`[ONLINE] Redis queue durumu - Mevcut online kullanıcılar: ${JSON.stringify(currentOnline)}`);
+          logger.info(`[ONLINE] Kullanıcı zaten online mi: ${isAlreadyOnline}`);
+          
           if (!isAlreadyOnline) {
             // Yoksa ekle
             await cacheService.client.rPush('online_users_queue', user.id);
             logger.info(translation('services.authService.logs.redisPushSuccess'), { userId: user.id });
             const updatedOnline = await cacheService.client.lRange('online_users_queue', 0, -1);
             logger.info(translation('services.authService.logs.currentOnlineUsers'), updatedOnline);
-            // KAFKA EVENT: agent_online
-            await sendAgentOnlineEvent(user.id);
+            logger.info(`[ONLINE] Redis queue güncellendi - Yeni online kullanıcılar: ${JSON.stringify(updatedOnline)}`);
+            // KAFKA EVENT: agent_online - token ile birlikte gönder
+            await sendAgentOnlineEvent(user.id, accessToken);
           } else {
             logger.info(translation('services.authService.logs.customerSupporterAlreadyOnline'), { userId: user.id });
             logger.info(translation('services.authService.logs.currentOnlineUsers'), currentOnline);
+            logger.info(`[ONLINE] Kullanıcı zaten queue'da mevcut, ekleme yapılmadı`);
           }
         } catch (err) {
           logger.error(translation('services.authService.logs.customerSupporterOnlineError'), { userId: user.id, email: user.email, error: err });
         }
+      } else {
+        logger.info(`[ONLINE] Kullanıcı Customer Supporter değil (${user.roleName}), queue'ya eklenmedi`);
       }
       // Eğer response objesi varsa (HTTP endpoint)
       if (res) {
@@ -218,14 +227,27 @@ class AuthService {
       }
       // CUSTOMER SUPPORTER ONLINE KAYDI (Logout)
       logger.info(`[ONLINE] (Logout) User roleName: ${req.user?.roleName}`);
+      logger.info(`[ONLINE] (Logout) User detayları - ID: ${req.user?.id}, Email: ${req.user?.email}, Role: ${req.user?.roleName}, Role Object: ${JSON.stringify(req.user?.role)}`);
+      
       if (req.user?.roleName === 'Customer Supporter') {
         try {
           logger.info(`[ONLINE] (Logout) Customer Supporter logout detected. userId=${req.user.id}`);
+          
+          // Logout öncesi queue durumu
+          const beforeLogout = await cacheService.client.lRange('online_users_queue', 0, -1);
+          logger.info(`[ONLINE] (Logout) Logout öncesi Redis queue: ${JSON.stringify(beforeLogout)}`);
+          
           await cacheService.client.lRem('online_users_queue', 0, req.user.id);
           logger.info(`[ONLINE] (Logout) Redis lRem('online_users_queue', 0, ${req.user.id}) sonucu:`);
+          
+          // Logout sonrası queue durumu
+          const afterLogout = await cacheService.client.lRange('online_users_queue', 0, -1);
+          logger.info(`[ONLINE] (Logout) Logout sonrası Redis queue: ${JSON.stringify(afterLogout)}`);
         } catch (err) {
           logger.error(`[ONLINE] (Logout) Customer Supporter online kaydedilemedi! userId=${req.user.id}, error=`, err);
         }
+      } else {
+        logger.info(`[ONLINE] (Logout) Kullanıcı Customer Supporter değil (${req.user?.roleName}), queue'dan çıkarılmadı`);
       }
       logger.info(translation('services.authService.logs.logoutSuccess'), { userId });
       apiSuccess(res, null, translation('services.authService.logs.logoutSuccess'), 200);
@@ -495,6 +517,8 @@ class AuthService {
       await JWTService.addActiveSession(user.id, accessToken, expireAt);
       // CUSTOMER SUPPORTER ONLINE KAYDI (Google Login)
       logger.info(`[ONLINE] (Google) User roleName: ${user.roleName}`);
+      logger.info(`[ONLINE] (Google) User detayları - ID: ${user.id}, Email: ${user.email}, Role: ${user.roleName}, Role Object: ${JSON.stringify(user.role)}`);
+      
       if (user.roleName === 'Customer Supporter') {
         try {
           logger.info(`[ONLINE] (Google) Customer Supporter login detected. userId=${user.id}, email=${user.email}`);
@@ -502,21 +526,28 @@ class AuthService {
           const currentOnline = await cacheService.client.lRange('online_users_queue', 0, -1);
           const isAlreadyOnline = currentOnline.includes(user.id);
           
+          logger.info(`[ONLINE] (Google) Redis queue durumu - Mevcut online kullanıcılar: ${JSON.stringify(currentOnline)}`);
+          logger.info(`[ONLINE] (Google) Kullanıcı zaten online mi: ${isAlreadyOnline}`);
+          
           if (!isAlreadyOnline) {
             // Yoksa ekle
             await cacheService.client.rPush('online_users_queue', user.id);
             logger.info(translation('services.authService.logs.googleRedisPushSuccess'), { userId: user.id });
             const updatedOnline = await cacheService.client.lRange('online_users_queue', 0, -1);
             logger.info(translation('services.authService.logs.googleCurrentOnlineUsers'), updatedOnline);
+            logger.info(`[ONLINE] (Google) Redis queue güncellendi - Yeni online kullanıcılar: ${JSON.stringify(updatedOnline)}`);
             // KAFKA EVENT: agent_online
             await sendAgentOnlineEvent(user.id);
           } else {
             logger.info(translation('services.authService.logs.googleCustomerSupporterAlreadyOnline'), { userId: user.id });
             logger.info(translation('services.authService.logs.googleCurrentOnlineUsers'), currentOnline);
+            logger.info(`[ONLINE] (Google) Kullanıcı zaten queue'da mevcut, ekleme yapılmadı`);
           }
         } catch (err) {
           logger.error(translation('services.authService.logs.googleCustomerSupporterOnlineError'), { userId: user.id, email: user.email, error: err });
         }
+      } else {
+        logger.info(`[ONLINE] (Google) Kullanıcı Customer Supporter değil (${user.roleName}), queue'ya eklenmedi`);
       }
       logger.info(translation('services.authService.logs.loginSuccess'), { provider: 'google', user, accessToken, expireAt });
       apiSuccess(res, { user, accessToken, expireAt }, translation('services.authService.logs.loginSuccess'), 200);

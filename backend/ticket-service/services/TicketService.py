@@ -2,6 +2,7 @@ import logging
 from cqrs.commands.CreateTicketCommandHandler import CreateTicketCommandHandler
 from cqrs.queries.GetTicketQueryHandler import GetTicketQueryHandler
 from cqrs.queries.ListTicketsQueryHandler import ListTicketsQueryHandler
+from cqrs.queries.ListTicketsForAgentQueryHandler import ListTicketsForAgentQueryHandler
 from cqrs.commands.UpdateTicketCommandHandler import UpdateTicketCommandHandler
 from cqrs.commands.SoftDeleteTicketCommandHandler import SoftDeleteTicketCommandHandler
 from responseHandlers.clientErrors.unauthorized_error import unauthorized_error
@@ -29,6 +30,7 @@ class TicketService:
         self.create_handler = CreateTicketCommandHandler()
         self.get_handler = GetTicketQueryHandler()
         self.list_handler = ListTicketsQueryHandler()
+        self.list_agent_handler = ListTicketsForAgentQueryHandler()
         self.update_handler = UpdateTicketCommandHandler()
         self.soft_delete_handler = SoftDeleteTicketCommandHandler()
         self.chat_service = ChatService()
@@ -42,15 +44,34 @@ class TicketService:
             logger.warning(_(f"services.ticketService.logs.bad_request"))
             return bad_request_error(_(f"services.ticketService.responses.bad_request"))
         logger.info(_(f"services.ticketService.logs.creating_ticket").format(user_id=user.get('id', 'unknown')))
+        
         # Online temsilci seçimi CQRS ile
         agent_selector = SelectAndRotateAgentQueryHandler()
         agent_id = agent_selector.execute()
-        if agent_id:
+        
+        # Agent seçimi kontrolü: customerId ile assignedAgentId aynı olamaz
+        customer_id = user.get('id')
+        if agent_id and agent_id == customer_id:
+            logger.warning(f"[TICKET_SERVICE] Agent ID ({agent_id}) customer ID ({customer_id}) ile aynı, agent atanmayacak")
+            agent_id = None
+        
+        # assignedAgentId'yi ayarla - unknown gitmemeli
+        if agent_id and agent_id != "unknown":
             ticket["assignedAgentId"] = agent_id
+            logger.info(f"[TICKET_SERVICE] Agent atandı: {agent_id}")
+        else:
+            # Online agent bulunamadıysa, customer ile aynıysa veya unknown ise assignedAgentId null geç
+            ticket["assignedAgentId"] = None
+            if agent_id == "unknown":
+                logger.warning(f"[TICKET_SERVICE] Agent ID 'unknown' geldi, assignedAgentId null olarak ayarlandı")
+            else:
+                logger.info(f"[TICKET_SERVICE] Online agent bulunamadı veya customer ile aynı, assignedAgentId null")
+        
         result = self.create_handler.execute(ticket, user)
         data = result.get('data')
         ticket_id = data.get('id') if isinstance(data, dict) else getattr(data, 'id', None)
         logger.info(_(f"services.ticketService.logs.ticket_created").format(ticket_id=ticket_id))
+        
         # Chat ve temsilci atama
         if result["success"]:
             ticket_obj = result["data"]
@@ -90,12 +111,14 @@ class TicketService:
                 "chatId": chat_id,  # chat'in gerçek id'si
                 "text": f"Title: {ticket_obj.title}\nDescription: {ticket_obj.description}",
                 "attachments": [att["name"] for att in (ticket_obj.attachments or [])],
-                "is_delivered": is_delivered,
+                "is_delivered": False,  # İlk mesaj her zaman false
                 "senderId": user["id"],
                 "senderRole": get_user_by_id(user["id"], token).get("roleName"),
-                "receiverId": agent_id if agent_id else None
+                "receiverId": None  # İlk mesaj için receiverId None
             }
-            self.message_service.send_message(first_message, user, is_delivered=is_delivered)
+            
+            # İlk mesajı gönder (receiverId None, is_delivered False)
+            self.message_service.send_message(first_message, user, is_delivered=False)
             # Mail bildirimleri
             try:
                 template_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates", "ticket_created.html")
@@ -113,6 +136,13 @@ class TicketService:
             return unauthorized_error(_(f"services.ticketService.responses.unauthorized"))
         logger.info(_(f"services.ticketService.logs.listing_tickets").format(user_id=user.get('id', 'unknown')))
         return self.list_handler.execute(user)
+
+    def list_tickets_for_agent(self, user):
+        if not user:
+            logger.warning(_(f"services.ticketService.logs.unauthorized"))
+            return unauthorized_error(_(f"services.ticketService.responses.unauthorized"))
+        logger.info(_(f"services.ticketService.logs.listing_tickets_for_agent").format(user_id=user.get('id', 'unknown')))
+        return self.list_agent_handler.execute(user)
 
     def get_ticket(self, ticket_id, user):
         if not user:
@@ -144,9 +174,9 @@ class TicketService:
         logger.info(_(f"services.ticketService.logs.soft_deleting_ticket").format(ticket_id=ticket_id, user_id=user.get('id', 'unknown')))
         return self.soft_delete_handler.execute(ticket_id, user)
 
-    def assign_agent_to_pending_ticket(self, agent_id):
+    async def assign_agent_to_pending_ticket(self, agent_id):
         handler = AssignAgentToPendingTicketCommandHandler()
-        result = handler.execute(agent_id)
+        result = await handler.execute(agent_id)
         if result.get("success"):
             logger.info(_(f"services.ticketService.logs.auto_assign").format(agent_id=agent_id, ticket_id=result.get("ticketId")))
         else:

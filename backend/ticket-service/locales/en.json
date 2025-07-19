@@ -11,7 +11,10 @@
             "connected": "Connected to MongoDB successfully. DB: {db}",
             "connection_failed": "MongoDB connection failed: {error}",
             "closing": "Closing MongoDB connection...",
-            "closed": "MongoDB connection closed."
+            "closed": "MongoDB connection closed.",
+            "mongo_server_connected": "MongoDB server connected successfully.",
+            "db_created_or_exists": "Database created or exists: {db}",
+            "test_collections_created": "Test collections created: {collections}"
         },
         "redis": {
             "redis_connection_success": "Redis connection successful.",

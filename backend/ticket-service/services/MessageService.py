@@ -26,7 +26,7 @@ class MessageService:
         if user:
             message_data["senderId"] = user.get("id")
             message_data["senderRole"] = user.get("roleName", "customer")
-        # receiverId zorunluysa kontrol et
+        # receiverId kontrolü - ilk mesaj için daha esnek
         if "receiverId" not in message_data or not message_data["receiverId"]:
             # Eğer chat'te tek bir karşı taraf varsa otomatik ata
             chat_id = message_data.get("chatId")
@@ -36,15 +36,25 @@ class MessageService:
                 chat_repo = GetChatByIdQueryHandler()
                 chat = chat_repo.execute(chat_id)
                 if chat and hasattr(chat, 'participants'):
-                    receiver = next((p.userId for p in chat.participants if p.userId != sender_id), None)
-                    if receiver:
-                        message_data["receiverId"] = receiver
+                    # Chat'teki diğer katılımcıları bul
+                    other_participants = [p.userId for p in chat.participants if p.userId != sender_id]
+                    if other_participants:
+                        message_data["receiverId"] = other_participants[0]  # İlk diğer katılımcıyı al
+                        self.logger.info(f"[MESSAGE_SERVICE] Receiver otomatik atandı: {message_data['receiverId']}")
                     else:
-                        return {"success": False, "data": None, "message": _(f"services.messageService.responses.receiver_not_found")}
+                        # Eğer başka katılımcı yoksa, ilk mesaj olabilir - receiverId'yi None bırak
+                        self.logger.info(f"[MESSAGE_SERVICE] Chat'te başka katılımcı yok, ilk mesaj olabilir")
+                        message_data["receiverId"] = None
                 else:
-                    return {"success": False, "data": None, "message": _(f"services.messageService.responses.chat_not_found")}
+                    self.logger.warning(f"[MESSAGE_SERVICE] Chat bulunamadı: {chat_id}")
+                    message_data["receiverId"] = None
             else:
-                return {"success": False, "data": None, "message": _(f"services.messageService.responses.receiver_and_chat_required")}
+                self.logger.warning(f"[MESSAGE_SERVICE] Chat ID veya sender ID eksik")
+                message_data["receiverId"] = None
+        else:
+            # receiverId zaten var, kontrol et
+            if message_data["receiverId"] is None:
+                self.logger.info(f"[MESSAGE_SERVICE] receiverId None olarak ayarlandı (ilk mesaj)")
         # is_delivered parametresini ayarla
         message_data["is_delivered"] = is_delivered
         result = self.send_handler.execute(message_data, user)

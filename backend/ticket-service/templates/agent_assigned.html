@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Müşteri Temsilciniz Atandı</title>
+    <!--
+      Bu şablon string.Template ile uyumludur.
+      Değişkenler: $firstName, $agentName, $ticketTitle, $ticketId
+    -->
+    <style type="text/css">
+        body { font-family: Arial, sans-serif; background: #f7f7f7; color: #222; }
+        .container { background: #fff; padding: 32px; border-radius: 8px; max-width: 600px; margin: 40px auto; box-shadow: 0 2px 8px rgba(0,0,0,0.07);}
+        .header { color: #2a7ae2; font-size: 24px; margin-bottom: 16px; }
+        .info { margin: 16px 0; }
+        .agent-info { background: #f0f8ff; padding: 16px; border-radius: 6px; margin: 16px 0; border-left: 4px solid #2a7ae2; }
+        .footer { margin-top: 32px; font-size: 13px; color: #888; }
+        .button { display: inline-block; background: #2a7ae2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">Müşteri Temsilciniz Atandı</div>
+        <div class="info">
+            <p>Sayın <b>$firstName</b>,</p>
+            <p>
+                <b>$ticketTitle</b> başlıklı destek talebiniz için müşteri temsilciniz atanmıştır.
+            </p>
+            <div class="agent-info">
+                <p><strong>Müşteri Temsilciniz:</strong> $agentName</p>
+                <p><strong>Talep Numarası:</strong> $ticketId</p>
+            </div>
+            <p>
+                Müşteri temsilciniz en kısa sürede sizinle iletişime geçecektir. 
+                Destek talebinizi takip etmek için sistemimize giriş yapabilirsiniz.
+            </p>
+            <a href="http://localhost:3000/my-requests" class="button">Destek Talebimi Görüntüle</a>
+        </div>
+        <div class="footer">
+            Bu e-posta otomatik olarak gönderilmiştir, lütfen yanıtlamayınız.<br>
+            Destek ekibimizle iletişime geçmek için <a href="mailto:support@example.com">support@example.com</a> adresine yazabilirsiniz.
+        </div>
+    </div>
+</body>
+</html> 

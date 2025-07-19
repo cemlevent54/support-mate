@@ -33,6 +33,7 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     console.error('[Axios][Response][Error]', error?.response?.status, error?.response?.data);
+    
     if (error.response && error.response.status === 401) {
       // Sadece access token expired ise refresh dene
       if (
@@ -54,16 +55,23 @@ axiosInstance.interceptors.response.use(
           return axiosInstance(originalRequest);
         } catch (refreshError) {
           console.error('[Axios][Refresh][Error]', refreshError);
+          // Refresh token başarısız olduğunda token'ları temizle
           localStorage.removeItem('jwt');
           localStorage.removeItem('refreshToken');
-          window.location.href = '/login';
+          // Ticket oluşturma işlemi değilse login'e yönlendir
+          if (!originalRequest.url.includes('/api/tickets') || originalRequest.method !== 'post') {
+            window.location.href = '/login';
+          }
           return Promise.reject(refreshError);
         }
       } else {
-        // Diğer tüm 401 durumlarında doğrudan login'e yönlendir
+        // Diğer tüm 401 durumlarında token'ları temizle
         localStorage.removeItem('jwt');
         localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
+        // Ticket oluşturma işlemi değilse login'e yönlendir
+        if (!originalRequest.url.includes('/api/tickets') || originalRequest.method !== 'post') {
+          window.location.href = '/login';
+        }
         return Promise.reject(error);
       }
     }

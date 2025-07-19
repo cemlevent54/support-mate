@@ -11,7 +11,10 @@
             "connected": "MongoDB'ye başarıyla bağlanıldı. DB: {db}",
             "connection_failed": "MongoDB bağlantısı başarısız oldu: {error}",
             "closing": "MongoDB bağlantısı kapatılıyor...",
-            "closed": "MongoDB bağlantısı kapatıldı."
+            "closed": "MongoDB bağlantısı kapatıldı.",
+            "mongo_server_connected": "MongoDB sunucusuna başarıyla bağlanıldı.",
+            "db_created_or_exists": "Veritabanı oluşturuldu veya mevcut: {db}",
+            "test_collections_created": "Test koleksiyonları oluşturuldu: {collections}"
         },
         "redis": {
             "redis_connection_success": "Redis bağlantısı başarılı.",

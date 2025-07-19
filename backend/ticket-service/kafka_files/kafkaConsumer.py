@@ -1,6 +1,7 @@
 import json
 import time
 import threading
+import asyncio
 from services.TicketService import TicketService
 import logging
 from config.kafka import get_kafka_consumer
@@ -17,13 +18,16 @@ def agent_online_consumer_loop():
             for message in consumer:
                 try:
                     event = json.loads(message.value)
+                    
                     if (
                         event.get('type') == 'agent-online'
                         or event.get('event') == 'agent_online'
                     ):
                         agent_id = event.get('agentId')
                         logger.info(f'[KAFKA] agent_online event received for agentId={agent_id}')
-                        ticket_service.assign_agent_to_pending_ticket(agent_id)
+                        
+                        # Async fonksiyonu await et
+                        asyncio.run(ticket_service.assign_agent_to_pending_ticket(agent_id))
                 except Exception as e:
                     logger.error(f'[KAFKA] Error processing message: {e}')
         except Exception as e:

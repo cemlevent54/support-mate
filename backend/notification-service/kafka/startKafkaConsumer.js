@@ -1,7 +1,14 @@
 import kafkaService from '../config/kafka.js';
 import logger from '../config/logger.js';
+import {
+  handleUserRegistered,
+  handlePasswordReset,
+  handleUserVerified,
+  handleTicketCreated,
+  handleAgentAssigned
+} from '../events/index.js';
 
-export async function startKafkaConsumer(onUserRegistered, onPasswordReset, onUserVerified, onTicketCreated, onAgentAssigned) {
+export async function startKafkaConsumer() {
   try {
     await kafkaService.connectConsumer();
     await kafkaService.consumer.subscribe({ topic: 'user-registered', fromBeginning: false });
@@ -18,15 +25,15 @@ export async function startKafkaConsumer(onUserRegistered, onPasswordReset, onUs
       eachMessage: async ({ topic, message }) => {
         const data = JSON.parse(message.value.toString());
         if (topic === 'user-registered') {
-          await onUserRegistered(data);
+          await handleUserRegistered(data);
         } else if (topic === 'password-reset') {
-          await onPasswordReset(data);
+          await handlePasswordReset(data);
         } else if (topic === 'user-verified') {
-          await onUserVerified(data);
+          await handleUserVerified(data);
         } else if (topic === 'ticket-created') {
-          await onTicketCreated(data);
+          await handleTicketCreated(data);
         } else if (topic === 'agent-assigned') {
-          await onAgentAssigned(data);
+          await handleAgentAssigned(data);
         }
       },
     });

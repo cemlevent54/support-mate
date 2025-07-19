@@ -23,7 +23,7 @@ const categories = [
   { value: "other", labelKey: "pages.createTicket.categories.other" },
 ];
 
-const CreateTicket = () => {
+const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
   const { t } = useTranslation();
   const [form, setForm] = useState({
     title: "",
@@ -33,6 +33,7 @@ const CreateTicket = () => {
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
   const [userRole, setUserRole] = useState("guest");
   const [previews, setPreviews] = useState([]); // [{url, name, type, size, file}]
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -123,10 +124,14 @@ const CreateTicket = () => {
     e.preventDefault();
     setError("");
     setSuccess("");
+    setLoading(true);
+    
     if (!form.title || !form.description || !form.category) {
       setError(t('pages.createTicket.validationError'));
+      setLoading(false);
       return;
     }
+    
     try {
       // Dosya yükleme desteği için files alanı
       const ticketPayload = {
@@ -136,25 +141,123 @@ const CreateTicket = () => {
         files: form.files || []
       };
       const response = await createTicket(ticketPayload);
+      
       if (response.success) {
         setTicketData(response.data);
-        setChatOpen(true);
+        
+        // assignedAgentId kontrolü
+        if (response.data.assignedAgentId) {
         setSuccess(t('pages.createTicket.success'));
+        } else {
+          setSuccess(t('pages.createTicket.successNoAgent'));
+        }
+        
         setForm({ title: "", description: "", category: "", files: [] });
+        
+        // Modal modunda ise parent'a bilgi ver ve modal'ı kapat
+        if (isModal && onClose) {
+          if (onTicketCreated) {
+            // Parent component'e ticket bilgisini gönder
+            onTicketCreated(response.data);
+          }
+          setTimeout(() => {
+            onClose();
+          }, 3000); // 3 saniye sonra kapat
+        } else {
+          // Standalone modda ChatDialog'a yönlendir
+          setTimeout(() => {
+            setChatOpen(true);
+          }, 2000); // 2 saniye sonra chat ekranını aç
+        }
       } else {
         setError(response.message || t('pages.createTicket.error'));
       }
     } catch (err) {
+      console.error('CreateTicket Error:', err);
+      
+      // 401 hatası durumunda özel mesaj göster (login'e yönlendirme yok)
+      if (err?.response?.status === 401) {
+        setSuccess(t('pages.createTicket.successWithRelogin'));
+        setForm({ title: "", description: "", category: "", files: [] });
+        
+        // Modal modunda ise modal'ı kapat
+        if (isModal && onClose) {
+          setTimeout(() => {
+            onClose();
+          }, 3000); // 3 saniye sonra kapat
+        }
+        
+        // Login'e yönlendirme kaldırıldı - kullanıcı manuel olarak login olabilir
+        return;
+      }
+      
+      // Diğer hatalar için normal error mesajı
       setError(err?.response?.data?.message || t('pages.createTicket.error'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBackFromChat = () => {
+    setChatOpen(false);
+    setTicketData(null);
+    // Modal modunda ise modal'ı kapat
+    if (isModal && onClose) {
+      onClose();
     }
   };
 
   return (
     chatOpen ? (
-      <ChatDialog ticket={ticketData} onBack={() => setChatOpen(false)} />
+      <ChatDialog ticket={ticketData} onBack={handleBackFromChat} />
     ) : (
-      <Box maxWidth={500} mx="auto" mt={10} p={4} bgcolor="#fff" borderRadius={2} boxShadow={3}>
-        <Typography variant="h5" fontWeight={700} mb={3}>{t('pages.createTicket.title')}</Typography>
+      <Box 
+        flex={1} 
+        minWidth={isModal ? 600 : 400} 
+        maxWidth={isModal ? 800 : 600} 
+        display="flex" 
+        flexDirection="column" 
+        minHeight={0}
+        height={isModal ? 'auto' : 'auto'}
+        maxHeight={isModal ? '95vh' : 'auto'}
+      >
+        <Box 
+          bgcolor="#f9f9f9" 
+          borderRadius={2} 
+          boxShadow={3} 
+          p={2} 
+          display="flex" 
+          flexDirection="column" 
+          flex={1} 
+          minHeight={0} 
+          mt={isModal ? 0 : 6}
+          height="100%"
+        >
+          <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+            <Typography variant="h6">{t('pages.createTicket.title')}</Typography>
+          </Box>
+          <Box 
+            flex={1} 
+            my={2} 
+            p={1} 
+            minHeight={0}
+            sx={{
+              '&::-webkit-scrollbar': {
+                width: '6px',
+              },
+              '&::-webkit-scrollbar-track': {
+                background: '#f1f1f1',
+                borderRadius: '3px',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                background: '#c1c1c1',
+                borderRadius: '3px',
+              },
+              '&::-webkit-scrollbar-thumb:hover': {
+                background: '#a8a8a8',
+              },
+            }}
+          >
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
         <form onSubmit={handleSubmit}>
@@ -166,6 +269,12 @@ const CreateTicket = () => {
             fullWidth
             required
             margin="normal"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    backgroundColor: '#fff',
+                  }
+                }}
           />
           <TextField
             label={t('pages.createTicket.form.description')}
@@ -177,6 +286,12 @@ const CreateTicket = () => {
             margin="normal"
             multiline
             rows={4}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    backgroundColor: '#fff',
+                  }
+                }}
           />
           <TextField
             select
@@ -187,6 +302,12 @@ const CreateTicket = () => {
             fullWidth
             required
             margin="normal"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    backgroundColor: '#fff',
+                  }
+                }}
           >
             <MenuItem value="">{t('pages.createTicket.form.select')}</MenuItem>
             {categories.map((cat) => (
@@ -200,7 +321,7 @@ const CreateTicket = () => {
               variant="contained"
               component="label"
               fullWidth
-              sx={{ mb: 1 }}
+                  sx={{ mb: 1, borderRadius: 2 }}
             >
               {t('pages.createTicket.form.file')}
               <input
@@ -243,16 +364,22 @@ const CreateTicket = () => {
               </Box>
             )}
           </Box>
+            </form>
+          </Box>
+          <Box display="flex" gap={1} mt={2} flexShrink={0}>
           <Button
             type="submit"
             variant="contained"
             color="primary"
             fullWidth
-            sx={{ py: 1.2, fontWeight: 600 }}
+              onClick={handleSubmit}
+              disabled={loading}
+              sx={{ borderRadius: 2, minWidth: 80, py: 1.2, fontWeight: 600 }}
           >
-            {t('pages.createTicket.form.submit')}
+              {loading ? t('pages.createTicket.form.submitting') : t('pages.createTicket.form.submit')}
           </Button>
-        </form>
+          </Box>
+        </Box>
         {/* Resim ve PDF önizleme Dialog */}
         <Dialog open={previewOpen} onClose={handleClosePreview} maxWidth="md" fullWidth>
           <DialogTitle>{selectedPreview?.name}</DialogTitle>

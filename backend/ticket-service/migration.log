@@ -1,0 +1,30 @@
+2025-07-19 14:08:45,127 - INFO - ============================================================
+2025-07-19 14:10:28,065 - INFO - [START] MongoDB Veri Tasima Script'i Baslatiliyor
+2025-07-19 14:10:28,066 - INFO - [SOURCE] Kaynak: mongodb://root:password@localhost:27018/ticket-service?authSource=admin
+2025-07-19 14:10:28,067 - INFO - [TARGET] Hedef: mongodb://root:password@localhost:27017/ticket-service?authSource=admin
+2025-07-19 14:10:28,068 - INFO - ============================================================
+2025-07-19 14:10:28,155 - INFO - [SUCCESS] Kaynak MongoDB'ye basariyla baglandi: ticket-service
+2025-07-19 14:10:28,216 - INFO - [SUCCESS] Hedef MongoDB'ye basariyla baglandi: ticket-service
+2025-07-19 14:10:28,218 - INFO - [INFO] Kaynak koleksiyon istatistikleri:
+2025-07-19 14:10:28,229 - INFO - [INFO] tickets koleksiyonu: 11 dokuman
+2025-07-19 14:10:28,234 - INFO - [INFO] messages koleksiyonu: 29 dokuman
+2025-07-19 14:10:28,239 - INFO - [INFO] chats koleksiyonu: 12 dokuman
+2025-07-19 14:10:28,245 - INFO - [INFO] tasks koleksiyonu: 0 dokuman
+2025-07-19 14:10:28,246 - INFO - [INFO] Toplam kaynak dokuman sayisi: 52
+2025-07-19 14:10:28,247 - INFO - ============================================================
+2025-07-19 14:10:28,252 - INFO - [MIGRATE] tickets koleksiyonu tasiniyor... (11 dokuman)
+2025-07-19 14:10:28,264 - INFO - [SUCCESS] tickets koleksiyonu basariyla tasindi: 11 dokuman
+2025-07-19 14:10:28,270 - INFO - [MIGRATE] messages koleksiyonu tasiniyor... (29 dokuman)
+2025-07-19 14:10:28,275 - INFO - [SUCCESS] messages koleksiyonu basariyla tasindi: 29 dokuman
+2025-07-19 14:10:28,280 - INFO - [MIGRATE] chats koleksiyonu tasiniyor... (12 dokuman)
+2025-07-19 14:10:28,286 - INFO - [SUCCESS] chats koleksiyonu basariyla tasindi: 12 dokuman
+2025-07-19 14:10:28,291 - INFO - [INFO] tasks koleksiyonu bos, atlaniyor
+2025-07-19 14:10:28,292 - INFO - ============================================================
+2025-07-19 14:10:28,292 - INFO - [SUMMARY] Tasima Ozeti: 52 dokuman tasindi
+2025-07-19 14:10:28,293 - INFO - [VERIFY] Tasima islemi dogrulaniyor...
+2025-07-19 14:10:28,303 - INFO - [SUCCESS] tickets: 11 dokuman (eslesiyor)
+2025-07-19 14:10:28,313 - INFO - [SUCCESS] messages: 29 dokuman (eslesiyor)
+2025-07-19 14:10:28,323 - INFO - [SUCCESS] chats: 12 dokuman (eslesiyor)
+2025-07-19 14:10:28,333 - INFO - [SUCCESS] tasks: 0 dokuman (eslesiyor)
+2025-07-19 14:10:28,335 - INFO - [SUCCESS] Veri tasima islemi tamamlandi!
+2025-07-19 14:10:28,340 - INFO - [INFO] MongoDB baglantilari kapatildi
