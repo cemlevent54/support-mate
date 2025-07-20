@@ -31,12 +31,12 @@ const ChatPanel = ({
   return (
     <Box 
       flex={1} 
-      minWidth={isModal ? 600 : 400} 
-      maxWidth={isModal ? 800 : 600} 
+      minWidth={isModal ? 400 : 400} 
+      maxWidth={isModal ? 400 : 600} 
       display="flex" 
       flexDirection="column" 
       minHeight={0}
-      height={isModal ? '80vh' : 'auto'}
+      height={isModal ? '70vh' : 'auto'}
     >
       <Box 
         bgcolor="#f9f9f9" 

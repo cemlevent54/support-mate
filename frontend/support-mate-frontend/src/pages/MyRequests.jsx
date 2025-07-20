@@ -13,10 +13,12 @@ import Modal from '@mui/material/Modal';
 import { listTicketsForUser } from '../api/ticketApi';
 import { useChatSocket } from '../hooks/useChatSocket';
 import ChatPanel from '../components/ChatPanel';
-import FloatingChatButton from '../components/FloatingChatButton';
-import CreateTicket from './CreateTicket';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
 
-const MyRequests = () => {
+
+const MyRequests = ({ openCreateTicketModal }) => {
   const { t } = useTranslation();
 
 const categoryLabels = {
@@ -48,7 +50,8 @@ const modalStyle = {
   const [chatTicket, setChatTicket] = useState(null);
   const [chatModalOpen, setChatModalOpen] = useState(false);
   const [selectedChatTicket, setSelectedChatTicket] = useState(null);
-  const [createTicketModalOpen, setCreateTicketModalOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewFile, setPreviewFile] = useState(null);
   const navigate = useNavigate();
 
   // Chat socket hook'unu kullan (modal için)
@@ -67,39 +70,47 @@ const modalStyle = {
     setInput
   } = useChatSocket(selectedChatTicket, chatModalOpen);
 
-  useEffect(() => {
-    const fetchTickets = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await listTicketsForUser();
-        if (response.success && Array.isArray(response.data)) {
-          setRows(response.data.map((ticket, idx) => ({
-            id: ticket._id || idx + 1,
-            title: ticket.title,
-            description: ticket.description,
-            category: ticket.category,
-            status: ticket.status || "-",
-            createdAt: ticket.createdAt ? new Date(ticket.createdAt).toLocaleString() : "-",
-            files: ticket.attachments || [],
-            chatId: ticket.chatId || ticket._id,
-            customerId: ticket.customerId,
-            assignedAgentId: ticket.assignedAgentId,
-            raw: ticket
-          })));
-        } else {
-          setRows([]);
-          setError(response.message || t('myRequests.noTickets'));
-        }
-      } catch (err) {
-        setError(t('myRequests.error'));
+  // fetchTickets fonksiyonunu burada tanımla
+  const fetchTickets = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await listTicketsForUser();
+      if (response.success && Array.isArray(response.data)) {
+        const sorted = response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setRows(sorted.map((ticket, idx) => ({
+          id: ticket._id || idx + 1,
+          title: ticket.title,
+          description: ticket.description,
+          category: ticket.category,
+          status: ticket.status || "-",
+          createdAt: ticket.createdAt ? new Date(new Date(ticket.createdAt).getTime() + 3 * 60 * 60 * 1000).toLocaleString() : "-",
+          files: ticket.attachments || [],
+          chatId: ticket.chatId || ticket._id,
+          customerId: ticket.customerId,
+          assignedAgentId: ticket.assignedAgentId,
+          raw: ticket
+        })));
+      } else {
         setRows([]);
-      } finally {
-        setLoading(false);
+        setError(response.message || t('myRequests.noTickets'));
       }
-    };
+    } catch (err) {
+      setError(t('myRequests.error'));
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchTickets();
   }, [t]);
+
+  // Ticket oluşturma modalı açıldığında tabloyu güncellemek için callback
+  const handleTicketCreated = () => {
+    fetchTickets();
+  };
 
   const handleOpenChat = (ticket) => {
     console.log('MyRequests - handleOpenChat - ticket:', ticket);
@@ -131,22 +142,13 @@ const modalStyle = {
     setSelectedTicket(null);
   };
 
-  const handleOpenCreateTicket = () => {
-    setCreateTicketModalOpen(true);
+  const handlePreviewFile = (file) => {
+    setPreviewFile(file);
+    setPreviewOpen(true);
   };
-
-  const handleCloseCreateTicket = () => {
-    setCreateTicketModalOpen(false);
-  };
-
-  const handleTicketCreated = (ticketData) => {
-    // Ticket oluşturulduktan sonra chat modal'ını aç
-    setSelectedChatTicket({
-      ...ticketData,
-      chatId: ticketData.chatId || ticketData._id,
-      ticketId: ticketData._id
-    });
-    setChatModalOpen(true);
+  const handleClosePreview = () => {
+    setPreviewOpen(false);
+    setPreviewFile(null);
   };
 
   const columns = [
@@ -251,7 +253,19 @@ const modalStyle = {
                 <ul>
                   {selectedTicket.attachments && selectedTicket.attachments.length > 0 ? (
                     selectedTicket.attachments.map((file, i) => (
-                      <li key={i}><a href={`/${file.url}`} target="_blank" rel="noopener noreferrer">{file.name}</a></li>
+                      <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <a href={`${process.env.REACT_APP_API_BASE_URL}/uploads/${file.url.split('uploads/')[1]}`} target="_blank" rel="noopener noreferrer">{file.name}</a>
+                        {(file.type && (file.type.startsWith('image/') || file.type === 'application/pdf')) && (
+                          <Button size="small" variant="outlined" sx={{ ml: 1 }} onClick={() => handlePreviewFile(file)}>
+                            {t('myRequests.modal.preview')}
+                          </Button>
+                        )}
+                        {file.type && !(file.type.startsWith('image/') || file.type === 'application/pdf') && (
+                          <Button size="small" variant="outlined" sx={{ ml: 1 }} component="a" href={`${process.env.REACT_APP_API_BASE_URL}/uploads/${file.url.split('uploads/')[1]}`} download>
+                            {t('myRequests.modal.download')}
+                          </Button>
+                        )}
+                      </li>
                     ))
                   ) : <li>{t('myRequests.modal.noAttachments')}</li>}
                 </ul>
@@ -261,29 +275,23 @@ const modalStyle = {
         </Modal>
       </Box>
 
-      {/* Floating Chat Button - CreateTicket formunu açar */}
-      <FloatingChatButton 
-        onClick={handleOpenCreateTicket}
-        disabled={false}
-      />
-
       {/* Chat Modal */}
       <Modal 
         open={chatModalOpen} 
         onClose={handleCloseChatModal}
         sx={{
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          alignItems: 'flex-end',
+          justifyContent: 'flex-end',
           p: 2
         }}
       >
         <Box sx={{ 
-          width: '90%', 
-          maxWidth: 800, 
-          height: '80vh',
+          width: 400, 
+          maxHeight: '80vh',
           bgcolor: 'transparent',
-          outline: 'none'
+          outline: 'none',
+          mb: 8
         }}>
           <ChatPanel
             chatTicket={selectedChatTicket}
@@ -300,27 +308,24 @@ const modalStyle = {
         </Box>
       </Modal>
 
-      {/* CreateTicket Modal */}
-      <Modal 
-        open={createTicketModalOpen} 
-        onClose={handleCloseCreateTicket}
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          p: 2
-        }}
-      >
-        <Box sx={{ 
-          width: '90%', 
-          maxWidth: 600, 
-          maxHeight: '95vh',
-          bgcolor: 'transparent',
-          outline: 'none'
-        }}>
-          <CreateTicket onClose={handleCloseCreateTicket} isModal={true} onTicketCreated={handleTicketCreated} />
-        </Box>
-      </Modal>
+      <Dialog open={previewOpen} onClose={handleClosePreview} maxWidth="md" fullWidth>
+        <DialogTitle>{previewFile?.name}</DialogTitle>
+        <DialogContent>
+          {previewFile && previewFile.type && previewFile.type.startsWith('image/') && (
+            <img src={`${process.env.REACT_APP_API_BASE_URL}/uploads/${previewFile.url.split('uploads/')[1]}`} alt={previewFile.name} style={{ maxWidth: '100%', maxHeight: '70vh', display: 'block', margin: '0 auto' }} />
+          )}
+          {previewFile && previewFile.type === 'application/pdf' && (
+            <iframe
+              src={`${process.env.REACT_APP_API_BASE_URL}/uploads/${previewFile.url.split('uploads/')[1]}`}
+              title={previewFile.name}
+              width="100%"
+              height="600px"
+              style={{ border: 'none', display: 'block', margin: '0 auto' }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
     </>
   );
 };

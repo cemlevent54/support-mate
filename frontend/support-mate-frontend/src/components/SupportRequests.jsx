@@ -8,6 +8,9 @@ import InfoIcon from '@mui/icons-material/Info';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import Modal from '@mui/material/Modal';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
 import { listTicketsForAgent } from '../api/ticketApi';
 
 const categoryLabels = {
@@ -36,6 +39,8 @@ const SupportRequests = ({ onStartChat }) => {
   const [error, setError] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewFile, setPreviewFile] = useState(null);
 
   useEffect(() => {
     const fetchTickets = async () => {
@@ -44,13 +49,14 @@ const SupportRequests = ({ onStartChat }) => {
       try {
         const response = await listTicketsForAgent();
         if (response.success && Array.isArray(response.data)) {
-          setRows(response.data.map((ticket, idx) => ({
+          const sorted = response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          setRows(sorted.map((ticket, idx) => ({
             id: ticket._id || idx + 1,
             title: ticket.title,
             description: ticket.description,
             category: ticket.category,
             status: ticket.status || "-",
-            createdAt: ticket.createdAt ? new Date(ticket.createdAt).toLocaleString() : "-",
+            createdAt: ticket.createdAt ? new Date(new Date(ticket.createdAt).getTime() + 3 * 60 * 60 * 1000).toLocaleString() : "-",
             files: ticket.attachments || [],
             raw: ticket
           })));
@@ -79,6 +85,16 @@ const SupportRequests = ({ onStartChat }) => {
 
   const handleGoChat = (ticket) => {
     onStartChat && onStartChat(ticket.raw._id, ticket.raw.title);
+  };
+
+  const handlePreviewFile = (file) => {
+    setPreviewFile(file);
+    setPreviewOpen(true);
+  };
+
+  const handleClosePreview = () => {
+    setPreviewOpen(false);
+    setPreviewFile(null);
   };
 
   const columns = [
@@ -157,7 +173,19 @@ const SupportRequests = ({ onStartChat }) => {
               <ul>
                 {selectedTicket.attachments && selectedTicket.attachments.length > 0 ? (
                   selectedTicket.attachments.map((file, i) => (
-                    <li key={i}><a href={`/${file.url}`} target="_blank" rel="noopener noreferrer">{file.name}</a></li>
+                    <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <a href={`${process.env.REACT_APP_API_BASE_URL}/uploads/${file.url.split('uploads/')[1]}`} target="_blank" rel="noopener noreferrer">{file.name}</a>
+                      {(file.type && (file.type.startsWith('image/') || file.type === 'application/pdf')) && (
+                        <Button size="small" variant="outlined" sx={{ ml: 1 }} onClick={() => handlePreviewFile(file)}>
+                          Önizle
+                        </Button>
+                      )}
+                      {file.type && !(file.type.startsWith('image/') || file.type === 'application/pdf') && (
+                        <Button size="small" variant="outlined" sx={{ ml: 1 }} component="a" href={`${process.env.REACT_APP_API_BASE_URL}/uploads/${file.url.split('uploads/')[1]}`} download>
+                          İndir
+                        </Button>
+                      )}
+                    </li>
                   ))
                 ) : <li>Yok</li>}
               </ul>
@@ -165,6 +193,23 @@ const SupportRequests = ({ onStartChat }) => {
           )}
         </Box>
       </Modal>
+      <Dialog open={previewOpen} onClose={handleClosePreview} maxWidth="md" fullWidth>
+        <DialogTitle>{previewFile?.name}</DialogTitle>
+        <DialogContent>
+          {previewFile && previewFile.type && previewFile.type.startsWith('image/') && (
+            <img src={`${process.env.REACT_APP_API_BASE_URL}/uploads/${previewFile.url.split('uploads/')[1]}`} alt={previewFile.name} style={{ maxWidth: '100%', maxHeight: '70vh', display: 'block', margin: '0 auto' }} />
+          )}
+          {previewFile && previewFile.type === 'application/pdf' && (
+            <iframe
+              src={`${process.env.REACT_APP_API_BASE_URL}/uploads/${previewFile.url.split('uploads/')[1]}`}
+              title={previewFile.name}
+              width="100%"
+              height="600px"
+              style={{ border: 'none', display: 'block', margin: '0 auto' }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 };

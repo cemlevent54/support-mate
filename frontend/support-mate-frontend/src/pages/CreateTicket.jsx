@@ -80,9 +80,29 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     if (name === 'files') {
+      // Dosya boyutu kontrolü (10MB limit)
+      const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+      const validFiles = [];
+      const invalidFiles = [];
+      
+      if (files) {
+        Array.from(files).forEach(file => {
+          if (file.size <= maxSize) {
+            validFiles.push(file);
+          } else {
+            invalidFiles.push(file.name);
+          }
+        });
+      }
+      
+      if (invalidFiles.length > 0) {
+        setError(`${invalidFiles.join(', ')} dosyaları 10MB'dan büyük olduğu için yüklenemedi.`);
+        return;
+      }
+      
       setForm((prev) => ({
         ...prev,
-        files: files ? Array.from(files) : [],
+        files: validFiles,
       }));
     } else {
       setForm((prev) => ({
@@ -213,13 +233,13 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
     ) : (
       <Box 
         flex={1} 
-        minWidth={isModal ? 600 : 400} 
-        maxWidth={isModal ? 800 : 600} 
+        minWidth={isModal ? 500 : 400} 
+        maxWidth={isModal ? 500 : 600} 
         display="flex" 
         flexDirection="column" 
         minHeight={0}
-        height={isModal ? 'auto' : 'auto'}
-        maxHeight={isModal ? '95vh' : 'auto'}
+        height="auto"
+        maxHeight={isModal ? '85vh' : 'auto'}
       >
         <Box 
           bgcolor="#f9f9f9" 
@@ -242,6 +262,8 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
             p={1} 
             minHeight={0}
             sx={{
+              overflowY: 'auto',
+              maxHeight: isModal ? '60vh' : 'auto',
               '&::-webkit-scrollbar': {
                 width: '6px',
               },
@@ -261,61 +283,106 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
         <form onSubmit={handleSubmit}>
-          <TextField
-            label={t('pages.createTicket.form.title')}
+        {/* Custom Title Input */}
+        <div style={{ margin: '16px 0', width: '100%' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
+            {t('pages.createTicket.form.title')}
+          </label>
+          <input
+            type="text"
             name="title"
             value={form.title}
             onChange={handleChange}
-            fullWidth
+            placeholder={t('pages.createTicket.form.title')}
             required
-            margin="normal"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
-                    backgroundColor: '#fff',
-                  }
-                }}
+            style={{
+              width: '100%',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              border: '1px solid #ccc',
+              fontSize: '14px',
+              backgroundColor: '#fff',
+              outline: 'none',
+              transition: '0.2s ease-in-out',
+            }}
+            onFocus={(e) => (e.target.style.borderColor = '#1976d2')}
+            onBlur={(e) => (e.target.style.borderColor = '#ccc')}
           />
-          <TextField
-            label={t('pages.createTicket.form.description')}
+        </div>
+
+        {/* Custom Description Textarea */}
+        <div style={{ margin: '16px 0', width: '100%' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
+            {t('pages.createTicket.form.description')}
+          </label>
+          <textarea
             name="description"
             value={form.description}
             onChange={handleChange}
-            fullWidth
+            placeholder={t('pages.createTicket.form.description')}
             required
-            margin="normal"
-            multiline
-            rows={4}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
-                    backgroundColor: '#fff',
-                  }
+            rows="4"
+            style={{
+              width: '100%',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              border: '1px solid #ccc',
+              fontSize: '14px',
+              backgroundColor: '#fff',
+              outline: 'none',
+              resize: 'vertical',
+              minHeight: '100px',
+              transition: '0.2s ease-in-out',
+            }}
+            onFocus={(e) => (e.target.style.borderColor = '#1976d2')}
+            onBlur={(e) => (e.target.style.borderColor = '#ccc')}
+          ></textarea>
+        </div>
+
+          
+          {/* Custom Dropdown */}
+          <div style={{ margin: '16px 0', width: '100%' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
+              {t('pages.createTicket.form.category')}
+            </label>
+            <div style={{ position: 'relative' }}>
+              <select
+                name="category"
+                value={form.category}
+                onChange={handleChange}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  borderRadius: '8px',
+                  border: '1px solid #ccc',
+                  fontSize: '14px',
+                  backgroundColor: '#fff',
+                  cursor: 'pointer',
+                  appearance: 'none', // Native arrow gizler
                 }}
-          />
-          <TextField
-            select
-            label={t('pages.createTicket.form.category')}
-            name="category"
-            value={form.category}
-            onChange={handleChange}
-            fullWidth
-            required
-            margin="normal"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
-                    backgroundColor: '#fff',
-                  }
-                }}
-          >
-            <MenuItem value="">{t('pages.createTicket.form.select')}</MenuItem>
-            {categories.map((cat) => (
-              <MenuItem key={cat.value} value={cat.value}>
-                {t(cat.labelKey)}
-              </MenuItem>
-            ))}
-          </TextField>
+                required
+              >
+                <option value="">{t('pages.createTicket.form.select')}</option>
+                {categories.map((cat) => (
+                  <option key={cat.value} value={cat.value}>
+                    {t(cat.labelKey)}
+                  </option>
+                ))}
+              </select>
+              {/* Custom Arrow */}
+              <span style={{
+                position: 'absolute',
+                top: '50%',
+                right: '12px',
+                transform: 'translateY(-50%)',
+                pointerEvents: 'none',
+                fontSize: '14px',
+                color: '#555',
+              }}>
+                ▼
+              </span>
+            </div>
+          </div>
           <Box mt={2} mb={2}>
             <Button
               variant="contained"
@@ -323,7 +390,7 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
               fullWidth
                   sx={{ mb: 1, borderRadius: 2 }}
             >
-              {t('pages.createTicket.form.file')}
+              {t('pages.createTicket.form.file')} (Max 10MB)
               <input
                 type="file"
                 name="files"
@@ -354,7 +421,12 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
                     </Box>
                     <Box flex={1}>
                       <Typography variant="body2">{file.name}</Typography>
-                      <Typography variant="caption" color="text.secondary">{(file.size / 1024).toFixed(1)} KB</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {file.size > 1024 * 1024 
+                          ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` 
+                          : `${(file.size / 1024).toFixed(1)} KB`
+                        }
+                      </Typography>
                     </Box>
                     <IconButton size="small" color="error" onClick={() => handleRemoveFile(idx)}>
                       <DeleteIcon fontSize="small" />

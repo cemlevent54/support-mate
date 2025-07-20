@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, status, UploadFile, File, Form, Request
+from fastapi import APIRouter, Depends, status, UploadFile, File, Form, Request, HTTPException
 from typing import List
 from models.ticket import Ticket, APIResponse
 from middlewares.auth import get_current_user, verify_agent_permission
 from controllers.TicketController import TicketController
-from fastapi import HTTPException
+from utils.file_utils import get_upload_path, ensure_upload_directories, validate_file_size, get_file_size_mb
+import os
 
 router = APIRouter()
 ticket_controller = TicketController()
@@ -69,16 +70,42 @@ async def create_ticket_route(
     user=Depends(get_current_user),
     request: Request = None
 ):
+    # Upload klasörlerini oluştur
+    ensure_upload_directories()
+    
     attachments = []
     for file in files:
-        file_location = f"uploads/{file.filename}"
-        with open(file_location, "wb") as f:
-            f.write(await file.read())
+        # Dosya boyutu kontrolü (10MB limit)
+        if not validate_file_size(file.size, 10):
+            file_size_mb = get_file_size_mb(file.size)
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Dosya boyutu çok büyük: {file_size_mb}MB. Maksimum 10MB olmalıdır."
+            )
+        
+        # Dosya türüne göre upload path'ini belirle
+        file_location = get_upload_path(file.filename)
+        
+        # Dosyayı kaydet
+        try:
+            with open(file_location, "wb") as f:
+                content = await file.read()
+                f.write(content)
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Dosya kaydedilemedi: {str(e)}"
+            )
+        
+        # Timestamp'li dosya adını al
+        timestamped_filename = os.path.basename(file_location)
+        
         attachments.append({
-            "name": file.filename,
+            "name": timestamped_filename,  # Timestamp'li dosya adını kullan
             "url": file_location,
             "type": file.content_type
         })
+    
     ticket_data = {
         "title": title,
         "description": description,
@@ -86,11 +113,13 @@ async def create_ticket_route(
         "attachments": attachments,
         "customerId": user["id"]
     }
+    
     token = None
     if request:
         auth_header = request.headers.get("authorization")
         if auth_header and auth_header.lower().startswith("bearer "):
             token = auth_header[7:]
+    
     return ticket_controller.create_ticket_endpoint(ticket_data, user, token)
 
 @router.get("/", response_model=APIResponse)

@@ -197,7 +197,7 @@ export default function ChatArea({ messages, input, setInput, handleSend, openTa
                   <ul style={{ margin: '8px 0 0 0', padding: 0, listStyle: 'none' }}>
                     {msg.attachments.map((file, i) => (
                       <li key={i}>
-                        <a href={`/${file}`} target="_blank" rel="noopener noreferrer">{file}</a>
+                        <a href={`/${file.url}`} target="_blank" rel="noopener noreferrer">{file.name}</a>
                       </li>
                     ))}
                   </ul>

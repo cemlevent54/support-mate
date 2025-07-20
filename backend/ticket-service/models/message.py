@@ -8,7 +8,6 @@ class Message(BaseModel):
     senderId: str
     senderRole: str  # customer, agent
     text: str  # AES encrypted
-    attachments: List[str] = []
     timestamp: Optional[datetime] = None
     isDeleted: bool = False 
     is_delivered: bool = False 

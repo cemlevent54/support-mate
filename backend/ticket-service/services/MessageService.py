@@ -86,11 +86,23 @@ class MessageService:
         chat = chat_handler.execute(ticket_id)
         if not chat:
             return {"success": False, "data": [], "message": _(f"services.messageService.responses.chat_not_found_simple")}
+        
+        # Ticket bilgilerini al (attachments için)
+        from repositories.TicketRepository import TicketRepository
+        ticket_repo = TicketRepository()
+        ticket = ticket_repo.get_by_id(ticket_id)
+        
         messages = messages_handler.execute(chat.id)
         for msg in messages:
             if hasattr(msg, "text"):
                 msg.text = decrypt_message(msg.text)
+        
         messages_dict = [msg.model_dump(by_alias=True) for msg in messages]
+        
+        # İlk mesaja ticket attachments'ını ekle
+        if messages_dict and ticket and ticket.attachments:
+            messages_dict[0]["attachments"] = ticket.attachments
+        
         self.logger.info(_(f"services.messageService.logs.message_listed"))
         return {"success": True, "data": {"messages": messages_dict, "chatId": chat.id}, "message": _(f"services.messageService.responses.messages_retrieved")}
 
@@ -112,6 +124,17 @@ class MessageService:
                 if hasattr(msg, "text"):
                     msg.text = decrypt_message(msg.text)
             messages_dict = [msg.model_dump(by_alias=True) for msg in messages]
+            
+            # Chat'in ticket ID'si varsa, ticket bilgilerini al
+            if hasattr(chat, 'ticketId') and chat.ticketId:
+                from repositories.TicketRepository import TicketRepository
+                ticket_repo = TicketRepository()
+                ticket = ticket_repo.get_by_id(chat.ticketId)
+                
+                # İlk mesaja ticket attachments'ını ekle
+                if messages_dict and ticket and ticket.attachments:
+                    messages_dict[0]["attachments"] = ticket.attachments
+            
             self.logger.info(_(f"services.messageService.logs.message_listed"))
             return {"success": True, "data": {"messages": messages_dict, "chatId": chat_id}, "message": _(f"services.messageService.responses.messages_retrieved")}
         else:

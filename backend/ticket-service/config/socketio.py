@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from routes import api_router
 from config.language import _
 
@@ -23,6 +24,12 @@ sio = socketio.AsyncServer(
 
 fastapi_app = FastAPI()
 fastapi_app.include_router(api_router)
+
+# Static files serving
+try:
+    fastapi_app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+except Exception as e:
+    logger.warning(f"Static files mounting failed: {e}")
 
 # Socket.IO event handling
 @sio.event

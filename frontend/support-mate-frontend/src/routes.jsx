@@ -14,10 +14,19 @@ import AdminRolePermissions from './pages/admin/AdminRolePermissions';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import SixDigitVerifyEmail from './components/SixDigitVerifyEmail';
-import CreateTicket from './pages/CreateTicket';
+
 import MyRequests from './pages/MyRequests';
 import ChatDialog from './pages/ChatDialog';
 import { useLocation, Navigate } from 'react-router-dom';
+
+// Global modal handlers - bu fonksiyonlar App.jsx'ten geçirilecek
+let globalOpenCreateTicketModal = () => {};
+let globalCloseCreateTicketModal = () => {};
+
+export const setGlobalModalHandlers = (openHandler, closeHandler) => {
+  globalOpenCreateTicketModal = openHandler;
+  globalCloseCreateTicketModal = closeHandler;
+};
 
 // Role bazlı erişim için örnek bir yapı
 export const appRoutes = [
@@ -88,14 +97,10 @@ export const appRoutes = [
     path: '/verify-email',
     element: <SixDigitVerifyEmail />,
   },
-  {
-    path: '/create-ticket',
-    element: <CreateTicket />,
-    roles: ['user'],
-  },
+
   {
     path: '/my-requests',
-    element: <MyRequests />,
+    element: <MyRequests openCreateTicketModal={globalOpenCreateTicketModal} />,
   },
   {
     path: '/my-requests/chat',

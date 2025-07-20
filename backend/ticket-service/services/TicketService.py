@@ -110,7 +110,6 @@ class TicketService:
             first_message = {
                 "chatId": chat_id,  # chat'in gerçek id'si
                 "text": f"Title: {ticket_obj.title}\nDescription: {ticket_obj.description}",
-                "attachments": [att["name"] for att in (ticket_obj.attachments or [])],
                 "is_delivered": False,  # İlk mesaj her zaman false
                 "senderId": user["id"],
                 "senderRole": get_user_by_id(user["id"], token).get("roleName"),

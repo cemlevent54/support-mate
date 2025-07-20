@@ -302,7 +302,9 @@
       "customerIdLabel": "Müşteri ID:",
       "agentIdLabel": "Agent ID:",
       "attachmentsLabel": "Ekler:",
-      "noAttachments": "Yok"
+      "noAttachments": "Yok",
+      "preview": "Önizle",
+      "download": "İndir"
     },
     "categories": {
       "hardware": "Donanım",
@@ -312,6 +314,7 @@
     }
   },
   "floatingButton": {
-    "createTicket": "Yeni Talep Oluştur"
+    "createTicket": "Yeni Talep Oluştur",
+    "close": "Kapat"
   }
 } 

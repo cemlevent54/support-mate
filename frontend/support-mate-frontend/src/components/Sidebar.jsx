@@ -23,11 +23,6 @@ const Sidebar = ({ open, onClose, isAuth, onLogin, onSignup, onMyAccount, onLogo
         </ListItem>
         <ListItem disablePadding>
           <ListItemButton>
-            <ListItemText primary={t('components.navbar.createRequest')} />
-          </ListItemButton>
-        </ListItem>
-        <ListItem disablePadding>
-          <ListItemButton>
             <ListItemText primary={t('components.navbar.liveChat')} />
           </ListItemButton>
         </ListItem>
@@ -46,11 +41,6 @@ const Sidebar = ({ open, onClose, isAuth, onLogin, onSignup, onMyAccount, onLogo
   } else if (userRole === 'user' && !isAuth) {
     content = (
       <>
-        <ListItem disablePadding>
-          <ListItemButton>
-            <ListItemText primary={t('components.navbar.createRequest')} />
-          </ListItemButton>
-        </ListItem>
         <ListItem disablePadding>
           <ListItemButton onClick={onLogin}>
             <ListItemText primary={t('components.navbar.login')} />

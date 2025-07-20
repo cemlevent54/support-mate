@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 const logger = require('./config/logger.config.js');
 const { authProxy, userProxy , notificationProxy , ticketProxy } = require('./middleware/index.proxy.js');
 const routes = require('./routes/index.js');
@@ -24,6 +25,20 @@ app.use('/', routes);
 app.use('/api/auth', authProxy);
 app.use('/api/notification', notificationProxy);
 app.use('/api/tickets', ticketProxy);
+
+// Uploads proxy - ticket service'den dosyaları proxy et
+app.use('/uploads', createProxyMiddleware({
+  target: 'http://localhost:8086',
+  changeOrigin: true,
+  logLevel: 'debug',
+  onProxyReq: (proxyReq, req, res) => {
+    logger.info(`[UPLOADS PROXY] ${req.method} ${req.url} -> ${proxyReq.path}`);
+  },
+  onError: (err, req, res) => {
+    logger.error(`[UPLOADS PROXY ERROR] ${err.message}`);
+    res.status(500).send('Proxy Error');
+  }
+}));
 
 // SOCKET.IO PROXY ENTEGRASYONU
 setupSocketProxy(server);

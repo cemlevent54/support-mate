@@ -2,6 +2,7 @@ from repositories.MessageRepository import MessageRepository
 from models.message import Message
 import uuid
 from datetime import datetime
+import pytz
 
 class SendMessageCommandHandler:
     def __init__(self):
@@ -17,8 +18,7 @@ class SendMessageCommandHandler:
                 receiverId=message_data.get("receiverId"),
                 senderRole=message_data.get("senderRole", user.get("role", "customer")),
                 text=message_data.get("text"),
-                attachments=message_data.get("attachments", []),
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(pytz.timezone('Europe/Istanbul')),
                 isDeleted=False,
                 is_delivered=message_data.get("is_delivered", False)
             )

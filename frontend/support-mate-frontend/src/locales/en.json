@@ -302,7 +302,9 @@
       "customerIdLabel": "Customer ID:",
       "agentIdLabel": "Agent ID:",
       "attachmentsLabel": "Attachments:",
-      "noAttachments": "None"
+      "noAttachments": "None",
+      "preview": "Preview",
+      "download": "Download"
     },
     "categories": {
       "hardware": "Hardware",
@@ -312,6 +314,7 @@
     }
   },
   "floatingButton": {
-    "createTicket": "Create New Request"
+    "createTicket": "Create New Request",
+    "close": "Close"
   }
 } 
