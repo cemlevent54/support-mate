@@ -104,7 +104,17 @@ const ChatPanel = ({
               <Box key={msg._id || idx} mb={1} display="flex" flexDirection="column" alignItems={msg.senderId === chatTicket?.customerId ? 'flex-end' : 'flex-start'}>
                 <Box px={2} py={1} bgcolor={msg.senderId === chatTicket?.customerId ? '#e3f2fd' : '#f1f1f1'} borderRadius={2} maxWidth="70%">
                   <Typography fontSize={15}>{typeof msg.text === 'string' ? msg.text : JSON.stringify(msg.text)}</Typography>
-                  <Typography fontSize={11} color="#888" textAlign="right">{msg.createdAt ? new Date(msg.createdAt).toLocaleString() : ''}</Typography>
+                  <Typography fontSize={11} color="#888" textAlign="right">
+                    {(() => {
+                      const timestamp = msg.timestamp || msg.createdAt;
+                      if (!timestamp) return '';
+                      
+                      const date = new Date(timestamp);
+                      return date.toLocaleString('tr-TR', {
+                        timeZone: 'Europe/Istanbul'
+                      });
+                    })()}
+                  </Typography>
                 </Box>
               </Box>
             ))

@@ -27,6 +27,7 @@ export default function SupportDashboard() {
   const [selected, setSelected] = useState('requests');
   const [activeChatTicketId, setActiveChatTicketId] = useState(null);
   const [activeChatTicketTitle, setActiveChatTicketTitle] = useState("");
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { language, onLanguageChange } = useLanguage();
@@ -54,6 +55,12 @@ export default function SupportDashboard() {
   const handleSelectChat = (ticketId, title) => {
     setActiveChatTicketId(ticketId);
     setActiveChatTicketTitle(title);
+  };
+
+  // Mesaj gönderildikten sonra chat listesini güncelle
+  const handleMessageSent = (message) => {
+    // Chat listesini yeniden yüklemek için refreshTrigger'ı artır
+    setRefreshTrigger(prev => prev + 1);
   };
 
   return (
@@ -112,10 +119,18 @@ export default function SupportDashboard() {
       )}
       {selected === 'chats' && (
         <>
-          <ChatList chatList={[]} activeChatTicketId={activeChatTicketId} onSelectChat={handleSelectChat} />
+          <ChatList 
+            activeChatTicketId={activeChatTicketId} 
+            onSelectChat={handleSelectChat} 
+            refreshTrigger={refreshTrigger}
+          />
           <Box flex={1} height="100vh" bgcolor="#f5f5f5">
             {activeChatTicketId ? (
-              <SupportChats ticketId={activeChatTicketId} ticketTitle={activeChatTicketTitle} />
+              <SupportChats 
+                ticketId={activeChatTicketId} 
+                ticketTitle={activeChatTicketTitle} 
+                onMessageSent={handleMessageSent}
+              />
             ) : (
               <Typography mt={4} ml={4} color="text.secondary">Bir talep seçin ve chat başlatın.</Typography>
             )}

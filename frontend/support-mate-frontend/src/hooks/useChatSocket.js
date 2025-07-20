@@ -85,21 +85,22 @@ export const useChatSocket = (chatTicket, chatOpen) => {
   useEffect(() => {
     if (!chatOpen || !chatId) return;
     const handleNewMessage = (data) => {
-      if (data.chatId === chatId) {
+      if (data.chatId === chatId && data.userId !== myUserId) {
         setMessages(prev => [
           ...prev,
           {
             _id: Math.random().toString(36),
             senderId: data.userId,
             text: data.message,
-            createdAt: new Date().toISOString()
+            timestamp: data.timestamp || new Date().toISOString(),
+            createdAt: data.timestamp || new Date().toISOString()
           }
         ]);
       }
     };
     socket.on('receive_chat_message', handleNewMessage);
     return () => socket.off('receive_chat_message', handleNewMessage);
-  }, [chatOpen, chatId]);
+  }, [chatOpen, chatId, myUserId]);
 
   // typing ve stop_typing eventlerini dinle (sadece başkası yazıyorsa göster)
   useEffect(() => {
@@ -157,6 +158,7 @@ export const useChatSocket = (chatTicket, chatOpen) => {
             _id: Math.random().toString(36),
             senderId: myUserId,
             text: input,
+            timestamp: new Date().toISOString(),
             createdAt: new Date().toISOString()
           }
         ]);

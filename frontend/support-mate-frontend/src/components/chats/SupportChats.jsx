@@ -8,7 +8,7 @@ import { getUserIdFromJWT } from '../../utils/jwt';
 import { useTranslation } from 'react-i18next';
 import socket from '../../socket/socket';
 
-export default function SupportChats({ ticketId, ticketTitle }) {
+export default function SupportChats({ ticketId, ticketTitle, onMessageSent }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [taskModalOpen, setTaskModalOpen] = useState(false);
@@ -63,20 +63,21 @@ export default function SupportChats({ ticketId, ticketTitle }) {
   useEffect(() => {
     if (!chatId) return;
     const handleNewMessage = (data) => {
-      if (data.chatId === chatId) {
+      if (data.chatId === chatId && data.userId !== userId) {
         setMessages(prev => [
           ...prev,
           {
             senderId: data.userId,
             text: data.message,
-            createdAt: new Date().toISOString()
+            timestamp: data.timestamp || new Date().toISOString(),
+            createdAt: data.timestamp || new Date().toISOString()
           }
         ]);
       }
     };
     socket.on('receive_chat_message', handleNewMessage);
     return () => socket.off('receive_chat_message', handleNewMessage);
-  }, [chatId]);
+  }, [chatId, userId]);
 
   useEffect(() => {
     const handleTyping = (data) => {
@@ -136,21 +137,33 @@ export default function SupportChats({ ticketId, ticketTitle }) {
   const handleSend = async (e) => {
     e.preventDefault();
     if (!input.trim() || !chatId) return;
-    setMessages(prev => [
-      ...prev,
-      {
-        text: input,
-        senderId: userId,
-        senderRole: 'Support',
-        createdAt: new Date().toISOString(),
-      }
-    ]);
+    
+    // Optimistic update - mesajı hemen ekle
+    const newMessage = {
+      text: input,
+      senderId: userId,
+      senderRole: 'Support',
+      timestamp: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+    };
+    setMessages(prev => [...prev, newMessage]);
+    
+    // Socket'e gönder
     socket.emit('send_message', { chatId, userId, message: input });
+    
+    // API'ye gönder
     try {
       await sendMessage({ chatId, userId, text: input });
+      // Mesaj gönderildikten sonra parent'a bildir
+      if (onMessageSent) {
+        onMessageSent(newMessage);
+      }
     } catch (error) {
-      // Hata durumunda kullanıcıya bildirim eklenebilir
+      // Hata durumunda mesajı geri al
+      setMessages(prev => prev.filter(msg => msg !== newMessage));
+      console.error('Mesaj gönderilemedi:', error);
     }
+    
     setInput("");
   };
 
@@ -186,7 +199,23 @@ export default function SupportChats({ ticketId, ticketTitle }) {
                       ))}
                     </ul>
                   )}
-                  <Box fontSize={12} color="#888" textAlign="right" mt={0.5}>{msg.time ? new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</Box>
+                  <Box fontSize={12} color="#888" textAlign="right" mt={0.5}>
+                    {(() => {
+                      const timestamp = msg.timestamp || msg.createdAt;
+                      if (!timestamp) return '';
+                      
+                      const date = new Date(timestamp);
+                      return date.toLocaleString('tr-TR', { 
+                        day: '2-digit', 
+                        month: '2-digit', 
+                        year: 'numeric',
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        second: '2-digit',
+                        timeZone: 'Europe/Istanbul'
+                      });
+                    })()}
+                  </Box>
                 </Box>
               ))
             )

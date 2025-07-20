@@ -99,7 +99,8 @@ export default function ChatArea({ messages, input, setInput, handleSend, openTa
           setBackendMessages(res.data.map(msg => ({
             from: msg.senderRole === 'Customer Supporter' ? 'support' : 'user',
             text: msg.text,
-            time: msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
+            timestamp: msg.timestamp || msg.createdAt,
+            time: (msg.timestamp || msg.createdAt) ? new Date(new Date(msg.timestamp || msg.createdAt).getTime() + (3 * 60 * 60 * 1000)).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : ''
           })));
           console.log('res:', res);
         } else {
@@ -125,20 +126,21 @@ export default function ChatArea({ messages, input, setInput, handleSend, openTa
   useEffect(() => {
     if (!chatId) return;
     const handleNewMessage = (data) => {
-      if (data.chatId === chatId) {
+      if (data.chatId === chatId && data.userId !== userId) {
         setBackendMessages(prev => [
           ...prev,
           {
             from: data.user && data.user.role === 'agent' ? 'support' : 'user',
             text: data.message,
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            timestamp: data.timestamp || new Date().toISOString(),
+            time: new Date(new Date(data.timestamp || new Date()).getTime() + (3 * 60 * 60 * 1000)).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
           }
         ]);
       }
     };
     socket.on('new_message', handleNewMessage);
     return () => socket.off('new_message', handleNewMessage);
-  }, [chatId]);
+  }, [chatId, userId]);
 
   useEffect(() => {
     const handleUserJoined = () => {};
@@ -200,7 +202,10 @@ export default function ChatArea({ messages, input, setInput, handleSend, openTa
                     ))}
                   </ul>
                 )}
-                <Box fontSize={12} color="#888" textAlign="right" mt={0.5}>{msg.time ? new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</Box>
+                <Box fontSize={12} color="#888" textAlign="right" mt={0.5}>
+                  {msg.timestamp ? new Date(new Date(msg.timestamp).getTime() + (3 * 60 * 60 * 1000)).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : 
+                   msg.time ? new Date(new Date(msg.time).getTime() + (3 * 60 * 60 * 1000)).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : ''}
+                </Box>
               </Box>
             ))
           )

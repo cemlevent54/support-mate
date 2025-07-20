@@ -93,21 +93,22 @@ const TicketChatDrawer = ({ ticket, onClose, useTicketIdForMessages }) => {
   useEffect(() => {
     if (!chatId) return;
     const handleNewMessage = (data) => {
-      if (data.chatId === chatId) {
+      if (data.chatId === chatId && data.userId !== myUserId) {
         setMessages(prev => [
           ...prev,
           {
             _id: data._id || Math.random().toString(36),
-            senderId: data.user?.id,
+            senderId: data.userId,
             text: data.message,
-            createdAt: new Date().toISOString()
+            timestamp: data.timestamp || new Date().toISOString(),
+            createdAt: data.timestamp || new Date().toISOString()
           }
         ]);
       }
     };
-    socket.on('new_message', handleNewMessage);
-    return () => socket.off('new_message', handleNewMessage);
-  }, [chatId]);
+    socket.on('receive_chat_message', handleNewMessage);
+    return () => socket.off('receive_chat_message', handleNewMessage);
+  }, [chatId, myUserId]);
 
   // typing ve stop_typing eventlerini dinle (sadece başkası yazıyorsa göster)
   useEffect(() => {
@@ -155,6 +156,7 @@ const TicketChatDrawer = ({ ticket, onClose, useTicketIdForMessages }) => {
         senderId: myUserId,
         senderRole: 'User',
         text: input,
+        timestamp: new Date().toISOString(),
         createdAt: new Date().toISOString()
       }
     ]);

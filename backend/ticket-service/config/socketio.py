@@ -80,6 +80,17 @@ async def send_chat_message(sid, data):
     logger.info(f"[SOCKET][MESSAGE] chatId={chat_id} userId={user_id}: {content}")
 
 @sio.event
+async def send_message(sid, data):
+    chat_id = data.get("chatId")
+    user_id = data.get("userId")
+    message = data.get("message")
+    if not chat_id or not user_id or not message:
+        await sio.emit('error', {'message': 'chatId, userId ve message gereklidir'}, to=sid)
+        return
+    await sio.emit("receive_chat_message", {"chatId": chat_id, "message": message, "userId": user_id}, room=chat_id)
+    logger.info(f"[SOCKET][SEND_MESSAGE] chatId={chat_id} userId={user_id}: {message}")
+
+@sio.event
 async def typing(sid, data):
     chat_id = data.get("chatId")
     user_id = data.get("userId")
