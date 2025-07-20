@@ -23,10 +23,12 @@ import AdminTickets from './pages/admin/AdminTickets';
 // Global modal handlers - bu fonksiyonlar App.jsx'ten geçirilecek
 let globalOpenCreateTicketModal = () => {};
 let globalCloseCreateTicketModal = () => {};
+let globalHandleTicketCreated = () => {};
 
-export const setGlobalModalHandlers = (openHandler, closeHandler) => {
+export const setGlobalModalHandlers = (openHandler, closeHandler, ticketCreatedHandler) => {
   globalOpenCreateTicketModal = openHandler;
   globalCloseCreateTicketModal = closeHandler;
+  globalHandleTicketCreated = ticketCreatedHandler;
 };
 
 // Role bazlı erişim için örnek bir yapı
@@ -105,7 +107,7 @@ export const appRoutes = [
 
   {
     path: '/my-requests',
-    element: <MyRequests openCreateTicketModal={globalOpenCreateTicketModal} />,
+    element: <MyRequests openCreateTicketModal={globalOpenCreateTicketModal} onTicketCreated={globalHandleTicketCreated} />,
   },
   {
     path: '/my-requests/chat',

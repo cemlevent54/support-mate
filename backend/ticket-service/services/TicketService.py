@@ -22,6 +22,7 @@ from cqrs.commands.AssignAgentToChatCommandHandler import AssignAgentToChatComma
 from cqrs.queries.SelectAndRotateAgentQueryHandler import SelectAndRotateAgentQueryHandler
 from cqrs.commands.AssignAgentToPendingTicketCommandHandler import AssignAgentToPendingTicketCommandHandler
 from config.language import _
+from dto.ticket_dto import TicketDTO, TicketListDTO
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +76,9 @@ class TicketService:
         # Chat ve temsilci atama
         if result["success"]:
             ticket_obj = result["data"]
+            # DTO'ya çevir
+            ticket_dto = TicketDTO.from_model(ticket_obj)
+            result["data"] = ticket_dto.model_dump()
             participants = [
                 {"userId": user["id"], "role": get_user_by_id(user["id"], token).get("roleName")}
             ]
@@ -134,14 +138,30 @@ class TicketService:
             logger.warning(_(f"services.ticketService.logs.unauthorized"))
             return unauthorized_error(_(f"services.ticketService.responses.unauthorized"))
         logger.info(_(f"services.ticketService.logs.listing_tickets").format(user_id=user.get('id', 'unknown')))
-        return self.list_handler.execute(user)
+        result = self.list_handler.execute(user)
+        
+        # DTO'ya çevir
+        if result.get("success") and result.get("data"):
+            tickets = result["data"]
+            ticket_dtos = [TicketDTO.from_model(ticket) for ticket in tickets]
+            result["data"] = [dto.model_dump() for dto in ticket_dtos]
+        
+        return result
 
     def list_tickets_for_agent(self, user):
         if not user:
             logger.warning(_(f"services.ticketService.logs.unauthorized"))
             return unauthorized_error(_(f"services.ticketService.responses.unauthorized"))
         logger.info(_(f"services.ticketService.logs.listing_tickets_for_agent").format(user_id=user.get('id', 'unknown')))
-        return self.list_agent_handler.execute(user)
+        result = self.list_agent_handler.execute(user)
+        
+        # DTO'ya çevir
+        if result.get("success") and result.get("data"):
+            tickets = result["data"]
+            ticket_dtos = [TicketDTO.from_model(ticket) for ticket in tickets]
+            result["data"] = [dto.model_dump() for dto in ticket_dtos]
+        
+        return result
 
     def get_ticket(self, ticket_id, user):
         if not user:
@@ -151,7 +171,15 @@ class TicketService:
             logger.warning(_(f"services.ticketService.logs.bad_request"))
             return bad_request_error(_(f"services.ticketService.responses.bad_request"))
         logger.info(_(f"services.ticketService.logs.getting_ticket").format(ticket_id=ticket_id, user_id=user.get('id', 'unknown')))
-        return self.get_handler.execute(ticket_id, user)
+        result = self.get_handler.execute(ticket_id, user)
+        
+        # DTO'ya çevir
+        if result.get("success") and result.get("data"):
+            ticket = result["data"]
+            ticket_dto = TicketDTO.from_model(ticket)
+            result["data"] = ticket_dto.model_dump()
+        
+        return result
 
     def update_ticket(self, ticket_id, updated, user):
         if not user:

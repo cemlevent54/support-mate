@@ -22,7 +22,6 @@ class CreateTicketCommandHandler:
                 attachments=ticket_data.get("attachments", []),
                 category=ticket_data.get("category"),
                 status="OPEN",
-                createdAt=datetime.utcnow(),
                 isDeleted=False,
                 assignedAgentId=ticket_data.get("assignedAgentId")
             )

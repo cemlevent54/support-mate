@@ -31,7 +31,7 @@ function AppContent() {
 
   // Global handler'ları set et
   React.useEffect(() => {
-    setGlobalModalHandlers(openCreateTicketModal, closeCreateTicketModal);
+    setGlobalModalHandlers(openCreateTicketModal, closeCreateTicketModal, handleTicketCreated);
   }, []);
 
   // Buton click fonksiyonları
@@ -63,9 +63,15 @@ function AppContent() {
   };
 
   const handleTicketCreated = (ticketData) => {
+    console.log('App.jsx - handleTicketCreated called with:', ticketData);
     // Ticket oluşturulduktan sonra modal'ı kapat ve kullanıcıyı my-requests sayfasına yönlendir
     setCreateTicketModalOpen(false);
-    navigate('/my-requests');
+    navigate('/my-requests', { 
+      state: { 
+        openChatForTicket: ticketData,
+        showChatAfterCreate: true 
+      } 
+    });
   };
 
   // Sayfa yenilendiğinde oturum kontrolü (JWT vs.) burada yapılabilir

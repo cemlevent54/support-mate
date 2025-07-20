@@ -110,9 +110,7 @@ const ChatPanel = ({
                       if (!timestamp) return '';
                       
                       const date = new Date(timestamp);
-                      return date.toLocaleString('tr-TR', {
-                        timeZone: 'Europe/Istanbul'
-                      });
+                      return date.toLocaleString('tr-TR');
                     })()}
                   </Typography>
                 </Box>

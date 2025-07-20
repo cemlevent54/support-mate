@@ -56,7 +56,7 @@ const SupportRequests = ({ onStartChat }) => {
             description: ticket.description,
             category: ticket.category,
             status: ticket.status || "-",
-            createdAt: ticket.createdAt ? new Date(new Date(ticket.createdAt).getTime() + 3 * 60 * 60 * 1000).toLocaleString() : "-",
+            createdAt: ticket.createdAt ? new Date(ticket.createdAt).toLocaleString('tr-TR') : "-",
             files: ticket.attachments || [],
             raw: ticket
           })));
@@ -151,7 +151,7 @@ const SupportRequests = ({ onStartChat }) => {
               <Typography><b>Açıklama:</b> {selectedTicket.description}</Typography>
               <Typography><b>Kategori:</b> {categoryLabels[selectedTicket.category] || selectedTicket.category}</Typography>
               <Typography><b>Durum:</b> {selectedTicket.status}</Typography>
-              <Typography><b>Oluşturulma:</b> {selectedTicket.createdAt ? new Date(selectedTicket.createdAt).toLocaleString() : '-'}</Typography>
+              <Typography><b>Oluşturulma:</b> {selectedTicket.createdAt ? new Date(selectedTicket.createdAt).toLocaleString('tr-TR') : '-'}</Typography>
               <Typography><b>Müşteri ID:</b> {selectedTicket.customerId}</Typography>
               <Typography><b>Agent ID:</b> {selectedTicket.assignedAgentId}</Typography>
               <Typography><b>Ekler:</b></Typography>

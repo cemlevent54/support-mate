@@ -19,8 +19,7 @@ class ChatRepository:
     def create(self, chat: Chat) -> Chat:
         try:
             chat_dict = chat.model_dump(by_alias=True)
-            if not chat_dict.get("createdAt"):
-                chat_dict["createdAt"] = datetime.utcnow()
+
             if not chat_dict.get("_id"):
                 chat_dict.pop("_id", None)
             result = self.collection.insert_one(chat_dict)

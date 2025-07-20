@@ -16,6 +16,7 @@ import { listMessagesByTicketId } from '../../api/messagesApi';
 import { getUserIdFromJWT } from '../../utils/jwt';
 import { Box } from '@mui/material';
 import socket from '../../socket/socket';
+import CircularProgress from '@mui/material/CircularProgress';
 
 export default function ChatList({ activeChatTicketId, onSelectChat, refreshTrigger }) {
   const { t } = useTranslation();
@@ -46,7 +47,7 @@ export default function ChatList({ activeChatTicketId, onSelectChat, refreshTrig
                   return timeB - timeA; // En yeni mesaj önce
                 });
                 lastMessage = sortedMessages[0];
-                // Backend'den gelen timestamp'i doğru şekilde al
+                // Backend'den gelen timestamp zaten TR timezone'da
                 lastMessageTime = lastMessage.timestamp || lastMessage.createdAt || lastMessage.sentAt;
               }
             }
@@ -148,25 +149,46 @@ export default function ChatList({ activeChatTicketId, onSelectChat, refreshTrig
             return chat.id === chatId;
           });
           
-          if (chatIndex !== -1) {
-            // Chat'i buldum, güncelle
-            const updatedChats = [...prevChats];
-            const updatedChat = {
-              ...updatedChats[chatIndex],
-              last: data.message && data.message.length > 50 ? data.message.substring(0, 50) + '...' : data.message,
-              timestamp: data.timestamp || new Date().toISOString(),
-              lastMessageTime: data.timestamp || new Date().toISOString()
-            };
-            
-            // Chat'i en üste taşı
-            updatedChats.splice(chatIndex, 1);
-            updatedChats.unshift(updatedChat);
-            
-            return updatedChats;
-          }
+                      if (chatIndex !== -1) {
+              // Chat'i buldum, güncelle
+              const updatedChats = [...prevChats];
+              const updatedChat = {
+                ...updatedChats[chatIndex],
+                last: data.message && data.message.length > 50 ? data.message.substring(0, 50) + '...' : data.message,
+                timestamp: data.timestamp || new Date().toISOString(),
+                lastMessageTime: data.timestamp || new Date().toISOString(),
+                isNewMessage: true // Yeni mesaj animasyonu için flag
+              };
+              
+              // Chat'i en üste taşı
+              updatedChats.splice(chatIndex, 1);
+              updatedChats.unshift(updatedChat);
+              
+              // 2 saniye sonra animasyon flag'ini kaldır
+              setTimeout(() => {
+                setChatList(currentChats => 
+                  currentChats.map(chat => 
+                    chat.id === chatId ? { ...chat, isNewMessage: false } : chat
+                  )
+                );
+              }, 2000);
+              
+              return updatedChats;
+            }
           
           // Chat bulunamadıysa, tüm listeyi yeniden çek
-          fetchChatList();
+          const refreshList = async () => {
+            try {
+              const response = await listTicketsForAgent();
+              if (response.success && response.data) {
+                const sortedChats = await sortChatsByLastMessage(response.data);
+                setChatList(sortedChats);
+              }
+            } catch (error) {
+              console.error('Chat listesi yenilenemedi:', error);
+            }
+          };
+          refreshList();
           return prevChats;
         });
       }
@@ -178,22 +200,9 @@ export default function ChatList({ activeChatTicketId, onSelectChat, refreshTrig
     return () => {
       socket.off('receive_chat_message', handleNewMessage);
     };
-  }, [userId]);
+  }, [userId, activeChatTicketId]);
 
-  // fetchChatList fonksiyonunu useEffect dışına çıkar
-  const fetchChatList = async () => {
-    try {
-      const response = await listTicketsForAgent();
-      if (response.success && response.data) {
-        // Chat'leri son mesajına göre sırala
-        const sortedChats = await sortChatsByLastMessage(response.data);
-        setChatList(sortedChats);
-      }
-    } catch (error) {
-      console.error('Chat listesi yüklenemedi:', error);
-      setChatList([]);
-    }
-  };
+
 
   // Search fonksiyonu
   const filteredChatList = chatList.filter(chat => 
@@ -221,35 +230,30 @@ export default function ChatList({ activeChatTicketId, onSelectChat, refreshTrig
   const formatTime = (timestamp) => {
     if (!timestamp) return '';
     
-    // Backend'den gelen timestamp'i Türkiye saat dilimine göre ayarla (UTC+3)
+    // Backend'den gelen timestamp zaten TR timezone'da, manuel offset eklemeye gerek yok
     const date = new Date(timestamp);
-    const turkeyTime = new Date(date.getTime() + (3 * 60 * 60 * 1000)); // UTC+3
     const now = new Date();
-    const nowTurkey = new Date(now.getTime() + (3 * 60 * 60 * 1000)); // UTC+3
     
-    const diffInHours = (nowTurkey - turkeyTime) / (1000 * 60 * 60);
+    const diffInHours = (now - date) / (1000 * 60 * 60);
     
     if (diffInHours < 24) {
       // Bugün: Saat:Dakika formatında göster
-      return turkeyTime.toLocaleTimeString('tr-TR', { 
+      return date.toLocaleTimeString('tr-TR', { 
         hour: '2-digit', 
-        minute: '2-digit',
-        timeZone: 'Europe/Istanbul'
+        minute: '2-digit'
       });
     } else if (diffInHours < 48) {
       return 'Dün';
     } else if (diffInHours < 168) { // 7 gün
       // Bu hafta: Gün adı
-      return turkeyTime.toLocaleDateString('tr-TR', { 
-        weekday: 'short',
-        timeZone: 'Europe/Istanbul'
+      return date.toLocaleDateString('tr-TR', { 
+        weekday: 'short'
       });
     } else {
       // Daha eski: Gün/Ay formatında
-      return turkeyTime.toLocaleDateString('tr-TR', { 
+      return date.toLocaleDateString('tr-TR', { 
         day: '2-digit', 
-        month: '2-digit',
-        timeZone: 'Europe/Istanbul'
+        month: '2-digit'
       });
     }
   };
@@ -266,7 +270,7 @@ export default function ChatList({ activeChatTicketId, onSelectChat, refreshTrig
         <TextField
           fullWidth
           size="small"
-          placeholder="Sohbet ara..."
+          placeholder={t('supportDashboard.searchChat')}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           InputProps={{
@@ -321,18 +325,10 @@ export default function ChatList({ activeChatTicketId, onSelectChat, refreshTrig
         msOverflowStyle: 'none', // IE ve Edge için
       }}>
         {filteredChatList.length === 0 ? (
-          <ListItem
-            sx={{
-              animation: 'fadeIn 0.5s ease-out',
-              '@keyframes fadeIn': {
-                '0%': { opacity: 0 },
-                '100%': { opacity: 1 },
-              },
-            }}
-          >
-            <Typography color="text.secondary" align="center" sx={{ width: '100%', py: 4 }}>
-              {searchTerm ? 'Arama sonucu bulunamadı' : 'Henüz chat yok'}
-            </Typography>
+          <ListItem>
+            <Box display="flex" justifyContent="center" alignItems="center" width="100%" py={4}>
+              <CircularProgress />
+            </Box>
           </ListItem>
         ) : (
           filteredChatList.map((chat, index) => (
@@ -371,7 +367,7 @@ export default function ChatList({ activeChatTicketId, onSelectChat, refreshTrig
                 onClick={() => handleChatSelect(chat)}
                 sx={{
                   color: '#222',
-                  bgcolor: activeChatTicketId === chat.id ? '#f0f8ff' : 'transparent',
+                  bgcolor: chat.isNewMessage ? '#fff3cd' : (activeChatTicketId === chat.id ? '#f0f8ff' : 'transparent'),
                   '&:hover': { 
                     bgcolor: '#f5f5f5',
                     transform: 'translateX(2px)',
@@ -384,8 +380,24 @@ export default function ChatList({ activeChatTicketId, onSelectChat, refreshTrig
                     '&:hover': { bgcolor: '#e3f2fd' },
                     borderLeft: '4px solid #1976d2',
                   },
-                  transition: 'all 0.2s ease-in-out',
-                  transform: 'translateX(0)',
+                  transition: 'all 0.3s ease-in-out',
+                  transform: chat.isNewMessage ? 'translateX(4px)' : 'translateX(0)',
+                  borderLeft: chat.isNewMessage ? '4px solid #ffc107' : 'none',
+                  animation: chat.isNewMessage ? 'newMessagePulse 2s ease-in-out' : 'none',
+                  '@keyframes newMessagePulse': {
+                    '0%': {
+                      backgroundColor: '#fff3cd',
+                      transform: 'translateX(4px) scale(1.02)',
+                    },
+                    '50%': {
+                      backgroundColor: '#fff3cd',
+                      transform: 'translateX(4px) scale(1.01)',
+                    },
+                    '100%': {
+                      backgroundColor: 'transparent',
+                      transform: 'translateX(0) scale(1)',
+                    },
+                  },
                 }}
               >
                 <ListItemAvatar>

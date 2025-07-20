@@ -17,7 +17,7 @@ class Ticket(BaseModel):
     attachments: list[dict] = []
     category: str
     status: TicketStatus = TicketStatus.OPEN
-    createdAt: Optional[datetime] = None
+    createdAt: datetime = Field(default_factory=datetime.utcnow)
     closedAt: Optional[datetime] = None
     isDeleted: bool = False
     deletedAt: Optional[datetime] = None

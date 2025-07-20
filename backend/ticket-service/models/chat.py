@@ -10,7 +10,7 @@ class Chat(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
     ticketId: str
     participants: List[Participant]
-    createdAt: Optional[datetime] = None
+    createdAt: datetime = Field(default_factory=datetime.utcnow)
     endedAt: Optional[datetime] = None
     isDeleted: bool = False
     deletedAt: Optional[datetime] = None 

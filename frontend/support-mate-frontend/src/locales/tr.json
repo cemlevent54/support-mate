@@ -238,6 +238,7 @@
       "profile": "Profil"
     },
     "chatsTitle": "Sohbetler",
+    "searchChat": "Sohbet ara...",
 
     "requestsTitle": "Destek Talepleri",
     "requestsDesc": "Destek talepleri burada görünecek.",
@@ -257,7 +258,9 @@
   },
   "chatArea": {
     "placeholder": "Mesaj yazın...",
-    "createTask": "Görev Oluştur"
+    "createTask": "Görev Oluştur",
+    "download": "İndir",
+    "preview": "Önizle"
   },
   "chatDialog": {
     "detail": "Detay",

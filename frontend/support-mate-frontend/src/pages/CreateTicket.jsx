@@ -174,15 +174,15 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
         
         setForm({ title: "", description: "", category: "", files: [] });
         
-        // Modal modunda ise parent'a bilgi ver ve modal'ı kapat
+        // Modal modunda ise parent'a bilgi ver ve modal'ı hemen kapat
         if (isModal && onClose) {
+          console.log('CreateTicket - Modal mode, calling onTicketCreated with:', response.data);
           if (onTicketCreated) {
             // Parent component'e ticket bilgisini gönder
             onTicketCreated(response.data);
           }
-          setTimeout(() => {
-            onClose();
-          }, 3000); // 3 saniye sonra kapat
+          // Modal'ı hemen kapat, chat paneli MyRequests sayfasında açılacak
+          onClose();
         } else {
           // Standalone modda ChatDialog'a yönlendir
           setTimeout(() => {

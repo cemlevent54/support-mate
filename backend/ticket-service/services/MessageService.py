@@ -6,6 +6,7 @@ from cqrs.queries.GetChatByTicketIdQueryHandler import GetChatByTicketIdQueryHan
 from cqrs.queries.ListMessagesByChatIdQueryHandler import ListMessagesByChatIdQueryHandler
 from config.language import get_language, set_language, _
 from config.logger import get_logger
+from dto.message_dto import MessageDTO, MessageListDTO
 # from config.env import get_default_language
 
 class MessageService:
@@ -59,6 +60,10 @@ class MessageService:
         message_data["is_delivered"] = is_delivered
         result = self.send_handler.execute(message_data, user)
         if result.get("success"):
+            # DTO'ya çevir
+            message = result["data"]
+            message_dto = MessageDTO.from_model(message)
+            result["data"] = message_dto.model_dump()
             self.logger.info(_(f"services.messageService.logs.message_sent"))
         else:
             self.logger.error(_(f"services.messageService.logs.message_send_failed").format(error=result.get("message", "")))
@@ -66,11 +71,16 @@ class MessageService:
 
     def list_messages(self, chat_id, user):
         result = self.list_handler.execute(chat_id, user)
-        # Mesajları AES ile çöz
+        # Mesajları AES ile çöz ve DTO'ya çevir
         if result["success"]:
-            for msg in result["data"]:
-                if "text" in msg:
-                    msg["text"] = decrypt_message(msg["text"])
+            messages = result["data"]
+            message_dtos = []
+            for msg in messages:
+                if hasattr(msg, "text"):
+                    msg.text = decrypt_message(msg.text)
+                message_dto = MessageDTO.from_model(msg)
+                message_dtos.append(message_dto.model_dump())
+            result["data"] = message_dtos
             self.logger.info(_(f"services.messageService.logs.message_listed"))
         else:
             self.logger.error(_(f"services.messageService.logs.message_list_failed").format(error=result.get("message", "")))
@@ -93,18 +103,19 @@ class MessageService:
         ticket = ticket_repo.get_by_id(ticket_id)
         
         messages = messages_handler.execute(chat.id)
+        message_dtos = []
         for msg in messages:
             if hasattr(msg, "text"):
                 msg.text = decrypt_message(msg.text)
-        
-        messages_dict = [msg.model_dump(by_alias=True) for msg in messages]
+            message_dto = MessageDTO.from_model(msg)
+            message_dtos.append(message_dto.model_dump())
         
         # İlk mesaja ticket attachments'ını ekle
-        if messages_dict and ticket and ticket.attachments:
-            messages_dict[0]["attachments"] = ticket.attachments
+        if message_dtos and ticket and ticket.attachments:
+            message_dtos[0]["attachments"] = ticket.attachments
         
         self.logger.info(_(f"services.messageService.logs.message_listed"))
-        return {"success": True, "data": {"messages": messages_dict, "chatId": chat.id}, "message": _(f"services.messageService.responses.messages_retrieved")}
+        return {"success": True, "data": {"messages": message_dtos, "chatId": chat.id}, "message": _(f"services.messageService.responses.messages_retrieved")}
 
     def get_messages_by_id(self, id, user):
         chat_by_id_handler = GetChatByIdQueryHandler()
@@ -120,10 +131,12 @@ class MessageService:
         if chat:
             chat_id = str(chat.id)
             messages = messages_handler.execute(chat_id)
+            message_dtos = []
             for msg in messages:
                 if hasattr(msg, "text"):
                     msg.text = decrypt_message(msg.text)
-            messages_dict = [msg.model_dump(by_alias=True) for msg in messages]
+                message_dto = MessageDTO.from_model(msg)
+                message_dtos.append(message_dto.model_dump())
             
             # Chat'in ticket ID'si varsa, ticket bilgilerini al
             if hasattr(chat, 'ticketId') and chat.ticketId:
@@ -132,11 +145,11 @@ class MessageService:
                 ticket = ticket_repo.get_by_id(chat.ticketId)
                 
                 # İlk mesaja ticket attachments'ını ekle
-                if messages_dict and ticket and ticket.attachments:
-                    messages_dict[0]["attachments"] = ticket.attachments
+                if message_dtos and ticket and ticket.attachments:
+                    message_dtos[0]["attachments"] = ticket.attachments
             
             self.logger.info(_(f"services.messageService.logs.message_listed"))
-            return {"success": True, "data": {"messages": messages_dict, "chatId": chat_id}, "message": _(f"services.messageService.responses.messages_retrieved")}
+            return {"success": True, "data": {"messages": message_dtos, "chatId": chat_id}, "message": _(f"services.messageService.responses.messages_retrieved")}
         else:
             self.logger.error(_(f"services.messageService.logs.message_list_failed").format(error="Chat not found"))
             return {"success": False, "data": [], "message": _(f"services.messageService.responses.chat_not_found_simple")}

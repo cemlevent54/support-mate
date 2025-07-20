@@ -19,6 +19,7 @@ import AudioFileIcon from '@mui/icons-material/AudioFile';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import DownloadIcon from '@mui/icons-material/Download';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import CircularProgress from '@mui/material/CircularProgress';
 
 export default function SupportChats({ ticketId, ticketTitle, onMessageSent }) {
   const [messages, setMessages] = useState([]);
@@ -337,7 +338,9 @@ export default function SupportChats({ ticketId, ticketTitle, onMessageSent }) {
               ))
             )
           ) : (
-            <div>Chat başlatılmadı.</div>
+            <Box display="flex" justifyContent="center" alignItems="center" height={200}>
+              <CircularProgress />
+            </Box>
           )}
           <div ref={messagesEndRef} />
           {isTyping && (
@@ -443,7 +446,7 @@ export default function SupportChats({ ticketId, ticketTitle, onMessageSent }) {
                        onClick={() => window.open(previewFile.url || getFileUrl(previewFile.name), '_blank')}
                        sx={{ minWidth: 120 }}
                      >
-                       Yeni Sekmede Aç
+                       {t('chatArea.preview')}
                      </Button>
                      <Button
                        variant="outlined"
@@ -453,7 +456,7 @@ export default function SupportChats({ ticketId, ticketTitle, onMessageSent }) {
                        download
                        sx={{ minWidth: 120 }}
                      >
-                       İndir
+                       {t('chatArea.download')}
                      </Button>
                    </Box>
                    

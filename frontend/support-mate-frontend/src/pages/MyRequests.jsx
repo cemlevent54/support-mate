@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -18,7 +18,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 
 
-const MyRequests = ({ openCreateTicketModal }) => {
+const MyRequests = ({ openCreateTicketModal, onTicketCreated }) => {
   const { t } = useTranslation();
 
 const categoryLabels = {
@@ -53,6 +53,7 @@ const modalStyle = {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Chat socket hook'unu kullan (modal için)
   const {
@@ -76,26 +77,39 @@ const modalStyle = {
     setError(null);
     try {
       const response = await listTicketsForUser();
+      console.log('MyRequests - fetchTickets - response:', response);
+      
       if (response.success && Array.isArray(response.data)) {
         const sorted = response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        setRows(sorted.map((ticket, idx) => ({
-          id: ticket._id || idx + 1,
-          title: ticket.title,
-          description: ticket.description,
-          category: ticket.category,
-          status: ticket.status || "-",
-          createdAt: ticket.createdAt ? new Date(new Date(ticket.createdAt).getTime() + 3 * 60 * 60 * 1000).toLocaleString() : "-",
-          files: ticket.attachments || [],
-          chatId: ticket.chatId || ticket._id,
-          customerId: ticket.customerId,
-          assignedAgentId: ticket.assignedAgentId,
-          raw: ticket
-        })));
+        const mappedRows = sorted.map((ticket, idx) => {
+          console.log('MyRequests - fetchTickets - processing ticket:', ticket);
+          return {
+            id: ticket._id || ticket.id || idx + 1,
+            title: ticket.title,
+            description: ticket.description,
+            category: ticket.category,
+            status: ticket.status || "-",
+            createdAt: ticket.createdAt ? new Date(ticket.createdAt).toLocaleString('tr-TR') : "-",
+            files: ticket.attachments || [],
+            chatId: ticket.chatId || ticket._id || ticket.id,
+            customerId: ticket.customerId,
+            assignedAgentId: ticket.assignedAgentId,
+            raw: {
+              ...ticket,
+              _id: ticket._id || ticket.id,
+              chatId: ticket.chatId || ticket._id || ticket.id,
+              ticketId: ticket._id || ticket.id
+            }
+          };
+        });
+        console.log('MyRequests - fetchTickets - mapped rows:', mappedRows);
+        setRows(mappedRows);
       } else {
         setRows([]);
         setError(response.message || t('myRequests.noTickets'));
       }
     } catch (err) {
+      console.error('MyRequests - fetchTickets - error:', err);
       setError(t('myRequests.error'));
       setRows([]);
     } finally {
@@ -107,20 +121,60 @@ const modalStyle = {
     fetchTickets();
   }, [t]);
 
+
+
+  // Ticket oluşturulduktan sonra chat panelini aç ve tabloyu güncelle
+  useEffect(() => {
+    console.log('MyRequests - location.state:', location.state);
+    if (location.state?.showChatAfterCreate && location.state?.openChatForTicket) {
+      const ticketData = location.state.openChatForTicket;
+      console.log('MyRequests - Opening chat for ticket:', ticketData);
+      
+      // Tabloyu güncelle (yeni ticket eklendi)
+      fetchTickets();
+      
+      // Yeni oluşturulan ticket'ı chat panelinde aç
+      const chatTicketData = {
+        ...ticketData,
+        chatId: ticketData.chatId || ticketData._id || ticketData.id,
+        ticketId: ticketData._id || ticketData.id
+      };
+      console.log('MyRequests - Setting selectedChatTicket:', chatTicketData);
+      setSelectedChatTicket(chatTicketData);
+      console.log('MyRequests - Setting chatModalOpen to true');
+      setChatModalOpen(true);
+      
+      // State'i temizle (geri dönüşte tekrar açılmasın)
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location.state, navigate, location.pathname]);
+
   // Ticket oluşturma modalı açıldığında tabloyu güncellemek için callback
-  const handleTicketCreated = () => {
+  const handleTicketCreated = (ticketData) => {
+    console.log('MyRequests - handleTicketCreated called with:', ticketData);
+    // Tabloyu güncelle
     fetchTickets();
+    
+    // Eğer global callback varsa onu da çağır
+    if (onTicketCreated) {
+      onTicketCreated(ticketData);
+    }
   };
 
   const handleOpenChat = (ticket) => {
     console.log('MyRequests - handleOpenChat - ticket:', ticket);
     console.log('MyRequests - handleOpenChat - assignedAgentId:', ticket.raw?.assignedAgentId);
+    console.log('MyRequests - handleOpenChat - ticketId:', ticket.raw._id);
+    console.log('MyRequests - handleOpenChat - chatId:', ticket.raw.chatId);
     
-    setSelectedChatTicket({
+    const chatTicketData = {
       ...ticket.raw,
       chatId: ticket.raw.chatId || ticket.raw._id,
-      ticketId: ticket.raw._id
-    });
+      ticketId: ticket.raw._id || ticket.raw.id
+    };
+    console.log('MyRequests - handleOpenChat - chatTicketData:', chatTicketData);
+    
+    setSelectedChatTicket(chatTicketData);
     setChatModalOpen(true);
   };
   const handleCloseChat = () => {
@@ -246,7 +300,7 @@ const modalStyle = {
                 <Typography><b>{t('myRequests.modal.descriptionLabel')}</b> {selectedTicket.description}</Typography>
                 <Typography><b>{t('myRequests.modal.categoryLabel')}</b> {categoryLabels[selectedTicket.category] || selectedTicket.category}</Typography>
                 <Typography><b>{t('myRequests.modal.statusLabel')}</b> {selectedTicket.status}</Typography>
-                <Typography><b>{t('myRequests.modal.createdAtLabel')}</b> {selectedTicket.createdAt ? new Date(selectedTicket.createdAt).toLocaleString() : '-'}</Typography>
+                <Typography><b>{t('myRequests.modal.createdAtLabel')}</b> {selectedTicket.createdAt ? new Date(selectedTicket.createdAt).toLocaleString('tr-TR') : '-'}</Typography>
                 <Typography><b>{t('myRequests.modal.customerIdLabel')}</b> {selectedTicket.customerId}</Typography>
                 <Typography><b>{t('myRequests.modal.agentIdLabel')}</b> {selectedTicket.assignedAgentId}</Typography>
                 <Typography><b>{t('myRequests.modal.attachmentsLabel')}</b></Typography>

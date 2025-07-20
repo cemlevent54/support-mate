@@ -103,7 +103,7 @@
       },
       "validationError": "Please fill in all required fields.",
       "success": "Your support ticket has been created successfully!",
-      "successNoAgent": "Your support ticket has been created successfully! There are currently no online customer representatives, we will send you an email when a representative comes online.",
+      "successNoAgent": "Your support ticket has been created successfully! There are currently no online customer supporters, we will send you an email when a supporter comes online.",
       "successWithRelogin": "Your support ticket has been created successfully! Your session may have expired.",
       "noPermission": "You do not have permission to view this page."
     }
@@ -242,7 +242,8 @@
     "requestsTitle": "Support Requests",
     "requestsDesc": "Support requests will be shown here.",
     "profileTitle": "Profile",
-    "profileDesc": "Profile information will be shown here."
+    "profileDesc": "Profile information will be shown here.",
+    "searchChat": "Search chat..."
   },
   "employeeDashboard": {
     "title": "Employee Panel",
@@ -257,7 +258,9 @@
   },
   "chatArea": {
     "placeholder": "Write a message...",
-    "createTask": "Create Task"
+    "createTask": "Create Task",
+    "download": "Download",
+    "preview": "Preview"
   },
   "chatDialog": {
     "detail": "Detail",
@@ -271,10 +274,10 @@
   "chatPanel": {
     "title": "Chat: {{title}}",
     "noMessages": "No messages yet.",
-    "typing": "Customer representative is typing...",
+    "typing": "Customer supporter is typing...",
     "placeholder": "Type a message...",
     "send": "Send",
-    "noAgentAssigned": "There are currently no online customer representatives. When a representative comes online, we will send you an email and you can continue here."
+    "noAgentAssigned": "There are currently no online customer supporters. When a supporter comes online, we will send you an email and you can continue here."
   },
   "myRequests": {
     "title": "My Requests",

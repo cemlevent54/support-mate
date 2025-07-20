@@ -8,7 +8,8 @@ class Message(BaseModel):
     senderId: str
     senderRole: str  # customer, agent
     text: str  # AES encrypted
-    timestamp: Optional[datetime] = None
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
     isDeleted: bool = False 
     is_delivered: bool = False 
     deletedAt: Optional[datetime] = None

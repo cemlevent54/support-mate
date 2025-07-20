@@ -31,31 +31,43 @@ export const useChatSocket = (chatTicket, chatOpen) => {
   // Chat mesajlarını çek
   useEffect(() => {
     if (!chatOpen || !chatTicket) return;
+    console.log('[useChatSocket] Fetching messages for:', { chatOpen, chatTicket });
+    
     const fetchMessages = async () => {
       setMessages([]);
       setChatId(null);
       try {
         let res;
         if (chatTicket.ticketId) {
+          console.log('[useChatSocket] Fetching by ticketId:', chatTicket.ticketId);
           res = await listMessagesByTicketId(chatTicket.ticketId);
         } else if (chatTicket.chatId) {
+          console.log('[useChatSocket] Fetching by chatId:', chatTicket.chatId);
           res = await listMessagesByTicketId(chatTicket.chatId); // fallback
         } else {
+          console.log('[useChatSocket] No ticketId or chatId found');
           setMessages([]);
           setChatId(null);
           return;
         }
+        
+        console.log('[useChatSocket] API response:', res);
+        
         if (res.success && res.data && Array.isArray(res.data.messages)) {
+          console.log('[useChatSocket] Setting messages from data.messages:', res.data.messages);
           setMessages(res.data.messages);
           setChatId(res.data.chatId || null);
         } else if (res.success && Array.isArray(res.data)) {
+          console.log('[useChatSocket] Setting messages from data:', res.data);
           setMessages(res.data);
           setChatId(chatTicket.chatId || null);
         } else {
+          console.log('[useChatSocket] No valid messages found');
           setMessages([]);
           setChatId(null);
         }
       } catch (e) {
+        console.error('[useChatSocket] Error fetching messages:', e);
         setMessages([]);
         setChatId(null);
       }
