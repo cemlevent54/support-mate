@@ -6,8 +6,11 @@ class ListTicketsQueryHandler:
 
     def execute(self, user):
         try:
-            # Kullanıcıya özel ticket'ları getir
-            if user and user.get('id'):
+            # Admin ise tüm ticketları getir
+            if user and user.get('roleName') == 'Admin':
+                tickets = self.ticket_repository.list()
+            # User ise sadece kendi ticketlarını getir
+            elif user and user.get('id'):
                 filter_criteria = {"customerId": user.get('id')}
                 tickets = self.ticket_repository.list(filter_criteria)
             else:

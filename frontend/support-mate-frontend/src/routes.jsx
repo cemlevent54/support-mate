@@ -18,6 +18,7 @@ import SixDigitVerifyEmail from './components/SixDigitVerifyEmail';
 import MyRequests from './pages/MyRequests';
 import ChatDialog from './pages/ChatDialog';
 import { useLocation, Navigate } from 'react-router-dom';
+import AdminTickets from './pages/admin/AdminTickets';
 
 // Global modal handlers - bu fonksiyonlar App.jsx'ten geçirilecek
 let globalOpenCreateTicketModal = () => {};
@@ -70,6 +71,10 @@ export const appRoutes = [
       {
         path: 'roles/permissions',
         element: <AdminRolePermissions />,
+      },
+      {
+        path: 'tickets',
+        element: <AdminTickets />,
       },
     ],
   },

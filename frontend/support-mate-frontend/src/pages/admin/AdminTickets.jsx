@@ -1,17 +1,13 @@
 import React, { useState, useEffect } from "react";
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
-import CustomTicketTable from './CustomTicketTable';
-import ChatIcon from '@mui/icons-material/Chat';
-import InfoIcon from '@mui/icons-material/Info';
-import CircularProgress from '@mui/material/CircularProgress';
-import Alert from '@mui/material/Alert';
+import CustomTicketTable from '../../components/CustomTicketTable';
 import Modal from '@mui/material/Modal';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
-import { listTicketsForAgent } from '../api/ticketApi';
+import { listTicketsForAdmin } from '../../api/ticketApi';
+import Button from '@mui/material/Button';
 
 const categoryLabels = {
   hardware: "Donanım",
@@ -33,7 +29,7 @@ const modalStyle = {
   p: 4,
 };
 
-const SupportRequests = ({ onStartChat }) => {
+const AdminTickets = () => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -47,7 +43,7 @@ const SupportRequests = ({ onStartChat }) => {
       setLoading(true);
       setError(null);
       try {
-        const response = await listTicketsForAgent();
+        const response = await listTicketsForAdmin();
         if (response.success && Array.isArray(response.data)) {
           const sorted = response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
           setRows(sorted.map((ticket, idx) => ({
@@ -58,6 +54,8 @@ const SupportRequests = ({ onStartChat }) => {
             status: ticket.status || "-",
             createdAt: ticket.createdAt ? new Date(new Date(ticket.createdAt).getTime() + 3 * 60 * 60 * 1000).toLocaleString() : "-",
             files: ticket.attachments || [],
+            customerId: ticket.customerId,
+            assignedAgentId: ticket.assignedAgentId,
             raw: ticket
           })));
         } else {
@@ -83,64 +81,25 @@ const SupportRequests = ({ onStartChat }) => {
     setSelectedTicket(null);
   };
 
-  const handleGoChat = (ticket) => {
-    onStartChat && onStartChat(ticket.raw._id, ticket.raw.title);
-  };
-
   const handlePreviewFile = (file) => {
     setPreviewFile(file);
     setPreviewOpen(true);
   };
-
   const handleClosePreview = () => {
     setPreviewOpen(false);
     setPreviewFile(null);
   };
 
-  const columns = [
-    { field: 'title', headerName: 'Başlık', width: 200 },
-    { field: 'category', headerName: 'Kategori', width: 200 },
-    { field: 'status', headerName: 'Durum', width: 200 },
-    { field: 'createdAt', headerName: 'Oluşturulma', width: 200 },
-    {
-      field: 'actions',
-      headerName: 'İşlemler',
-      width: 200,
-      sortable: false,
-      renderCell: (params) => (
-        <Box display="flex" gap={1}>
-          <Button
-            variant="contained"
-            color="primary"
-            size="small"
-            startIcon={<ChatIcon />}
-            onClick={() => handleGoChat(params.row)}
-          >
-            Chat
-          </Button>
-          <Button
-            variant="outlined"
-            color="info"
-            size="small"
-            startIcon={<InfoIcon />}
-            onClick={() => handleOpenDetail(params.row)}
-          >
-            Detay
-          </Button>
-        </Box>
-      ),
-    },
-  ];
-
   return (
-    <Box display="flex" flexDirection="column" alignItems="flex-start" width="100%" pl={4} pr={4}>
-      <Typography variant="h5" fontWeight={700} mb={3} mt={4}>Atandığım Talepler</Typography>
+    <>
+      <Typography variant="h5" fontWeight={700} mb={3}>Tüm Destek Talepleri (Admin)</Typography>
       <CustomTicketTable
         rows={rows}
         loading={loading}
         error={error}
-        onChat={handleGoChat}
+        onChat={null}
         onDetail={handleOpenDetail}
+        i18nNamespace="adminTickets"
       />
       <Modal open={modalOpen} onClose={handleCloseDetail}>
         <Box sx={modalStyle}>
@@ -195,8 +154,8 @@ const SupportRequests = ({ onStartChat }) => {
           )}
         </DialogContent>
       </Dialog>
-    </Box>
+    </>
   );
 };
 
-export default SupportRequests; 
+export default AdminTickets; 

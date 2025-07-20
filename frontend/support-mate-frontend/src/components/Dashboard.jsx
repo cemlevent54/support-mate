@@ -65,6 +65,7 @@ export default function Dashboard() {
     { key: 'dashboard', label: t('adminDashboard.dashboard'), path: '/admin' },
     { key: 'users', label: t('adminDashboard.users'), path: '/admin/users' },
     { key: 'roles', label: t('adminDashboard.roles'), path: '/admin/roles' },
+    { key: 'tickets', label: t('adminDashboard.tickets'), path: '/admin/tickets' },
     // { key: 'settings', label: t('adminDashboard.settings'), path: '/admin/settings' },
   ];
 

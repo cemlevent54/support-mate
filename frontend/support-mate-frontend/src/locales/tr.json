@@ -117,6 +117,7 @@
     "title": "Admin Panel",
     "dashboard": "Dashboard",
     "users": "Kullanıcılar",
+    "tickets": "Destek Talepleri",
     "roles": "Roller"
   },
   "adminUsers": {
@@ -316,5 +317,25 @@
   "floatingButton": {
     "createTicket": "Yeni Talep Oluştur",
     "close": "Kapat"
+  },
+  "adminTickets": {
+    "table": {
+      "title": "Başlık",
+      "category": "Kategori",
+      "createdAt": "Oluşturulma",
+      "actions": "İşlemler",
+      "status": "Durum"
+    },
+    "buttons": {
+      "chat": "Chat",
+      "detail": "Detay"
+    },
+    "pagination": {
+      "page": "Sayfa",
+      "rowsPerPage": "Kayıt / Sayfa",
+      "total": "Toplam"
+    },
+    "loading": "Yükleniyor...",
+    "noTickets": "Kayıt yok"
   }
 } 

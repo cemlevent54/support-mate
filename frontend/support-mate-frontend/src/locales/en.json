@@ -118,7 +118,8 @@
     "title": "Admin Panel",
     "dashboard": "Dashboard",
     "users": "Users",
-    "roles": "Roles"
+    "roles": "Roles",
+    "tickets": "Support Requests"
   },
   "adminUsers": {
     "title": "User Management",
@@ -316,5 +317,25 @@
   "floatingButton": {
     "createTicket": "Create New Request",
     "close": "Close"
+  },
+  "adminTickets": {
+    "table": {
+      "title": "Title",
+      "category": "Category",
+      "createdAt": "Created At",
+      "actions": "Actions",
+      "status": "Status"
+    },
+    "buttons": {
+      "chat": "Chat",
+      "detail": "Detail"
+    },
+    "pagination": {
+      "page": "Page",
+      "rowsPerPage": "Rows / Page",
+      "total": "Total"
+    },
+    "loading": "Loading...",
+    "noTickets": "No records found"
   }
 } 
