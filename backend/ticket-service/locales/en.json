@@ -140,6 +140,40 @@
             "delivered_error": "[SOCKET][DELIVERED][ERROR] {error} | Payload: {data}",
             "seen": "[SOCKET][SEEN] Message {message_id} seen by {user} in chat {chat_id} | Payload: {data}",
             "seen_error": "[SOCKET][SEEN][ERROR] {error} | Payload: {data}"
+        },
+        "categoryService": {
+            "logs": {
+                "creating_category": "Category is being created: {category_name_tr} {category_name_en}",
+                "category_created": "Category created successfully: {category_id}",
+                "updating_category": "Category is being updated: {category_id}",
+                "category_updated": "Category updated successfully: {category_id}",
+                "deleting_category": "Category is being deleted: {category_id}",
+                "category_deleted": "Category deleted successfully: {category_id}",
+                "category_name_exists": "A category with this name already exists."
+            },
+            "responses": {
+                "bad_request": "Missing or invalid parameters.",
+                "category_not_found": "Category not found.",
+                "category_not_created": "Category could not be created.",
+                "category_updated": "Category updated successfully.",
+                "category_deleted": "Category deleted successfully.",
+                "categories_listed": "Categories listed successfully.",
+                "category_created": "Category created successfully."
+            }
+        },
+        "categoryRepository": {
+            "logs": {
+                "create": "[REPO] CategoryRepository.create: category_id={category_id}",
+                "create_error": "[REPO] CategoryRepository.create error: {error}",
+                "get_by_id": "[REPO] CategoryRepository.get_by_id: category_id={category_id}, found={found}",
+                "get_by_id_error": "[REPO] CategoryRepository.get_by_id error: {error}",
+                "list": "[REPO] CategoryRepository.list: filter={filter}, count={count}",
+                "list_error": "[REPO] CategoryRepository.list error: {error}",
+                "update": "[REPO] CategoryRepository.update: category_id={category_id}, değişen={modified}",
+                "update_error": "[REPO] CategoryRepository.update error: {error}",
+                "soft_delete": "[REPO] CategoryRepository.soft_delete: category_id={category_id}, değişen={modified}",
+                "soft_delete_error": "[REPO] CategoryRepository.soft_delete error: {error}"
+            }
         }
     }
 }

@@ -307,15 +307,34 @@ const modalStyle = {
                 <ul>
                   {selectedTicket.attachments && selectedTicket.attachments.length > 0 ? (
                     selectedTicket.attachments.map((file, i) => (
-                      <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <a href={`${process.env.REACT_APP_API_BASE_URL}/uploads/${file.url.split('uploads/')[1]}`} target="_blank" rel="noopener noreferrer">{file.name}</a>
+                      <li key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, marginBottom: 12 }}>
+                        <a
+                          href={`${process.env.REACT_APP_API_BASE_URL}/uploads/${file.url.split('uploads/')[1]}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ fontWeight: 500, wordBreak: 'break-all' }}
+                        >
+                          {file.name}
+                        </a>
                         {(file.type && (file.type.startsWith('image/') || file.type === 'application/pdf')) && (
-                          <Button size="small" variant="outlined" sx={{ ml: 1 }} onClick={() => handlePreviewFile(file)}>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            sx={{ mt: 1, textTransform: 'none' }}
+                            onClick={() => handlePreviewFile(file)}
+                          >
                             {t('myRequests.modal.preview')}
                           </Button>
                         )}
                         {file.type && !(file.type.startsWith('image/') || file.type === 'application/pdf') && (
-                          <Button size="small" variant="outlined" sx={{ ml: 1 }} component="a" href={`${process.env.REACT_APP_API_BASE_URL}/uploads/${file.url.split('uploads/')[1]}`} download>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            sx={{ mt: 1, textTransform: 'none' }}
+                            component="a"
+                            href={`${process.env.REACT_APP_API_BASE_URL}/uploads/${file.url.split('uploads/')[1]}`}
+                            download
+                          >
                             {t('myRequests.modal.download')}
                           </Button>
                         )}

@@ -19,6 +19,7 @@ import MyRequests from './pages/MyRequests';
 import ChatDialog from './pages/ChatDialog';
 import { useLocation, Navigate } from 'react-router-dom';
 import AdminTickets from './pages/admin/AdminTickets';
+import AdminCategories from './pages/admin/AdminCategories';
 
 // Global modal handlers - bu fonksiyonlar App.jsx'ten geçirilecek
 let globalOpenCreateTicketModal = () => {};
@@ -77,6 +78,10 @@ export const appRoutes = [
       {
         path: 'tickets',
         element: <AdminTickets />,
+      },
+      {
+        path: 'categories',
+        element: <AdminCategories />,
       },
     ],
   },

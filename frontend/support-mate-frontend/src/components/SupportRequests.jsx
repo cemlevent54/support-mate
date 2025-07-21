@@ -12,6 +12,7 @@ import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import { listTicketsForAgent } from '../api/ticketApi';
+import { useTranslation } from 'react-i18next';
 
 const categoryLabels = {
   hardware: "Donanım",
@@ -34,6 +35,7 @@ const modalStyle = {
 };
 
 const SupportRequests = ({ onStartChat }) => {
+  const { t } = useTranslation();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -134,7 +136,9 @@ const SupportRequests = ({ onStartChat }) => {
 
   return (
     <Box display="flex" flexDirection="column" alignItems="flex-start" width="100%" pl={4} pr={4}>
-      <Typography variant="h5" fontWeight={700} mb={3} mt={4}>Atandığım Talepler</Typography>
+      <Typography variant="h5" fontWeight={700} mb={3} mt={4}>
+        {t('supportRequests.title')}
+      </Typography>
       <CustomTicketTable
         rows={rows}
         loading={loading}
@@ -144,35 +148,54 @@ const SupportRequests = ({ onStartChat }) => {
       />
       <Modal open={modalOpen} onClose={handleCloseDetail}>
         <Box sx={modalStyle}>
-          <Typography variant="h6" mb={2}>Talep Detayları</Typography>
+          <Typography variant="h6" mb={2}>{t('supportRequests.modal.title')}</Typography>
           {selectedTicket && (
             <Box>
-              <Typography><b>Başlık:</b> {selectedTicket.title}</Typography>
-              <Typography><b>Açıklama:</b> {selectedTicket.description}</Typography>
-              <Typography><b>Kategori:</b> {categoryLabels[selectedTicket.category] || selectedTicket.category}</Typography>
-              <Typography><b>Durum:</b> {selectedTicket.status}</Typography>
-              <Typography><b>Oluşturulma:</b> {selectedTicket.createdAt ? new Date(selectedTicket.createdAt).toLocaleString('tr-TR') : '-'}</Typography>
-              <Typography><b>Müşteri ID:</b> {selectedTicket.customerId}</Typography>
-              <Typography><b>Agent ID:</b> {selectedTicket.assignedAgentId}</Typography>
-              <Typography><b>Ekler:</b></Typography>
+              <Typography><b>{t('supportRequests.modal.titleLabel')}</b> {selectedTicket.title}</Typography>
+              <Typography><b>{t('supportRequests.modal.descriptionLabel')}</b> {selectedTicket.description}</Typography>
+              <Typography><b>{t('supportRequests.modal.categoryLabel')}</b> {categoryLabels[selectedTicket.category] || selectedTicket.category}</Typography>
+              <Typography><b>{t('supportRequests.modal.statusLabel')}</b> {selectedTicket.status}</Typography>
+              <Typography><b>{t('supportRequests.modal.createdAtLabel')}</b> {selectedTicket.createdAt ? new Date(selectedTicket.createdAt).toLocaleString('tr-TR') : '-'}</Typography>
+              <Typography><b>{t('supportRequests.modal.customerIdLabel')}</b> {selectedTicket.customerId}</Typography>
+              <Typography><b>{t('supportRequests.modal.agentIdLabel')}</b> {selectedTicket.assignedAgentId}</Typography>
+              <Typography><b>{t('supportRequests.modal.attachmentsLabel')}</b></Typography>
               <ul>
                 {selectedTicket.attachments && selectedTicket.attachments.length > 0 ? (
                   selectedTicket.attachments.map((file, i) => (
-                    <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <a href={`${process.env.REACT_APP_API_BASE_URL}/uploads/${file.url.split('uploads/')[1]}`} target="_blank" rel="noopener noreferrer">{file.name}</a>
+                    <li key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, marginBottom: 12 }}>
+                      <a
+                        href={`${process.env.REACT_APP_API_BASE_URL}/uploads/${file.url.split('uploads/')[1]}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ fontWeight: 500, wordBreak: 'break-all' }}
+                      >
+                        {file.name}
+                      </a>
                       {(file.type && (file.type.startsWith('image/') || file.type === 'application/pdf')) && (
-                        <Button size="small" variant="outlined" sx={{ ml: 1 }} onClick={() => handlePreviewFile(file)}>
-                          Önizle
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          sx={{ mt: 1, textTransform: 'none' }}
+                          onClick={() => handlePreviewFile(file)}
+                        >
+                          {t('supportRequests.modal.preview')}
                         </Button>
                       )}
                       {file.type && !(file.type.startsWith('image/') || file.type === 'application/pdf') && (
-                        <Button size="small" variant="outlined" sx={{ ml: 1 }} component="a" href={`${process.env.REACT_APP_API_BASE_URL}/uploads/${file.url.split('uploads/')[1]}`} download>
-                          İndir
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          sx={{ mt: 1, textTransform: 'none' }}
+                          component="a"
+                          href={`${process.env.REACT_APP_API_BASE_URL}/uploads/${file.url.split('uploads/')[1]}`}
+                          download
+                        >
+                          {t('supportRequests.modal.download')}
                         </Button>
                       )}
                     </li>
                   ))
-                ) : <li>Yok</li>}
+                ) : <li>{t('supportRequests.modal.noAttachments')}</li>}
               </ul>
             </Box>
           )}

@@ -118,7 +118,8 @@
     "dashboard": "Dashboard",
     "users": "Kullanıcılar",
     "tickets": "Destek Talepleri",
-    "roles": "Roller"
+    "roles": "Roller",
+    "categories": "Kategoriler"
   },
   "adminUsers": {
     "title": "Kullanıcı Yönetimi",
@@ -323,7 +324,7 @@
   },
   "adminTickets": {
     "table": {
-      "title": "Başlık",
+      "title": "Talep Tablosu",
       "category": "Kategori",
       "createdAt": "Oluşturulma",
       "actions": "İşlemler",
@@ -339,6 +340,63 @@
       "total": "Toplam"
     },
     "loading": "Yükleniyor...",
-    "noTickets": "Kayıt yok"
+    "noTickets": "Kayıt yok",
+    "modal": {
+      "title": "Talep Detayları",
+      "titleLabel": "Başlık:",
+      "descriptionLabel": "Açıklama:",
+      "categoryLabel": "Kategori:",
+      "statusLabel": "Durum:",
+      "createdAtLabel": "Oluşturulma:",
+      "customerIdLabel": "Müşteri ID:",
+      "agentIdLabel": "Agent ID:",
+      "attachmentsLabel": "Ekler:",
+      "noAttachments": "Yok",
+      "preview": "Önizle",
+      "download": "İndir"
+    }
+  },
+  "supportRequests": {
+    "title": "Atandığım Talepler",
+    "modal": {
+      "title": "Talep Detayları",
+      "titleLabel": "Başlık:",
+      "descriptionLabel": "Açıklama:",
+      "categoryLabel": "Kategori:",
+      "statusLabel": "Durum:",
+      "createdAtLabel": "Oluşturulma:",
+      "customerIdLabel": "Müşteri ID:",
+      "agentIdLabel": "Agent ID:",
+      "attachmentsLabel": "Ekler:",
+      "noAttachments": "Yok",
+      "preview": "Önizle",
+      "download": "İndir"
+    }
+  },
+  "adminCategories": {
+    "fetchError": "Kategoriler alınırken bir hata oluştu.",
+    "createError": "Kategori oluşturulurken bir hata oluştu.",
+    "updateError": "Kategori güncellenirken bir hata oluştu.",
+    "deleteError": "Kategori silinirken bir hata oluştu.",
+    "notFound": "Kategori bulunamadı.",
+    "notCreated": "Kategori oluşturulamadı.",
+    "notUpdated": "Kategori güncellenemedi.",
+    "notDeleted": "Kategori silinemedi.",
+    "deleteSuccess": "Kategori başarıyla silindi.",
+    "title": "Kategoriler",
+    "add": "Kategori Ekle",
+    "edit": "Kategoriyi Düzenle",
+    "delete": "Sil",
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "table": {
+      "nameTr": "Kategori Adı (TR)",
+      "nameEn": "Kategori Adı (EN)",
+      "actions": "İşlemler"
+    },
+    "confirmDeleteTitle": "Kategoriyi Sil",
+    "confirmDeleteDesc": "Bu kategoriyi silmek istediğinize emin misiniz?",
+    "confirmDeleteYes": "Evet, Sil",
+    "confirmDeleteNo": "Vazgeç"
   }
 } 

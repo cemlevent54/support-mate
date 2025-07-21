@@ -119,7 +119,8 @@
     "dashboard": "Dashboard",
     "users": "Users",
     "roles": "Roles",
-    "tickets": "Support Requests"
+    "tickets": "Support Requests",
+    "categories": "Categories"
   },
   "adminUsers": {
     "title": "User Management",
@@ -323,7 +324,7 @@
   },
   "adminTickets": {
     "table": {
-      "title": "Title",
+      "title": "Ticket Table",
       "category": "Category",
       "createdAt": "Created At",
       "actions": "Actions",
@@ -339,6 +340,63 @@
       "total": "Total"
     },
     "loading": "Loading...",
-    "noTickets": "No records found"
+    "noTickets": "No records found",
+    "modal": {
+      "title": "Request Details",
+      "titleLabel": "Title:",
+      "descriptionLabel": "Description:",
+      "categoryLabel": "Category:",
+      "statusLabel": "Status:",
+      "createdAtLabel": "Created At:",
+      "customerIdLabel": "Customer ID:",
+      "agentIdLabel": "Agent ID:",
+      "attachmentsLabel": "Attachments:",
+      "noAttachments": "None",
+      "preview": "Preview",
+      "download": "Download"
+    }
+  },
+  "supportRequests": {
+    "title": "My Requests",
+    "modal": {
+      "title": "Request Details",
+      "titleLabel": "Title:",
+      "descriptionLabel": "Description:",
+      "categoryLabel": "Category:",
+      "statusLabel": "Status:",
+      "createdAtLabel": "Created At:",
+      "customerIdLabel": "Customer ID:",
+      "agentIdLabel": "Agent ID:",
+      "attachmentsLabel": "Attachments:",
+      "noAttachments": "None",
+      "preview": "Preview",
+      "download": "Download"
+    }
+  },
+  "adminCategories": {
+    "title": "Categories",
+    "add": "Add Category",
+    "edit": "Edit Category",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "fetchError": "An error occurred while fetching categories.",
+    "createError": "An error occurred while creating category.",
+    "updateError": "An error occurred while updating category.",
+    "deleteError": "An error occurred while deleting category.",
+    "notFound": "Category not found.",
+    "deleteSuccess": "Category deleted successfully.",
+    "notCreated": "Category not created.",
+    "notUpdated": "Category not updated.",
+    "notDeleted": "Category not deleted.",
+    "table": {
+      "nameTr": "Category Name (TR)",
+      "nameEn": "Category Name (EN)",
+      "actions": "Actions"
+    },
+    "confirmDeleteTitle": "Delete Category",
+    "confirmDeleteDesc": "Are you sure you want to delete this category?",
+    "confirmDeleteYes": "Yes, Delete",
+    "confirmDeleteNo": "Cancel"
   }
 } 

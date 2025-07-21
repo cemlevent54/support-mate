@@ -141,6 +141,40 @@
             "delivered_error": "[SOCKET][DELIVERED][HATA] {error} | Payload: {data}",
             "seen": "[SOCKET][SEEN] Mesaj {message_id} {user} tarafından {chat_id} odasında görüldü | Payload: {data}",
             "seen_error": "[SOCKET][SEEN][HATA] {error} | Payload: {data}"
+        },
+        "categoryService": {
+            "logs": {
+                "creating_category": "Kategori oluşturuluyor: {category_name_tr} {category_name_en}",
+                "category_created": "Kategori başarıyla oluşturuldu.",
+                "updating_category": "Kategori güncelleniyor: {category_id}",
+                "category_updated": "Kategori başarıyla güncellendi: {category_id}",
+                "deleting_category": "Kategori siliniyor: {category_id}",
+                "category_deleted": "Kategori başarıyla silindi: {category_id}",
+                "category_name_exists": "Bu isimde bir kategori zaten mevcut."
+            },
+            "responses": {
+                "bad_request": "Eksik veya hatalı parametre.",
+                "category_not_found": "Kategori bulunamadı.",
+                "category_not_created": "Kategori oluşturulamadı.",
+                "category_updated": "Kategori başarıyla güncellendi.",
+                "category_deleted": "Kategori başarıyla silindi.",
+                "categories_listed": "Kategoriler başarıyla listelendi.",
+                "category_created": "Kategori başarıyla oluşturuldu."
+            }
+        },
+        "categoryRepository": {
+            "logs": {
+                "create": "[REPO] CategoryRepository.create: category_id={category_id}",
+                "create_error": "[REPO] CategoryRepository.create hata: {error}",
+                "get_by_id": "[REPO] CategoryRepository.get_by_id: category_id={category_id}, bulundu={found}",
+                "get_by_id_error": "[REPO] CategoryRepository.get_by_id hata: {error}",
+                "list": "[REPO] CategoryRepository.list: filter={filter}, count={count}",
+                "list_error": "[REPO] CategoryRepository.list hata: {error}",
+                "update": "[REPO] CategoryRepository.update: category_id={category_id}, değişen={modified}",
+                "update_error": "[REPO] CategoryRepository.update hata: {error}",
+                "soft_delete": "[REPO] CategoryRepository.soft_delete: category_id={category_id}, değişen={modified}",
+                "soft_delete_error": "[REPO] CategoryRepository.soft_delete hata: {error}"
+            }
         }
     }
 }
