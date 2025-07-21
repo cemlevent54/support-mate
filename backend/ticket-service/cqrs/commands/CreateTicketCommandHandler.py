@@ -20,7 +20,7 @@ class CreateTicketCommandHandler:
                 description=ticket_data.get("description"),
                 customerId=ticket_data.get("customerId", user.get("id")),
                 attachments=ticket_data.get("attachments", []),
-                category=ticket_data.get("category"),
+                categoryId=ticket_data.get("categoryId"),
                 status="OPEN",
                 isDeleted=False,
                 assignedAgentId=ticket_data.get("assignedAgentId")

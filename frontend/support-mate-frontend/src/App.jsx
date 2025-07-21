@@ -83,10 +83,7 @@ function AppContent() {
         const decoded = JSON.parse(atob(token.split('.')[1]));
         const roleName = decoded.roleName;
         setUserRole(roleName ? roleName.toLowerCase() : 'user');
-        // Eğer Customer Supporter ise support paneline yönlendir
-        if (roleName === 'Customer Supporter' && location.pathname !== '/support') {
-          navigate('/support');
-        }
+        // Otomatik yönlendirme kaldırıldı
       } catch (e) {
         setUserRole('user');
       }

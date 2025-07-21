@@ -19,7 +19,7 @@ import DialogContent from '@mui/material/DialogContent';
 
 
 const MyRequests = ({ openCreateTicketModal, onTicketCreated }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
 const categoryLabels = {
     hardware: t('myRequests.categories.hardware'),
@@ -83,11 +83,21 @@ const modalStyle = {
         const sorted = response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         const mappedRows = sorted.map((ticket, idx) => {
           console.log('MyRequests - fetchTickets - processing ticket:', ticket);
+          let categoryName = "";
+          if (ticket.category) {
+            if (i18n.language === "tr") {
+              categoryName = ticket.category.categoryNameTr || ticket.category.categoryNameEn || "-";
+            } else {
+              categoryName = ticket.category.categoryNameEn || ticket.category.categoryNameTr || "-";
+            }
+          } else {
+            categoryName = "-";
+          }
           return {
             id: ticket._id || ticket.id || idx + 1,
             title: ticket.title,
             description: ticket.description,
-            category: ticket.category,
+            category: categoryName,
             status: ticket.status || "-",
             createdAt: ticket.createdAt ? new Date(ticket.createdAt).toLocaleString('tr-TR') : "-",
             files: ticket.attachments || [],
@@ -298,7 +308,15 @@ const modalStyle = {
               <Box>
                 <Typography><b>{t('myRequests.modal.titleLabel')}</b> {selectedTicket.title}</Typography>
                 <Typography><b>{t('myRequests.modal.descriptionLabel')}</b> {selectedTicket.description}</Typography>
-                <Typography><b>{t('myRequests.modal.categoryLabel')}</b> {categoryLabels[selectedTicket.category] || selectedTicket.category}</Typography>
+                <Typography><b>{t('myRequests.modal.categoryLabel')}</b> {
+                  typeof selectedTicket.category === 'string'
+                    ? selectedTicket.category
+                    : selectedTicket.category
+                      ? (i18n.language === 'tr'
+                          ? selectedTicket.category.categoryNameTr || selectedTicket.category.categoryNameEn || '-'
+                          : selectedTicket.category.categoryNameEn || selectedTicket.category.categoryNameTr || '-')
+                      : '-'
+                }</Typography>
                 <Typography><b>{t('myRequests.modal.statusLabel')}</b> {selectedTicket.status}</Typography>
                 <Typography><b>{t('myRequests.modal.createdAtLabel')}</b> {selectedTicket.createdAt ? new Date(selectedTicket.createdAt).toLocaleString('tr-TR') : '-'}</Typography>
                 <Typography><b>{t('myRequests.modal.customerIdLabel')}</b> {selectedTicket.customerId}</Typography>

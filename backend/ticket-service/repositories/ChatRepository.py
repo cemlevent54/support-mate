@@ -63,5 +63,7 @@ class ChatRepository:
         doc = self.collection.find_one({"ticketId": ticket_id, "isDeleted": False})
         if doc:
             doc["_id"] = str(doc["_id"])
+            if "createdAt" not in doc or doc["createdAt"] is None:
+                doc["createdAt"] = None
             return Chat.model_validate(doc)
         return None 

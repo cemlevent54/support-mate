@@ -65,7 +65,7 @@ def list_tickets_agent(user=Depends(get_current_user)):
 async def create_ticket_route(
     title: str = Form(...),
     description: str = Form(...),
-    category: str = Form(...),
+    categoryId: str = Form(...),
     files: List[UploadFile] = File([]),
     user=Depends(get_current_user),
     request: Request = None
@@ -109,7 +109,7 @@ async def create_ticket_route(
     ticket_data = {
         "title": title,
         "description": description,
-        "category": category,
+        "categoryId": categoryId,
         "attachments": attachments,
         "customerId": user["id"]
     }

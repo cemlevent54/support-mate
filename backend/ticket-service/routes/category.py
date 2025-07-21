@@ -18,6 +18,14 @@ router = APIRouter()
 def get_category_controller(lang: str = 'tr'):
     return CategoryController(lang=lang)
 
+@router.get("/categories")
+def list_categories_user(request: Request, user=Depends(get_current_user)):
+    lang = request.headers.get("X-language")
+    if lang is None:
+        lang = request.headers.get("accept-language", "tr")
+    category_controller = get_category_controller(lang=lang)
+    return category_controller.list_categories_endpoint_for_user(user, lang=lang)
+
 @router.get("/admin/categories")
 def list_categories_admin(request: Request, user=Depends(get_current_user)):
     lang = request.headers.get("accept-language", "tr")
@@ -26,14 +34,7 @@ def list_categories_admin(request: Request, user=Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Forbidden")
     return category_controller.list_categories_endpoint_for_admin(user, lang=lang)
 
-@router.get("/categories")
-def list_categories_user(request: Request, user=Depends(get_current_user)):
-    lang = request.headers.get("X-language")
-    if lang is None:
-        raise HTTPException(status_code=400, detail="Language header is required")
-    category_controller = get_category_controller(lang=lang)
-    # Burada rol kontrolü yok, login olan herkes erişebilir
-    return category_controller.list_categories_endpoint_for_user(user)
+
 
 @router.post("/admin/categories")
 def create_category_admin(category: Category, request: Request, user=Depends(get_current_user)):

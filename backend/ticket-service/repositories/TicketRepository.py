@@ -37,6 +37,8 @@ class TicketRepository:
             doc = self.collection.find_one({"_id": ObjectId(ticket_id), "isDeleted": False})
             logger.info(_(f"services.ticketRepository.logs.get_by_id").format(ticket_id=ticket_id, found=doc is not None))
             if doc:
+                if '_id' in doc:
+                    doc['_id'] = str(doc['_id'])
                 return Ticket.model_validate(doc)
             return None
         except Exception as e:

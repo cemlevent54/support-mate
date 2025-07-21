@@ -31,7 +31,7 @@ const modalStyle = {
 };
 
 const AdminTickets = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -48,18 +48,30 @@ const AdminTickets = () => {
         const response = await listTicketsForAdmin();
         if (response.success && Array.isArray(response.data)) {
           const sorted = response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-          setRows(sorted.map((ticket, idx) => ({
-            id: ticket._id || idx + 1,
-            title: ticket.title,
-            description: ticket.description,
-            category: ticket.category,
-            status: ticket.status || "-",
-            createdAt: ticket.createdAt ? new Date(ticket.createdAt).toLocaleString('tr-TR') : "-",
-            files: ticket.attachments || [],
-            customerId: ticket.customerId,
-            assignedAgentId: ticket.assignedAgentId,
-            raw: ticket
-          })));
+          setRows(sorted.map((ticket, idx) => {
+            let categoryName = "";
+            if (ticket.category) {
+              if (i18n.language === "tr") {
+                categoryName = ticket.category.categoryNameTr || ticket.category.categoryNameEn || "-";
+              } else {
+                categoryName = ticket.category.categoryNameEn || ticket.category.categoryNameTr || "-";
+              }
+            } else {
+              categoryName = "-";
+            }
+            return {
+              id: ticket._id || idx + 1,
+              title: ticket.title,
+              description: ticket.description,
+              category: categoryName,
+              status: ticket.status || "-",
+              createdAt: ticket.createdAt ? new Date(ticket.createdAt).toLocaleString('tr-TR') : "-",
+              files: ticket.attachments || [],
+              customerId: ticket.customerId,
+              assignedAgentId: ticket.assignedAgentId,
+              raw: ticket
+            };
+          }));
         } else {
           setRows([]);
           setError(response.message || "Talepler alınamadı.");
@@ -110,7 +122,15 @@ const AdminTickets = () => {
             <Box>
               <Typography><b>{t('adminTickets.modal.titleLabel')}</b> {selectedTicket.title}</Typography>
               <Typography><b>{t('adminTickets.modal.descriptionLabel')}</b> {selectedTicket.description}</Typography>
-              <Typography><b>{t('adminTickets.modal.categoryLabel')}</b> {categoryLabels[selectedTicket.category] || selectedTicket.category}</Typography>
+              <Typography><b>{t('adminTickets.modal.categoryLabel')}</b> {
+                typeof selectedTicket.category === 'string'
+                  ? selectedTicket.category
+                  : selectedTicket.category
+                    ? (i18n.language === 'tr'
+                        ? selectedTicket.category.categoryNameTr || selectedTicket.category.categoryNameEn || '-'
+                        : selectedTicket.category.categoryNameEn || selectedTicket.category.categoryNameTr || '-')
+                    : '-'
+              }</Typography>
               <Typography><b>{t('adminTickets.modal.statusLabel')}</b> {selectedTicket.status}</Typography>
               <Typography><b>{t('adminTickets.modal.createdAtLabel')}</b> {selectedTicket.createdAt ? new Date(selectedTicket.createdAt).toLocaleString('tr-TR') : '-'}</Typography>
               <Typography><b>{t('adminTickets.modal.customerIdLabel')}</b> {selectedTicket.customerId}</Typography>

@@ -44,4 +44,9 @@ class CategoryController:
         set_language(lang)
         logger.info(_("services.categoryService.logs.deleting_category"))
         result = self.service.delete_category(category_id)
-        return result 
+        return result
+
+    def list_categories_endpoint_for_user(self, user: dict, lang: str) -> Any:
+        set_language(lang)
+        logger.info(_("services.categoryService.logs.listing_categories"))
+        return self.service.list_categories() 

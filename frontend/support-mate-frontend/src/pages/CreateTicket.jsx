@@ -14,23 +14,19 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import ChatDialog from './ChatDialog';
 import { createTicket } from '../api/ticketApi';
+import { getCategories } from '../api/categoryApi';
 
-// Örnek kategori verisi
-const categories = [
-  { value: "software", labelKey: "pages.createTicket.categories.software" },
-  { value: "hardware", labelKey: "pages.createTicket.categories.hardware" },
-  { value: "network", labelKey: "pages.createTicket.categories.network" },
-  { value: "other", labelKey: "pages.createTicket.categories.other" },
-];
+// Kategoriler API'den gelecek
 
 const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
   const { t } = useTranslation();
   const [form, setForm] = useState({
     title: "",
     description: "",
-    category: "",
+    categoryId: "",
     files: [],
   });
+  const [categories, setCategories] = useState([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
@@ -71,6 +67,15 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
       setPreviews([]);
     }
   }, [form.files]);
+
+  useEffect(() => {
+    // Kategorileri API'den çek
+    getCategories().then(res => {
+      if (res.success && Array.isArray(res.data)) {
+        setCategories(res.data);
+      }
+    }).catch(() => setCategories([]));
+  }, []);
 
   // Sadece girişli ve User rolünde ise göster
   if (userRole !== "user") {
@@ -146,7 +151,7 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
     setSuccess("");
     setLoading(true);
     
-    if (!form.title || !form.description || !form.category) {
+    if (!form.title || !form.description || !form.categoryId) {
       setError(t('pages.createTicket.validationError'));
       setLoading(false);
       return;
@@ -157,7 +162,7 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
       const ticketPayload = {
         title: form.title,
         description: form.description,
-        category: form.category,
+        categoryId: form.categoryId,
         files: form.files || []
       };
       const response = await createTicket(ticketPayload);
@@ -172,7 +177,7 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
           setSuccess(t('pages.createTicket.successNoAgent'));
         }
         
-        setForm({ title: "", description: "", category: "", files: [] });
+        setForm({ title: "", description: "", categoryId: "", files: [] });
         
         // Modal modunda ise parent'a bilgi ver ve modal'ı hemen kapat
         if (isModal && onClose) {
@@ -198,7 +203,7 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
       // 401 hatası durumunda özel mesaj göster (login'e yönlendirme yok)
       if (err?.response?.status === 401) {
         setSuccess(t('pages.createTicket.successWithRelogin'));
-        setForm({ title: "", description: "", category: "", files: [] });
+        setForm({ title: "", description: "", categoryId: "", files: [] });
         
         // Modal modunda ise modal'ı kapat
         if (isModal && onClose) {
@@ -347,8 +352,8 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
             </label>
             <div style={{ position: 'relative' }}>
               <select
-                name="category"
-                value={form.category}
+                name="categoryId"
+                value={form.categoryId}
                 onChange={handleChange}
                 style={{
                   width: '100%',
@@ -358,18 +363,17 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
                   fontSize: '14px',
                   backgroundColor: '#fff',
                   cursor: 'pointer',
-                  appearance: 'none', // Native arrow gizler
+                  appearance: 'none',
                 }}
                 required
               >
                 <option value="">{t('pages.createTicket.form.select')}</option>
                 {categories.map((cat) => (
-                  <option key={cat.value} value={cat.value}>
-                    {t(cat.labelKey)}
+                  <option key={cat.id || cat._id} value={cat.id || cat._id}>
+                    {cat.category_name_tr || cat.category_name_en || cat.name || cat.label}
                   </option>
                 ))}
               </select>
-              {/* Custom Arrow */}
               <span style={{
                 position: 'absolute',
                 top: '50%',

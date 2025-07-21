@@ -143,8 +143,23 @@ class TicketService:
         # DTO'ya çevir
         if result.get("success") and result.get("data"):
             tickets = result["data"]
-            ticket_dtos = [TicketDTO.from_model(ticket) for ticket in tickets]
-            result["data"] = [dto.model_dump() for dto in ticket_dtos]
+            category_service = None
+            ticket_dtos = []
+            for ticket in tickets:
+                dto = TicketDTO.from_model(ticket)
+                dto_dict = dto.model_dump()
+                # Kategori bilgisi ekle
+                category_id = getattr(ticket, "categoryId", None)
+                if category_id:
+                    if not category_service:
+                        from services.CategoryService import CategoryService
+                        category_service = CategoryService()
+                    category_info = category_service.get_category_by_id(category_id)
+                    dto_dict["category"] = category_info
+                else:
+                    dto_dict["category"] = None
+                ticket_dtos.append(dto_dict)
+            result["data"] = ticket_dtos
         
         return result
 
@@ -155,11 +170,26 @@ class TicketService:
         logger.info(_(f"services.ticketService.logs.listing_tickets_for_agent").format(user_id=user.get('id', 'unknown')))
         result = self.list_agent_handler.execute(user)
         
-        # DTO'ya çevir
+        # DTO'ya çevir ve kategori ekle
         if result.get("success") and result.get("data"):
             tickets = result["data"]
-            ticket_dtos = [TicketDTO.from_model(ticket) for ticket in tickets]
-            result["data"] = [dto.model_dump() for dto in ticket_dtos]
+            category_service = None
+            ticket_dtos = []
+            for ticket in tickets:
+                dto = TicketDTO.from_model(ticket)
+                dto_dict = dto.model_dump()
+                # Kategori bilgisi ekle
+                category_id = getattr(ticket, "categoryId", None)
+                if category_id:
+                    if not category_service:
+                        from services.CategoryService import CategoryService
+                        category_service = CategoryService()
+                    category_info = category_service.get_category_by_id(category_id)
+                    dto_dict["category"] = category_info
+                else:
+                    dto_dict["category"] = None
+                ticket_dtos.append(dto_dict)
+            result["data"] = ticket_dtos
         
         return result
 

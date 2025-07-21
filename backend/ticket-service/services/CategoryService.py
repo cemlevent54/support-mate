@@ -80,6 +80,7 @@ class CategoryService:
         return None
 
     def list_categories(self) -> dict:
+        set_language(self.lang)
         categories = self.list_handler.handle()
         data = [CategoryResponseDTO(
             id=cat.id,
@@ -93,4 +94,14 @@ class CategoryService:
             "success": True,
             "data": data,
             "message": _("services.categoryService.responses.categories_listed")
+        }
+
+    def get_category_by_id(self, category_id: str):
+        category = self.list_handler.repository.find_by_id(category_id)
+        if not category:
+            return None
+        return {
+            "categoryId": category.id,
+            "categoryNameTr": getattr(category, "category_name_tr", None),
+            "categoryNameEn": getattr(category, "category_name_en", None)
         } 

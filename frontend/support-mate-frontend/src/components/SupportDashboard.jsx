@@ -7,7 +7,7 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { logout as apiLogout } from '../api/authApi';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
@@ -24,8 +24,8 @@ const sidebarItems = [
 ];
 
 export default function SupportDashboard() {
+  const { chatId } = useParams();
   const [selected, setSelected] = useState('requests');
-  const [activeChatTicketId, setActiveChatTicketId] = useState(null);
   const [activeChatTicketTitle, setActiveChatTicketTitle] = useState("");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const navigate = useNavigate();
@@ -46,15 +46,15 @@ export default function SupportDashboard() {
 
   // Chat başlat callback'i
   const handleStartChat = (ticketId, title) => {
-    setActiveChatTicketId(ticketId);
     setActiveChatTicketTitle(title);
     setSelected('chats');
+    navigate(`/support/chats/${ticketId}`);
   };
 
   // ChatList'te bir chat seçilirse aktif chat güncellensin
   const handleSelectChat = (ticketId, title) => {
-    setActiveChatTicketId(ticketId);
     setActiveChatTicketTitle(title);
+    navigate(`/support/chats/${ticketId}`);
   };
 
   // Mesaj gönderildikten sonra chat listesini güncelle
@@ -120,14 +120,14 @@ export default function SupportDashboard() {
       {selected === 'chats' && (
         <>
           <ChatList 
-            activeChatTicketId={activeChatTicketId} 
+            activeChatTicketId={chatId} 
             onSelectChat={handleSelectChat} 
             refreshTrigger={refreshTrigger}
           />
           <Box flex={1} height="100vh" bgcolor="#f5f5f5">
-            {activeChatTicketId ? (
+            {chatId ? (
               <SupportChats 
-                ticketId={activeChatTicketId} 
+                ticketId={chatId} 
                 ticketTitle={activeChatTicketTitle} 
                 onMessageSent={handleMessageSent}
               />

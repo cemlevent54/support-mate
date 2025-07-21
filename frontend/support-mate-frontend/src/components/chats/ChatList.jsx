@@ -33,7 +33,7 @@ export default function ChatList({ activeChatTicketId, onSelectChat, refreshTrig
         tickets.map(async (ticket) => {
           try {
             // Her ticket için mesajları çek
-            const messagesResponse = await listMessagesByTicketId(ticket._id || ticket.id);
+            const messagesResponse = await listMessagesByTicketId(ticket.chatId || ticket._id || ticket.id);
             let lastMessage = null;
             let lastMessageTime = ticket.createdAt; // Varsayılan olarak ticket oluşturulma zamanı
 
@@ -53,7 +53,7 @@ export default function ChatList({ activeChatTicketId, onSelectChat, refreshTrig
             }
 
             return {
-              id: ticket._id || ticket.id,
+              id: ticket.chatId || ticket._id || ticket.id,
               name: ticket.title || 'Destek Talebi',
               last: lastMessage ? (lastMessage.text && lastMessage.text.length > 50 ? lastMessage.text.substring(0, 50) + '...' : lastMessage.text) : (ticket.description ? (ticket.description.length > 50 ? ticket.description.substring(0, 50) + '...' : ticket.description) : 'Mesaj yok'),
               timestamp: lastMessageTime || ticket.createdAt || ticket.updatedAt,
@@ -363,11 +363,11 @@ export default function ChatList({ activeChatTicketId, onSelectChat, refreshTrig
               }}
             >
               <ListItemButton
-                selected={activeChatTicketId === chat.id}
+                selected={String(activeChatTicketId) === String(chat.id)}
                 onClick={() => handleChatSelect(chat)}
                 sx={{
                   color: '#222',
-                  bgcolor: chat.isNewMessage ? '#fff3cd' : (activeChatTicketId === chat.id ? '#f0f8ff' : 'transparent'),
+                  bgcolor: chat.isNewMessage ? '#fff3cd' : (String(activeChatTicketId) === String(chat.id) ? '#f0f8ff' : 'transparent'),
                   '&:hover': { 
                     bgcolor: '#f5f5f5',
                     transform: 'translateX(2px)',
@@ -436,7 +436,9 @@ export default function ChatList({ activeChatTicketId, onSelectChat, refreshTrig
                       </Typography>
                       <Box display="flex" justifyContent="space-between" alignItems="center">
                         <Typography variant="caption" sx={{ color: '#999', fontSize: 11 }}>
-                          {chat.category || 'Genel'}
+                          {typeof chat.category === 'object'
+                            ? (chat.category?.categoryNameTr || chat.category?.categoryNameEn || 'Genel')
+                            : (chat.category || 'Genel')}
                         </Typography>
                         <Typography variant="caption" sx={{ color: '#999', fontSize: 11 }}>
                           {formatTime(chat.timestamp)}

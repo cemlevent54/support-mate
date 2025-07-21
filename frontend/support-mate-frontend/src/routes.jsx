@@ -3,7 +3,8 @@ import SignupCard from './components/SignupCard';
 import HomePage from './pages/HomePage/HomePage';
 import LoginCard from './components/LoginCard';
 import Dashboard from './components/Dashboard';
-import SupportDashboard from './components/SupportDashboard';
+import SupportRequests from './components/SupportRequests';
+import SupportChatsLayout from './components/chats/SupportChatsLayout';
 import EmployeeDashboard from './components/EmployeeDashboard';
 import MyAccount from './components/MyAccount';
 import ForgotPassword from './components/ForgotPassword';
@@ -20,6 +21,7 @@ import ChatDialog from './pages/ChatDialog';
 import { useLocation, Navigate } from 'react-router-dom';
 import AdminTickets from './pages/admin/AdminTickets';
 import AdminCategories from './pages/admin/AdminCategories';
+import SupportLayout from './components/SupportLayout';
 
 // Global modal handlers - bu fonksiyonlar App.jsx'ten geçirilecek
 let globalOpenCreateTicketModal = () => {};
@@ -87,7 +89,14 @@ export const appRoutes = [
   },
   {
     path: '/support',
-    element: <SupportDashboard />,
+    element: <SupportLayout />,
+    children: [
+      { path: 'requests', element: <SupportRequests /> },
+      { path: 'requests/:chatId', element: <SupportRequests /> },
+      { path: 'chats', element: <SupportChatsLayout /> },
+      { path: 'chats/:chatId', element: <SupportChatsLayout /> },
+      { index: true, element: <Navigate to="requests" replace /> }
+    ]
   },
   {
     path: '/employee',
@@ -118,11 +127,6 @@ export const appRoutes = [
     path: '/my-requests/chat',
     element: <ChatChatWrapper />,
   },
-  // {
-  //   path: '/',
-  //   element: <HomePage />,
-  //   roles: ['guest', 'user', 'admin'],
-  // },
 ];
 
 // ChatChatWrapper bileşeni

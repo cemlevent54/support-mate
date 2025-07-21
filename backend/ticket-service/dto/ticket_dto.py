@@ -10,7 +10,7 @@ class TicketDTO(BaseModel):
     customerId: str
     assignedAgentId: Optional[str] = None
     attachments: List[dict] = []
-    category: str
+    categoryId: str
     status: str
     createdAt: Optional[str] = None
     closedAt: Optional[str] = None

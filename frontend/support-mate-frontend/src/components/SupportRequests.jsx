@@ -13,6 +13,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import { listTicketsForAgent } from '../api/ticketApi';
 import { useTranslation } from 'react-i18next';
+import { useNavigate, useParams } from 'react-router-dom';
 
 const categoryLabels = {
   hardware: "Donanım",
@@ -35,7 +36,7 @@ const modalStyle = {
 };
 
 const SupportRequests = ({ onStartChat }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -43,6 +44,8 @@ const SupportRequests = ({ onStartChat }) => {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
+  const navigate = useNavigate();
+  const params = useParams();
 
   useEffect(() => {
     const fetchTickets = async () => {
@@ -52,16 +55,28 @@ const SupportRequests = ({ onStartChat }) => {
         const response = await listTicketsForAgent();
         if (response.success && Array.isArray(response.data)) {
           const sorted = response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-          setRows(sorted.map((ticket, idx) => ({
-            id: ticket._id || idx + 1,
-            title: ticket.title,
-            description: ticket.description,
-            category: ticket.category,
-            status: ticket.status || "-",
-            createdAt: ticket.createdAt ? new Date(ticket.createdAt).toLocaleString('tr-TR') : "-",
-            files: ticket.attachments || [],
-            raw: ticket
-          })));
+          setRows(sorted.map((ticket, idx) => {
+            let categoryName = "";
+            if (ticket.category) {
+              if (i18n.language === "tr") {
+                categoryName = ticket.category.categoryNameTr || ticket.category.categoryNameEn || "-";
+              } else {
+                categoryName = ticket.category.categoryNameEn || ticket.category.categoryNameTr || "-";
+              }
+            } else {
+              categoryName = "-";
+            }
+            return {
+              id: ticket._id || idx + 1,
+              title: ticket.title,
+              description: ticket.description,
+              category: categoryName,
+              status: ticket.status || "-",
+              createdAt: ticket.createdAt ? new Date(ticket.createdAt).toLocaleString('tr-TR') : "-",
+              files: ticket.attachments || [],
+              raw: { ...ticket, category: categoryName }
+            };
+          }));
         } else {
           setRows([]);
           setError(response.message || "Talepler alınamadı.");
@@ -86,7 +101,8 @@ const SupportRequests = ({ onStartChat }) => {
   };
 
   const handleGoChat = (ticket) => {
-    onStartChat && onStartChat(ticket.raw._id, ticket.raw.title);
+    const chatId = ticket.raw.id;
+    navigate(`/support/chats/${chatId}`);
   };
 
   const handlePreviewFile = (file) => {
@@ -153,7 +169,13 @@ const SupportRequests = ({ onStartChat }) => {
             <Box>
               <Typography><b>{t('supportRequests.modal.titleLabel')}</b> {selectedTicket.title}</Typography>
               <Typography><b>{t('supportRequests.modal.descriptionLabel')}</b> {selectedTicket.description}</Typography>
-              <Typography><b>{t('supportRequests.modal.categoryLabel')}</b> {categoryLabels[selectedTicket.category] || selectedTicket.category}</Typography>
+              <Typography><b>{t('supportRequests.modal.categoryLabel')}</b>{" "}
+                {typeof selectedTicket.category === "object"
+                  ? (i18n.language === "tr"
+                      ? selectedTicket.category.categoryNameTr || selectedTicket.category.categoryNameEn || "-"
+                      : selectedTicket.category.categoryNameEn || selectedTicket.category.categoryNameTr || "-")
+                  : selectedTicket.category || "-"}
+              </Typography>
               <Typography><b>{t('supportRequests.modal.statusLabel')}</b> {selectedTicket.status}</Typography>
               <Typography><b>{t('supportRequests.modal.createdAtLabel')}</b> {selectedTicket.createdAt ? new Date(selectedTicket.createdAt).toLocaleString('tr-TR') : '-'}</Typography>
               <Typography><b>{t('supportRequests.modal.customerIdLabel')}</b> {selectedTicket.customerId}</Typography>

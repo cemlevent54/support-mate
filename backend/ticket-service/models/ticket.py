@@ -5,7 +5,10 @@ from datetime import datetime
 
 class TicketStatus(str, Enum):
     OPEN = "OPEN"
+    PENDING = "PENDING"
     IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    WAITING_FOR_CUSTOMER_APPROVE = "WAITING_FOR_CUSTOMER_APPROVE"
     CLOSED = "CLOSED"
 
 class Ticket(BaseModel):
@@ -15,7 +18,7 @@ class Ticket(BaseModel):
     customerId: str
     assignedAgentId: Optional[str] = None
     attachments: list[dict] = []
-    category: str
+    categoryId: str
     status: TicketStatus = TicketStatus.OPEN
     createdAt: datetime = Field(default_factory=datetime.utcnow)
     closedAt: Optional[datetime] = None
