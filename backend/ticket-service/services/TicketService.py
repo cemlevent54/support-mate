@@ -9,7 +9,7 @@ from responseHandlers.clientErrors.unauthorized_error import unauthorized_error
 from responseHandlers.clientErrors.badrequst_error import bad_request_error
 from services.ChatService import ChatService
 from services.MessageService import MessageService
-from kafka_files.kafkaProducer import send_ticket_created_event
+from kafka_files.kafkaProducer import send_ticket_created_event, send_agent_assigned_event
 import asyncio
 import os
 from config.redis import select_and_rotate_agent
@@ -45,6 +45,9 @@ class TicketService:
             logger.warning(_(f"services.ticketService.logs.bad_request"))
             return bad_request_error(_(f"services.ticketService.responses.bad_request"))
         logger.info(_(f"services.ticketService.logs.creating_ticket").format(user_id=user.get('id', 'unknown')))
+        
+        # Kullanıcı detaylarını çek
+        user_detail = get_user_by_id(user["id"], token)
         
         # Online temsilci seçimi CQRS ile
         agent_selector = SelectAndRotateAgentQueryHandler()
@@ -125,7 +128,7 @@ class TicketService:
             # Mail bildirimleri
             try:
                 template_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates", "ticket_created.html")
-                send_ticket_created_event(ticket_obj, user, html_path=template_path)
+                send_ticket_created_event(ticket_obj, user_detail, html_path=template_path)
                 logger.info(_(f"services.ticketService.logs.ticket_event_sent").format(ticket_id=ticket_obj.id))
                 if agent_user and agent_id:
                     logger.info(_(f"services.ticketService.logs.agent_mail_notify").format(agent_id=agent_id))
@@ -236,6 +239,50 @@ class TicketService:
         result = await handler.execute(agent_id)
         if result.get("success"):
             logger.info(_(f"services.ticketService.logs.auto_assign").format(agent_id=agent_id, ticket_id=result.get("ticketId")))
+            # --- MAIL BİLDİRİMİ ---
+            try:
+                ticket_id = result.get("ticketId")
+                logger.info(f"[AGENT-ASSIGNED][DEBUG] ticket_id: {ticket_id}")
+                # Ticket ve user detaylarını çek
+                ticket_repo = TicketRepository()
+                ticket = ticket_repo.get_by_id(str(ticket_id))
+                user_id = getattr(ticket, "customerId", None)
+                user_detail = get_user_by_id(user_id, None) if user_id else None
+                agent_detail = get_user_by_id(agent_id, None)
+                logger.info(f"[AGENT-ASSIGNED][DEBUG] user_detail: {user_detail}")
+                logger.info(f"[AGENT-ASSIGNED][DEBUG] agent_detail: {agent_detail}")
+                logger.info(f"[AGENT-ASSIGNED][DEBUG] ticket: {ticket.__dict__ if ticket else None}")
+                # Customer Supporter'a atama varsa, hem kullanıcıya hem agent'a event gönder
+                if agent_detail and agent_detail.get("roleName") == "Customer Supporter":
+                    user_lang = (user_detail.get("language") or "tr") if user_detail else "tr"
+                    agent_lang = (agent_detail.get("language") or "tr")
+                    user_template = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates", f"agent_assigned_user_{user_lang}.html")
+                    agent_template = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates", f"agent_assigned_agent_{agent_lang}.html")
+                    event_data = {
+                        "user": {
+                            "email": user_detail.get("email"),
+                            "firstName": user_detail.get("firstName"),
+                            "lastName": user_detail.get("lastName"),
+                            "language": user_lang
+                        },
+                        "agent": {
+                            "email": agent_detail.get("email"),
+                            "firstName": agent_detail.get("firstName"),
+                            "lastName": agent_detail.get("lastName"),
+                            "language": agent_lang
+                        },
+                        "ticket": {
+                            "title": getattr(ticket, "title", ""),
+                            "id": getattr(ticket, "id", "")
+                        },
+                        "user_template": user_template,
+                        "agent_template": agent_template,
+                        "customerName": f"{user_detail.get('firstName', '')} {user_detail.get('lastName', '')}",
+                        "customerEmail": user_detail.get("email")
+                    }
+                    send_agent_assigned_event(event_data)
+            except Exception as e:
+                logger.error(f"[AGENT-ASSIGNED][ERROR] Agent assignment mail notification failed: {e}", exc_info=True)
         else:
             logger.info(_(f"services.ticketService.logs.no_pending_ticket"))
         return result

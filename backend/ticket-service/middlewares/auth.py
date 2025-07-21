@@ -38,6 +38,7 @@ def get_user_by_id(user_id, token):
     
     try:
         response = requests.get(url, headers=headers, timeout=10)
+        logger.info(f"Response: {response.json()}")
         if response.status_code == 200:
             user_data = response.json().get("data")
             logger.info(f"Successfully fetched user data for user_id: {user_id}")

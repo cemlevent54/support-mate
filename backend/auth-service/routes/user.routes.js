@@ -11,7 +11,7 @@ const router = Router();
 router.get('/profile', authMiddleware, userController.getAuthenticatedUser);
 
 // GET /users/:id
-router.get('/:id', authMiddleware, userController.getUserById);
+router.get('/:id', userController.getUserById);
 router.get('/', authMiddleware, requireRole('Admin'), userController.getAllUsers);
 router.get('/role/:role', authMiddleware, requireRole('Admin'), userController.getUsersByRole);
 

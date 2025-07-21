@@ -7,6 +7,7 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
+import { logout as apiLogout } from '../api/authApi';
 
 const sidebarItems = [
   { key: 'requests', label: 'Support Requests', path: '/support/requests' },
@@ -17,6 +18,18 @@ const sidebarItems = [
 export default function SupportLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem('jwt');
+      await apiLogout(token);
+    } catch (e) {
+      localStorage.removeItem('jwt');
+    } finally {
+      navigate('/login');
+      setTimeout(() => { window.location.reload(); }, 100);
+    }
+  };
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
@@ -44,7 +57,7 @@ export default function SupportLayout() {
             ))}
           </List>
         </div>
-        <Button variant="outlined" color="error" sx={{ mt: 2, borderColor: '#fff', color: '#fff', '&:hover': { borderColor: '#fff', bgcolor: '#222' } }}>
+        <Button variant="outlined" color="error" onClick={handleLogout} sx={{ mt: 2, borderColor: '#fff', color: '#fff', '&:hover': { borderColor: '#fff', bgcolor: '#222' } }}>
           Çıkış Yap
         </Button>
       </Paper>
