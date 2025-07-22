@@ -263,12 +263,22 @@ class MessageService:
         handler = ListAgentChatsWithMessagesQueryHandler()
         user_id = user.get("id")
         result = handler.execute(user_id)
-        data = result["data"]
+        all_data = result["data"]
+        total = len(all_data)
         if page is not None and page_size is not None:
             start = (page - 1) * page_size
             end = start + page_size
-            data = data[start:end]
-        return {"success": True, "data": data, "message": "Agent chats with messages retrieved successfully."}
+            data = all_data[start:end]
+        else:
+            data = all_data
+        return {
+            "success": True,
+            "data": data,
+            "total": total,
+            "page": page,
+            "pageSize": page_size,
+            "message": "Agent chats with messages retrieved successfully."
+        }
 
     def list_user_chats_with_messages(self, user, page=None, page_size=None):
         from cqrs.queries.ListUserChatsWithMessagesQueryHandler import ListUserChatsWithMessagesQueryHandler
