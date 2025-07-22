@@ -2,16 +2,9 @@ from fastapi import APIRouter, Depends, status, UploadFile, File, Form, Request,
 from typing import List
 import os
 from controllers.CategoryController import CategoryController
-from services.CategoryService import CategoryService
-from cqrs.commands.CreateCategoryCommandHandler import CreateCategoryCommandHandler
-from cqrs.commands.UpdateCategoryCommandHandler import UpdateCategoryCommandHandler
-from cqrs.commands.DeleteCategoryCommandHandler import DeleteCategoryCommandHandler
-from cqrs.queries.ListCategoriesQueryHandler import ListCategoriesQueryHandler
-from repositories.CategoryRepository import CategoryRepository
+
 from middlewares.auth import get_current_user
 from models.category import Category
-from pymongo import MongoClient
-from config.database import get_mongo_uri
 
 router = APIRouter()
 

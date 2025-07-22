@@ -1,10 +1,10 @@
 import logging
-from cqrs.commands.CreateTicketCommandHandler import CreateTicketCommandHandler
-from cqrs.queries.GetTicketQueryHandler import GetTicketQueryHandler
-from cqrs.queries.ListTicketsQueryHandler import ListTicketsQueryHandler
-from cqrs.queries.ListTicketsForAgentQueryHandler import ListTicketsForAgentQueryHandler
-from cqrs.commands.UpdateTicketCommandHandler import UpdateTicketCommandHandler
-from cqrs.commands.SoftDeleteTicketCommandHandler import SoftDeleteTicketCommandHandler
+from cqrs.commands.ticket.CreateTicketCommandHandler import CreateTicketCommandHandler
+from cqrs.queries.ticket.GetTicketQueryHandler import GetTicketQueryHandler
+from cqrs.queries.ticket.ListTicketsQueryHandler import ListTicketsQueryHandler
+from cqrs.queries.ticket.ListTicketsForAgentQueryHandler import ListTicketsForAgentQueryHandler
+from cqrs.commands.ticket.UpdateTicketCommandHandler import UpdateTicketCommandHandler
+from cqrs.commands.ticket.SoftDeleteTicketCommandHandler import SoftDeleteTicketCommandHandler
 from responseHandlers.clientErrors.unauthorized_error import unauthorized_error
 from responseHandlers.clientErrors.badrequst_error import bad_request_error
 from services.ChatService import ChatService
@@ -17,10 +17,10 @@ from middlewares.auth import get_user_by_id
 from repositories.TicketRepository import TicketRepository
 from repositories.ChatRepository import ChatRepository
 from bson import ObjectId
-from cqrs.commands.CreateChatCommandHandler import CreateChatCommandHandler
-from cqrs.commands.AssignAgentToChatCommandHandler import AssignAgentToChatCommandHandler
-from cqrs.queries.SelectAndRotateAgentQueryHandler import SelectAndRotateAgentQueryHandler
-from cqrs.commands.AssignAgentToPendingTicketCommandHandler import AssignAgentToPendingTicketCommandHandler
+from cqrs.commands.chat.CreateChatCommandHandler import CreateChatCommandHandler
+from cqrs.commands.chat.AssignAgentToChatCommandHandler import AssignAgentToChatCommandHandler
+from cqrs.queries.agent.SelectAndRotateAgentQueryHandler import SelectAndRotateAgentQueryHandler
+from cqrs.commands.ticket.AssignAgentToPendingTicketCommandHandler import AssignAgentToPendingTicketCommandHandler
 from config.language import _
 from dto.ticket_dto import TicketDTO, TicketListDTO
 

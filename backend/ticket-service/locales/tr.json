@@ -153,6 +153,7 @@
         },
         "categoryService": {
             "logs": {
+                "listing_categories": "Kategoriler listeleniyor",
                 "creating_category": "Kategori oluşturuluyor: {category_name_tr} {category_name_en}",
                 "category_created": "Kategori başarıyla oluşturuldu.",
                 "updating_category": "Kategori güncelleniyor: {category_id}",

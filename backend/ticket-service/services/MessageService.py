@@ -1,9 +1,9 @@
-from cqrs.commands.SendMessageCommandHandler import SendMessageCommandHandler
-from cqrs.queries.ListMessagesQueryHandler import ListMessagesQueryHandler, ListMessagesBetweenUsersQueryHandler
+from cqrs.commands.chat.SendMessageCommandHandler import SendMessageCommandHandler
+from cqrs.queries.chat.ListMessagesQueryHandler import ListMessagesQueryHandler, ListMessagesBetweenUsersQueryHandler
 from utils.crypto import encrypt_message, decrypt_message
-from cqrs.queries.GetChatByIdQueryHandler import GetChatByIdQueryHandler
-from cqrs.queries.GetChatByTicketIdQueryHandler import GetChatByTicketIdQueryHandler
-from cqrs.queries.ListMessagesByChatIdQueryHandler import ListMessagesByChatIdQueryHandler
+from cqrs.queries.chat.GetChatByIdQueryHandler import GetChatByIdQueryHandler
+from cqrs.queries.chat.GetChatByTicketIdQueryHandler import GetChatByTicketIdQueryHandler
+from cqrs.queries.chat.ListMessagesByChatIdQueryHandler import ListMessagesByChatIdQueryHandler
 from config.language import get_language, set_language, _
 from config.logger import get_logger
 from dto.message_dto import MessageDTO, MessageListDTO

@@ -153,6 +153,7 @@
         
         "categoryService": {
             "logs": {
+                "listing_categories": "Listing categories",
                 "creating_category": "Category is being created: {category_name_tr} {category_name_en}",
                 "category_created": "Category created successfully: {category_id}",
                 "updating_category": "Category is being updated: {category_id}",

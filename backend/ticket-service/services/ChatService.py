@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 import logging
 from middlewares.auth import get_user_by_id
-from cqrs.commands.CreateChatCommandHandler import CreateChatCommandHandler
+from cqrs.commands.chat.CreateChatCommandHandler import CreateChatCommandHandler
 from config.language import _
 
 logger = logging.getLogger(__name__)
