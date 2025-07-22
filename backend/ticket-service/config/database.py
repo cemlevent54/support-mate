@@ -26,7 +26,7 @@ def ensure_db_and_collection():
     try:
         # MongoDB sunucusuna bağlantı testi
         client.server_info()
-        logger.success(_(f"config.database.mongo_server_connected"))
+        logger.info(_(f"config.database.mongo_server_connected"))
         
         # Veritabanını oluştur (eğer yoksa)
         db = client[db_name]
@@ -35,9 +35,9 @@ def ensure_db_and_collection():
         # Bu işlem veritabanını otomatik olarak oluşturur
         db.list_collection_names()
         
-        logger.success(_(f"config.database.db_created_or_exists").format(db=db_name))
-        logger.success(_(f"config.database.connected").format(db=db_name))
-        logger.success(_(f"config.database.mongo_connection_success").format(db=db_name))
+        logger.info(_(f"config.database.db_created_or_exists").format(db=db_name))
+        logger.info(_(f"config.database.connected").format(db=db_name))
+        logger.info(_(f"config.database.mongo_connection_success").format(db=db_name))
         
     except Exception as e:
         logger.error(_(f"config.database.connection_failed").format(error=str(e)))

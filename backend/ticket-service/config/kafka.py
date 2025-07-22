@@ -26,7 +26,7 @@ def get_kafka_status():
     try:
         producer = KafkaProducer(bootstrap_servers=brokers, request_timeout_ms=2000)
         producer.close()
-        logger.success(_("config.kafka.kafka_connection_success"))
+        logger.info(_("config.kafka.kafka_connection_success"))
         status = "up"
     except Exception as e:
         logger.error(_("config.kafka.kafka_connection_error", error=str(e)))

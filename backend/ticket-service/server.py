@@ -1,11 +1,8 @@
 import logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s: %(message)s",
-)
-
 import sys
 import os
+from config.logger import LOG_CONFIG
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from config.socketio import socket_app, fastapi_app
 from config.cors import CORS_CONFIG
@@ -26,4 +23,10 @@ if __name__ == "__main__":
     # Statik dosya servisi (uploads klasörü)
     fastapi_app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
-    uvicorn.run("server:socket_app", host="0.0.0.0", port=8086, reload=True)
+    uvicorn.run(
+        "server:socket_app",
+        host="0.0.0.0",
+        port=8086,
+        reload=True,
+        log_config=LOG_CONFIG
+    )

@@ -1,46 +1,71 @@
-from loguru import logger
 import logging
+import logging.config
 from datetime import datetime
-import colorama
 
-colorama.init()
+# ANSI renk kodları
+RESET = "\033[0m"
+GREEN = "\033[32m"
+YELLOW = "\033[33m"
+RED = "\033[31m"
 
-# Dosya için düz format
-LOG_FORMAT = "{time:YYYY-MM-DD HH:mm:ss} {level}: {message} {extra}"
-# Konsol için renkli format
-LOG_FORMAT_COLOR = "<green>{time:YYYY-MM-DD HH:mm:ss}</green> <level>{level}</level>: <cyan>{message}</cyan> {extra}"
+class ColoredFormatter(logging.Formatter):
+    def format(self, record):
+        msg = super().format(record)
+        if record.levelno >= logging.ERROR:
+            color = RED
+        elif record.levelno == logging.WARNING:
+            color = YELLOW
+        else:
+            color = GREEN
+        return f"{color}{msg}{RESET}"
 
-logger.remove()  # Varsayılan handler'ı kaldır
-logger.add(
-    "logs/app.log",  # Dosyaya da logla
-    format=LOG_FORMAT,
-    level="INFO",
-    rotation="10 MB",
-    retention="10 days",
-    enqueue=True
-)
-logger.add(
-    lambda msg: print(msg, end=""),  # Konsola renkli formatta yaz
-    format=LOG_FORMAT_COLOR,
-    level="INFO"
-)
+LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s'
+LOG_DATEFMT = '%Y-%m-%d %H:%M:%S'
 
-class InterceptHandler(logging.Handler):
-    def emit(self, record):
-        # Loguru seviyesine çevir
-        try:
-            level = logger.level(record.levelname).name
-        except ValueError:
-            level = record.levelno
-        logger.opt(exception=record.exc_info).log(level, record.getMessage())
+class ConsoleHandler(logging.StreamHandler):
+    def __init__(self):
+        super().__init__()
+        self.setFormatter(ColoredFormatter(LOG_FORMAT, LOG_DATEFMT))
 
-logging.basicConfig(handlers=[InterceptHandler()], level=0)
-logging.getLogger().handlers = [InterceptHandler()]
+LOG_CONFIG = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "default": {
+            "format": LOG_FORMAT,
+            "datefmt": LOG_DATEFMT,
+        },
+        "colored": {
+            '()': ColoredFormatter,
+            'format': LOG_FORMAT,
+            'datefmt': LOG_DATEFMT,
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "colored",
+            "stream": "ext://sys.stdout",
+        },
+        "file": {
+            "class": "logging.FileHandler",
+            "formatter": "default",
+            "filename": "logs/app.log",
+            "encoding": "utf-8",
+        },
+    },
+    "root": {
+        "level": "INFO",
+        "handlers": ["console", "file"]
+    },
+    "loggers": {
+        "uvicorn": {"handlers": ["console", "file"], "level": "INFO", "propagate": False},
+        "uvicorn.error": {"handlers": ["console", "file"], "level": "INFO", "propagate": False},
+        "uvicorn.access": {"handlers": ["console", "file"], "level": "INFO", "propagate": False},
+    },
+}
 
-# Uvicorn ve diğer logging loglarını da loguru'ya yönlendir
-for name in ("uvicorn", "uvicorn.error", "uvicorn.access", "fastapi"):  
-    logging.getLogger(name).handlers = [InterceptHandler()]
-    logging.getLogger(name).propagate = False
+logging.config.dictConfig(LOG_CONFIG)
 
 def get_logger():
-    return logger
+    return logging.getLogger()

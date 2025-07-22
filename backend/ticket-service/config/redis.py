@@ -22,7 +22,7 @@ def get_redis_status():
     url = get_redis_url()
     try:
         r.ping()
-        logger.success(_(f"config.redis.redis_connection_success"))
+        logger.info(_(f"config.redis.redis_connection_success"))
         status = "up"
     except Exception as e:
         logger.error(_(f"config.redis.redis_connection_error").format(error=str(e)))
@@ -66,7 +66,7 @@ def select_and_rotate_agent():
 def clear_online_queue():
     if r:
         result = r.delete(REDIS_ONLINE_QUEUE)
-        logger.info(f"[REDIS] Online queue temizlendi. Silinen kayıt sayısı: {result}")
+        logger.info(_(f"config.redis.queue_cleared").format(result=result))
         return result
     return 0
 
@@ -74,6 +74,6 @@ def clear_online_queue():
 def list_all_online_agents():
     if r:
         agents = r.lrange(REDIS_ONLINE_QUEUE, 0, -1)
-        logger.info(f"[REDIS] Queue'daki tüm agent'lar: {agents}")
+        logger.info(_(f"config.redis.all_agents_listed").format(agents=agents))
         return [agent.decode() if isinstance(agent, bytes) else agent for agent in agents]
     return []

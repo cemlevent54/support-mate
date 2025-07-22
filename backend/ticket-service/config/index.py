@@ -26,7 +26,7 @@ def health():
     return health_check()
 
 # SocketIO log
-logging.getLogger("socketio").info("Socket.IO config imported in index.py")
+logging.getLogger("socketio").info(_(f"config.socketio.socketio_config_imported"))
 
 # Bağlantı testleri
 
@@ -34,26 +34,26 @@ def test_mongo():
     try:
         client = pymongo.MongoClient(get_mongo_uri(), serverSelectionTimeoutMS=2000)
         client.server_info()  # Bağlantı testi
-        logger.success("MongoDB bağlantısı başarılı.")
+        logger.info(_(f"config.database.mongo_test_success"))
     except Exception as e:
-        logger.error(f"MongoDB bağlantı hatası: {e}")
+        logger.error(_(f"config.database.mongo_test_error").format(error=e))
 
 def test_redis():
     try:
         #r = redis.from_url(get_redis_url())
         r = redis.from_url('redis://127.0.0.1:6379')
         r.ping()
-        logger.success("Redis bağlantısı başarılı.")
+        logger.info(_(f"config.redis.redis_test_success"))
     except Exception as e:
-        logger.error(f"Redis bağlantı hatası: {e}")
+        logger.error(_(f"config.redis.redis_test_error").format(error=e))
 
 def test_kafka():
     try:
         producer = get_kafka_producer()
         producer.close()
-        logger.success("Kafka bağlantısı başarılı.")
+        logger.info(_(f"config.kafka.kafka_test_success"))
     except Exception as e:
-        logger.error(f"Kafka bağlantı hatası: {e}")
+        logger.error(_(f"config.kafka.kafka_test_error").format(error=e))
 
 # API başlatıldığında testleri otomatik çalıştır
 

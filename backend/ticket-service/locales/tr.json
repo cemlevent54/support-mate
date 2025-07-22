@@ -14,7 +14,9 @@
             "closed": "MongoDB bağlantısı kapatıldı.",
             "mongo_server_connected": "MongoDB sunucusuna başarıyla bağlanıldı.",
             "db_created_or_exists": "Veritabanı oluşturuldu veya mevcut: {db}",
-            "test_collections_created": "Test koleksiyonları oluşturuldu: {collections}"
+            "test_collections_created": "Test koleksiyonları oluşturuldu: {collections}",
+            "mongo_test_success": "MongoDB bağlantısı başarılı.",
+            "mongo_test_error": "MongoDB bağlantı hatası: {error}"
         },
         "redis": {
             "redis_connection_success": "Redis bağlantısı başarılı.",
@@ -25,14 +27,41 @@
             "agent_added": "Online temsilci eklendi: {user_id}",
             "agent_removed": "Online temsilci çıkarıldı: {user_id}",
             "agent_selected": "Temsilci seçildi: {agent_id}",
-            "agent_rotated": "Temsilci sona eklendi (round robin): {agent_id}"
+            "agent_rotated": "Temsilci sona eklendi (round robin): {agent_id}",
+            "redis_test_success": "Redis bağlantısı başarılı.",
+            "redis_test_error": "Redis bağlantı hatası: {error}",
+            "queue_cleared": "[REDIS] Online queue temizlendi. Silinen kayıt sayısı: {result}",
+            "all_agents_listed": "[REDIS] Queue'daki tüm agent'lar: {agents}"
         },
         "kafka": {
             "kafka_connection_success": "Kafka bağlantısı başarılı.",
-            "kafka_connection_error": "Kafka bağlantı hatası: {error}"
+            "kafka_connection_error": "Kafka bağlantı hatası: {error}",
+            "kafka_test_success": "Kafka bağlantısı başarılı.",
+            "kafka_test_error": "Kafka bağlantı hatası: {error}"
         },
         "language": {
             "default_language": "Varsayılan dil: {lang}"
+        },
+        "socketio": {
+            "socketio_config_imported": "Socket.IO config index.py dosyasından import edildi ",
+            "server_initialized": "Socket.IO sunucusu başlatıldı.",
+            "client_connected": "[SOCKET][CONNECT] İstemci bağlandı: {sid}. Toplam bağlantı: {count}",
+            "client_disconnected": "[SOCKET][DISCONNECT] İstemci bağlantısı kesildi: {sid}. Toplam bağlantı: {count}",
+            "user_offline": "[SOCKET][DISCONNECT] Kullanıcı {user_id} artık çevrimdışı (sid: {sid})",
+            "join_room": "[SOCKET][JOIN_ROOM] Kullanıcı {user_id} oda {chat_id}'ye katıldı (sid: {sid}) | Payload: {data} | Oda üyeleri: {members}",
+            "join_room_error": "[SOCKET][JOIN_ROOM][HATA] {error} | Payload: {data}",
+            "leave_room": "[SOCKET][LEAVE_ROOM] Kullanıcı {user_id} oda {chat_id}'den ayrıldı (sid: {sid}) | Payload: {data} | Ayrıldıktan sonra oda üyeleri: {members}",
+            "leave_room_error": "[SOCKET][LEAVE_ROOM][HATA] {error} | Payload: {data}",
+            "send_message": "[SOCKET][SEND_MESSAGE] {user} kullanıcısından {chat_id} odasına mesaj: {message} | Payload: {data}",
+            "send_message_error": "[SOCKET][SEND_MESSAGE][HATA] {error} | Payload: {data}",
+            "typing": "[SOCKET][TYPING] {user} {chat_id} odasında yazıyor | Payload: {data}",
+            "typing_error": "[SOCKET][TYPING][HATA] {error} | Payload: {data}",
+            "stop_typing": "[SOCKET][STOP_TYPING] {user} {chat_id} odasında yazmayı bıraktı | Payload: {data}",
+            "stop_typing_error": "[SOCKET][STOP_TYPING][HATA] {error} | Payload: {data}",
+            "delivered": "[SOCKET][DELIVERED] Mesaj {message_id} {user} kullanıcısına {chat_id} odasında teslim edildi | Payload: {data}",
+            "delivered_error": "[SOCKET][DELIVERED][HATA] {error} | Payload: {data}",
+            "seen": "[SOCKET][SEEN] Mesaj {message_id} {user} tarafından {chat_id} odasında görüldü | Payload: {data}",
+            "seen_error": "[SOCKET][SEEN][HATA] {error} | Payload: {data}"
         }
     },
     "api_started": "API başlatıldı",
@@ -121,26 +150,6 @@
                 "soft_delete": "[REPO] ChatRepository.soft_delete: chat_id={chat_id}, değişen={modified}",
                 "soft_delete_error": "[REPO] ChatRepository.soft_delete hata: {error}"
             }
-        },
-        "socketio": {
-            "server_initialized": "Socket.IO sunucusu başlatıldı.",
-            "client_connected": "[SOCKET][CONNECT] İstemci bağlandı: {sid}. Toplam bağlantı: {count}",
-            "client_disconnected": "[SOCKET][DISCONNECT] İstemci bağlantısı kesildi: {sid}. Toplam bağlantı: {count}",
-            "user_offline": "[SOCKET][DISCONNECT] Kullanıcı {user_id} artık çevrimdışı (sid: {sid})",
-            "join_room": "[SOCKET][JOIN_ROOM] Kullanıcı {user_id} oda {chat_id}'ye katıldı (sid: {sid}) | Payload: {data} | Oda üyeleri: {members}",
-            "join_room_error": "[SOCKET][JOIN_ROOM][HATA] {error} | Payload: {data}",
-            "leave_room": "[SOCKET][LEAVE_ROOM] Kullanıcı {user_id} oda {chat_id}'den ayrıldı (sid: {sid}) | Payload: {data} | Ayrıldıktan sonra oda üyeleri: {members}",
-            "leave_room_error": "[SOCKET][LEAVE_ROOM][HATA] {error} | Payload: {data}",
-            "send_message": "[SOCKET][SEND_MESSAGE] {user} kullanıcısından {chat_id} odasına mesaj: {message} | Payload: {data}",
-            "send_message_error": "[SOCKET][SEND_MESSAGE][HATA] {error} | Payload: {data}",
-            "typing": "[SOCKET][TYPING] {user} {chat_id} odasında yazıyor | Payload: {data}",
-            "typing_error": "[SOCKET][TYPING][HATA] {error} | Payload: {data}",
-            "stop_typing": "[SOCKET][STOP_TYPING] {user} {chat_id} odasında yazmayı bıraktı | Payload: {data}",
-            "stop_typing_error": "[SOCKET][STOP_TYPING][HATA] {error} | Payload: {data}",
-            "delivered": "[SOCKET][DELIVERED] Mesaj {message_id} {user} kullanıcısına {chat_id} odasında teslim edildi | Payload: {data}",
-            "delivered_error": "[SOCKET][DELIVERED][HATA] {error} | Payload: {data}",
-            "seen": "[SOCKET][SEEN] Mesaj {message_id} {user} tarafından {chat_id} odasında görüldü | Payload: {data}",
-            "seen_error": "[SOCKET][SEEN][HATA] {error} | Payload: {data}"
         },
         "categoryService": {
             "logs": {

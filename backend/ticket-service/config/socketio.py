@@ -34,7 +34,7 @@ except Exception as e:
 # Socket.IO event handling
 @sio.event
 async def connect(sid, environ):
-    logger.info(f"[SOCKET][CONNECT] Client connected: {sid}")
+    logger.info(_(f"config.socketio.client_connected").format(sid=sid, count=len(active_users)+1))
 
 @sio.event
 async def disconnect(sid):
@@ -42,10 +42,10 @@ async def disconnect(sid):
         for user_id, info in list(room["activeUsers"].items()):
             if info["socketId"] == sid:
                 del room["activeUsers"][user_id]
-                logger.info(f"[SOCKET][DISCONNECT] chatId={chat_id} aktif kullanıcılar: {room['activeUsers']}")
+                logger.info(_(f"config.socketio.client_disconnected").format(sid=sid, count=len(active_users)-1))
         if not room["activeUsers"]:
             del rooms[chat_id]
-    logger.info(f"[SOCKET][DISCONNECT] User disconnected: {sid}")
+    logger.info(_(f"config.socketio.client_disconnected").format(sid=sid, count=len(active_users)-1))
 
 @sio.event
 async def authenticate_and_join(sid, data):
@@ -62,7 +62,7 @@ async def authenticate_and_join(sid, data):
         'chat_id': chat_id,
         'rooms': [chat_id]
     }
-    logger.info(f"[SOCKET][JOIN] User {user_id} ({user_role}) joined chat with {user_id}: {chat_id}")
+    logger.info(_(f"config.socketio.join_room").format(user_id=user_id, chat_id=chat_id, sid=sid, data=data, members=list(active_users.keys())))
     await sio.emit("user_joined_chat", {
         "userId": user_id,
         "userRole": user_role,
@@ -84,7 +84,7 @@ async def send_chat_message(sid, data):
         await sio.emit('error', {'message': 'chatId, userId ve content gereklidir'}, to=sid)
         return
     await sio.emit("receive_chat_message", {"chatId": chat_id, "message": content, "userId": user_id}, room=chat_id)
-    logger.info(f"[SOCKET][MESSAGE] chatId={chat_id} userId={user_id}: {content}")
+    logger.info(_(f"config.socketio.send_message").format(user=user_id, chat_id=chat_id, message=content, data=data))
 
 @sio.event
 async def send_message(sid, data):
@@ -95,7 +95,7 @@ async def send_message(sid, data):
         await sio.emit('error', {'message': 'chatId, userId ve message gereklidir'}, to=sid)
         return
     await sio.emit("receive_chat_message", {"chatId": chat_id, "message": message, "userId": user_id}, room=chat_id)
-    logger.info(f"[SOCKET][SEND_MESSAGE] chatId={chat_id} userId={user_id}: {message}")
+    logger.info(_(f"config.socketio.send_message").format(user=user_id, chat_id=chat_id, message=message, data=data))
 
 @sio.event
 async def typing(sid, data):
@@ -105,7 +105,7 @@ async def typing(sid, data):
     is_typing = data.get("isTyping", True)
     if not chat_id or not user_id:
         return
-    logger.info(f"[SOCKET][TYPING] chatId={chat_id} userId={user_id} receiverId={receiver_id}: {is_typing}")
+    logger.info(_(f"config.socketio.typing").format(user=user_id, chat_id=chat_id, data=data))
     if receiver_id and chat_id in rooms and receiver_id in rooms[chat_id]["activeUsers"]:
         receiver_sid = rooms[chat_id]["activeUsers"][receiver_id]["socketId"]
         await sio.emit("typing", {"chatId": chat_id, "userId": user_id, "isTyping": is_typing, "timestamp": str_now()}, to=receiver_sid)
@@ -119,7 +119,7 @@ async def stop_typing(sid, data):
     receiver_id = data.get("receiverId")
     if not chat_id or not user_id:
         return
-    logger.info(f"[SOCKET][STOP_TYPING] chatId={chat_id} userId={user_id} receiverId={receiver_id}")
+    logger.info(_(f"config.socketio.stop_typing").format(user=user_id, chat_id=chat_id, data=data))
     if receiver_id and chat_id in rooms and receiver_id in rooms[chat_id]["activeUsers"]:
         receiver_sid = rooms[chat_id]["activeUsers"][receiver_id]["socketId"]
         await sio.emit("stop_typing", {"chatId": chat_id, "userId": user_id, "isTyping": False, "timestamp": str_now()}, to=receiver_sid)
@@ -134,7 +134,7 @@ async def leave_chat(sid, data):
     user_id = user_info['user_id']
     user_role = user_info['user_role']
     chat_id = '_'.join(sorted([user_id, user_id]))
-    logger.info(f"[SOCKET][LEAVE] {user_id} leaving chat {chat_id}")
+    logger.info(_(f"config.socketio.leave_room").format(user_id=user_id, chat_id=chat_id, sid=sid, data=data, members=list(active_users.keys())))
     await sio.emit("user_left_chat", {
         "userId": user_id,
         "userRole": user_role,
@@ -164,7 +164,7 @@ async def join_room(sid, data):
         rooms[chat_id] = {"activeUsers": {}}
     rooms[chat_id]["activeUsers"][user_id] = {"socketId": sid}
     await sio.enter_room(sid, chat_id)
-    logger.info(f"[SOCKET][JOIN_ROOM] chatId={chat_id} aktif kullanıcılar: {rooms[chat_id]['activeUsers']}")
+    logger.info(_(f"config.socketio.join_room").format(user_id=user_id, chat_id=chat_id, sid=sid, data=data, members=list(rooms[chat_id]["activeUsers"].keys())))
     await sio.emit("user_joined", {"chatId": chat_id, "userId": user_id}, room=chat_id)
 
 @sio.event
@@ -174,7 +174,7 @@ async def leave_room(sid, data):
     if chat_id in rooms and user_id in rooms[chat_id]["activeUsers"]:
         del rooms[chat_id]["activeUsers"][user_id]
         await sio.leave_room(sid, chat_id)
-        logger.info(f"[SOCKET][LEAVE_ROOM] chatId={chat_id} aktif kullanıcılar: {rooms[chat_id]['activeUsers']}")
+        logger.info(_(f"config.socketio.leave_room").format(user_id=user_id, chat_id=chat_id, sid=sid, data=data, members=list(rooms[chat_id]["activeUsers"].keys())))
         if not rooms[chat_id]["activeUsers"]:
             del rooms[chat_id]
 
