@@ -233,6 +233,7 @@
     }
   },
   "supportDashboard": {
+    
     "sidebar": {
       "requests": "Destek Talepleri",
       "chats": "Sohbetler",
@@ -246,7 +247,8 @@
     "profileTitle": "Profil",
     "profileDesc": "Profil bilgileri burada görünecek.",
     "noTicketChats": "Hiç ticket sohbeti yok.",
-    "noNonTicketChats": "Hiç ticket dışı sohbet yok."
+    "noNonTicketChats": "Hiç ticket dışı sohbet yok.",
+    "selectRequestToStartChat": "Bir talep seçin ve chat başlatın."
   },
   "employeeDashboard": {
     "title": "Employee Panel",

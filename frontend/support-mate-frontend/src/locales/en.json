@@ -246,7 +246,8 @@
     "profileDesc": "Profile information will be shown here.",
     "searchChat": "Search chat...",
     "noTicketChats": "No ticket chats.",
-    "noNonTicketChats": "No non-ticket chats."
+    "noNonTicketChats": "No non-ticket chats.",
+    "selectRequestToStartChat": "Select a request and start a chat."
   },
   "employeeDashboard": {
     "title": "Employee Panel",

@@ -15,23 +15,25 @@ def get_category_controller(lang: str = 'tr'):
 def list_categories_user(request: Request, user=Depends(get_current_user)):
     lang = request.headers.get("X-language")
     if lang is None:
-        lang = request.headers.get("accept-language", "tr")
+        lang = request.headers.get("accept-language")
     category_controller = get_category_controller(lang=lang)
     return category_controller.list_categories_endpoint_for_user(user, lang=lang)
 
 @router.get("/admin/categories")
 def list_categories_admin(request: Request, user=Depends(get_current_user)):
-    lang = request.headers.get("accept-language", "tr")
+    lang = request.headers.get("X-language")
+    if lang is None:
+        lang = request.headers.get("accept-language")
     category_controller = get_category_controller(lang=lang)
     if user.get("roleName") != "Admin":
         raise HTTPException(status_code=403, detail="Forbidden")
     return category_controller.list_categories_endpoint_for_admin(user, lang=lang)
 
-
-
 @router.post("/admin/categories")
 def create_category_admin(category: Category, request: Request, user=Depends(get_current_user)):
-    lang = request.headers.get("accept-language", "tr")
+    lang = request.headers.get("X-language")
+    if lang is None:
+        lang = request.headers.get("accept-language")
     category_controller = get_category_controller(lang=lang)
     if user.get("roleName") != "Admin":
         raise HTTPException(status_code=403, detail="Forbidden")
@@ -39,7 +41,9 @@ def create_category_admin(category: Category, request: Request, user=Depends(get
 
 @router.patch("/admin/categories/{category_id}")
 def update_category_admin(category_id: str, category: Category, request: Request, user=Depends(get_current_user)):
-    lang = request.headers.get("accept-language", "tr")
+    lang = request.headers.get("X-language")
+    if lang is None:
+        lang = request.headers.get("accept-language")
     category_controller = get_category_controller(lang=lang)
     if user.get("roleName") != "Admin":
         raise HTTPException(status_code=403, detail="Forbidden")
@@ -48,7 +52,9 @@ def update_category_admin(category_id: str, category: Category, request: Request
 # soft delete category
 @router.delete("/admin/categories/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
 def soft_delete_category_admin(category_id: str, request: Request, user=Depends(get_current_user)):
-    lang = request.headers.get("accept-language", "tr")
+    lang = request.headers.get("X-language")
+    if lang is None:
+        lang = request.headers.get("accept-language")
     category_controller = get_category_controller(lang=lang)
     if user.get("roleName") != "Admin":
         raise HTTPException(status_code=403, detail="Forbidden")

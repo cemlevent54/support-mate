@@ -1,64 +1,132 @@
 from services.MessageService import MessageService
 from fastapi import HTTPException
-from repositories.ChatRepository import ChatRepository
-from dto.chat_dto import ChatDTO
+from config.language import _, set_language
+from responseHandlers.api_success import api_success
+from responseHandlers.api_error import api_error
 import logging
 
 logger = logging.getLogger(__name__)
 
 class MessageController:
-    def __init__(self):
+    def __init__(self, lang: str = 'tr'):
+        self.lang = lang
         self.message_service = MessageService()
 
-    def send_message(self, message, user):
-        logging.info(f"[CONTROLLER] send_message called with user: {user.get('id')}")
-        result = self.message_service.send_message(message, user)
-        if isinstance(result, dict) and result.get("success") is False:
-            raise HTTPException(status_code=400, detail=result.get("message", "Message send failed"))
-        return result
-    
-    def create_message(self, message, user):
-        logging.info(f"[CONTROLLER] create_message called with user: {user.get('id')}")
-        result = self.message_service.create_message(message, user)
-        if isinstance(result, dict) and result.get("success") is False:
-            raise HTTPException(status_code=400, detail=result.get("message", "Message create failed"))
-        return result
+    def send_message(self, message, user, lang: str = None):
+        set_language(lang or self.lang)
+        logger.info(_("services.messageService.logs.plain_message_before_encryption"))
+        try:
+            result = self.message_service.send_message(message, user)
+            return api_success(data=result.get("data"), message=result.get("message"))
+        except Exception as e:
+            logger.error(str(e))
+            return api_error(error=str(e), message=_("services.messageService.logs.message_send_failed"))
 
-    def list_messages(self, chat_id, user):
-        logging.info(f"[CONTROLLER] list_messages called with chat_id: {chat_id}, user: {user.get('id')}")
-        return self.message_service.list_messages(chat_id, user)
+    def create_message(self, message, user, lang: str = None):
+        set_language(lang or self.lang)
+        logger.info(_("services.messageService.logs.plain_message_before_encryption"))
+        try:
+            result = self.message_service.create_message(message, user)
+            return api_success(data=result.get("data"), message=result.get("message"))
+        except Exception as e:
+            logger.error(str(e))
+            return api_error(error=str(e), message=_("services.messageService.logs.message_send_failed"))
 
-    def list_messages_between_users(self, sender_id, receiver_id, user):
-        logging.info(f"[CONTROLLER] list_messages_between_users called with sender_id: {sender_id}, receiver_id: {receiver_id}, user: {user.get('id')}")
-        return self.message_service.list_messages_between_users(sender_id, receiver_id, user)
+    def list_messages(self, chat_id, user, lang: str = None):
+        set_language(lang or self.lang)
+        logger.info(_("services.messageService.logs.message_listed"))
+        try:
+            result = self.message_service.list_messages(chat_id, user)
+            return api_success(data=result.get("data"), message=result.get("message"))
+        except Exception as e:
+            logger.error(str(e))
+            return api_error(error=str(e), message=_("services.messageService.logs.message_list_failed"))
 
-    def list_messages_by_ticket_id(self, ticket_id, user):
-        logging.info(f"[CONTROLLER] list_messages_by_ticket_id called with ticket_id: {ticket_id}, user: {user.get('id')}")
-        return self.message_service.list_messages_by_ticket_id(ticket_id, user)
-    
-    def list_messages_by_chat_id(self, chat_id, user):
-        logging.info(f"[CONTROLLER] list_messages_by_chat_id called with chat_id: {chat_id}, user: {user.get('id')}")
-        return self.message_service.list_messages_by_chat_id(chat_id, user)
+    def list_messages_between_users(self, sender_id, receiver_id, user, lang: str = None):
+        set_language(lang or self.lang)
+        logger.info(_("services.messageService.logs.message_listed"))
+        try:
+            result = self.message_service.list_messages_between_users(sender_id, receiver_id, user)
+            return api_success(data=result.get("data"), message=result.get("message"))
+        except Exception as e:
+            logger.error(str(e))
+            return api_error(error=str(e), message=_("services.messageService.logs.message_list_failed"))
 
-    def get_messages_by_id(self, id, user):
-        logging.info(f"[CONTROLLER] get_messages_by_id called with id: {id}, user: {user.get('id')}")
-        return self.message_service.get_messages_by_id(id, user)
+    def list_messages_by_ticket_id(self, ticket_id, user, lang: str = None):
+        set_language(lang or self.lang)
+        logger.info(_("services.messageService.logs.message_listed"))
+        try:
+            result = self.message_service.list_messages_by_ticket_id(ticket_id, user)
+            return api_success(data=result.get("data"), message=result.get("message"))
+        except Exception as e:
+            logger.error(str(e))
+            return api_error(error=str(e), message=_("services.messageService.logs.message_list_failed"))
 
-    def list_non_ticket_chats(self, user):
-        logging.info(f"[CONTROLLER] list_non_ticket_chats called with user: {user.get('id')}")
-        return self.message_service.list_non_ticket_chats(user)
+    def list_messages_by_chat_id(self, chat_id, user, lang: str = None):
+        set_language(lang or self.lang)
+        logger.info(_("services.messageService.logs.message_listed"))
+        try:
+            result = self.message_service.list_messages_by_chat_id(chat_id, user)
+            return api_success(data=result.get("data"), message=result.get("message"))
+        except Exception as e:
+            logger.error(str(e))
+            return api_error(error=str(e), message=_("services.messageService.logs.message_list_failed"))
 
-    def get_chat_by_id(self, chat_id, user):
-        logging.info(f"[CONTROLLER] get_chat_by_id called with chat_id: {chat_id}, user: {user.get('id')}")
-        return self.message_service.list_messages_by_chat_id(chat_id, user)
+    def get_messages_by_id(self, id, user, lang: str = None):
+        set_language(lang or self.lang)
+        logger.info(_("services.messageService.logs.message_listed"))
+        try:
+            result = self.message_service.get_messages_by_id(id, user)
+            return api_success(data=result.get("data"), message=result.get("message"))
+        except Exception as e:
+            logger.error(str(e))
+            return api_error(error=str(e), message=_("services.messageService.logs.message_list_failed"))
 
-    def list_user_chats(self, user):
-        return self.message_service.list_user_chats(user)
+    def list_non_ticket_chats(self, user, lang: str = None):
+        set_language(lang or self.lang)
+        logger.info(_("services.messageService.logs.message_listed"))
+        try:
+            result = self.message_service.list_non_ticket_chats(user)
+            return api_success(data=result.get("data"), message=result.get("message"))
+        except Exception as e:
+            logger.error(str(e))
+            return api_error(error=str(e), message=_("services.messageService.logs.message_list_failed"))
 
-    def list_agent_chats_with_messages(self, user, page=None, page_size=None):
-        return self.message_service.list_agent_chats_with_messages(user, page, page_size)
+    def get_chat_by_id(self, chat_id, user, lang: str = None):
+        set_language(lang or self.lang)
+        logger.info(_("services.messageService.logs.message_listed"))
+        try:
+            result = self.message_service.list_messages_by_chat_id(chat_id, user)
+            return api_success(data=result.get("data"), message=result.get("message"))
+        except Exception as e:
+            logger.error(str(e))
+            return api_error(error=str(e), message=_("services.messageService.logs.message_list_failed"))
 
-    def list_user_chats_with_messages(self, user, page=None, page_size=None):
-        return self.message_service.list_user_chats_with_messages(user, page, page_size)
+    def list_user_chats(self, user, lang: str = None):
+        set_language(lang or self.lang)
+        try:
+            result = self.message_service.list_user_chats(user)
+            return api_success(data=result.get("data"), message=result.get("message"))
+        except Exception as e:
+            logger.error(str(e))
+            return api_error(error=str(e), message=_("services.messageService.logs.message_list_failed"))
+
+    def list_agent_chats_with_messages(self, user, page=None, page_size=None, lang: str = None):
+        set_language(lang or self.lang)
+        try:
+            result = self.message_service.list_agent_chats_with_messages(user, page, page_size)
+            return api_success(data=result.get("data"), message=result.get("message"))
+        except Exception as e:
+            logger.error(str(e))
+            return api_error(error=str(e), message=_("services.messageService.logs.message_list_failed"))
+
+    def list_user_chats_with_messages(self, user, page=None, page_size=None, lang: str = None):
+        set_language(lang or self.lang)
+        try:
+            result = self.message_service.list_user_chats_with_messages(user, page, page_size)
+            return api_success(data=result.get("data"), message=result.get("message"))
+        except Exception as e:
+            logger.error(str(e))
+            return api_error(error=str(e), message=_("services.messageService.logs.message_list_failed"))
 
 message_controller = MessageController()

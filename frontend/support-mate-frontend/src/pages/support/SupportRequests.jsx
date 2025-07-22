@@ -58,10 +58,18 @@ const SupportRequests = ({ onStartChat }) => {
           setRows(sorted.map((ticket, idx) => {
             let categoryName = "";
             if (ticket.category) {
-              if (i18n.language === "tr") {
-                categoryName = ticket.category.categoryNameTr || ticket.category.categoryNameEn || "-";
+              if (ticket.category.data) {
+                if (i18n.language === "tr") {
+                  categoryName = ticket.category.data.category_name_tr || "-";
+                } else {
+                  categoryName = ticket.category.data.category_name_en || "-";
+                }
               } else {
-                categoryName = ticket.category.categoryNameEn || ticket.category.categoryNameTr || "-";
+                if (i18n.language === "tr") {
+                  categoryName = ticket.category.category_name_tr || ticket.category.categoryNameTr || "-";
+                } else {
+                  categoryName = ticket.category.category_name_en || ticket.category.categoryNameEn || "-";
+                }
               }
             } else {
               categoryName = "-";
@@ -90,7 +98,7 @@ const SupportRequests = ({ onStartChat }) => {
       }
     };
     fetchTickets();
-  }, []);
+  }, [i18n.language]);
 
   const handleOpenDetail = (ticket) => {
     setSelectedTicket(ticket.raw || ticket);
@@ -174,9 +182,13 @@ const SupportRequests = ({ onStartChat }) => {
               <Typography><b>{t('supportRequests.modal.descriptionLabel')}</b> {selectedTicket.description}</Typography>
               <Typography><b>{t('supportRequests.modal.categoryLabel')}</b>{" "}
                 {typeof selectedTicket.category === "object"
-                  ? (i18n.language === "tr"
-                      ? selectedTicket.category.categoryNameTr || selectedTicket.category.categoryNameEn || "-"
-                      : selectedTicket.category.categoryNameEn || selectedTicket.category.categoryNameTr || "-")
+                  ? (selectedTicket.category.data
+                      ? (i18n.language === "tr"
+                          ? selectedTicket.category.data.category_name_tr || selectedTicket.category.data.category_name_en || "-"
+                          : selectedTicket.category.data.category_name_en || selectedTicket.category.data.category_name_tr || "-")
+                      : (i18n.language === "tr"
+                          ? selectedTicket.category.categoryNameTr || selectedTicket.category.categoryNameEn || "-"
+                          : selectedTicket.category.categoryNameEn || selectedTicket.category.categoryNameTr || "-"))
                   : selectedTicket.category || "-"}
               </Typography>
               <Typography><b>{t('supportRequests.modal.statusLabel')}</b> {selectedTicket.status}</Typography>

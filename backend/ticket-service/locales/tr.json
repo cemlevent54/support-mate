@@ -83,7 +83,13 @@
                 "chat_not_found": "Chat bulunamadı veya participants yok",
                 "receiver_and_chat_required": "receiverId ve chatId zorunlu",
                 "messages_retrieved": "Mesajlar başarıyla getirildi.",
-                "chat_not_found_simple": "Chat bulunamadı."
+                "chat_not_found_simple": "Chat bulunamadı.",
+                "non_ticket_chats_retrieved": "Ticket ile ilişkili olmayan sohbetler başarıyla getirildi.",
+                "chats_retrieved": "Sohbetler başarıyla getirildi.",
+                "agent_chats_with_messages_retrieved": "Temsilciye ait sohbetler ve mesajlar başarıyla getirildi.",
+                "user_chats_with_messages_retrieved": "Kullanıcıya ait sohbetler ve mesajlar başarıyla getirildi.",
+                "chat_could_not_be_created": "Chat oluşturulamadı.",
+                "receiver_id_required": "Yeni chat için receiverId gereklidir."
             }
         },
         "ticketService": {
@@ -184,6 +190,25 @@
                 "update_error": "[REPO] CategoryRepository.update hata: {error}",
                 "soft_delete": "[REPO] CategoryRepository.soft_delete: category_id={category_id}, değişen={modified}",
                 "soft_delete_error": "[REPO] CategoryRepository.soft_delete hata: {error}"
+            }
+        }
+    },
+
+    "controllers": {
+        "categoryController": {
+            "logs": {
+                "listing_categories": "Kategoriler listeleniyor",
+                "creating_category": "Kategori oluşturuluyor: {category_name_tr} {category_name_en}",
+                "category_created": "Kategori başarıyla oluşturuldu.",
+                "updating_category": "Kategori güncelleniyor: {category_id}",
+                "category_updated": "Kategori başarıyla güncellendi: {category_id}",
+                "deleting_category": "Kategori siliniyor: {category_id}",
+                "category_deleted": "Kategori başarıyla silindi: {category_id}",
+                "category_name_exists": "Bu isimde bir kategori zaten mevcut.",
+                "category_list_error": "Kategoriler listelenemedi.",
+                "category_creation_error": "Kategori oluşturulamadı.",
+                "category_update_error": "Kategori güncellenemedi.",
+                "category_deletion_error": "Kategori silinemedi."
             }
         }
     }

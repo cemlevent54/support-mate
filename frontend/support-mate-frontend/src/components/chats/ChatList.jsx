@@ -16,18 +16,25 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 
-export default function ChatList({ activeChatTicketId, onSelectChat, agentChats }) {
+export default function ChatList({ activeChatTicketId, onSelectChat, agentChats, loading }) {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [newMessageChats, setNewMessageChats] = useState(new Set());
   const [unreadCounts, setUnreadCounts] = useState({});
   const [allChats, setAllChats] = useState([]);
-  const [loading] = useState(false);
 
   // agentChats prop'u gelirse tüm chatleri güncelle
   useEffect(() => {
     if (agentChats && Array.isArray(agentChats)) {
-      setAllChats(agentChats);
+      // Son mesaj zamanına göre sırala (en yeni yukarıda)
+      const sorted = [...agentChats].sort((a, b) => {
+        const msgsA = a.chatMessages || a.messages || [];
+        const msgsB = b.chatMessages || b.messages || [];
+        const lastA = msgsA.length > 0 ? new Date(msgsA[msgsA.length - 1].timestamp || msgsA[msgsA.length - 1].createdAt) : new Date(a.lastMessageTime || a.updatedAt || a.createdAt || 0);
+        const lastB = msgsB.length > 0 ? new Date(msgsB[msgsB.length - 1].timestamp || msgsB[msgsB.length - 1].createdAt) : new Date(b.lastMessageTime || b.updatedAt || b.createdAt || 0);
+        return lastB - lastA;
+      });
+      setAllChats(sorted);
     }
   }, [agentChats]);
 
@@ -123,12 +130,15 @@ export default function ChatList({ activeChatTicketId, onSelectChat, agentChats 
     if (chat.ticket && chat.ticket.title) {
       return chat.ticket.title;
     }
-    if (Array.isArray(chat.participants)) {
-      const user = chat.participants.find(p => p.role === 'User');
-      if (user && user.userId) return user.userId;
+  
+    const lang = localStorage.getItem('language') || 'tr';
+    if (lang === 'tr') {
+      return chat.name || chat.userId || chat.customerId || 'Bilinmeyen Kullanıcı';
+    } else {
+      return chat.nameEn || chat.name || chat.userId || chat.customerId || 'Unknown User';
     }
-    return chat.userId || chat.customerId || chat.user_id || chat.name || 'Kullanıcı';
   };
+  
 
   const getChatCategoryName = (chat) => {
     const lang = localStorage.getItem('language') || 'tr';
@@ -153,6 +163,14 @@ export default function ChatList({ activeChatTicketId, onSelectChat, agentChats 
     }
     return name;
   };
+
+  if (loading) {
+    return (
+      <div style={{ width: 350, background: '#fff', borderRight: '1px solid #e0e0e0', display: 'flex', flexDirection: 'column', height: '100vh', alignItems: 'center', justifyContent: 'center' }}>
+        <CircularProgress />
+      </div>
+    );
+  }
 
   return (
     <div style={{ width: 350, background: '#fff', borderRight: '1px solid #e0e0e0', display: 'flex', flexDirection: 'column', height: '100vh' }}>
@@ -219,21 +237,11 @@ export default function ChatList({ activeChatTicketId, onSelectChat, agentChats 
         msOverflowStyle: 'none',
       }}>
         {sortedChatList.length === 0 ? (
-          <ListItem>
-            <Box display="flex" justifyContent="center" alignItems="center" width="100%" py={4}>
-              {loading ? (
-                <CircularProgress />
-              ) : (
-                <Typography color="textSecondary">
-                  {t('supportDashboard.noTicketChats')}
-                </Typography>
-              )}
-            </Box>
-          </ListItem>
+          <></>
         ) : (
           sortedChatList.map((chat, index) => (
             <ListItem 
-              key={chat.id} 
+              key={chat._id || chat.chatId || chat.id} 
               disablePadding
               sx={{
                 position: 'relative',
@@ -323,67 +331,55 @@ export default function ChatList({ activeChatTicketId, onSelectChat, agentChats 
                     <PersonIcon />
                   </Avatar>
                 </ListItemAvatar>
-              <ListItemText
+                <ListItemText
                   primary={
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: 15, color: '#222' }}>
+                    <span style={{ fontWeight: 600, fontSize: 15, color: '#222' }}>
                       {getChatDisplayName(chat)}
-                    </Typography>
+                    </span>
                   }
                   secondary={
-                    <Box>
-                      <Typography 
-                        variant="body2" 
-                        sx={{ 
-                          color: unreadCounts[chat.id] > 0 ? '#1976d2' : '#666', 
-                          fontSize: 13, 
-                          mb: 0.5,
-                          fontWeight: unreadCounts[chat.id] > 0 ? 600 : 400
-                        }}
-                      >
+                    <span>
+                      <span style={{ color: unreadCounts[chat.id] > 0 ? '#1976d2' : '#666', fontSize: 13, fontWeight: unreadCounts[chat.id] > 0 ? 600 : 400 }}>
                         {getLastMessage(chat)}
-                      </Typography>
-                      <Box display="flex" justifyContent="space-between" alignItems="center">
-                        <Typography variant="caption" sx={{ color: '#999', fontSize: 11 }}>
-                          {getChatCategoryName(chat)}
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: '#999', fontSize: 11 }}>
-                          {getLastMessageTime(chat)}
-                        </Typography>
-                      </Box>
-                    </Box>
+                      </span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: '#999', fontSize: 11 }}>{getChatCategoryName(chat)}</span>
+                        <span style={{ color: '#999', fontSize: 11 }}>{getLastMessageTime(chat)}</span>
+                      </div>
+                    </span>
                   }
                   sx={{ ml: 1 }}
-              />
-              {unreadCounts[chat.id] > 0 && (
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    top: 8,
-                    right: 8,
-                    minWidth: 20,
-                    height: 20,
-                    borderRadius: '10px',
-                    bgcolor: '#1976d2',
-                    color: '#fff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 11,
-                    fontWeight: 600,
-                    animation: 'bounce 1s infinite',
-                    zIndex: 1,
-                    '@keyframes bounce': {
-                      '0%, 20%, 50%, 80%, 100%': { transform: 'translateY(0)' },
-                      '40%': { transform: 'translateY(-3px)' },
-                      '60%': { transform: 'translateY(-2px)' },
-                    },
-                  }}
-                >
-                  {unreadCounts[chat.id] > 99 ? '99+' : unreadCounts[chat.id]}
-                </Box>
-              )}
-            </ListItemButton>
-          </ListItem>
+                />
+                {unreadCounts[chat.id] > 0 && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: 8,
+                      right: 8,
+                      minWidth: 20,
+                      height: 20,
+                      borderRadius: '10px',
+                      bgcolor: '#1976d2',
+                      color: '#fff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      animation: 'bounce 1s infinite',
+                      zIndex: 1,
+                      '@keyframes bounce': {
+                        '0%, 20%, 50%, 80%, 100%': { transform: 'translateY(0)' },
+                        '40%': { transform: 'translateY(-3px)' },
+                        '60%': { transform: 'translateY(-2px)' },
+                      },
+                    }}
+                  >
+                    {unreadCounts[chat.id] > 99 ? '99+' : unreadCounts[chat.id]}
+                  </Box>
+                )}
+              </ListItemButton>
+            </ListItem>
           ))
         )}
       </List>

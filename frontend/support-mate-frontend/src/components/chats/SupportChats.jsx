@@ -21,7 +21,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import CircularProgress from '@mui/material/CircularProgress';
 
-export default function SupportChats({ ticketId, ticketTitle, onMessageSent, messages: propMessages }) {
+export default function SupportChats({ ticketId, ticketTitle, onMessageSent, messages: propMessages, myUserId }) {
   const [messages, setMessages] = useState(propMessages || []);
   const [input, setInput] = useState("");
   const [taskModalOpen, setTaskModalOpen] = useState(false);
@@ -291,9 +291,9 @@ export default function SupportChats({ ticketId, ticketTitle, onMessageSent, mes
             ) : (
               (messages || []).map((msg, idx) => (
                 <Box
-                  key={idx}
-                  alignSelf={msg.senderRole === 'Customer Supporter' || msg.senderRole === 'Support' ? 'flex-end' : 'flex-start'}
-                  bgcolor={msg.senderRole === 'Customer Supporter' || msg.senderRole === 'Support' ? '#e3f2fd' : '#f1f1f1'}
+                  key={msg._id || msg.id || idx}
+                  alignSelf={msg.senderId === myUserId ? 'flex-end' : 'flex-start'}
+                  bgcolor={msg.senderId === myUserId ? '#e3f2fd' : '#f1f1f1'}
                   color="#222"
                   px={2} py={1.5} mb={1}
                   borderRadius={3}
@@ -317,11 +317,10 @@ export default function SupportChats({ ticketId, ticketTitle, onMessageSent, mes
                       ))}
                     </ul>
                   )}
-                  <Box fontSize={12} color="#888" textAlign="right" mt={0.5}>
+                  <div style={{ fontSize: 12, color: '#888', textAlign: 'right', marginTop: 4 }}>
                     {(() => {
                       const timestamp = msg.timestamp || msg.createdAt;
                       if (!timestamp) return '';
-                      // ISO string ise ve timezone içermiyorsa, UTC olarak parse et
                       let date;
                       if (typeof timestamp === 'string' && !timestamp.endsWith('Z') && !timestamp.includes('+')) {
                         date = new Date(timestamp + 'Z');
@@ -338,7 +337,7 @@ export default function SupportChats({ ticketId, ticketTitle, onMessageSent, mes
                         timeZone: 'Europe/Istanbul'
                       });
                     })()}
-                  </Box>
+                  </div>
                 </Box>
               ))
             )

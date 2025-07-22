@@ -35,17 +35,19 @@ class CategoryService:
         if category_id is None:
             return None
         logger.info(_("services.categoryService.logs.category_created"))
+        # Yeni kaydı veritabanından çek
+        created_category = self.list_handler.repository.find_by_id(category_id)
         dto = CategoryResponseDTO(
-            id=category_id,
-            category_name_tr=category.category_name_tr,
-            category_name_en=category.category_name_en,
-            createdAt=None,
-            isDeleted=False,
-            deletedAt=None
+            id=created_category.id,
+            category_name_tr=created_category.category_name_tr,
+            category_name_en=created_category.category_name_en,
+            createdAt=created_category.createdAt,
+            isDeleted=created_category.isDeleted,
+            deletedAt=created_category.deletedAt
         ).dict()
         return {
             "data": self.dto_to_serializable(dto),
-            "message": _("services.categoryService.responses.category_created")
+            "message": _(f"services.categoryService.responses.category_created")
         }
 
     def update_category(self, category_id: str, category: Category):
@@ -77,20 +79,8 @@ class CategoryService:
         deleted = self.delete_handler.handle(category_id)
         if deleted:
             logger.info(_("services.categoryService.logs.category_deleted"))
-            deleted_category = self.list_handler.repository.find_by_id(category_id)
-            dto = None
-            if deleted_category:
-                dto = CategoryResponseDTO(
-                    id=deleted_category.id,
-                    category_name_tr=deleted_category.category_name_tr,
-                    category_name_en=deleted_category.category_name_en,
-                    createdAt=deleted_category.createdAt,
-                    isDeleted=deleted_category.isDeleted,
-                    deletedAt=deleted_category.deletedAt
-                ).dict()
-                dto = self.dto_to_serializable(dto)
             return {
-                "data": dto,
+                "data": None,
                 "message": _("services.categoryService.responses.category_deleted")
             }
         else:

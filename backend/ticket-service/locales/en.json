@@ -82,7 +82,13 @@
                 "chat_not_found": "Chat not found or participants missing",
                 "receiver_and_chat_required": "receiverId and chatId are required",
                 "messages_retrieved": "Messages retrieved successfully.",
-                "chat_not_found_simple": "Chat not found."
+                "chat_not_found_simple": "Chat not found.",
+                "non_ticket_chats_retrieved": "Non-ticket chats retrieved successfully.",
+                "chats_retrieved": "Chats retrieved successfully.",
+                "agent_chats_with_messages_retrieved": "Agent chats with messages retrieved successfully.",
+                "user_chats_with_messages_retrieved": "User chats with messages retrieved successfully.",
+                "chat_could_not_be_created": "Chat could not be created.",
+                "receiver_id_required": "receiverId is required for new chat."
             }
         },
         "ticketService": {
@@ -184,6 +190,25 @@
                 "update_error": "[REPO] CategoryRepository.update error: {error}",
                 "soft_delete": "[REPO] CategoryRepository.soft_delete: category_id={category_id}, değişen={modified}",
                 "soft_delete_error": "[REPO] CategoryRepository.soft_delete error: {error}"
+            }
+        }
+    },
+
+    "controllers": {
+        "categoryController": {
+            "logs": {
+                "listing_categories": "Listing categories",
+                "creating_category": "Category is being created: {category_name_tr} {category_name_en}",
+                "category_created": "Category created successfully.",
+                "updating_category": "Category is being updated: {category_id}",
+                "category_updated": "Category updated successfully: {category_id}",
+                "deleting_category": "Category is being deleted: {category_id}",
+                "category_deleted": "Category deleted successfully: {category_id}",
+                "category_name_exists": "A category with this name already exists.",
+                "category_list_error": "Categories could not be listed.",
+                "category_creation_error": "Category could not be created.",
+                "category_update_error": "Category could not be updated.",
+                "category_deletion_error": "Category could not be deleted."
             }
         }
     }

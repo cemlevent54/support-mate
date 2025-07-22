@@ -12,7 +12,7 @@ import { logout as apiLogout } from '../../api/authApi';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import { useTranslation } from 'react-i18next';
-import { useLanguage } from './LanguageProvider';
+import { useLanguage } from '../../providers/LanguageProvider';
 import ChatList from '../chats/ChatList';
 import SupportChats from '../chats/SupportChats';
 import SupportRequests from '../SupportRequests';
@@ -23,7 +23,13 @@ const sidebarItems = [
   { key: 'profile', label: 'Profil' },
 ];
 
+const LANGUAGES = [
+  { code: 'tr', label: 'Türkçe' },
+  { code: 'en', label: 'English' }
+];
+
 export default function SupportDashboard() {
+  console.log('SupportDashboard render oldu');
   const { chatId } = useParams();
   const [selected, setSelected] = useState('requests');
   const [activeChatTicketTitle, setActiveChatTicketTitle] = useState("");
@@ -66,18 +72,26 @@ export default function SupportDashboard() {
   return (
     <Box display="flex" minHeight="100vh">
       {/* Sidebar */}
+      {console.log('Sidebar render ediliyor')}
       <Paper elevation={3} sx={{ width: 220, minHeight: '100vh', borderRadius: 0, p: 2, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', bgcolor: '#111', color: '#fff' }}>
         <div>
+          {console.log('Sidebar içeriği render ediliyor')}
+          abc
           <Typography variant="h6" fontWeight={700} mb={2} textAlign="center" sx={{ color: '#fff' }}>Support Panel</Typography>
-          <Select
-            value={language}
-            onChange={e => onLanguageChange(e.target.value)}
-            size="small"
-            sx={{ mb: 2, width: '100%', bgcolor: '#222', color: '#fff', '.MuiSvgIcon-root': { color: '#fff' } }}
-          >
-            <MenuItem value="tr">Türkçe</MenuItem>
-            <MenuItem value="en">English</MenuItem>
-          </Select>
+          {/* Basit HTML select ile dil seçici */}
+          <div style={{ marginBottom: 16 }}>
+            <label htmlFor="language-select" style={{ color: '#fff', fontSize: 14, marginBottom: 4, display: 'block' }}>Dil Seçimi</label>
+            <select
+              id="language-select"
+              value={language}
+              onChange={e => onLanguageChange(e.target.value)}
+              style={{ width: '100%', padding: '6px 8px', borderRadius: 4, border: '1px solid #444', background: '#222', color: '#fff', fontSize: 14 }}
+            >
+              {LANGUAGES.map(lang => (
+                <option key={lang.code} value={lang.code}>{lang.label}</option>
+              ))}
+            </select>
+          </div>
           <List>
             {sidebarItems.map(item => (
               <ListItem key={item.key} disablePadding>
@@ -108,6 +122,7 @@ export default function SupportDashboard() {
         </Button>
       </Paper>
       {/* İçerik */}
+      {console.log('İçerik alanı render ediliyor, selected:', selected)}
       {selected === 'requests' && (
         <SupportRequests onStartChat={handleStartChat} />
       )}
@@ -132,7 +147,7 @@ export default function SupportDashboard() {
                 onMessageSent={handleMessageSent}
               />
             ) : (
-              <Typography mt={4} ml={4} color="text.secondary">Bir talep seçin ve chat başlatın.</Typography>
+              <Typography mt={4} ml={4} color="text.secondary">{t('supportDashboard.noTicketChats')}</Typography>
             )}
           </Box>
         </>

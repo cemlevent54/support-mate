@@ -85,10 +85,18 @@ const modalStyle = {
           console.log('MyRequests - fetchTickets - processing ticket:', ticket);
           let categoryName = "";
           if (ticket.category) {
-            if (i18n.language === "tr") {
-              categoryName = ticket.category.categoryNameTr || ticket.category.categoryNameEn || "-";
+            if (ticket.category.data) {
+              if (i18n.language === "tr") {
+                categoryName = ticket.category.data.category_name_tr || ticket.category.data.category_name_en || "-";
+              } else {
+                categoryName = ticket.category.data.category_name_en || ticket.category.data.category_name_tr || "-";
+              }
             } else {
-              categoryName = ticket.category.categoryNameEn || ticket.category.categoryNameTr || "-";
+              if (i18n.language === "tr") {
+                categoryName = ticket.category.categoryNameTr || ticket.category.categoryNameEn || "-";
+              } else {
+                categoryName = ticket.category.categoryNameEn || ticket.category.categoryNameTr || "-";
+              }
             }
           } else {
             categoryName = "-";
