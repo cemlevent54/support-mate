@@ -244,7 +244,9 @@
     "requestsDesc": "Support requests will be shown here.",
     "profileTitle": "Profile",
     "profileDesc": "Profile information will be shown here.",
-    "searchChat": "Search chat..."
+    "searchChat": "Search chat...",
+    "noTicketChats": "No ticket chats.",
+    "noNonTicketChats": "No non-ticket chats."
   },
   "employeeDashboard": {
     "title": "Employee Panel",
@@ -261,7 +263,8 @@
     "placeholder": "Write a message...",
     "createTask": "Create Task",
     "download": "Download",
-    "preview": "Preview"
+    "preview": "Preview",
+    "userTyping": "User is typing..."
   },
   "chatDialog": {
     "detail": "Detail",

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { listMessagesByTicketId, sendMessage } from '../api/messagesApi';
+import { listMessagesByTicketId, sendMessage, createMessage } from '../api/messagesApi';
 import socket from '../socket/socket';
 
 // JWT çözümleyici yardımcı fonksiyon
@@ -158,11 +158,26 @@ export const useChatSocket = (chatTicket, chatOpen) => {
 
   // Mesaj gönder
   const handleSend = async () => {
-    if (!input.trim() || !chatId) return;
+    if (!input.trim()) return;
     setSending(true);
     try {
-      socket.emit('send_message', { chatId, userId: myUserId, message: input });
-      const res = await sendMessage({ chatId, userId: myUserId, text: input });
+      let currentChatId = chatId;
+      let res;
+      if (!currentChatId) {
+        // İlk mesaj, chat yok. createMessage ile başlat.
+        res = await createMessage({ text: input, userId: myUserId, receiverId: chatTicket?.receiverId, ticketId: chatTicket?.ticketId });
+        if (res.success && res.data && res.data.chatId) {
+          currentChatId = res.data.chatId;
+          setChatId(currentChatId);
+        } else {
+          throw new Error('Chat başlatılamadı');
+        }
+      } else {
+        // Var olan chat, sendMessage ile devam.
+        res = await sendMessage({ chatId: currentChatId, userId: myUserId, text: input });
+      }
+      // Socket emit her iki durumda da yapılmalı
+      socket.emit('send_message', { chatId: currentChatId, userId: myUserId, message: input });
       if (res.success) {
         setMessages(prev => [
           ...prev,
@@ -176,7 +191,7 @@ export const useChatSocket = (chatTicket, chatOpen) => {
         ]);
         setInput("");
         setSomeoneTyping(false);
-        socket.emit('stop_typing', { chatId, userId: myUserId });
+        socket.emit('stop_typing', { chatId: currentChatId, userId: myUserId });
       }
     } catch (e) {
       console.error('[MyRequests][SOCKET][SEND_MESSAGE][HATA] Mesaj gönderilemedi:', e);

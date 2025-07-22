@@ -173,7 +173,7 @@ class TicketService:
         logger.info(_(f"services.ticketService.logs.listing_tickets_for_agent").format(user_id=user.get('id', 'unknown')))
         result = self.list_agent_handler.execute(user)
         
-        # DTO'ya çevir ve kategori ekle
+        # DTO'ya çevir ve kategori + chatId ekle
         if result.get("success") and result.get("data"):
             tickets = result["data"]
             category_service = None
@@ -191,6 +191,10 @@ class TicketService:
                     dto_dict["category"] = category_info
                 else:
                     dto_dict["category"] = None
+                # --- CHAT ID EKLEME ---
+                chat_repo = ChatRepository()
+                chat = chat_repo.find_by_ticket_id(str(ticket.id))
+                dto_dict["chatId"] = str(chat.id) if chat else None
                 ticket_dtos.append(dto_dict)
             result["data"] = ticket_dtos
         

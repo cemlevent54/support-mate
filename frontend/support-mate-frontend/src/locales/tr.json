@@ -244,7 +244,9 @@
     "requestsTitle": "Destek Talepleri",
     "requestsDesc": "Destek talepleri burada görünecek.",
     "profileTitle": "Profil",
-    "profileDesc": "Profil bilgileri burada görünecek."
+    "profileDesc": "Profil bilgileri burada görünecek.",
+    "noTicketChats": "Hiç ticket sohbeti yok.",
+    "noNonTicketChats": "Hiç ticket dışı sohbet yok."
   },
   "employeeDashboard": {
     "title": "Employee Panel",
@@ -261,7 +263,8 @@
     "placeholder": "Mesaj yazın...",
     "createTask": "Görev Oluştur",
     "download": "İndir",
-    "preview": "Önizle"
+    "preview": "Önizle",
+    "userTyping": "Kullanıcı yazıyor..."
   },
   "chatDialog": {
     "detail": "Detay",

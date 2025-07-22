@@ -2,6 +2,7 @@ from models.chat import Chat
 from typing import List, Optional
 from pymongo import MongoClient
 from config.database import get_mongo_uri
+from config.logger import get_logger
 import logging
 from bson import ObjectId
 from datetime import datetime
@@ -31,7 +32,14 @@ class ChatRepository:
             raise
 
     def get_by_id(self, chat_id: str) -> Optional[Chat]:
-        doc = self.collection.find_one({"_id": ObjectId(chat_id)})
+        # Önce ObjectId ile dene, olmazsa string ile dene
+        doc = None
+        try:
+            doc = self.collection.find_one({"_id": ObjectId(chat_id)})
+        except Exception:
+            pass
+        if not doc:
+            doc = self.collection.find_one({"_id": chat_id})
         if doc:
             doc["_id"] = str(doc["_id"])
             return Chat.model_validate(doc)
@@ -66,4 +74,18 @@ class ChatRepository:
             if "createdAt" not in doc or doc["createdAt"] is None:
                 doc["createdAt"] = None
             return Chat.model_validate(doc)
-        return None 
+        return None
+
+    def list_non_ticket_chats_for_user(self, user_id: str):
+        logging.info(f"[REPO] list_non_ticket_chats_for_user called with user_id: {user_id}")
+        # participants.userId == user_id ve ticketId == None ve isDeleted == False
+        docs = self.collection.find({
+            "participants.userId": user_id,
+            "ticketId": None,
+            "isDeleted": False
+        })
+        result = []
+        for doc in docs:
+            doc["_id"] = str(doc["_id"])
+            result.append(doc)
+        return result 

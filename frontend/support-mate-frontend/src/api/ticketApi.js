@@ -70,5 +70,21 @@ export const getTicketForUser = async (ticketId) => {
   return response.data;
 }
 
+// Online customer supporter var mı?
+export const checkOnlineSupporters = async () => {
+  const response = await axiosInstance.get('http://localhost:9000/api/auth/online-users');
+  // data array'i dönüyor, uzunluğunu döndür
+  return Array.isArray(response.data?.data) && response.data.data.length > 0;
+};
+
+// Online customer supporter'ların ilk id'sini döndür
+export const getFirstOnlineSupporterId = async () => {
+  const response = await axiosInstance.get('http://localhost:9000/api/auth/online-users');
+  if (Array.isArray(response.data?.data) && response.data.data.length > 0) {
+    return response.data.data[0].id || response.data.data[0]._id;
+  }
+  return null;
+};
+
 
 

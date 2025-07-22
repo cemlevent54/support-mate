@@ -11,6 +11,7 @@ class AuthController {
   googleLogin = authService.googleLogin.bind(authService);
   googleRegister = authService.googleRegister.bind(authService);
   verifyEmail = authService.verifyEmail.bind(authService);
+  onlineUsers = authService.onlineUsers.bind(authService);
 }
 
 export default new AuthController(); 

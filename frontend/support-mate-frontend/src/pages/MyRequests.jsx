@@ -395,6 +395,7 @@ const modalStyle = {
             onSend={handleSend}
             onInputChange={handleInputChange}
             isModal={true}
+            myUserId={myUserId}
           />
         </Box>
       </Modal>

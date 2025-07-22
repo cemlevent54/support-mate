@@ -129,3 +129,21 @@ def verify_agent_permission(current_user_with_details):
         )
     
     return user_details
+
+
+# online users
+
+def get_online_customer_supporters():
+    """Gateway üzerinden online customer supporter detaylarını getirir."""
+    url = f"{GATEWAY_URL}/api/auth/online-users"
+    try:
+        response = requests.get(url, timeout=10)
+        if response.status_code == 200:
+            data = response.json().get("data", [])
+            return data
+        else:
+            logger.error(f"Failed to fetch online customer supporters. Status: {response.status_code}, Response: {response.text}")
+            return []
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Request error while fetching online customer supporters: {str(e)}")
+        return []

@@ -3,7 +3,7 @@ import TaskCreateModal from './TaskCreateModal';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import { MdSend } from 'react-icons/md';
-import { listMessagesByTicketId, sendMessage } from '../../api/messagesApi';
+import { listMessagesByChatId, sendMessage } from '../../api/messagesApi';
 import { getUserIdFromJWT } from '../../utils/jwt';
 import { useTranslation } from 'react-i18next';
 import socket from '../../socket/socket';
@@ -21,11 +21,11 @@ import DownloadIcon from '@mui/icons-material/Download';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import CircularProgress from '@mui/material/CircularProgress';
 
-export default function SupportChats({ ticketId, ticketTitle, onMessageSent }) {
-  const [messages, setMessages] = useState([]);
+export default function SupportChats({ ticketId, ticketTitle, onMessageSent, messages: propMessages }) {
+  const [messages, setMessages] = useState(propMessages || []);
   const [input, setInput] = useState("");
   const [taskModalOpen, setTaskModalOpen] = useState(false);
-  const [chatId, setChatId] = useState(null);
+  const [chatId, setChatId] = useState(ticketId || null);
   const [isTyping, setIsTyping] = useState(false);
   const [loading, setLoading] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -121,6 +121,11 @@ export default function SupportChats({ ticketId, ticketTitle, onMessageSent }) {
   };
 
   useEffect(() => {
+    if (propMessages) {
+      setMessages(propMessages);
+      setChatId(ticketId);
+      return;
+    }
     if (!ticketId) {
       setMessages([]);
       setChatId(null);
@@ -128,7 +133,7 @@ export default function SupportChats({ ticketId, ticketTitle, onMessageSent }) {
     }
     const fetchMessages = async () => {
       try {
-        const res = await listMessagesByTicketId(ticketId);
+        const res = await listMessagesByChatId(ticketId);
         if (res && res.success && res.data && Array.isArray(res.data.messages)) {
           setMessages(res.data.messages);
           setChatId(res.data.chatId || null);
@@ -142,7 +147,7 @@ export default function SupportChats({ ticketId, ticketTitle, onMessageSent }) {
       }
     };
     fetchMessages();
-  }, [ticketId]);
+  }, [ticketId, propMessages]);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -345,7 +350,7 @@ export default function SupportChats({ ticketId, ticketTitle, onMessageSent }) {
           <div ref={messagesEndRef} />
           {isTyping && (
             <Box fontSize={14} color="#888" mb={1}>
-              Kullanıcı yazıyor...
+              {t('chatArea.userTyping')}
             </Box>
           )}
         </Box>

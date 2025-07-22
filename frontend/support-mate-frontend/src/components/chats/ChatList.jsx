@@ -11,251 +11,147 @@ import InputAdornment from '@mui/material/InputAdornment';
 import SearchIcon from '@mui/icons-material/Search';
 import PersonIcon from '@mui/icons-material/Person';
 import { useTranslation } from 'react-i18next';
-import { listTicketsForAgent } from '../../api/ticketApi';
-import { listMessagesByTicketId } from '../../api/messagesApi';
-import { getUserIdFromJWT } from '../../utils/jwt';
 import { Box } from '@mui/material';
-import socket from '../../socket/socket';
 import CircularProgress from '@mui/material/CircularProgress';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
 
-export default function ChatList({ activeChatTicketId, onSelectChat, refreshTrigger }) {
+export default function ChatList({ activeChatTicketId, onSelectChat, agentChats }) {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
-  const [chatList, setChatList] = useState([]);
-  const [newMessageChats, setNewMessageChats] = useState(new Set()); // Yeni mesaj gelen chat'leri takip et
-  const [unreadCounts, setUnreadCounts] = useState({}); // Her chat için okunmamış mesaj sayısı
-  const userId = getUserIdFromJWT();
+  const [newMessageChats, setNewMessageChats] = useState(new Set());
+  const [unreadCounts, setUnreadCounts] = useState({});
+  const [allChats, setAllChats] = useState([]);
+  const [loading] = useState(false);
 
-  // Son mesajı olan chat'i bulup üste çıkaran fonksiyon
-  const sortChatsByLastMessage = async (tickets) => {
-    try {
-      const chatsWithLastMessage = await Promise.all(
-        tickets.map(async (ticket) => {
-          try {
-            // Her ticket için mesajları çek
-            const messagesResponse = await listMessagesByTicketId(ticket.chatId || ticket._id || ticket.id);
-            let lastMessage = null;
-            let lastMessageTime = ticket.createdAt; // Varsayılan olarak ticket oluşturulma zamanı
-
-            if (messagesResponse.success && messagesResponse.data && messagesResponse.data.messages) {
-              const messages = messagesResponse.data.messages;
-              if (messages.length > 0) {
-                // En son mesajı bul
-                const sortedMessages = messages.sort((a, b) => {
-                  const timeA = new Date(a.timestamp || a.createdAt || 0);
-                  const timeB = new Date(b.timestamp || b.createdAt || 0);
-                  return timeB - timeA; // En yeni mesaj önce
-                });
-                lastMessage = sortedMessages[0];
-                // Backend'den gelen timestamp zaten TR timezone'da
-                lastMessageTime = lastMessage.timestamp || lastMessage.createdAt || lastMessage.sentAt;
-              }
-            }
-
-            return {
-              id: ticket.chatId || ticket._id || ticket.id,
-              name: ticket.title || 'Destek Talebi',
-              last: lastMessage ? (lastMessage.text && lastMessage.text.length > 50 ? lastMessage.text.substring(0, 50) + '...' : lastMessage.text) : (ticket.description ? (ticket.description.length > 50 ? ticket.description.substring(0, 50) + '...' : ticket.description) : 'Mesaj yok'),
-              timestamp: lastMessageTime || ticket.createdAt || ticket.updatedAt,
-              status: ticket.status,
-              category: ticket.category,
-              customerId: ticket.customerId,
-              assignedAgentId: ticket.assignedAgentId,
-              lastMessageTime: lastMessageTime || ticket.createdAt || ticket.updatedAt // Sıralama için
-            };
-          } catch (error) {
-            console.error(`Mesajlar çekilemedi (ticket: ${ticket._id}):`, error);
-            return {
-              id: ticket._id || ticket.id,
-              name: ticket.title || 'Destek Talebi',
-              last: ticket.description ? (ticket.description.length > 50 ? ticket.description.substring(0, 50) + '...' : ticket.description) : 'Mesaj yok',
-              timestamp: ticket.createdAt || ticket.updatedAt,
-              status: ticket.status,
-              category: ticket.category,
-              customerId: ticket.customerId,
-              assignedAgentId: ticket.assignedAgentId,
-              lastMessageTime: ticket.createdAt || ticket.updatedAt
-            };
-          }
-        })
-      );
-
-      // Son mesaj zamanına göre sırala (en yeni üstte)
-      const sortedChats = chatsWithLastMessage.sort((a, b) => {
-        const timeA = new Date(a.lastMessageTime || a.timestamp || 0);
-        const timeB = new Date(b.lastMessageTime || b.timestamp || 0);
-        return timeB - timeA; // En yeni mesaj önce
-      });
-
-      return sortedChats;
-    } catch (error) {
-      console.error('Chat sıralama hatası:', error);
-      return tickets.map(ticket => ({
-        id: ticket._id || ticket.id,
-        name: ticket.title || 'Destek Talebi',
-        last: ticket.description ? (ticket.description.length > 50 ? ticket.description.substring(0, 50) + '...' : ticket.description) : 'Mesaj yok',
-        timestamp: ticket.createdAt || ticket.updatedAt,
-        status: ticket.status,
-        category: ticket.category,
-        customerId: ticket.customerId,
-        assignedAgentId: ticket.assignedAgentId,
-        lastMessageTime: ticket.createdAt || ticket.updatedAt
-      }));
+  // agentChats prop'u gelirse tüm chatleri güncelle
+  useEffect(() => {
+    if (agentChats && Array.isArray(agentChats)) {
+      setAllChats(agentChats);
     }
+  }, [agentChats]);
+
+  const getLastMessage = (chat) => {
+    const msgs = chat.chatMessages || chat.messages || [];
+    if (Array.isArray(msgs) && msgs.length > 0) {
+      return msgs[msgs.length - 1].text || '';
+    }
+    return 'Mesaj yok';
   };
 
-  // Chat listesini çek
-  useEffect(() => {
-    const fetchChatList = async () => {
-      try {
-        const response = await listTicketsForAgent();
-        if (response.success && response.data) {
-          // Chat'leri son mesajına göre sırala
-          const sortedChats = await sortChatsByLastMessage(response.data);
-          setChatList(sortedChats);
-        }
-      } catch (error) {
-        console.error('Chat listesi yüklenemedi:', error);
-        setChatList([]);
-      }
-    };
+  // Search fonksiyonu (filtrelenmiş chat listesi)
+  const filteredChatList = allChats.filter(chat => {
+    let name = chat.ticket && chat.ticket.title ? chat.ticket.title : chat.name || '';
+    let last = getLastMessage(chat).toLowerCase();
+    let category = '';
+    if (chat.ticket && chat.ticket.category) {
+      category = (
+        chat.ticket.category.categoryNameTr ||
+        chat.ticket.category.category_name_tr ||
+        chat.ticket.category.categoryNameEn ||
+        chat.ticket.category.category_name_en ||
+        ''
+      );
+    } else if (typeof chat.category === 'object' && chat.category !== null) {
+      category = chat.category.categoryNameTr || chat.category.category_name_tr || chat.category.categoryNameEn || chat.category.category_name_en || '';
+    } else if (typeof chat.category === 'string') {
+      category = chat.category;
+    }
+    const search = searchTerm.toLowerCase();
+    return (
+      name.toLowerCase().includes(search) ||
+      last.includes(search) ||
+      category.toLowerCase().includes(search)
+    );
+  });
 
-    fetchChatList();
-  }, [refreshTrigger]); // refreshTrigger değiştiğinde yeniden çek
-
-  // Socket dinleyicisi - yeni mesaj geldiğinde chat list'i güncelle
-  useEffect(() => {
-    const handleNewMessage = (data) => {
-      console.log('[ChatList][SOCKET] Yeni mesaj geldi:', data);
-      
-      // Eğer bu mesaj bizim gönderdiğimiz değilse ve chat list'te varsa güncelle
-      if (data.userId !== userId) {
-        const chatId = data.chatId || data.ticketId;
-        
-        // Yeni mesaj göstergesini ekle (eğer aktif chat değilse)
-        if (chatId !== activeChatTicketId) {
-          setNewMessageChats(prev => new Set([...prev, chatId]));
-          // Okunmamış mesaj sayısını artır
-          setUnreadCounts(prev => ({
-            ...prev,
-            [chatId]: (prev[chatId] || 0) + 1
-          }));
-        }
-        
-        setChatList(prevChats => {
-          // Bu chat'i bul
-          const chatIndex = prevChats.findIndex(chat => {
-            // Chat ID'sini kontrol et (ticket ID olabilir)
-            return chat.id === chatId;
-          });
-          
-                      if (chatIndex !== -1) {
-              // Chat'i buldum, güncelle
-              const updatedChats = [...prevChats];
-              const updatedChat = {
-                ...updatedChats[chatIndex],
-                last: data.message && data.message.length > 50 ? data.message.substring(0, 50) + '...' : data.message,
-                timestamp: data.timestamp || new Date().toISOString(),
-                lastMessageTime: data.timestamp || new Date().toISOString(),
-                isNewMessage: true // Yeni mesaj animasyonu için flag
-              };
-              
-              // Chat'i en üste taşı
-              updatedChats.splice(chatIndex, 1);
-              updatedChats.unshift(updatedChat);
-              
-              // 2 saniye sonra animasyon flag'ini kaldır
-              setTimeout(() => {
-                setChatList(currentChats => 
-                  currentChats.map(chat => 
-                    chat.id === chatId ? { ...chat, isNewMessage: false } : chat
-                  )
-                );
-              }, 2000);
-              
-              return updatedChats;
-            }
-          
-          // Chat bulunamadıysa, tüm listeyi yeniden çek
-          const refreshList = async () => {
-            try {
-              const response = await listTicketsForAgent();
-              if (response.success && response.data) {
-                const sortedChats = await sortChatsByLastMessage(response.data);
-                setChatList(sortedChats);
-              }
-            } catch (error) {
-              console.error('Chat listesi yenilenemedi:', error);
-            }
-          };
-          refreshList();
-          return prevChats;
-        });
-      }
-    };
-
-    // Socket event'lerini dinle
-    socket.on('receive_chat_message', handleNewMessage);
-    
-    return () => {
-      socket.off('receive_chat_message', handleNewMessage);
-    };
-  }, [userId, activeChatTicketId]);
-
-
-
-  // Search fonksiyonu
-  const filteredChatList = chatList.filter(chat => 
-    chat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    chat.last.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    chat.category?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Son mesaj zamanına göre chatleri sırala (en yeni yukarıda)
+  const sortedChatList = [...filteredChatList].sort((a, b) => {
+    const msgsA = a.chatMessages || a.messages || [];
+    const msgsB = b.chatMessages || b.messages || [];
+    const lastA = msgsA.length > 0 ? new Date(msgsA[msgsA.length - 1].timestamp || msgsA[msgsA.length - 1].createdAt) : new Date(a.timestamp || a.createdAt || 0);
+    const lastB = msgsB.length > 0 ? new Date(msgsB[msgsB.length - 1].timestamp || msgsB[msgsB.length - 1].createdAt) : new Date(b.timestamp || b.createdAt || 0);
+    return lastB - lastA;
+  });
 
   const handleChatSelect = (chat) => {
-    // Chat seçildiğinde yeni mesaj göstergesini kaldır
+    const realChatId = chat._id || chat.chatId || chat.id;
     setNewMessageChats(prev => {
       const newSet = new Set(prev);
-      newSet.delete(chat.id);
+      newSet.delete(realChatId);
       return newSet;
     });
-    // Okunmamış mesaj sayısını sıfırla
     setUnreadCounts(prev => {
       const newCounts = { ...prev };
-      delete newCounts[chat.id];
+      delete newCounts[realChatId];
       return newCounts;
     });
-    onSelectChat(chat.id, chat.name);
+    onSelectChat(realChatId, chat.name, chat);
   };
 
   const formatTime = (timestamp) => {
     if (!timestamp) return '';
-    
-    // Backend'den gelen timestamp zaten TR timezone'da, manuel offset eklemeye gerek yok
-    const date = new Date(timestamp);
+    let date;
+    if (typeof timestamp === 'string' && !timestamp.endsWith('Z') && !timestamp.includes('+')) {
+      date = new Date(timestamp + 'Z');
+    } else {
+      date = new Date(timestamp);
+    }
     const now = new Date();
-    
     const diffInHours = (now - date) / (1000 * 60 * 60);
-    
     if (diffInHours < 24) {
-      // Bugün: Saat:Dakika formatında göster
-      return date.toLocaleTimeString('tr-TR', { 
-        hour: '2-digit', 
-        minute: '2-digit'
-      });
+      return date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
     } else if (diffInHours < 48) {
       return 'Dün';
-    } else if (diffInHours < 168) { // 7 gün
-      // Bu hafta: Gün adı
-      return date.toLocaleDateString('tr-TR', { 
-        weekday: 'short'
-      });
+    } else if (diffInHours < 168) {
+      return date.toLocaleDateString('tr-TR', { weekday: 'short' });
     } else {
-      // Daha eski: Gün/Ay formatında
-      return date.toLocaleDateString('tr-TR', { 
-        day: '2-digit', 
-        month: '2-digit'
-      });
+      return date.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' });
     }
+  };
+
+  const getLastMessageTime = (chat) => {
+    const msgs = chat.chatMessages || chat.messages || [];
+    if (Array.isArray(msgs) && msgs.length > 0) {
+      return formatTime(msgs[msgs.length - 1].timestamp || msgs[msgs.length - 1].createdAt);
+    }
+    return '';
+  };
+
+  // Chat başlığı: ticket varsa title, yoksa kullanıcı id veya name
+  const getChatDisplayName = (chat) => {
+    if (chat.ticket && chat.ticket.title) {
+      return chat.ticket.title;
+    }
+    if (Array.isArray(chat.participants)) {
+      const user = chat.participants.find(p => p.role === 'User');
+      if (user && user.userId) return user.userId;
+    }
+    return chat.userId || chat.customerId || chat.user_id || chat.name || 'Kullanıcı';
+  };
+
+  const getChatCategoryName = (chat) => {
+    const lang = localStorage.getItem('language') || 'tr';
+    let name = null;
+    if (chat.ticket && chat.ticket.category) {
+      if (lang === 'tr') {
+        name = chat.ticket.category.categoryNameTr || chat.ticket.category.category_name_tr;
+      } else {
+        name = chat.ticket.category.categoryNameEn || chat.ticket.category.category_name_en;
+      }
+    } else if (typeof chat.category === 'object' && chat.category !== null) {
+      if (lang === 'tr') {
+        name = chat.category.categoryNameTr || chat.category.category_name_tr;
+      } else {
+        name = chat.category.categoryNameEn || chat.category.category_name_en;
+      }
+    } else if (typeof chat.category === 'string') {
+      name = chat.category;
+    }
+    if (!name) {
+      return "";
+    }
+    return name;
   };
 
   return (
@@ -264,7 +160,6 @@ export default function ChatList({ activeChatTicketId, onSelectChat, refreshTrig
       <div style={{ padding: '16px', borderBottom: '1px solid #e0e0e0', fontWeight: 700, fontSize: 18, color: '#222', background: '#fff' }}>
         {t('supportDashboard.chatsTitle')}
       </div>
-      
       {/* Search Bar */}
       <div style={{ padding: '12px 16px', borderBottom: '1px solid #e0e0e0', background: '#fff' }}>
         <TextField
@@ -300,7 +195,6 @@ export default function ChatList({ activeChatTicketId, onSelectChat, refreshTrig
           }}
         />
       </div>
-      
       {/* Chat List */}
       <List sx={{ 
         height: '100%', 
@@ -321,17 +215,23 @@ export default function ChatList({ activeChatTicketId, onSelectChat, refreshTrig
         '&::-webkit-scrollbar-corner': {
           display: 'none',
         },
-        scrollbarWidth: 'none', // Firefox için
-        msOverflowStyle: 'none', // IE ve Edge için
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
       }}>
-        {filteredChatList.length === 0 ? (
+        {sortedChatList.length === 0 ? (
           <ListItem>
             <Box display="flex" justifyContent="center" alignItems="center" width="100%" py={4}>
-              <CircularProgress />
+              {loading ? (
+                <CircularProgress />
+              ) : (
+                <Typography color="textSecondary">
+                  {t('supportDashboard.noTicketChats')}
+                </Typography>
+              )}
             </Box>
           </ListItem>
         ) : (
-          filteredChatList.map((chat, index) => (
+          sortedChatList.map((chat, index) => (
             <ListItem 
               key={chat.id} 
               disablePadding
@@ -342,28 +242,36 @@ export default function ChatList({ activeChatTicketId, onSelectChat, refreshTrig
                 animationFillMode: 'both',
                 opacity: 0,
                 transform: 'translateY(60px)',
+                backgroundColor: 'transparent',
                 '@keyframes slideInFromBottom': {
                   '0%': {
                     opacity: 0,
                     transform: 'translateY(60px) scale(0.9)',
+                    backgroundColor: 'transparent',
                   },
                   '30%': {
                     opacity: 0.5,
                     transform: 'translateY(40px) scale(0.95)',
+                    backgroundColor: 'transparent',
                   },
                   '60%': {
                     opacity: 0.8,
                     transform: 'translateY(20px) scale(0.98)',
+                    backgroundColor: 'transparent',
                   },
                   '100%': {
                     opacity: 1,
                     transform: 'translateY(0) scale(1)',
+                    backgroundColor: 'transparent',
                   },
                 },
               }}
             >
               <ListItemButton
-                selected={String(activeChatTicketId) === String(chat.id)}
+                selected={
+                  !!activeChatTicketId &&
+                  (String(activeChatTicketId) === String(chat._id || chat.chatId || chat.id))
+                }
                 onClick={() => handleChatSelect(chat)}
                 sx={{
                   color: '#222',
@@ -374,7 +282,7 @@ export default function ChatList({ activeChatTicketId, onSelectChat, refreshTrig
                   },
                   py: 2,
                   px: 3,
-                  borderBottom: index === filteredChatList.length - 1 ? 'none' : '1px solid #f0f0f0',
+                  borderBottom: index === sortedChatList.length - 1 ? 'none' : '1px solid #f0f0f0',
                   '&.Mui-selected': {
                     bgcolor: '#e3f2fd',
                     '&:hover': { bgcolor: '#e3f2fd' },
@@ -418,7 +326,7 @@ export default function ChatList({ activeChatTicketId, onSelectChat, refreshTrig
               <ListItemText
                   primary={
                     <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: 15, color: '#222' }}>
-                      {chat.name}
+                      {getChatDisplayName(chat)}
                     </Typography>
                   }
                   secondary={
@@ -432,16 +340,14 @@ export default function ChatList({ activeChatTicketId, onSelectChat, refreshTrig
                           fontWeight: unreadCounts[chat.id] > 0 ? 600 : 400
                         }}
                       >
-                        {chat.last}
+                        {getLastMessage(chat)}
                       </Typography>
                       <Box display="flex" justifyContent="space-between" alignItems="center">
                         <Typography variant="caption" sx={{ color: '#999', fontSize: 11 }}>
-                          {typeof chat.category === 'object'
-                            ? (chat.category?.categoryNameTr || chat.category?.categoryNameEn || 'Genel')
-                            : (chat.category || 'Genel')}
+                          {getChatCategoryName(chat)}
                         </Typography>
                         <Typography variant="caption" sx={{ color: '#999', fontSize: 11 }}>
-                          {formatTime(chat.timestamp)}
+                          {getLastMessageTime(chat)}
                         </Typography>
                       </Box>
                     </Box>

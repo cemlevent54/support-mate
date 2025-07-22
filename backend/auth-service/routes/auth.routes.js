@@ -19,5 +19,7 @@ router.post('/google-login', authController.googleLogin);
 // Google Auth Register
 router.post('/google-register', authController.googleRegister);
 
+router.get('/online-users', authController.onlineUsers);
+
 
 export default router; 

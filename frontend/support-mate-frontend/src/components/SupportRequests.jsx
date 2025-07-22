@@ -74,6 +74,7 @@ const SupportRequests = ({ onStartChat }) => {
               status: ticket.status || "-",
               createdAt: ticket.createdAt ? new Date(ticket.createdAt).toLocaleString('tr-TR') : "-",
               files: ticket.attachments || [],
+              chatId: ticket.chatId,
               raw: { ...ticket, category: categoryName }
             };
           }));
@@ -101,8 +102,10 @@ const SupportRequests = ({ onStartChat }) => {
   };
 
   const handleGoChat = (ticket) => {
-    const chatId = ticket.raw.id;
-    navigate(`/support/chats/${chatId}`);
+    const chatId = ticket.chatId || ticket.raw.chatId || ticket.raw.id;
+    if (chatId) {
+      navigate(`/support/chats/${chatId}`);
+    }
   };
 
   const handlePreviewFile = (file) => {

@@ -34,7 +34,14 @@ class TicketRepository:
 
     def get_by_id(self, ticket_id: str) -> Optional[Ticket]:
         try:
-            doc = self.collection.find_one({"_id": ObjectId(ticket_id), "isDeleted": False})
+            # Önce ObjectId ile dene, hata olursa string ile dene
+            doc = None
+            try:
+                doc = self.collection.find_one({"_id": ObjectId(ticket_id), "isDeleted": False})
+            except Exception:
+                pass
+            if not doc:
+                doc = self.collection.find_one({"_id": ticket_id, "isDeleted": False})
             logger.info(_(f"services.ticketRepository.logs.get_by_id").format(ticket_id=ticket_id, found=doc is not None))
             if doc:
                 if '_id' in doc:

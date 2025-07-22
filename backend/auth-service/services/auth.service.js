@@ -692,6 +692,28 @@ class AuthService {
       return internalServerError(res, translation('services.authService.logs.resetPasswordError'));
     }
   }
+
+  async onlineUsers(req, res) {
+    try {
+      const onlineUserIds = await cacheService.client.lRange('online_users_queue', 0, -1);
+      // Her id için kullanıcı detayını CQRS ile çek
+      const userDetails = [];
+      for (const id of onlineUserIds) {
+        // id string olabilir, boşsa atla
+        if (!id) continue;
+        try {
+          const user = await queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_ID, { id });
+          if (user) userDetails.push(user);
+        } catch (err) {
+          logger.warn('onlineUsers: Kullanıcı detayı alınamadı', { id, error: err });
+        }
+      }
+      return apiSuccess(res, userDetails, translation('services.authService.logs.onlineUsers'), 200);
+    } catch (err) {
+      logger.error('onlineUsers error', { error: err });
+      return internalServerError(res, translation('services.authService.logs.onlineUsersError'));
+    }
+  }
 }
 
 const authService = new AuthService();
