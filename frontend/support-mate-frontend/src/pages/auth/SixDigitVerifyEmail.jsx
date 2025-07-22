@@ -8,8 +8,8 @@ import Alert from '@mui/material/Alert';
 import { MuiOtpInput } from 'mui-one-time-password-input';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { login } from '../api/authApi';
-import axiosInstance from '../api/axiosInstance';
+import { login } from '../../api/authApi';
+import axiosInstance from '../../api/axiosInstance';
 
 const SixDigitVerifyEmail = ({ onVerify }) => {
   const [otp, setOtp] = useState('');

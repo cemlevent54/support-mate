@@ -1,27 +1,27 @@
 import React from 'react';
-import SignupCard from './components/SignupCard';
+import SignupCard from './pages/auth/SignupCard';
 import HomePage from './pages/HomePage/HomePage';
-import LoginCard from './components/LoginCard';
-import Dashboard from './components/Dashboard';
-import SupportRequests from './components/SupportRequests';
+import LoginCard from './pages/auth/LoginCard';
+import Dashboard from './components/layout/Dashboard';
+import SupportRequests from './pages/support/SupportRequests';
 import SupportChatsLayout from './components/chats/SupportChatsLayout';
-import EmployeeDashboard from './components/EmployeeDashboard';
-import MyAccount from './components/MyAccount';
-import ForgotPassword from './components/ForgotPassword';
-import ResetPassword from './components/ResetPassword';
+import EmployeeDashboard from './components/layout/EmployeeDashboard';
+import MyAccount from './pages/auth/MyAccount';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminUserRoles from './pages/admin/AdminUserRoles';
 import AdminRolePermissions from './pages/admin/AdminRolePermissions';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import SixDigitVerifyEmail from './components/SixDigitVerifyEmail';
+import SixDigitVerifyEmail from './pages/auth/SixDigitVerifyEmail';
 
-import MyRequests from './pages/MyRequests';
-import ChatDialog from './pages/ChatDialog';
+import MyRequests from './pages/tickets/MyRequests';
+import ChatDialog from './pages/chat/chatDialog/ChatDialog';
 import { useLocation, Navigate } from 'react-router-dom';
 import AdminTickets from './pages/admin/AdminTickets';
 import AdminCategories from './pages/admin/AdminCategories';
-import SupportLayout from './components/SupportLayout';
+import SupportLayout from './components/layout/SupportLayout';
 
 // Global modal handlers - bu fonksiyonlar App.jsx'ten geçirilecek
 let globalOpenCreateTicketModal = () => {};

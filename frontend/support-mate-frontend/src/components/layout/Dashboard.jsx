@@ -8,11 +8,11 @@ import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { logout as apiLogout } from '../api/authApi';
+import { logout } from '../../api/authApi';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import { useTranslation } from 'react-i18next';
-import { useLanguage } from './LanguageProvider';
+import { useLanguage } from '../../providers/LanguageProvider';
 
 const LANGUAGES = [
   { code: 'tr', label: 'Türkçe' },
@@ -41,7 +41,7 @@ export default function Dashboard() {
   const handleLogout = async () => {
     try {
       const token = localStorage.getItem('jwt');
-      await apiLogout(token);
+      await logout(token);
     } catch (e) {
       // Hata olsa da localStorage temizlensin ve yönlendirilsin
       localStorage.removeItem('jwt');

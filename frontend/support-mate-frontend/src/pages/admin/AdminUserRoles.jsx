@@ -6,7 +6,7 @@ import {
 import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon, List as ListIcon, Settings as SettingsIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import * as roleApi from '../../api/roleApi';
-import ConfirmModal from '../../components/ConfirmModal';
+import ConfirmModal from '../../components/common/ConfirmModal';
 import { usePermissions } from '../../hooks/usePermissions';
 import { useTranslation } from 'react-i18next';
 

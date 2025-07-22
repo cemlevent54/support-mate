@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import './CustomTicketTable.css';
+import './CustomTicketTable/CustomTicketTable';
 import CircularProgress from '@mui/material/CircularProgress';
 import Button from '@mui/material/Button';
 

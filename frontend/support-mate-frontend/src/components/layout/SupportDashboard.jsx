@@ -8,14 +8,14 @@ import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import { useNavigate, useParams } from 'react-router-dom';
-import { logout as apiLogout } from '../api/authApi';
+import { logout as apiLogout } from '../../api/authApi';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from './LanguageProvider';
-import ChatList from './chats/ChatList';
-import SupportChats from './chats/SupportChats';
-import SupportRequests from './SupportRequests';
+import ChatList from '../chats/ChatList';
+import SupportChats from '../chats/SupportChats';
+import SupportRequests from '../SupportRequests';
 
 const sidebarItems = [
   { key: 'requests', label: 'Requests' },

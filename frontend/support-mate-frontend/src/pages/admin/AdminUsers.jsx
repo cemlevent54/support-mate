@@ -32,7 +32,7 @@ import {
 } from '@mui/icons-material';
 import { getAllUsers, updateUser, deleteUser } from '../../api/userApi';
 import * as roleApi from '../../api/roleApi';
-import ConfirmModal from '../../components/ConfirmModal';
+import ConfirmModal from '../../components/common/ConfirmModal';
 import { usePermissions } from '../../hooks/usePermissions';
 import { useTranslation } from 'react-i18next';
 

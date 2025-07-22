@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
-import LanguageProvider from './components/LanguageProvider';
+import LanguageProvider from './providers/LanguageProvider';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import AppContent from './AppContent';
 

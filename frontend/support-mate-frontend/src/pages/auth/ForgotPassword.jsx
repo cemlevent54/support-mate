@@ -5,7 +5,7 @@ import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import Snackbar from '@mui/material/Snackbar';
-import { forgotPassword } from '../api/authApi';
+import { forgotPassword } from '../../api/authApi';
 import { useTranslation } from 'react-i18next';
 
 export default function ForgotPassword() {

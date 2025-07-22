@@ -6,7 +6,7 @@ import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import { useTranslation } from 'react-i18next';
-import { useLanguage } from './LanguageProvider';
+import { useLanguage } from '../../providers/LanguageProvider';
 
 const Sidebar = ({ open, onClose, isAuth, onLogin, onSignup, onMyAccount, onLogout, onHome, userRole }) => {
   const { t } = useTranslation();

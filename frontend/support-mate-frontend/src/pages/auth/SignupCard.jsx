@@ -10,11 +10,11 @@ import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import Paper from '@mui/material/Paper';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
-import { register, googleRegister } from '../api/authApi';
+import { register, googleRegister } from '../../api/authApi';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import { useTranslation } from 'react-i18next';
-import { useLanguage } from './LanguageProvider';
+import { useLanguage } from '../../providers/LanguageProvider';
 import { GoogleLogin } from '@react-oauth/google';
 import { useNavigate } from 'react-router-dom';
 

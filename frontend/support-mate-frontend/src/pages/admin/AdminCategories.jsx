@@ -7,8 +7,8 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
-import CustomTable from '../../components/CustomTable';
-import ConfirmModal from '../../components/ConfirmModal';
+import CustomTable from '../../components/tickets/CustomTable';
+import ConfirmModal from '../../components/common/ConfirmModal';
 import { useTranslation } from 'react-i18next';
 import {
   getAdminCategories,

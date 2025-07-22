@@ -7,7 +7,7 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
-import { logout as apiLogout } from '../api/authApi';
+import { logout as apiLogout } from '../../api/authApi';
 
 const sidebarItems = [
   { key: 'requests', label: 'Support Requests', path: '/support/requests' },

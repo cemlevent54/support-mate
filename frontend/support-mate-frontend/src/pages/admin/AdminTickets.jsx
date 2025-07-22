@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import CustomTicketTable from '../../components/CustomTicketTable';
+import CustomTicketTable from '../../components/tickets/CustomTicketTable/CustomTicketTable';
 import Modal from '@mui/material/Modal';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';

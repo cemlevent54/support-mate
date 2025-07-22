@@ -6,8 +6,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import Divider from '@mui/material/Divider';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
-import { listMessages, sendMessage, listMessagesByTicketId } from '../api/messagesApi';
-import socket from '../socket/socket';
+import { listMessages, sendMessage, listMessagesByTicketId } from '../../api/messagesApi';
+import socket from '../../socket/socket';
 
 // JWT çözümleyici yardımcı fonksiyon
 function decodeJWT(token) {

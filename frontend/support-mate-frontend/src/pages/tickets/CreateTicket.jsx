@@ -12,9 +12,9 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
-import ChatDialog from './ChatDialog';
-import { createTicket } from '../api/ticketApi';
-import { getCategories } from '../api/categoryApi';
+import ChatDialog from '../chat/chatDialog/ChatDialog';
+import { createTicket } from '../../api/ticketApi';
+import { getCategories } from '../../api/categoryApi';
 
 // Kategoriler API'den gelecek
 

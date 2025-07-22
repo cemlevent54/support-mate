@@ -11,8 +11,8 @@ import { useNavigate } from 'react-router-dom';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import { useTranslation } from 'react-i18next';
-import { useLanguage } from './LanguageProvider';
-import { logout as apiLogout } from '../api/authApi';
+import { useLanguage } from '../../providers/LanguageProvider';
+import { logout as apiLogout } from '../../api/authApi';
 
 const sidebarItems = [
   { key: 'tasks', label: 'Görevler' },

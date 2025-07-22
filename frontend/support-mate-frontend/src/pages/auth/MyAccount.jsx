@@ -8,10 +8,10 @@ import Stack from '@mui/material/Stack';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import { useTranslation } from 'react-i18next';
-import { useLanguage } from './LanguageProvider';
-import { getAuthenticatedUser, updateUser, deleteUser } from '../api/userApi';
-import { changePassword } from '../api/authApi';
-import ConfirmModal from './ConfirmModal';
+import { useLanguage } from '../../providers/LanguageProvider';
+import { getAuthenticatedUser, updateUser, deleteUser } from '../../api/userApi';
+import { changePassword } from '../../api/authApi';
+import ConfirmModal from '../../components/common/ConfirmModal';
 import { useNavigate } from 'react-router-dom';
 
 export default function MyAccount() {

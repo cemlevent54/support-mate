@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
-import CustomTicketTable from './CustomTicketTable';
+import CustomTicketTable from '../../components/tickets/CustomTicketTable/CustomTicketTable';
 import ChatIcon from '@mui/icons-material/Chat';
 import InfoIcon from '@mui/icons-material/Info';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -11,7 +11,7 @@ import Modal from '@mui/material/Modal';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
-import { listTicketsForAgent } from '../api/ticketApi';
+import { listTicketsForAgent } from '../../api/ticketApi';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 
