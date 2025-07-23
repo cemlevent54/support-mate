@@ -265,6 +265,7 @@
   "chatArea": {
     "placeholder": "Write a message...",
     "createTask": "Create Task",
+    "createTicket": "Create Ticket",
     "download": "Download",
     "preview": "Preview",
     "userTyping": "User is typing..."

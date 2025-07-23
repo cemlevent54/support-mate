@@ -11,6 +11,9 @@ export const createTicket = async (ticketData) => {
   formData.append('title', ticketData.title);
   formData.append('description', ticketData.description);
   formData.append('categoryId', ticketData.categoryId);
+  if (ticketData.productId) formData.append('productId', ticketData.productId);
+  if (ticketData.customerId) formData.append('customerId', ticketData.customerId);
+  if (ticketData.chatId) formData.append('chatId', ticketData.chatId);
   (ticketData.files || []).forEach(file => {
     formData.append('files', file);
   });

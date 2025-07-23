@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import TaskCreateModal from './TaskCreateModal';
+import CreateTask from '../../pages/support/CreateTask';
+import CreateSupportTicket from '../../pages/support/CreateSupportTicket';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import { MdSend } from 'react-icons/md';
@@ -24,10 +26,19 @@ import CircularProgress from '@mui/material/CircularProgress';
 
 const BASE_URL = "http://localhost:9000" + "/api/tickets";
 
+// CustomerId bulma fonksiyonu
+function getCustomerIdFromParticipants(participants, agentId) {
+  if (!Array.isArray(participants)) return null;
+  const customer = participants.find(p => p.userId !== agentId);
+  return customer ? customer.userId : null;
+}
+
 export default function SupportChats({ chat, myUserId }) {
   const [messages, setMessages] = useState(chat?.messages || []);
   const [input, setInput] = useState("");
   const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [createTaskModalOpen, setCreateTaskModalOpen] = useState(false);
+  const [createTicketModalOpen, setCreateTicketModalOpen] = useState(false);
   const [chatId, setChatId] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -248,8 +259,10 @@ export default function SupportChats({ chat, myUserId }) {
     setInput("");
   };
 
-  const openTaskModal = () => setTaskModalOpen(true);
-  const closeTaskModal = () => setTaskModalOpen(false);
+  const openTaskModal = () => setCreateTaskModalOpen(true);
+  const closeTaskModal = () => setCreateTaskModalOpen(false);
+  const openTicketModal = () => setCreateTicketModalOpen(true);
+  const closeTicketModal = () => setCreateTicketModalOpen(false);
   
   // Modal kapatma fonksiyonları
   const handleClosePreview = () => {
@@ -355,14 +368,15 @@ export default function SupportChats({ chat, myUserId }) {
               {t('chatArea.createTask')}
             </Button>
             {(!ticketId) && (
-              <Button variant="outlined" color="secondary" sx={{ height: 44, borderRadius: 22, fontWeight: 600, px: 2.5 }}>
-                Create Ticket
+              <Button variant="outlined" color="secondary" sx={{ height: 44, borderRadius: 22, fontWeight: 600, px: 2.5 }} onClick={openTicketModal}>
+                {t('chatArea.createTicket')}
               </Button>
             )}
           </form>
         </Box>
       </Box>
-      <TaskCreateModal open={taskModalOpen} onClose={closeTaskModal} />
+      <CreateTask open={createTaskModalOpen} onClose={closeTaskModal} />
+      <CreateSupportTicket open={createTicketModalOpen} onClose={closeTicketModal} chat={chat} />
       <Modal
         open={previewOpen}
         onClose={handleClosePreview}

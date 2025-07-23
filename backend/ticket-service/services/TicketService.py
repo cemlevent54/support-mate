@@ -24,6 +24,8 @@ from cqrs.commands.ticket.AssignAgentToPendingTicketCommandHandler import Assign
 from config.language import _
 from dto.ticket_dto import TicketDTO, TicketListDTO
 from config.language import set_language, _
+from fastapi import HTTPException
+from cqrs.commands.chat.UpdateChatTicketIdCommandHandler import UpdateChatTicketIdCommandHandler
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +48,34 @@ class TicketService:
             logger.warning(_(f"services.ticketService.logs.bad_request"))
             return bad_request_error(_(f"services.ticketService.responses.bad_request"))
         logger.info(_(f"services.ticketService.logs.creating_ticket").format(user_id=user.get('id', 'unknown')))
+
+        # Customer Supporter ise özel mantık: chat ve mesaj işlemlerini atla
+        if user.get('roleName') == 'Customer Supporter':
+            ticket['assignedAgentId'] = user['id']
+            if ticket.get('customerId') == user['id']:
+                logger.warning(_(f"services.ticketService.logs.agent_customer_same").format(agent_id=user['id'], customer_id=ticket.get('customerId')))
+                raise HTTPException(status_code=400, detail=_(f"services.ticketService.responses.customer_supporter_cannot_create_own_ticket"))
+            result = self.create_handler.execute(ticket, user)
+            data = result.get('data')
+            ticket_id = data.get('id') if isinstance(data, dict) else getattr(data, 'id', None)
+            logger.info(_(f"services.ticketService.logs.ticket_created").format(ticket_id=ticket_id))
+            chat_id = ticket.get('chatId')
+            if chat_id and ticket_id:
+                update_chat_ticket_handler = UpdateChatTicketIdCommandHandler()
+                update_chat_ticket_handler.execute(chat_id, ticket_id)
+            # --- MAIL GÖNDER ---
+            try:
+                user_detail = get_user_by_id(ticket.get('customerId'), token)
+                ticket_obj = data
+                template_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates", "ticket_created.html")
+                send_ticket_created_event(ticket_obj, user_detail, html_path=template_path)
+                logger.info(_(f"services.ticketService.logs.ticket_created_mail_sent").format(user_id=ticket.get('customerId')))
+            except Exception as e:
+                logger.error(_(f"services.ticketService.logs.ticket_created_mail_failed").format(error=e))
+            return result
         
+            
+
         # Kullanıcı detaylarını çek
         user_detail = get_user_by_id(user["id"], token)
         

@@ -98,6 +98,8 @@ async def create_ticket_route(
     description: str = Form(...),
     categoryId: str = Form(...),
     productId: str = Form(None),
+    customerId: str = Form(None),
+    chatId: str = Form(None),
     files: List[UploadFile] = File([]),
     user=Depends(get_current_user),
     request: Request = None
@@ -135,7 +137,8 @@ async def create_ticket_route(
         "categoryId": categoryId,
         "productId": productId,
         "attachments": attachments,
-        "customerId": user["id"]
+        "customerId": customerId if customerId else user["id"],
+        "chatId": chatId
     }
     token = None
     if request:

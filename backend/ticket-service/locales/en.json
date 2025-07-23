@@ -110,14 +110,22 @@
                 "listing_tickets_for_agent": "Listing tickets for agent: {user_id}",
                 "getting_ticket": "Getting ticket with ID: {ticket_id} for user: {user_id}",
                 "updating_ticket": "Updating ticket with ID: {ticket_id} for user: {user_id}",
-                "soft_deleting_ticket": "Soft deleting ticket with ID: {ticket_id} for user: {user_id}"
+                "soft_deleting_ticket": "Soft deleting ticket with ID: {ticket_id} for user: {user_id}",
+                "ticket_created_mail_sent": "Ticket created mail sent: {user_id}",
+                "ticket_created_mail_failed": "Ticket created mail failed: {error}"
             },
             "responses": {
                 "unauthorized": "User is not authenticated.",
                 "bad_request": "Missing or invalid parameters.",
                 "tickets_listed": "Tickets listed successfully.",
                 "ticket_not_found": "Ticket not found.",
-                "ticket_found": "Ticket found."
+                "ticket_found": "Ticket found.",
+                "tickets_list_failed": "Tickets could not be listed.",
+                "ticket_created": "Ticket created successfully.",
+                "ticket_updated": "Ticket updated successfully.",
+                "ticket_deleted": "Ticket deleted successfully.",
+                "ticket_soft_deleted": "Ticket soft deleted successfully.",
+                "customer_supporter_cannot_create_own_ticket": "Customer Supporter cannot create a ticket for themselves. Please select a different customer."
             }
         },
         "ticketRepository": {

@@ -111,14 +111,22 @@
                 "listing_tickets_for_agent": "Temsilci için ticket listeleniyor: {user_id}",
                 "getting_ticket": "Ticket getiriliyor: {ticket_id} kullanıcı: {user_id}",
                 "updating_ticket": "Ticket güncelleniyor: {ticket_id} kullanıcı: {user_id}",
-                "soft_deleting_ticket": "Ticket siliniyor: {ticket_id} kullanıcı: {user_id}"
+                "soft_deleting_ticket": "Ticket siliniyor: {ticket_id} kullanıcı: {user_id}",
+                "ticket_created_mail_sent": "Ticket oluşturuldu maili gönderildi: {user_id}",
+                "ticket_created_mail_failed": "Ticket oluşturuldu maili gönderilemedi: {error}"
             },
             "responses": {
                 "unauthorized": "Kullanıcı doğrulanamadı.",
                 "bad_request": "Eksik veya hatalı parametre.",
                 "tickets_listed": "Ticketler başarıyla listelendi.",
                 "ticket_not_found": "Ticket bulunamadı.",
-                "ticket_found": "Ticket bulundu."
+                "ticket_found": "Ticket bulundu.",
+                "tickets_list_failed": "Ticketler listelenemedi.",
+                "ticket_created": "Ticket başarıyla oluşturuldu.",
+                "ticket_updated": "Ticket başarıyla güncellendi.",
+                "ticket_deleted": "Ticket başarıyla silindi.",
+                "ticket_soft_deleted": "Ticket başarıyla silindi (soft delete).",
+                "customer_supporter_cannot_create_own_ticket": "Customer Supporter kendi adına ticket oluşturamaz. Lütfen farklı bir müşteri seçin."
             }
         },
         "ticketRepository": {

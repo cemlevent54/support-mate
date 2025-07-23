@@ -268,7 +268,8 @@
     "createTask": "Görev Oluştur",
     "download": "İndir",
     "preview": "Önizle",
-    "userTyping": "Kullanıcı yazıyor..."
+    "userTyping": "Kullanıcı yazıyor...",
+    "createTicket": "Talep Oluştur"
   },
   "chatDialog": {
     "detail": "Detay",

@@ -88,4 +88,29 @@ class ChatRepository:
         for doc in docs:
             doc["_id"] = str(doc["_id"])
             result.append(doc)
-        return result 
+        return result
+
+    def update_ticket_id(self, chat_id: str, ticket_id: str) -> bool:
+        """
+        Verilen chat_id'li chat'in ticketId alanını ticket_id ile günceller.
+        """
+        from bson import ObjectId
+        try:
+            result = self.collection.update_one(
+                {"_id": ObjectId(chat_id)},
+                {"$set": {"ticketId": ticket_id}}
+            )
+            if result.modified_count == 1:
+                logger.info(f"[REPO] ChatRepository.update_ticket_id: chat_id={chat_id}, ticket_id={ticket_id}")
+                return True
+        except Exception as e:
+            logger.warning(f"[REPO] ChatRepository.update_ticket_id: ObjectId ile güncellenemedi, string id ile denenecek. Hata: {e}")
+            result = self.collection.update_one(
+                {"_id": chat_id},
+                {"$set": {"ticketId": ticket_id}}
+            )
+            if result.modified_count == 1:
+                logger.info(f"[REPO] ChatRepository.update_ticket_id: chat_id={chat_id}, ticket_id={ticket_id} (string id ile)")
+                return True
+        logger.error(f"[REPO] ChatRepository.update_ticket_id: chat_id={chat_id}, ticket_id={ticket_id} güncellenemedi!")
+        return False 
