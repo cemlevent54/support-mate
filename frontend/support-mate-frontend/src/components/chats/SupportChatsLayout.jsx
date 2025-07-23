@@ -13,7 +13,7 @@ import { getUserIdFromJWT } from '../../utils/jwt';
 export default function SupportChatsLayout() {
   const { chatId } = useParams();
   const navigate = useNavigate();
-  const [selectedChat, setSelectedChat] = React.useState(null);
+  const [selectedChat, setSelectedChat] = useState(null);
   const [agentChats, setAgentChats] = useState([]);
   const [loading, setLoading] = useState(true);
   const { t } = useTranslation();
@@ -37,6 +37,14 @@ export default function SupportChatsLayout() {
     fetchAgentChats();
   }, []);
 
+  // chatId değiştiğinde veya agentChats yüklendiğinde ilgili chat'i seçili yap
+  useEffect(() => {
+    if (chatId && agentChats.length > 0) {
+      const found = agentChats.find(chat => String(chat._id || chat.chatId || chat.id) === String(chatId));
+      if (found) setSelectedChat(found);
+    }
+  }, [chatId, agentChats]);
+
   // Yeni mesaj geldiğinde agentChats listesini güncelle
   useEffect(() => {
     const handleNewMessage = (data) => {
@@ -44,7 +52,6 @@ export default function SupportChatsLayout() {
         let updated = false;
         let updatedChat = null;
         const newChats = prevChats.filter(chat => {
-          // Hem ticket'lı hem ticket'sız chat'ler için id karşılaştır
           const chatIds = [chat._id, chat.chatId, chat.id].map(id => id && String(id)).filter(Boolean);
           if (chatIds.includes(String(data.chatId))) {
             updated = true;
@@ -108,9 +115,12 @@ export default function SupportChatsLayout() {
     return () => socket.off('receive_chat_message', handleNewMessage);
   }, []);
 
-  const handleSelectChat = (chatId, title, chatObj) => {
+  const handleSelectChat = (chatObj) => {
     setSelectedChat(chatObj);
-    navigate(`/support/chats/${chatId}`);
+    const chatId = chatObj?._id || chatObj?.chatId || chatObj?.id;
+    if (chatId) {
+      navigate(`/support/chats/${chatId}`);
+    }
   };
 
   if (loading) {
@@ -125,17 +135,14 @@ export default function SupportChatsLayout() {
     <Box display="flex" minHeight="100vh">
       <ChatList 
         activeChatTicketId={chatId} 
-        onSelectChat={(id, name, chatObj) => handleSelectChat(id, name, chatObj)}
+        onSelectChat={handleSelectChat}
         refreshTrigger={0}
         agentChats={agentChats}
       />
       <Box flex={1} height="100vh" bgcolor="#f5f5f5">
-        {chatId ? (
+        {chatId && selectedChat ? (
           <SupportChats 
-            ticketId={chatId} 
-            ticketTitle={""} 
-            onMessageSent={() => {}}
-            messages={selectedChat?.messages || selectedChat?.chatMessages}
+            chat={selectedChat}
             myUserId={myUserId}
           />
         ) : (

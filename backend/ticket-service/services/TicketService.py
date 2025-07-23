@@ -169,38 +169,39 @@ class TicketService:
         return {"success": True, "data": ticket_dtos, "message": message}
 
     def list_tickets_for_agent(self, user, lang='tr'):
+        from config.language import set_language, _
+        set_language(lang)
         if not user:
             logger.warning(_(f"services.ticketService.logs.unauthorized"))
             return unauthorized_error(_(f"services.ticketService.responses.unauthorized"))
         logger.info(_(f"services.ticketService.logs.listing_tickets_for_agent").format(user_id=user.get('id', 'unknown')))
-        result = self.list_agent_handler.execute(user)
-        
+        tickets = self.list_agent_handler.execute(user)
+        if tickets is None:
+            message = _(f"services.ticketService.responses.tickets_list_failed")
+            return {"success": False, "data": [], "message": message}
         # DTO'ya çevir ve kategori + chatId ekle
-        if result.get("success") and result.get("data"):
-            tickets = result["data"]
-            category_service = None
-            ticket_dtos = []
-            for ticket in tickets:
-                dto = TicketDTO.from_model(ticket)
-                dto_dict = dto.model_dump()
-                # Kategori bilgisi ekle
-                category_id = getattr(ticket, "categoryId", None)
-                if category_id:
-                    if not category_service:
-                        from services.CategoryService import CategoryService
-                        category_service = CategoryService()
-                    category_info = category_service.get_category_by_id(category_id)
-                    dto_dict["category"] = category_info
-                else:
-                    dto_dict["category"] = None
-                # --- CHAT ID EKLEME ---
-                chat_repo = ChatRepository()
-                chat = chat_repo.find_by_ticket_id(str(ticket.id))
-                dto_dict["chatId"] = str(chat.id) if chat else None
-                ticket_dtos.append(dto_dict)
-            result["data"] = ticket_dtos
-        
-        return result
+        category_service = None
+        ticket_dtos = []
+        for ticket in tickets:
+            dto = TicketDTO.from_model(ticket)
+            dto_dict = dto.model_dump()
+            # Kategori bilgisi ekle
+            category_id = getattr(ticket, "categoryId", None)
+            if category_id:
+                if not category_service:
+                    from services.CategoryService import CategoryService
+                    category_service = CategoryService()
+                category_info = category_service.get_category_by_id(category_id)
+                dto_dict["category"] = category_info
+            else:
+                dto_dict["category"] = None
+            # --- CHAT ID EKLEME ---
+            chat_repo = ChatRepository()
+            chat = chat_repo.find_by_ticket_id(str(ticket.id))
+            dto_dict["chatId"] = str(chat.id) if chat else None
+            ticket_dtos.append(dto_dict)
+        message = _(f"services.ticketService.responses.tickets_listed")
+        return {"success": True, "data": ticket_dtos, "message": message}
 
     def get_ticket(self, ticket_id, user, lang='tr'):
         

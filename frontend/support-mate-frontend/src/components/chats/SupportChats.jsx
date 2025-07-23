@@ -4,6 +4,7 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import { MdSend } from 'react-icons/md';
 import { listMessagesByChatId, sendMessage } from '../../api/messagesApi';
+import axiosInstance from '../../api/axiosInstance';
 import { getUserIdFromJWT } from '../../utils/jwt';
 import { useTranslation } from 'react-i18next';
 import socket from '../../socket/socket';
@@ -21,11 +22,13 @@ import DownloadIcon from '@mui/icons-material/Download';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import CircularProgress from '@mui/material/CircularProgress';
 
-export default function SupportChats({ ticketId, ticketTitle, onMessageSent, messages: propMessages, myUserId }) {
-  const [messages, setMessages] = useState(propMessages || []);
+const BASE_URL = "http://localhost:9000" + "/api/tickets";
+
+export default function SupportChats({ chat, myUserId }) {
+  const [messages, setMessages] = useState(chat?.messages || []);
   const [input, setInput] = useState("");
   const [taskModalOpen, setTaskModalOpen] = useState(false);
-  const [chatId, setChatId] = useState(ticketId || null);
+  const [chatId, setChatId] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
   const [loading, setLoading] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -34,6 +37,7 @@ export default function SupportChats({ ticketId, ticketTitle, onMessageSent, mes
   const messagesEndRef = useRef(null);
   const { t } = useTranslation();
   const userId = getUserIdFromJWT();
+  const ticketId = chat?.ticketId;
 
   // Dosya türünü belirleme fonksiyonu
   const getFileType = (fileName) => {
@@ -121,33 +125,9 @@ export default function SupportChats({ ticketId, ticketTitle, onMessageSent, mes
   };
 
   useEffect(() => {
-    if (propMessages) {
-      setMessages(propMessages);
-      setChatId(ticketId);
-      return;
-    }
-    if (!ticketId) {
-      setMessages([]);
-      setChatId(null);
-      return;
-    }
-    const fetchMessages = async () => {
-      try {
-        const res = await listMessagesByChatId(ticketId);
-        if (res && res.success && res.data && Array.isArray(res.data.messages)) {
-          setMessages(res.data.messages);
-          setChatId(res.data.chatId || null);
-        } else {
-          setMessages([]);
-          setChatId(null);
-        }
-      } catch (e) {
-        setMessages([]);
-        setChatId(null);
-      }
-    };
-    fetchMessages();
-  }, [ticketId, propMessages]);
+    setMessages(chat?.messages || []);
+    setChatId(chat?._id || chat?.chatId || chat?.id || null);
+  }, [chat]);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -259,10 +239,6 @@ export default function SupportChats({ ticketId, ticketTitle, onMessageSent, mes
     // API'ye gönder
     try {
       await sendMessage({ chatId, userId, text: input });
-      // Mesaj gönderildikten sonra parent'a bildir
-      if (onMessageSent) {
-        onMessageSent(newMessage);
-      }
     } catch (error) {
       // Hata durumunda mesajı geri al
       setMessages(prev => prev.filter(msg => msg !== newMessage));
@@ -280,6 +256,13 @@ export default function SupportChats({ ticketId, ticketTitle, onMessageSent, mes
     setPreviewOpen(false);
     setPreviewFile(null);
   };
+
+  // LOG EKLEMEK İÇİN
+  console.log('[SupportChats][LOG] chat:', chat);
+  console.log('[SupportChats][LOG] chatId:', chatId);
+  console.log('[SupportChats][LOG] chat.messages:', chat?.messages);
+  console.log('[SupportChats][LOG] ticketId:', ticketId);
+  console.log('[SupportChats][LOG] Create Ticket butonu görünecek mi?', !ticketId);
 
   return (
     <Box display="flex" height="100%" boxShadow={2} borderRadius={2} bgcolor="#fff" overflow="hidden">
@@ -371,164 +354,161 @@ export default function SupportChats({ ticketId, ticketTitle, onMessageSent, mes
             <Button variant="outlined" color="primary" sx={{ height: 44, borderRadius: 22, fontWeight: 600, px: 2.5 }} onClick={openTaskModal}>
               {t('chatArea.createTask')}
             </Button>
+            {(!ticketId) && (
+              <Button variant="outlined" color="secondary" sx={{ height: 44, borderRadius: 22, fontWeight: 600, px: 2.5 }}>
+                Create Ticket
+              </Button>
+            )}
           </form>
         </Box>
       </Box>
       <TaskCreateModal open={taskModalOpen} onClose={closeTaskModal} />
-             <Modal
-         open={previewOpen}
-         onClose={handleClosePreview}
-         disableEscapeKeyDown={true}
-         disableBackdropClick={true}
-         aria-labelledby="modal-title"
-         aria-describedby="modal-description"
-         sx={{
-           display: 'flex',
-           alignItems: 'center',
-           justifyContent: 'center',
-           p: 2
-         }}
-       >
-         <Box
-           onClick={(e) => e.stopPropagation()}
-           sx={{
-             position: 'relative',
-             width: '90%',
-             maxWidth: '900px',
-             bgcolor: 'background.paper',
-             borderRadius: 2,
-             p: 3,
-             maxHeight: '90vh',
-             overflow: 'auto',
-             boxShadow: 24,
-             outline: 'none'
-           }}
-         >
-           <IconButton
-             onClick={handleClosePreview}
-             sx={{ 
-               position: 'absolute', 
-               top: 8, 
-               right: 8, 
-               bgcolor: 'rgba(0,0,0,0.1)',
-               '&:hover': { bgcolor: 'rgba(0,0,0,0.2)' }
-             }}
-           >
-             <CloseIcon />
-           </IconButton>
-           <Typography 
-             id="modal-title" 
-             variant="h6" 
-             component="h2"
-             sx={{ 
-               pr: 4, 
-               mb: 2, 
-               wordBreak: 'break-word',
-               color: 'text.primary'
-             }}
-           >
-             {previewFile?.name}
-           </Typography>
-                     {previewFile?.type === 'image' && (
-             <img src={previewFile.url || getFileUrl(previewFile.name)} alt={previewFile.name} style={{ maxWidth: '100%', maxHeight: '80vh', marginTop: 20 }} />
-           )}
-           {previewFile?.type === 'video' && (
-             <video src={previewFile.url || getFileUrl(previewFile.name)} controls style={{ maxWidth: '100%', maxHeight: '80vh', marginTop: 20 }} />
-           )}
-           {previewFile?.type === 'audio' && (
-             <audio src={previewFile.url || getFileUrl(previewFile.name)} controls style={{ maxWidth: '100%', marginTop: 20 }} />
-           )}
-                     {previewFile?.type === 'document' && (
-             <Box sx={{ mt: 2 }}>
-               {previewFile.name.toLowerCase().endsWith('.pdf') ? (
-                 <Box sx={{ width: '100%', minHeight: '500px' }}>
-                   {/* PDF Görüntüleme Seçenekleri */}
-                   <Box sx={{ mb: 2, display: 'flex', gap: 2, justifyContent: 'center' }}>
-                     <Button
-                       variant="outlined"
-                       startIcon={<OpenInNewIcon />}
-                       onClick={() => window.open(previewFile.url || getFileUrl(previewFile.name), '_blank')}
-                       sx={{ minWidth: 120 }}
-                     >
-                       {t('chatArea.preview')}
-                     </Button>
-                     <Button
-                       variant="outlined"
-                       startIcon={<DownloadIcon />}
-                       component="a"
-                       href={previewFile.url || getFileUrl(previewFile.name)}
-                       download
-                       sx={{ minWidth: 120 }}
-                     >
-                       {t('chatArea.download')}
-                     </Button>
-                   </Box>
-                   
-                   {/* PDF Önizleme */}
-                   <Box sx={{ 
-                     width: '100%', 
-                     height: '500px', 
-                     border: '1px solid #ddd', 
-                     borderRadius: 1,
-                     overflow: 'hidden',
-                     position: 'relative'
-                   }}>
-                     <iframe
-                       src={`${previewFile.url || getFileUrl(previewFile.name)}#toolbar=1&navpanes=1&scrollbar=1&view=FitH`}
-                       title={previewFile.name}
-                       width="100%"
-                       height="100%"
-                       style={{ 
-                         border: 'none', 
-                         display: 'block'
-                       }}
-                       onLoad={() => console.log('PDF yüklendi:', previewFile.name)}
-                       onError={(e) => {
-                         console.error('PDF yüklenemedi:', e);
-                         const container = e.target.parentNode;
-                         container.innerHTML = `
-                           <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px; text-align: center;">
-                             <Typography variant="h6" style="margin-bottom: 16px; color: #666;">
-                               PDF dosyası tarayıcıda görüntülenemiyor
-                             </Typography>
-                             <Typography variant="body2" style="margin-bottom: 20px; color: #888;">
-                               Dosyayı görüntülemek için yukarıdaki "Yeni Sekmede Aç" butonunu kullanın veya indirin.
-                             </Typography>
-                             <Button 
-                               variant="contained" 
-                               component="a" 
-                               href="${previewFile.url || getFileUrl(previewFile.name)}" 
-                               download
-                               startIcon={<DownloadIcon />}
-                               style="text-decoration: none;"
-                             >
-                               ${previewFile.name} dosyasını indir
-                             </Button>
-                           </div>
-                         `;
-                       }}
-                     />
-                   </Box>
-                 </Box>
-               ) : (
-                 <Box sx={{ textAlign: 'center', mt: 2 }}>
-                   <Typography variant="body1" sx={{ mb: 2 }}>
-                     Bu dosya türü tarayıcıda önizlenemez. İndirmek için aşağıdaki bağlantıyı kullanın:
-                   </Typography>
-                   <Button 
-                     variant="contained" 
-                     component="a" 
-                     href={previewFile.url || getFileUrl(previewFile.name)} 
-                     download
-                     startIcon={<DownloadIcon />}
-                     sx={{ textDecoration: 'none' }}
-                   >
-                     {previewFile.name} dosyasını indir
-                   </Button>
-                 </Box>
-               )}
-             </Box>
-           )}
+      <Modal
+        open={previewOpen}
+        onClose={handleClosePreview}
+        disableEscapeKeyDown={true}
+        disableBackdropClick={true}
+        aria-labelledby="modal-title"
+        aria-describedby="modal-description"
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          p: 2
+        }}
+      >
+        <Box
+          onClick={(e) => e.stopPropagation()}
+          sx={{
+            position: 'relative',
+            width: '90%',
+            maxWidth: '900px',
+            bgcolor: 'background.paper',
+            borderRadius: 2,
+            p: 3,
+            maxHeight: '90vh',
+            overflow: 'auto',
+            boxShadow: 24,
+            outline: 'none'
+          }}
+        >
+          <IconButton
+            onClick={handleClosePreview}
+            sx={{ 
+              position: 'absolute', 
+              top: 8, 
+              right: 8, 
+              bgcolor: 'rgba(0,0,0,0.1)',
+              '&:hover': { bgcolor: 'rgba(0,0,0,0.2)' }
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+          <Typography 
+            id="modal-title" 
+            variant="h6" 
+            component="h2"
+            sx={{ 
+              pr: 4, 
+              mb: 2, 
+              wordBreak: 'break-word',
+              color: 'text.primary'
+            }}
+          >
+            {previewFile?.name}
+          </Typography>
+          {previewFile?.type === 'image' && (
+            <img src={previewFile.url || getFileUrl(previewFile.name)} alt={previewFile.name} style={{ maxWidth: '100%', maxHeight: '80vh', marginTop: 20 }} />
+          )}
+          {previewFile?.type === 'video' && (
+            <video src={previewFile.url || getFileUrl(previewFile.name)} controls style={{ maxWidth: '100%', maxHeight: '80vh', marginTop: 20 }} />
+          )}
+          {previewFile?.type === 'audio' && (
+            <audio src={previewFile.url || getFileUrl(previewFile.name)} controls style={{ maxWidth: '100%', marginTop: 20 }} />
+          )}
+          {previewFile?.type === 'document' && (
+            <Box sx={{ mt: 2 }}>
+              {previewFile.name.toLowerCase().endsWith('.pdf') ? (
+                <Box sx={{ width: '100%', minHeight: '500px' }}>
+                  {/* PDF Görüntüleme Seçenekleri */}
+                  <Box sx={{ mb: 2, display: 'flex', gap: 2, justifyContent: 'center' }}>
+                    <Button
+                      variant="outlined"
+                      startIcon={<OpenInNewIcon />}
+                      onClick={() => window.open(previewFile.url || getFileUrl(previewFile.name), '_blank')}
+                      sx={{ minWidth: 120 }}
+                    >
+                      {t('chatArea.preview')}
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<DownloadIcon />}
+                      component="a"
+                      href={previewFile.url || getFileUrl(previewFile.name)}
+                      download
+                      sx={{ minWidth: 120 }}
+                    >
+                      {t('chatArea.download')}
+                    </Button>
+                  </Box>
+                  {/* PDF Önizleme */}
+                  <Box sx={{ 
+                    width: '100%', 
+                    height: '500px', 
+                    border: '1px solid #ddd', 
+                    borderRadius: 1,
+                    overflow: 'hidden',
+                    position: 'relative'
+                  }}>
+                    <iframe
+                      src={`${previewFile.url || getFileUrl(previewFile.name)}#toolbar=1&navpanes=1&scrollbar=1&view=FitH`}
+                      title={previewFile.name}
+                      width="100%"
+                      height="100%"
+                      style={{ 
+                        border: 'none', 
+                        display: 'block'
+                      }}
+                      onLoad={() => console.log('PDF yüklendi:', previewFile.name)}
+                      onError={(e) => {
+                        console.error('PDF yüklenemedi:', e);
+                        const container = e.target.parentNode;
+                        container.innerHTML = `
+                          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px; text-align: center;">
+                            <span style="margin-bottom: 16px; color: #666; font-size: 18px; font-weight: 600;">PDF dosyası tarayıcıda görüntülenemiyor</span>
+                            <span style="margin-bottom: 20px; color: #888; font-size: 14px;">Dosyayı görüntülemek için yukarıdaki \"Yeni Sekmede Aç\" butonunu kullanın veya indirin.</span>
+                            <a 
+                              href="${previewFile.url || getFileUrl(previewFile.name)}" 
+                              download
+                              style="text-decoration: none; display: inline-block; margin-top: 12px; padding: 8px 16px; background: #1976d2; color: #fff; border-radius: 4px; font-weight: 600;"
+                            >
+                              ${previewFile.name} dosyasını indir
+                            </a>
+                          </div>
+                        `;
+                      }}
+                    />
+                  </Box>
+                </Box>
+              ) : (
+                <Box sx={{ textAlign: 'center', mt: 2 }}>
+                  <Typography variant="body1" sx={{ mb: 2 }}>
+                    Bu dosya türü tarayıcıda önizlenemez. İndirmek için aşağıdaki bağlantıyı kullanın:
+                  </Typography>
+                  <Button 
+                    variant="contained" 
+                    component="a" 
+                    href={previewFile.url || getFileUrl(previewFile.name)} 
+                    download
+                    startIcon={<DownloadIcon />}
+                    sx={{ textDecoration: 'none' }}
+                  >
+                    {previewFile.name} dosyasını indir
+                  </Button>
+                </Box>
+              )}
+            </Box>
+          )}
         </Box>
       </Modal>
     </Box>

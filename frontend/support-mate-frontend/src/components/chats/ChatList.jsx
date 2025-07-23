@@ -93,7 +93,7 @@ export default function ChatList({ activeChatTicketId, onSelectChat, agentChats,
       delete newCounts[realChatId];
       return newCounts;
     });
-    onSelectChat(realChatId, chat.name, chat);
+    onSelectChat(chat);
   };
 
   const formatTime = (timestamp) => {

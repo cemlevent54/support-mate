@@ -20,4 +20,3 @@ def create_chat_route(request: Request, user=Depends(get_current_user)):
     return chat_controller.create_chat(user)
 
 
-
