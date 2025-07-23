@@ -88,6 +88,8 @@
       "form": {
         "title": "Başlık",
         "description": "Açıklama",
+        "selectProduct": "Ürün Seç",
+        "product": "Ürün",
         "category": "Kategori",
         "file": "Dosya Ekle (İsteğe Bağlı)",
         "submit": "Gönder",

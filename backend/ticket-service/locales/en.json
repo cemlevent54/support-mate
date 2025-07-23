@@ -93,31 +93,31 @@
         },
         "ticketService": {
             "logs": {
+                "unauthorized": "User is not authenticated.",
+                "bad_request": "Missing or invalid parameters.",
                 "creating_ticket": "Creating ticket for user: {user_id}",
                 "ticket_created": "Ticket created successfully: {ticket_id}",
+                "agent_customer_same": "Agent ID ({agent_id}) is the same as customer ID ({customer_id}), agent will not be assigned.",
+                "agent_id_unknown": "Agent ID 'unknown' received, assignedAgentId set to null.",
+                "no_agent_found": "No online agent found or same as customer, assignedAgentId set to null.",
                 "agent_assigned": "Online agent found and assigned: {agent_id}",
-                "no_agent_found": "No online agent found. Chat will be created with customer only.",
                 "chat_created": "Chat created for ticket {ticket_id}: {chat_id}",
                 "is_delivered": "is_delivered: {is_delivered}",
                 "ticket_event_sent": "ticket_created event sent to Kafka: {ticket_id}",
                 "agent_mail_notify": "Agent mail notification should be sent: {agent_id}",
                 "event_mail_failed": "ticket_created event or mail could not be sent: {error}",
                 "listing_tickets": "Listing tickets for user: {user_id}",
+                "listing_tickets_for_agent": "Listing tickets for agent: {user_id}",
                 "getting_ticket": "Getting ticket with ID: {ticket_id} for user: {user_id}",
                 "updating_ticket": "Updating ticket with ID: {ticket_id} for user: {user_id}",
-                "soft_deleting_ticket": "Soft deleting ticket with ID: {ticket_id} for user: {user_id}",
-                "auto_assign": "[AUTO-ASSIGN] Agent {agent_id} assigned to pending ticket {ticket_id}",
-                "no_pending_ticket": "[AUTO-ASSIGN] No pending ticket found for agent assignment."
+                "soft_deleting_ticket": "Soft deleting ticket with ID: {ticket_id} for user: {user_id}"
             },
             "responses": {
                 "unauthorized": "User is not authenticated.",
                 "bad_request": "Missing or invalid parameters.",
+                "tickets_listed": "Tickets listed successfully.",
                 "ticket_not_found": "Ticket not found.",
-                "ticket_created": "Ticket created successfully.",
-                "ticket_updated": "Ticket updated successfully.",
-                "ticket_deleted": "Ticket deleted successfully.",
-                "agent_assigned": "Agent assigned successfully.",
-                "no_pending_ticket": "No pending ticket."
+                "ticket_found": "Ticket found."
             }
         },
         "ticketRepository": {
@@ -191,6 +191,29 @@
                 "soft_delete": "[REPO] CategoryRepository.soft_delete: category_id={category_id}, değişen={modified}",
                 "soft_delete_error": "[REPO] CategoryRepository.soft_delete error: {error}"
             }
+        },
+        "productService": {
+            "logs": {
+                "product_created": "Product created successfully.",
+                "product_updated": "Product updated successfully.",
+                "product_deleted": "Product deleted successfully.",
+                "category_not_found": "Category not found!",
+                "product_name_exists": "A product with this name already exists.",
+                "listing_products": "Listing products.",
+                "listing_products_error": "An error occurred while listing products.",
+                "creating_product": "Creating product.",
+                "product_creation_error": "An error occurred while creating product.",
+                "updating_product": "Updating product.",
+                "product_update_error": "An error occurred while updating product.",
+                "soft_deleting_product": "Deleting product."
+            },
+            "responses": {
+                "product_created": "Product created successfully.",
+                "product_updated": "Product updated successfully.",
+                "product_deleted": "Product deleted successfully.",
+                "products_listed": "Products listed successfully.",
+                "product_not_found": "Product not found."
+            }
         }
     },
 
@@ -209,6 +232,32 @@
                 "category_creation_error": "Category could not be created.",
                 "category_update_error": "Category could not be updated.",
                 "category_deletion_error": "Category could not be deleted."
+            }
+        },
+        "ticketController": {
+            "logs": {
+                "list_tickets_called": "list_tickets called. user={user_id}",
+                "list_tickets_result": "list_tickets result: {result}",
+                "get_ticket_called": "get_ticket called. user={user_id}, ticket_id={ticket_id}",
+                "get_ticket_result": "get_ticket result: {result}",
+                "update_ticket_called": "update_ticket called. user={user_id}, ticket_id={ticket_id}",
+                "update_ticket_result": "update_ticket result: {result}",
+                "delete_ticket_called": "delete_ticket called. user={user_id}, ticket_id={ticket_id}",
+                "delete_ticket_result": "delete_ticket result: {result}",
+                "list_tickets_admin_called": "list_tickets_admin called. user={user_id}",
+                "list_tickets_admin_result": "list_tickets_admin result: {result}",
+                "get_ticket_admin_called": "get_ticket_admin called. user={user_id}, ticket_id={ticket_id}",
+                "get_ticket_admin_result": "get_ticket_admin result: {result}",
+                "soft_delete_ticket_admin_called": "soft_delete_ticket_admin called. user={user_id}, ticket_id={ticket_id}",
+                "soft_delete_ticket_admin_result": "soft_delete_ticket_admin result: {result}",
+                "list_tickets_user_called": "list_tickets_user called. user={user_id}",
+                "list_tickets_user_result": "list_tickets_user result: {result}",
+                "get_ticket_user_called": "get_ticket_user called. user={user_id}, ticket_id={ticket_id}",
+                "get_ticket_user_result": "get_ticket_user result: {result}",
+                "soft_delete_ticket_user_called": "soft_delete_ticket_user called. user={user_id}, ticket_id={ticket_id}",
+                "soft_delete_ticket_user_result": "soft_delete_ticket_user result: {result}",
+                "list_tickets_agent_called": "list_tickets_agent called. user={user_id}",
+                "list_tickets_agent_result": "list_tickets_agent result: {result}"
             }
         }
     }

@@ -1,6 +1,7 @@
 import logging
 from services.TicketService import TicketService
 from models.ticket import APIResponse
+from config.language import _
 
 logger = logging.getLogger(__name__)
 
@@ -8,81 +9,75 @@ class TicketController:
     def __init__(self):
         self.ticket_service = TicketService()
 
-    def create_ticket_endpoint(self, ticket, user, token=None):
-        logger.info(f"[CONTROLLER] create_ticket called. user={user.get('id')}, title={ticket.get('title')}")
-        result = self.ticket_service.create_ticket(ticket, user, token)
-
+    def create_ticket_endpoint(self, ticket, user, token=None, lang='tr'):
+        result = self.ticket_service.create_ticket(ticket, user, token, lang=lang)
         ticket_id = result.get('data').get('id') if isinstance(result.get('data'), dict) else None
-        logger.info(f"[CONTROLLER] create_ticket result: {result.get('success')}, ticket_id={ticket_id}")
         return result
 
-    def list_tickets_endpoint(self, user):
-        logger.info(f"[CONTROLLER] list_tickets called. user={user.get('id')}")
-        result = self.ticket_service.list_tickets(user)
-        logger.info(f"[CONTROLLER] list_tickets result: {len(result.get('data', [])) if result.get('success') else 'error'}")
+    def list_tickets_endpoint(self, user, lang='tr'):
+        logger.info(_(f"services.ticketController.logs.list_tickets_called").format(user_id=user.get('id')))
+        result = self.ticket_service.list_tickets(user, lang=lang)
+        logger.info(_(f"services.ticketController.logs.list_tickets_result").format(result=len(result.get('data', [])) if result.get('success') else 'error'))
         return APIResponse(**result)
 
-    def get_ticket_endpoint(self, ticket_id, user):
-        logger.info(f"[CONTROLLER] get_ticket called. user={user.get('id')}, ticket_id={ticket_id}")
-        result = self.ticket_service.get_ticket(ticket_id, user)
-        logger.info(f"[CONTROLLER] get_ticket result: {result.get('success')}")
+    def get_ticket_endpoint(self, ticket_id, user, lang='tr'):
+        logger.info(_(f"services.ticketController.logs.get_ticket_called").format(user_id=user.get('id'), ticket_id=ticket_id))
+        result = self.ticket_service.get_ticket(ticket_id, user, lang=lang)
+        logger.info(_(f"services.ticketController.logs.get_ticket_result").format(result=result.get('success')))
         return APIResponse(**result)
 
-    def update_ticket_endpoint(self, ticket_id, updated, user):
-        logger.info(f"[CONTROLLER] update_ticket called. user={user.get('id')}, ticket_id={ticket_id}")
-        result = self.ticket_service.update_ticket(ticket_id, updated, user)
-        logger.info(f"[CONTROLLER] update_ticket result: {result.get('success')}")
+    def update_ticket_endpoint(self, ticket_id, updated, user, lang='tr'):
+        logger.info(_(f"services.ticketController.logs.update_ticket_called").format(user_id=user.get('id'), ticket_id=ticket_id))
+        result = self.ticket_service.update_ticket(ticket_id, updated, user, lang=lang)
+        logger.info(_(f"services.ticketController.logs.update_ticket_result").format(result=result.get('success')))
+        return result
+
+    def delete_ticket_endpoint(self, ticket_id, user, lang='tr'):
+        logger.info(_(f"services.ticketController.logs.delete_ticket_called").format(user_id=user.get('id'), ticket_id=ticket_id))
+        result = self.ticket_service.soft_delete_ticket(ticket_id, user, lang=lang)
+        logger.info(_(f"services.ticketController.logs.delete_ticket_result").format(result=result.get('success')))
         return APIResponse(**result)
 
-    def delete_ticket_endpoint(self, ticket_id, user):
-        logger.info(f"[CONTROLLER] delete_ticket called. user={user.get('id')}, ticket_id={ticket_id}")
-        result = self.ticket_service.soft_delete_ticket(ticket_id, user)
-        logger.info(f"[CONTROLLER] delete_ticket result: {result.get('success')}")
+    def list_tickets_endpoint_for_admin(self, user, lang='tr'):
+        logger.info(_(f"services.ticketController.logs.list_tickets_admin_called").format(user_id=user.get('id')))
+        result = self.ticket_service.list_tickets(user, lang=lang)
+        logger.info(_(f"services.ticketController.logs.list_tickets_admin_result").format(result=len(result.get('data', [])) if result.get('success') else 'error'))
         return APIResponse(**result)
 
-    def list_tickets_endpoint_for_admin(self, user):
-        logger.info(f"[CONTROLLER] list_tickets_admin called. user={user.get('id')}")
-        # Burada admin için ticket listeleme servisi çağrılmalı (örnek)
-        result = self.ticket_service.list_tickets(user)  # Gerekirse filtre ekle
-        logger.info(f"[CONTROLLER] list_tickets_admin result: {len(result.get('data', [])) if result.get('success') else 'error'}")
+    def get_ticket_endpoint_for_admin(self, ticket_id, user, lang='tr'):
+        logger.info(_(f"services.ticketController.logs.get_ticket_admin_called").format(user_id=user.get('id'), ticket_id=ticket_id))
+        result = self.ticket_service.get_ticket(ticket_id, user, lang=lang)
+        logger.info(_(f"services.ticketController.logs.get_ticket_admin_result").format(result=result.get('success')))
         return APIResponse(**result)
 
-    def get_ticket_endpoint_for_admin(self, ticket_id, user):
-        logger.info(f"[CONTROLLER] get_ticket_admin called. user={user.get('id')}, ticket_id={ticket_id}")
-        result = self.ticket_service.get_ticket(ticket_id, user)
-        logger.info(f"[CONTROLLER] get_ticket_admin result: {result.get('success')}")
+    def soft_delete_ticket_endpoint_for_admin(self, ticket_id, user, lang='tr'):
+        logger.info(_(f"services.ticketController.logs.soft_delete_ticket_admin_called").format(user_id=user.get('id'), ticket_id=ticket_id))
+        result = self.ticket_service.soft_delete_ticket(ticket_id, user, lang=lang)
+        logger.info(_(f"services.ticketController.logs.soft_delete_ticket_admin_result").format(result=result.get('success')))
         return APIResponse(**result)
 
-    def soft_delete_ticket_endpoint_for_admin(self, ticket_id, user):
-        logger.info(f"[CONTROLLER] soft_delete_ticket_admin called. user={user.get('id')}, ticket_id={ticket_id}")
-        result = self.ticket_service.soft_delete_ticket(ticket_id, user)
-        logger.info(f"[CONTROLLER] soft_delete_ticket_admin result: {result.get('success')}")
+    def list_tickets_endpoint_for_user(self, user, lang='tr'):
+        logger.info(_(f"services.ticketController.logs.list_tickets_user_called").format(user_id=user.get('id')))
+        result = self.ticket_service.list_tickets(user, lang=lang)
+        logger.info(_(f"services.ticketController.logs.list_tickets_user_result").format(result=len(result.get('data', [])) if result.get('success') else 'error'))
         return APIResponse(**result)
 
-    def list_tickets_endpoint_for_user(self, user):
-        logger.info(f"[CONTROLLER] list_tickets_user called. user={user.get('id')}")
-        # Burada user için ticket listeleme servisi çağrılmalı (örnek)
-        result = self.ticket_service.list_tickets(user)  # Gerekirse filtre ekle
-        logger.info(f"[CONTROLLER] list_tickets_user result: {len(result.get('data', [])) if result.get('success') else 'error'}")
+    def get_ticket_endpoint_for_user(self, ticket_id, user, lang='tr'):
+        logger.info(_(f"services.ticketController.logs.get_ticket_user_called").format(user_id=user.get('id'), ticket_id=ticket_id))
+        result = self.ticket_service.get_ticket(ticket_id, user, lang=lang)
+        logger.info(_(f"services.ticketController.logs.get_ticket_user_result").format(result=result.get('success')))
         return APIResponse(**result)
 
-    def get_ticket_endpoint_for_user(self, ticket_id, user):
-        logger.info(f"[CONTROLLER] get_ticket_user called. user={user.get('id')}, ticket_id={ticket_id}")
-        result = self.ticket_service.get_ticket(ticket_id, user)
-        logger.info(f"[CONTROLLER] get_ticket_user result: {result.get('success')}")
+    def soft_delete_ticket_endpoint_for_user(self, ticket_id, user, lang='tr'):
+        logger.info(_(f"services.ticketController.logs.soft_delete_ticket_user_called").format(user_id=user.get('id'), ticket_id=ticket_id))
+        result = self.ticket_service.soft_delete_ticket(ticket_id, user, lang=lang)
+        logger.info(_(f"services.ticketController.logs.soft_delete_ticket_user_result").format(result=result.get('success')))
         return APIResponse(**result)
 
-    def soft_delete_ticket_endpoint_for_user(self, ticket_id, user):
-        logger.info(f"[CONTROLLER] soft_delete_ticket_user called. user={user.get('id')}, ticket_id={ticket_id}")
-        result = self.ticket_service.soft_delete_ticket(ticket_id, user)
-        logger.info(f"[CONTROLLER] soft_delete_ticket_user result: {result.get('success')}")
-        return APIResponse(**result)
-
-    def list_tickets_endpoint_for_agent(self, user):
-        logger.info(f"[CONTROLLER] list_tickets_agent called. user={user.get('id')}")
-        # Agent'lar için özel ticket listeleme servisi
-        result = self.ticket_service.list_tickets_for_agent(user)
-        logger.info(f"[CONTROLLER] list_tickets_agent result: {len(result.get('data', [])) if result.get('success') else 'error'}")
+    def list_tickets_endpoint_for_agent(self, user, lang='tr'):
+        logger.info(_(f"services.ticketController.logs.list_tickets_agent_called").format(user_id=user.get('id')))
+        result = self.ticket_service.list_tickets_for_agent(user, lang=lang)
+        logger.info(_(f"services.ticketController.logs.list_tickets_agent_result").format(result=len(result.get('data', [])) if result.get('success') else 'error'))
         return APIResponse(**result)
 
 

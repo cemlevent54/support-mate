@@ -5,8 +5,6 @@ import Button from '@mui/material/Button';
 import CustomTicketTable from '../../components/tickets/CustomTicketTable/CustomTicketTable';
 import ChatIcon from '@mui/icons-material/Chat';
 import InfoIcon from '@mui/icons-material/Info';
-import CircularProgress from '@mui/material/CircularProgress';
-import Alert from '@mui/material/Alert';
 import Modal from '@mui/material/Modal';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -15,12 +13,6 @@ import { listTicketsForAgent } from '../../api/ticketApi';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 
-const categoryLabels = {
-  hardware: "Donanım",
-  software: "Yazılım",
-  network: "Ağ",
-  other: "Diğer"
-};
 
 const modalStyle = {
   position: 'absolute',

@@ -94,31 +94,31 @@
         },
         "ticketService": {
             "logs": {
+                "unauthorized": "Kullanıcı doğrulanamadı.",
+                "bad_request": "Eksik veya hatalı parametre.",
                 "creating_ticket": "Kullanıcı için ticket oluşturuluyor: {user_id}",
                 "ticket_created": "Ticket başarıyla oluşturuldu: {ticket_id}",
+                "agent_customer_same": "Agent ID ({agent_id}) customer ID ({customer_id}) ile aynı, agent atanmayacak.",
+                "agent_id_unknown": "Agent ID 'unknown' geldi, assignedAgentId null olarak ayarlandı.",
+                "no_agent_found": "Online agent bulunamadı veya customer ile aynı, assignedAgentId null.",
                 "agent_assigned": "Online temsilci bulundu ve atandı: {agent_id}",
-                "no_agent_found": "Online temsilci bulunamadı. Sadece müşteri ile chat oluşturulacak.",
                 "chat_created": "Ticket için chat oluşturuldu: {ticket_id} - {chat_id}",
                 "is_delivered": "is_delivered: {is_delivered}",
                 "ticket_event_sent": "ticket_created event Kafka'ya gönderildi: {ticket_id}",
                 "agent_mail_notify": "Temsilciye mail bildirimi gönderilmeli: {agent_id}",
                 "event_mail_failed": "ticket_created event veya mail gönderilemedi: {error}",
                 "listing_tickets": "Kullanıcı için ticket listeleniyor: {user_id}",
+                "listing_tickets_for_agent": "Temsilci için ticket listeleniyor: {user_id}",
                 "getting_ticket": "Ticket getiriliyor: {ticket_id} kullanıcı: {user_id}",
                 "updating_ticket": "Ticket güncelleniyor: {ticket_id} kullanıcı: {user_id}",
-                "soft_deleting_ticket": "Ticket siliniyor: {ticket_id} kullanıcı: {user_id}",
-                "auto_assign": "[AUTO-ASSIGN] Agent {agent_id} pending ticket {ticket_id} için atandı",
-                "no_pending_ticket": "[AUTO-ASSIGN] Atanacak bekleyen ticket yok."
+                "soft_deleting_ticket": "Ticket siliniyor: {ticket_id} kullanıcı: {user_id}"
             },
             "responses": {
                 "unauthorized": "Kullanıcı doğrulanamadı.",
                 "bad_request": "Eksik veya hatalı parametre.",
+                "tickets_listed": "Ticketler başarıyla listelendi.",
                 "ticket_not_found": "Ticket bulunamadı.",
-                "ticket_created": "Ticket başarıyla oluşturuldu.",
-                "ticket_updated": "Ticket başarıyla güncellendi.",
-                "ticket_deleted": "Ticket başarıyla silindi.",
-                "agent_assigned": "Temsilci başarıyla atandı.",
-                "no_pending_ticket": "Atanacak bekleyen ticket yok."
+                "ticket_found": "Ticket bulundu."
             }
         },
         "ticketRepository": {
@@ -191,6 +191,29 @@
                 "soft_delete": "[REPO] CategoryRepository.soft_delete: category_id={category_id}, değişen={modified}",
                 "soft_delete_error": "[REPO] CategoryRepository.soft_delete hata: {error}"
             }
+        },
+        "productService": {
+            "logs": {
+                "product_created": "Ürün başarıyla oluşturuldu.",
+                "product_updated": "Ürün başarıyla güncellendi.",
+                "product_deleted": "Ürün başarıyla silindi.",
+                "category_not_found": "Kategori bulunamadı!",
+                "product_name_exists": "Bu isimde bir ürün zaten mevcut.",
+                "listing_products": "Ürünler listeleniyor.",
+                "listing_products_error": "Ürünler listelenirken hata oluştu.",
+                "creating_product": "Ürün oluşturuluyor.",
+                "product_creation_error": "Ürün oluşturulurken hata oluştu.",
+                "updating_product": "Ürün güncelleniyor.",
+                "product_update_error": "Ürün güncellenirken hata oluştu.",
+                "soft_deleting_product": "Ürün siliniyor."
+            },
+            "responses": {
+                "product_created": "Ürün başarıyla oluşturuldu.",
+                "product_updated": "Ürün başarıyla güncellendi.",
+                "product_deleted": "Ürün başarıyla silindi.",
+                "products_listed": "Ürünler başarıyla listelendi.",
+                "product_not_found": "Ürün bulunamadı."
+            }
         }
     },
 
@@ -209,6 +232,32 @@
                 "category_creation_error": "Kategori oluşturulamadı.",
                 "category_update_error": "Kategori güncellenemedi.",
                 "category_deletion_error": "Kategori silinemedi."
+            }
+        },
+        "ticketController": {
+            "logs": {
+                "list_tickets_called": "list_tickets çağrıldı. user={user_id}",
+                "list_tickets_result": "list_tickets sonucu: {result}",
+                "get_ticket_called": "get_ticket çağrıldı. user={user_id}, ticket_id={ticket_id}",
+                "get_ticket_result": "get_ticket sonucu: {result}",
+                "update_ticket_called": "update_ticket çağrıldı. user={user_id}, ticket_id={ticket_id}",
+                "update_ticket_result": "update_ticket sonucu: {result}",
+                "delete_ticket_called": "delete_ticket çağrıldı. user={user_id}, ticket_id={ticket_id}",
+                "delete_ticket_result": "delete_ticket sonucu: {result}",
+                "list_tickets_admin_called": "list_tickets_admin çağrıldı. user={user_id}",
+                "list_tickets_admin_result": "list_tickets_admin sonucu: {result}",
+                "get_ticket_admin_called": "get_ticket_admin çağrıldı. user={user_id}, ticket_id={ticket_id}",
+                "get_ticket_admin_result": "get_ticket_admin sonucu: {result}",
+                "soft_delete_ticket_admin_called": "soft_delete_ticket_admin çağrıldı. user={user_id}, ticket_id={ticket_id}",
+                "soft_delete_ticket_admin_result": "soft_delete_ticket_admin sonucu: {result}",
+                "list_tickets_user_called": "list_tickets_user çağrıldı. user={user_id}",
+                "list_tickets_user_result": "list_tickets_user sonucu: {result}",
+                "get_ticket_user_called": "get_ticket_user çağrıldı. user={user_id}, ticket_id={ticket_id}",
+                "get_ticket_user_result": "get_ticket_user sonucu: {result}",
+                "soft_delete_ticket_user_called": "soft_delete_ticket_user çağrıldı. user={user_id}, ticket_id={ticket_id}",
+                "soft_delete_ticket_user_result": "soft_delete_ticket_user sonucu: {result}",
+                "list_tickets_agent_called": "list_tickets_agent çağrıldı. user={user_id}",
+                "list_tickets_agent_result": "list_tickets_agent sonucu: {result}"
             }
         }
     }

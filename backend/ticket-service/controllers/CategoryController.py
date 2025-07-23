@@ -3,8 +3,6 @@ from models.category import Category
 from fastapi import HTTPException
 from typing import Any
 from config.logger import get_logger
-from pymongo import MongoClient
-from config.database import get_mongo_uri
 
 from config.language import _, set_language
 from responseHandlers.api_success import api_success

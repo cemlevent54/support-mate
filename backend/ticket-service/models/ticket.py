@@ -19,6 +19,7 @@ class Ticket(BaseModel):
     assignedAgentId: Optional[str] = None
     attachments: list[dict] = []
     categoryId: str
+    productId: Optional[str] = None
     status: TicketStatus = TicketStatus.OPEN
     createdAt: datetime = Field(default_factory=datetime.utcnow)
     closedAt: Optional[datetime] = None

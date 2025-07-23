@@ -17,69 +17,38 @@ class TicketRepository:
         self.db = client[db_name]
         self.collection = self.db["tickets"]
 
-    def create(self, ticket: Ticket) -> Ticket:
-        try:
-            ticket_dict = ticket.model_dump(by_alias=True)
-            # Eğer id yoksa, _id alanını sil
-            if not ticket_dict.get("_id"):
-                ticket_dict.pop("_id", None)
-            result = self.collection.insert_one(ticket_dict)
-            # MongoDB'nin oluşturduğu id'yi ticket objesine ata
-            ticket.id = str(result.inserted_id)
-            logger.info(_(f"services.ticketRepository.logs.create").format(ticket_id=ticket.id))
-            return ticket
-        except Exception as e:
-            logger.error(_(f"services.ticketRepository.logs.create_error").format(error=str(e)))
-            raise
+    def create(self, ticket):
+        ticket_dict = ticket.dict(by_alias=True)
+        if ticket_dict.get('_id') is None:
+            ticket_dict.pop('_id', None)
+        result = self.collection.insert_one(ticket_dict)
+        return str(result.inserted_id)
 
-    def get_by_id(self, ticket_id: str) -> Optional[Ticket]:
-        try:
-            # Önce ObjectId ile dene, hata olursa string ile dene
-            doc = None
-            try:
-                doc = self.collection.find_one({"_id": ObjectId(ticket_id), "isDeleted": False})
-            except Exception:
-                pass
-            if not doc:
-                doc = self.collection.find_one({"_id": ticket_id, "isDeleted": False})
-            logger.info(_(f"services.ticketRepository.logs.get_by_id").format(ticket_id=ticket_id, found=doc is not None))
-            if doc:
-                if '_id' in doc:
-                    doc['_id'] = str(doc['_id'])
-                return Ticket.model_validate(doc)
-            return None
-        except Exception as e:
-            logger.error(_(f"services.ticketRepository.logs.get_by_id_error").format(error=str(e)))
-            return None
+    def update(self, ticket_id, updated):
+        updated_dict = updated.dict(by_alias=True, exclude={"id", "createdAt"})
+        result = self.collection.update_one(
+            {"_id": ObjectId(ticket_id)},
+            {"$set": updated_dict}
+        )
+        return result.modified_count > 0
 
-    def list(self, filter: dict = None) -> List[Ticket]:
-        try:
-            query = {"isDeleted": False}
-            if filter:
-                query.update(filter)
-            docs = self.collection.find(query)
-            count = self.collection.count_documents(query)
-            logger.info(_(f"services.ticketRepository.logs.list").format(filter=filter, count=count))
-            result = []
-            for doc in docs:
-                if '_id' in doc:
-                    doc['_id'] = str(doc['_id'])
-                result.append(Ticket.model_validate(doc))
-            return result
-        except Exception as e:
-            logger.error(_(f"services.ticketRepository.logs.list_error").format(error=str(e)))
-            return []
+    def get_by_id(self, ticket_id):
+        ticket = self.collection.find_one({"_id": ObjectId(ticket_id)})
+        if ticket:
+            if "_id" in ticket:
+                ticket["_id"] = str(ticket["_id"])
+            return Ticket(**ticket)
+        return None
 
-    def update(self, ticket_id: str, updated: dict) -> Optional[Ticket]:
-        try:
-            result = self.collection.update_one({"_id": ObjectId(ticket_id)}, {"$set": updated})
-            logger.info(_(f"services.ticketRepository.logs.update").format(ticket_id=ticket_id, modified=result.modified_count))
-            if result.modified_count:
-                return self.get_by_id(ticket_id)
-            return None
-        except Exception as e:
-            logger.error(_(f"services.ticketRepository.logs.update_error").format(error=str(e)))
-            return None
+    def get_all(self, filter_query=None):
+        filter_query = filter_query or {"isDeleted": False}
+        tickets = self.collection.find(filter_query)
+        result = []
+        for ticket in tickets:
+            if "_id" in ticket:
+                ticket["_id"] = str(ticket["_id"])
+            result.append(Ticket(**ticket))
+        return result
 
     def soft_delete(self, ticket_id: str) -> bool:
         try:

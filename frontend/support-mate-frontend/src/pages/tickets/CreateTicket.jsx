@@ -15,6 +15,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import ChatDialog from '../chat/chatDialog/ChatDialog';
 import { createTicket } from '../../api/ticketApi';
 import { getCategories } from '../../api/categoryApi';
+import { getProductsUser } from "../../api/productApi";
 
 // Kategoriler API'den gelecek
 
@@ -24,6 +25,7 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
     title: "",
     description: "",
     categoryId: "",
+    productId: "",
     files: [],
   });
   const [categories, setCategories] = useState([]);
@@ -36,6 +38,8 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
   const [selectedPreview, setSelectedPreview] = useState(null); // {url, name, type, size}
   const [chatOpen, setChatOpen] = useState(false);
   const [ticketData, setTicketData] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -77,6 +81,33 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
     }).catch(() => setCategories([]));
   }, []);
 
+  useEffect(() => {
+    const token = localStorage.getItem("jwt");
+    if (token) {
+      getProductsUser(token)
+        .then(res => {
+          if (res.data && res.data.success && Array.isArray(res.data.data)) {
+            setProducts(res.data.data);
+          }
+        })
+        .catch(() => setProducts([]));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (form.categoryId) {
+      const filtered = products.filter(
+        (prod) => String(prod.product_category_id) === String(form.categoryId)
+      );
+      setFilteredProducts(filtered);
+      console.log("Tüm ürünler:", products);
+      console.log("Seçili kategori:", form.categoryId);
+      console.log("Filtrelenen ürünler:", filtered);
+    } else {
+      setFilteredProducts([]);
+    }
+  }, [form.categoryId, products]);
+
   // Sadece girişli ve User rolünde ise göster
   if (userRole !== "user") {
     return <Box mt={10}><Alert severity="error">{t('pages.createTicket.noPermission')}</Alert></Box>;
@@ -114,6 +145,12 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
         ...prev,
         [name]: value,
       }));
+      if (name === "categoryId") {
+        setForm((prev) => ({
+          ...prev,
+          productId: "", // Kategori değişince ürün seçimini sıfırla
+        }));
+      }
     }
   };
 
@@ -163,6 +200,7 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
         title: form.title,
         description: form.description,
         categoryId: form.categoryId,
+        productId: form.productId,
         files: form.files || []
       };
       const response = await createTicket(ticketPayload);
@@ -387,6 +425,50 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
               </span>
             </div>
           </div>
+          {/* Ürün Dropdown */}
+          {filteredProducts.length > 0 && (
+            <div style={{ margin: '16px 0', width: '100%' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
+                {t('pages.createTicket.form.product')}
+              </label>
+              <div style={{ position: 'relative' }}>
+                <select
+                  name="productId"
+                  value={form.productId}
+                  onChange={handleChange}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid #ccc',
+                    fontSize: '14px',
+                    backgroundColor: '#fff',
+                    cursor: 'pointer',
+                    appearance: 'none',
+                  }}
+                  required
+                >
+                  <option value="">{t('pages.createTicket.form.selectProduct')}</option>
+                  {filteredProducts.map((prod) => (
+                    <option key={prod.id} value={prod.id}>
+                      {prod.product_name_tr || prod.product_name_en}
+                    </option>
+                  ))}
+                </select>
+                <span style={{
+                  position: 'absolute',
+                  top: '50%',
+                  right: '12px',
+                  transform: 'translateY(-50%)',
+                  pointerEvents: 'none',
+                  fontSize: '14px',
+                  color: '#555',
+                }}>
+                  ▼
+                </span>
+              </div>
+            </div>
+          )}
           <Box mt={2} mb={2}>
             <Button
               variant="contained"

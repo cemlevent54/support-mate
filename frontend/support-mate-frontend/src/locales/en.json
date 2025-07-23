@@ -89,6 +89,8 @@
       "form": {
         "title": "Title",
         "description": "Description",
+        "selectProduct": "Select Product",
+        "product": "Product",
         "category": "Category",
         "file": "Attach File (Optional)",
         "submit": "Submit",

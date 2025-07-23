@@ -2,19 +2,12 @@ from repositories.TicketRepository import TicketRepository
 
 class ListTicketsQueryHandler:
     def __init__(self):
-        self.ticket_repository = TicketRepository()
+        self._repository = TicketRepository()
 
-    def execute(self, user):
+    def execute(self, user, lang='tr'):
         try:
-            # Admin ise tüm ticketları getir
-            if user and user.get('roleName') == 'Admin':
-                tickets = self.ticket_repository.list()
-            # User ise sadece kendi ticketlarını getir
-            elif user and user.get('id'):
-                filter_criteria = {"customerId": user.get('id')}
-                tickets = self.ticket_repository.list(filter_criteria)
-            else:
-                tickets = []
-            return {"success": True, "data": tickets, "message": "Ticket list retrieved."}
+            tickets = self._repository.get_all()
+            return tickets
         except Exception as e:
-            return {"success": False, "data": [], "message": f"Ticket list query failed: {str(e)}"} 
+            print(f"[ERROR] Ticket list query failed: {str(e)}")
+            return None 

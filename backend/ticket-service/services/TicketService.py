@@ -23,6 +23,7 @@ from cqrs.queries.agent.SelectAndRotateAgentQueryHandler import SelectAndRotateA
 from cqrs.commands.ticket.AssignAgentToPendingTicketCommandHandler import AssignAgentToPendingTicketCommandHandler
 from config.language import _
 from dto.ticket_dto import TicketDTO, TicketListDTO
+from config.language import set_language, _
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +38,7 @@ class TicketService:
         self.chat_service = ChatService()
         self.message_service = MessageService()
 
-    def create_ticket(self, ticket, user, token=None):
+    def create_ticket(self, ticket, user, token=None, lang='tr'):
         if not user:
             logger.warning(_(f"services.ticketService.logs.unauthorized"))
             return unauthorized_error(_(f"services.ticketService.responses.unauthorized"))
@@ -56,21 +57,22 @@ class TicketService:
         # Agent seçimi kontrolü: customerId ile assignedAgentId aynı olamaz
         customer_id = user.get('id')
         if agent_id and agent_id == customer_id:
-            logger.warning(f"[TICKET_SERVICE] Agent ID ({agent_id}) customer ID ({customer_id}) ile aynı, agent atanmayacak")
+            logger.warning(_(f"services.ticketService.logs.agent_customer_same").format(agent_id=agent_id, customer_id=customer_id))
             agent_id = None
         
         # assignedAgentId'yi ayarla - unknown gitmemeli
         if agent_id and agent_id != "unknown":
             ticket["assignedAgentId"] = agent_id
-            logger.info(f"[TICKET_SERVICE] Agent atandı: {agent_id}")
+            logger.info(_(f"services.ticketService.logs.agent_assigned").format(agent_id=agent_id))
         else:
             # Online agent bulunamadıysa, customer ile aynıysa veya unknown ise assignedAgentId null geç
             ticket["assignedAgentId"] = None
             if agent_id == "unknown":
-                logger.warning(f"[TICKET_SERVICE] Agent ID 'unknown' geldi, assignedAgentId null olarak ayarlandı")
+                logger.warning(_(f"services.ticketService.logs.agent_id_unknown"))
             else:
-                logger.info(f"[TICKET_SERVICE] Online agent bulunamadı veya customer ile aynı, assignedAgentId null")
+                logger.info(_(f"services.ticketService.logs.no_agent_found"))
         
+        # productId alanı ticket dict'inde olmalı ve CQRS ile kaydedilmeli
         result = self.create_handler.execute(ticket, user)
         data = result.get('data')
         ticket_id = data.get('id') if isinstance(data, dict) else getattr(data, 'id', None)
@@ -136,37 +138,37 @@ class TicketService:
                 logger.error(_(f"services.ticketService.logs.event_mail_failed").format(error=e))
         return result
 
-    def list_tickets(self, user):
+    def list_tickets(self, user, lang='tr'):
         if not user:
             logger.warning(_(f"services.ticketService.logs.unauthorized"))
             return unauthorized_error(_(f"services.ticketService.responses.unauthorized"))
         logger.info(_(f"services.ticketService.logs.listing_tickets").format(user_id=user.get('id', 'unknown')))
-        result = self.list_handler.execute(user)
+        tickets = self.list_handler.execute(user, lang=lang)
         
+        if tickets is None:
+            message = _(f"services.ticketService.responses.tickets_list_failed")
+            return {"success": False, "data": [], "message": message}
         # DTO'ya çevir
-        if result.get("success") and result.get("data"):
-            tickets = result["data"]
-            category_service = None
-            ticket_dtos = []
-            for ticket in tickets:
-                dto = TicketDTO.from_model(ticket)
-                dto_dict = dto.model_dump()
-                # Kategori bilgisi ekle
-                category_id = getattr(ticket, "categoryId", None)
-                if category_id:
-                    if not category_service:
-                        from services.CategoryService import CategoryService
-                        category_service = CategoryService()
-                    category_info = category_service.get_category_by_id(category_id)
-                    dto_dict["category"] = category_info
-                else:
-                    dto_dict["category"] = None
-                ticket_dtos.append(dto_dict)
-            result["data"] = ticket_dtos
-        
-        return result
+        category_service = None
+        ticket_dtos = []
+        for ticket in tickets:
+            dto = TicketDTO.from_model(ticket)
+            dto_dict = dto.model_dump()
+            # Kategori bilgisi ekle
+            category_id = getattr(ticket, "categoryId", None)
+            if category_id:
+                if not category_service:
+                    from services.CategoryService import CategoryService
+                    category_service = CategoryService()
+                category_info = category_service.get_category_by_id(category_id)
+                dto_dict["category"] = category_info
+            else:
+                dto_dict["category"] = None
+            ticket_dtos.append(dto_dict)
+        message = _(f"services.ticketService.responses.tickets_listed")
+        return {"success": True, "data": ticket_dtos, "message": message}
 
-    def list_tickets_for_agent(self, user):
+    def list_tickets_for_agent(self, user, lang='tr'):
         if not user:
             logger.warning(_(f"services.ticketService.logs.unauthorized"))
             return unauthorized_error(_(f"services.ticketService.responses.unauthorized"))
@@ -200,7 +202,8 @@ class TicketService:
         
         return result
 
-    def get_ticket(self, ticket_id, user):
+    def get_ticket(self, ticket_id, user, lang='tr'):
+        
         if not user:
             logger.warning(_(f"services.ticketService.logs.unauthorized"))
             return unauthorized_error(_(f"services.ticketService.responses.unauthorized"))
@@ -209,16 +212,17 @@ class TicketService:
             return bad_request_error(_(f"services.ticketService.responses.bad_request"))
         logger.info(_(f"services.ticketService.logs.getting_ticket").format(ticket_id=ticket_id, user_id=user.get('id', 'unknown')))
         result = self.get_handler.execute(ticket_id, user)
-        
+        if result is None or not result.get("success") or not result.get("data"):
+            message = _(f"services.ticketService.responses.ticket_not_found") 
+            return {"success": False, "data": None, "message": message}
         # DTO'ya çevir
-        if result.get("success") and result.get("data"):
-            ticket = result["data"]
-            ticket_dto = TicketDTO.from_model(ticket)
-            result["data"] = ticket_dto.model_dump()
-        
-        return result
+        ticket = result["data"]
+        ticket_dto = TicketDTO.from_model(ticket)
+        result["data"] = ticket_dto.model_dump()
+        message = _(f"services.ticketService.responses.ticket_found") 
+        return {"success": True, "data": result["data"], "message": message}
 
-    def update_ticket(self, ticket_id, updated, user):
+    def update_ticket(self, ticket_id, updated, user, lang='tr'):
         if not user:
             logger.warning(_(f"services.ticketService.logs.unauthorized"))
             return unauthorized_error(_(f"services.ticketService.responses.unauthorized"))
@@ -226,9 +230,10 @@ class TicketService:
             logger.warning(_(f"services.ticketService.logs.bad_request"))
             return bad_request_error(_(f"services.ticketService.responses.bad_request"))
         logger.info(_(f"services.ticketService.logs.updating_ticket").format(ticket_id=ticket_id, user_id=user.get('id', 'unknown')))
+        # productId alanı updated dict'inde olmalı ve CQRS ile güncellenmeli
         return self.update_handler.execute(ticket_id, updated, user)
 
-    def soft_delete_ticket(self, ticket_id, user):
+    def soft_delete_ticket(self, ticket_id, user, lang='tr'):
         if not user:
             logger.warning(_(f"services.ticketService.logs.unauthorized"))
             return unauthorized_error(_(f"services.ticketService.responses.unauthorized"))
