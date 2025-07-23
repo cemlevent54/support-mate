@@ -134,8 +134,18 @@ class ProductService:
     
     def list_products(self):
         products = self.list_handler.handle()
-        dto_list = [
-            ProductResponseDTO(
+        dto_list = []
+        for prod in products:
+            # Kategori bilgisi ekle
+            category = self.get_category_handler.handle(prod.product_category_id)
+            product_category = None
+            if category:
+                product_category = {
+                    "product_category_id": category.id,
+                    "product_category_name_en": category.category_name_en,
+                    "product_category_name_tr": category.category_name_tr
+                }
+            dto = ProductResponseDTO(
                 id=prod.id,
                 product_name_tr=prod.product_name_tr,
                 product_name_en=prod.product_name_en,
@@ -143,10 +153,11 @@ class ProductService:
                 createdAt=prod.createdAt,
                 isDeleted=prod.isDeleted,
                 deletedAt=prod.deletedAt
-            ).dict() for prod in products
-        ]
-        serializable_list = [self.dto_to_serializable(dto) for dto in dto_list]
+            ).dict()
+            dto.pop("product_category_id", None)
+            dto["productCategory"] = product_category
+            dto_list.append(self.dto_to_serializable(dto))
         return {
-            "data": serializable_list,
+            "data": dto_list,
             "message": _(f"services.productService.responses.products_listed")
         }

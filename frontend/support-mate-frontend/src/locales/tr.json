@@ -405,5 +405,20 @@
     "confirmDeleteDesc": "Bu kategoriyi silmek istediğinize emin misiniz?",
     "confirmDeleteYes": "Evet, Sil",
     "confirmDeleteNo": "Vazgeç"
+  },
+  "adminProducts": {
+    "title": "Ürünler",
+    "add": "Yeni Ürün Ekle",
+    "edit": "Ürün Güncelle",
+    "cancel": "İptal",
+    "selectCategory": "Kategori seçiniz",
+    "table": {
+      "nameTr": "Ad (TR)",
+      "nameEn": "Ad (EN)",
+      "category": "Kategori",
+      "actions": "İşlemler"
+    },
+    "confirmDeleteTitle": "Ürünü Sil",
+    "confirmDeleteDesc": "Bu ürünü silmek istediğinize emin misiniz?"
   }
 } 

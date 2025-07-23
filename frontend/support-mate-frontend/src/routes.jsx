@@ -22,6 +22,7 @@ import { useLocation, Navigate } from 'react-router-dom';
 import AdminTickets from './pages/admin/AdminTickets';
 import AdminCategories from './pages/admin/AdminCategories';
 import SupportLayout from './components/layout/SupportLayout';
+import AdminProducts from './pages/admin/AdminProducts';
 
 // Global modal handlers - bu fonksiyonlar App.jsx'ten geçirilecek
 let globalOpenCreateTicketModal = () => {};
@@ -84,6 +85,10 @@ export const appRoutes = [
       {
         path: 'categories',
         element: <AdminCategories />,
+      },
+      {
+        path: 'products',
+        element: <AdminProducts />,
       },
     ],
   },

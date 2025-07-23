@@ -40,7 +40,7 @@ export const createProductAdmin = (product, token) => {
 // Admin için ürün güncelle
 export const updateProductAdmin = (productId, product, token) => {
   const lang = getLang();
-  return axiosInstance.patch(`/admin/products/${productId}`, product, {
+  return axiosInstance.patch(BASE_URL + `/admin/products/${productId}`, product, {
     headers: {
       Authorization: `Bearer ${token}`,
       "accept-language": lang,
@@ -51,7 +51,7 @@ export const updateProductAdmin = (productId, product, token) => {
 // Admin için ürün sil (soft delete)
 export const deleteProductAdmin = (productId, token) => {
   const lang = getLang();
-  return axiosInstance.delete(BASE_URL + "/admin/products/${productId}", {
+  return axiosInstance.delete(BASE_URL + `/admin/products/${productId}`, {
     headers: {
       Authorization: `Bearer ${token}`,
       "accept-language": lang,

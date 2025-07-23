@@ -404,5 +404,20 @@
     "confirmDeleteDesc": "Are you sure you want to delete this category?",
     "confirmDeleteYes": "Yes, Delete",
     "confirmDeleteNo": "Cancel"
+  },
+  "adminProducts": {
+    "title": "Products",
+    "add": "Add Product",
+    "edit": "Edit Product",
+    "cancel": "Cancel",
+    "selectCategory": "Select category",
+    "table": {
+      "nameTr": "Name (TR)",
+      "nameEn": "Name (EN)",
+      "category": "Category",
+      "actions": "Actions"
+    },
+    "confirmDeleteTitle": "Delete Product",
+    "confirmDeleteDesc": "Are you sure you want to delete this product?"
   }
 } 
