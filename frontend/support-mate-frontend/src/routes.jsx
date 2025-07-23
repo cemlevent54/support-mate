@@ -23,6 +23,8 @@ import AdminTickets from './pages/admin/AdminTickets';
 import AdminCategories from './pages/admin/AdminCategories';
 import SupportLayout from './components/layout/SupportLayout';
 import AdminProducts from './pages/admin/AdminProducts';
+import SupportKanbanBoard from './pages/support/SupportKanbanBoard';
+import AdminKanbanBoard from './pages/admin/AdminKanbanBoard';
 
 // Global modal handlers - bu fonksiyonlar App.jsx'ten geçirilecek
 let globalOpenCreateTicketModal = () => {};
@@ -90,6 +92,10 @@ export const appRoutes = [
         path: 'products',
         element: <AdminProducts />,
       },
+      {
+        path: 'kanban',
+        element: <AdminKanbanBoard />,
+      },
     ],
   },
   {
@@ -100,6 +106,7 @@ export const appRoutes = [
       { path: 'requests/:chatId', element: <SupportRequests /> },
       { path: 'chats', element: <SupportChatsLayout /> },
       { path: 'chats/:chatId', element: <SupportChatsLayout /> },
+      { path: 'kanban', element: <SupportKanbanBoard /> },
       { index: true, element: <Navigate to="requests" replace /> }
     ]
   },

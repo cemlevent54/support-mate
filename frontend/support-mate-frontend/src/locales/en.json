@@ -239,7 +239,8 @@
     "sidebar": {
       "requests": "Support Requests",
       "chats": "Chats",
-      "profile": "Profile"
+      "profile": "Profile",
+      "kanban": "Kanban"
     },
     "chatsTitle": "Chats",
     "requestsTitle": "Support Requests",
@@ -420,5 +421,25 @@
     },
     "confirmDeleteTitle": "Delete Product",
     "confirmDeleteDesc": "Are you sure you want to delete this product?"
+  },
+  "createTask": {
+    "title": "Create Task",
+    "form": {
+      "title": "Title",
+      "titlePlaceholder": "Enter title",
+      "description": "Description",
+      "descriptionPlaceholder": "Enter description",
+      "priority": "Priority",
+      "priority_low": "Low",
+      "priority_medium": "Medium",
+      "priority_high": "High",
+      "priorityPlaceholder": "Select Priority",
+      "assignee": "Assignee",
+      "assigneePlaceholder": "Select Assignee",
+      "dueDate": "Due Date",
+      "ticketId": "Related Support Ticket ID",
+      "save": "Save",
+      "cancel": "Cancel"
+    }
   }
 } 

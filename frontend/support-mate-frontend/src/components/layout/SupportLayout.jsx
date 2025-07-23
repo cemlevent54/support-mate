@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 const sidebarItems = [
   { key: 'requests', labelKey: 'supportDashboard.sidebar.requests', path: '/support/requests' },
   { key: 'chats', labelKey: 'supportDashboard.sidebar.chats', path: '/support/chats' },
+  { key: 'kanban', labelKey: 'supportDashboard.sidebar.kanban', path: '/support/kanban' },
   { key: 'profile', labelKey: 'supportDashboard.sidebar.profile', path: '/support/profile' },
 ];
 

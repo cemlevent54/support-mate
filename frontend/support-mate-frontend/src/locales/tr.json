@@ -239,7 +239,8 @@
     "sidebar": {
       "requests": "Destek Talepleri",
       "chats": "Sohbetler",
-      "profile": "Profil"
+      "profile": "Profil",
+      "kanban": "Kanban"
     },
     "chatsTitle": "Sohbetler",
     "searchChat": "Sohbet ara...",
@@ -421,5 +422,25 @@
     },
     "confirmDeleteTitle": "Ürünü Sil",
     "confirmDeleteDesc": "Bu ürünü silmek istediğinize emin misiniz?"
+  },
+  "createTask": {
+    "title": "Görev Oluştur",
+    "form": {
+      "title": "Başlık",
+      "titlePlaceholder": "Başlık giriniz",
+      "description": "Sorun Tanımı",
+      "descriptionPlaceholder": "Sorun tanımını yazınız",
+      "priority": "Öncelik",
+      "priority_low": "Düşük",
+      "priority_medium": "Orta",
+      "priority_high": "Yüksek",
+      "priorityPlaceholder": "Öncelik Seçiniz",
+      "assignee": "Atanacak Kişi",
+      "assigneePlaceholder": "Atanacak Kişi Seçiniz",
+      "dueDate": "Son Teslim Tarihi",
+      "ticketId": "İlişkili Destek Talebi ID",
+      "save": "Kaydet",
+      "cancel": "Kapat"
+    }
   }
 } 
