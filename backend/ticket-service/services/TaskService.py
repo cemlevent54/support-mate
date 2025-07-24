@@ -3,9 +3,13 @@ from cqrs.commands.task.UpdateTaskCommandHandler import UpdateTaskCommandHandler
 from cqrs.commands.task.DeleteTaskCommandHandler import DeleteTaskCommandHandler
 from cqrs.queries.task.ListTasksQueryHandler import ListTasksQueryHandler
 from cqrs.queries.task.GetTaskQueryHandler import GetTaskQueryHandler
+from cqrs.queries.task.GetTaskQueryHandler import GetTaskQueryHandler
+from cqrs.queries.ticket.GetTicketQueryHandler import GetTicketQueryHandler
+from cqrs.commands.task.UpdateTaskCommandHandler import UpdateTaskCommandHandler
+from cqrs.commands.ticket.UpdateTicketStatusCommandHandler import UpdateTicketStatusCommandHandler
 from models.task import Task
 from typing import List, Optional
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
 from config.logger import get_logger
 from dto.task_dto import TaskResponseDto
 from config.language import _
@@ -13,6 +17,7 @@ from fastapi.responses import JSONResponse
 from fastapi import status
 from kafka_files.kafkaProducer import send_task_assigned_event
 from middlewares.auth import get_user_by_id
+import json
 
 logger = get_logger()
 
@@ -194,5 +199,71 @@ class TaskService:
             "data": [self.dto_to_serializable(dto) for dto in dto_list],
             "message": _(f"services.taskService.logs.employee_tasks_listed")
         }
+    
+    def user_approve_or_reject_task(self, task_id: str, status: str, user: dict, token: str = None, language: str = 'tr'):
+        try:
+            from kafka_files.kafkaProducer import send_task_approved_event, send_task_rejected_event
+            # Task ve ticket'ı bul
+            task_handler = GetTaskQueryHandler()
+            ticket_handler = GetTicketQueryHandler()
+            update_task_handler = UpdateTaskCommandHandler()
+            update_ticket_status_handler = UpdateTicketStatusCommandHandler()
+            task_obj = task_handler.find_by_id(task_id)
+            if not task_obj:
+                return {"success": False, "message": "Task not found."}
+            ticket_id = getattr(task_obj, 'relatedTicketId', None)
+            ticket = ticket_handler.execute(ticket_id, user) if ticket_id else None
+            if not ticket:
+                return {"success": False, "message": "Ticket not found."}
+
+            # Kullanıcılar
+            customer_id = getattr(ticket['data'], 'customerId', None) if ticket and ticket.get('data') else None
+            customer = get_user_by_id(customer_id, token) if customer_id else None
+            employee = get_user_by_id(task_obj.assignedEmployeeId, token)
+            supporter = get_user_by_id(task_obj.createdByCustomerSupporterId, token)
+
+            # Güncelleme işlemleri
+            if status == 'APPROVED':
+                # Task status DONE kalır, ticket status COMPLETED olur
+                update_ticket_status_handler.execute(ticket['data'].id, 'COMPLETED')
+                # Bildirimler
+                if customer:
+                    html_path = f"templates/email/task_approved_customer_{language}.html"
+                    send_task_approved_event(task_obj, customer, html_path=html_path, language=language)
+                if employee:
+                    html_path = f"templates/email/task_approved_employee_{language}.html"
+                    send_task_approved_event(task_obj, employee, html_path=html_path, language=language)
+                if supporter:
+                    html_path = f"templates/email/task_approved_supporter_{language}.html"
+                    send_task_approved_event(task_obj, supporter, html_path=html_path, language=language)
+            elif status == 'REJECTED':
+                # Task status PENDING olur, ticket status OPEN olur
+                update_task_handler.handle(task_id, {**task_obj.dict(), 'status': 'PENDING'})
+                update_ticket_status_handler.execute(ticket['data'].id, 'OPEN')
+                # Bildirimler
+                if customer:
+                    html_path = f"templates/email/task_rejected_customer_{language}.html"
+                    send_task_rejected_event(task_obj, customer, html_path=html_path, language=language)
+                if employee:
+                    html_path = f"templates/email/task_rejected_employee_{language}.html"
+                    send_task_rejected_event(task_obj, employee, html_path=html_path, language=language)
+                if supporter:
+                    html_path = f"templates/email/task_rejected_supporter_{language}.html"
+                    send_task_rejected_event(task_obj, supporter, html_path=html_path, language=language)
+            else:
+                return {"success": False, "message": "Invalid status value."}
+
+            # Güncel task'ı tekrar çek ve döndür
+            updated_task = task_handler.find_by_id(task_id)
+            from dto.task_dto import TaskResponseDto
+            dto = TaskResponseDto.from_model(updated_task).dict()
+            return {
+                "success": True,
+                "data": dto,
+                "message": f"Task and ticket status updated: {status}"
+            }
+        except Exception as e:
+            logger.error(f"user_approve_or_reject_task error: {e}")
+            return {"success": False, "message": str(e)}
     
     

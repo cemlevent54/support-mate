@@ -10,6 +10,8 @@ TICKET_CREATED_TOPIC = "ticket-created"
 AGENT_ASSIGNED_TOPIC = "agent-assigned"
 TASK_ASSIGNED_TOPIC = "task-assigned"
 TASK_DONE_TOPIC = "task-done"
+TASK_APPROVED_TOPIC = "task-approved"
+TASK_REJECTED_TOPIC = "task-rejected"
 
 _producer = None
 
@@ -138,3 +140,69 @@ def send_task_done_event(task, user, html_path=None, language='tr'):
             logger.error("KafkaProducer mevcut değil, event gönderilemedi.")
     except Exception as e:
         logger.error(f"Kafka task_done event could not be sent: {e}")
+
+def send_task_approved_event(task, user, html_path=None, language='tr'):
+    try:
+        html_content = ""
+        if html_path:
+            try:
+                with open(html_path, 'r', encoding='utf-8') as f:
+                    html_template = Template(f.read())
+                html_content = html_template.safe_substitute(
+                    firstName=user.get("firstName", ""),
+                    taskTitle=task.title,
+                    taskId=task.id
+                )
+            except Exception as e:
+                logger.error(f"HTML şablonu okunamadı: {e}")
+                html_content = ""
+        event = {
+            "email": user.get("email"),
+            "firstName": user.get("firstName", ""),
+            "language": language,
+            "taskId": task.id,
+            "taskTitle": task.title,
+            "html": html_content
+        }
+        logger.info(f"Sending task_approved event to Kafka: {event}")
+        producer = get_producer()
+        if producer:
+            producer.send(TASK_APPROVED_TOPIC, event)
+            producer.flush()
+        else:
+            logger.error("KafkaProducer mevcut değil, event gönderilemedi.")
+    except Exception as e:
+        logger.error(f"Kafka task_approved event could not be sent: {e}")
+
+def send_task_rejected_event(task, user, html_path=None, language='tr'):
+    try:
+        html_content = ""
+        if html_path:
+            try:
+                with open(html_path, 'r', encoding='utf-8') as f:
+                    html_template = Template(f.read())
+                html_content = html_template.safe_substitute(
+                    firstName=user.get("firstName", ""),
+                    taskTitle=task.title,
+                    taskId=task.id
+                )
+            except Exception as e:
+                logger.error(f"HTML şablonu okunamadı: {e}")
+                html_content = ""
+        event = {
+            "email": user.get("email"),
+            "firstName": user.get("firstName", ""),
+            "language": language,
+            "taskId": task.id,
+            "taskTitle": task.title,
+            "html": html_content
+        }
+        logger.info(f"Sending task_rejected event to Kafka: {event}")
+        producer = get_producer()
+        if producer:
+            producer.send(TASK_REJECTED_TOPIC, event)
+            producer.flush()
+        else:
+            logger.error("KafkaProducer mevcut değil, event gönderilemedi.")
+    except Exception as e:
+        logger.error(f"Kafka task_rejected event could not be sent: {e}")

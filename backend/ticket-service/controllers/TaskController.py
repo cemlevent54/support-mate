@@ -105,4 +105,16 @@ class TaskController:
             logger.error(_("services.taskService.logs.delete_task_error"), exc_info=True)
             return api_error(message=str(e))
     
+    # full path: /api/tickets/tasks/user/{task_id}
+    def user_approve_or_reject_task(self, task_id, status, user, token=None, lang='tr'):
+        set_language(self.lang)
+        logger.info(_("services.taskService.logs.user_approve_or_reject_task"))
+        try:
+            result = self.service.user_approve_or_reject_task(task_id, status, user, token, lang)
+            return api_success(data=result["data"], message=result["message"])
+        except Exception as e:
+            logger.error(_("services.taskService.logs.user_approve_or_reject_task_error"), exc_info=True)
+            return api_error(message=str(e))
+        
+    
     

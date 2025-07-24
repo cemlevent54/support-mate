@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, UploadFile, File, Form, Request, HTTPException
+from fastapi import APIRouter, Depends, status, UploadFile, File, Form, Request, HTTPException, Body
 from typing import List
 import os 
 from controllers.TaskController import TaskController
@@ -86,4 +86,21 @@ def delete_task(task_id: str, request: Request, user=Depends(get_current_user)):
     if user.get("roleName") not in ["Customer Supporter", "Employee"]:
         raise HTTPException(status_code=403, detail="Forbidden")
     return task_controller.delete_task(task_id, user)
+
+# user approve or reject task when ticket status is WAITING_FOR_CUSTOMER_APPROVE and task status is DONE
+# full path: /api/tickets/tasks/user/{task_id}
+# body: { "status": "APPROVED" } or { "status": "REJECTED" }
+# when APPROVED, task status will stay DONE and ticket status will be COMPLETED
+# when REJECTED, task status will be PENDING and ticket status will be OPEN
+@router.patch("/tasks/user/{task_id}")
+async def user_approve_or_reject_task(task_id: str, request: Request, user=Depends(get_current_user)):
+    body = await request.json()
+    status = body.get("status")
+    token = request.headers.get("authorization", "").replace("Bearer ", "")
+    lang = get_lang(request)
+    set_language(lang)
+    task_controller = get_task_controller(lang)
+    if user.get("roleName") not in ["User"]:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    return task_controller.user_approve_or_reject_task(task_id, status, user, token, lang)
 

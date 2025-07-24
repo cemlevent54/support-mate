@@ -1,7 +1,7 @@
 import kafkaService from '../config/kafka.js';
 import logger from '../config/logger.js';
 
-export async function startKafkaConsumer(onUserRegistered, onPasswordReset, onUserVerified, onTicketCreated, onAgentAssigned, onTaskAssigned) {
+export async function startKafkaConsumer(onUserRegistered, onPasswordReset, onUserVerified, onTicketCreated, onAgentAssigned, onTaskAssigned, onTaskApproved, onTaskRejected) {
   try {
     await kafkaService.connectConsumer();
     await kafkaService.consumer.subscribe({ topic: 'user-registered', fromBeginning: false });
@@ -16,6 +16,10 @@ export async function startKafkaConsumer(onUserRegistered, onPasswordReset, onUs
     logger.info('Kafka consumer subscribed to topic: agent-assigned');
     await kafkaService.consumer.subscribe({ topic: 'task-assigned', fromBeginning: false });
     logger.info('Kafka consumer subscribed to topic: task-assigned');
+    await kafkaService.consumer.subscribe({ topic: 'task-approved', fromBeginning: false });
+    logger.info('Kafka consumer subscribed to topic: task-approved');
+    await kafkaService.consumer.subscribe({ topic: 'task-rejected', fromBeginning: false });
+    logger.info('Kafka consumer subscribed to topic: task-rejected');
     await kafkaService.consumer.run({
       eachMessage: async ({ topic, message }) => {
         const data = JSON.parse(message.value.toString());
@@ -31,6 +35,10 @@ export async function startKafkaConsumer(onUserRegistered, onPasswordReset, onUs
           await onAgentAssigned(data);
         } else if (topic === 'task-assigned') {
           await onTaskAssigned(data);
+        } else if (topic === 'task-approved') {
+          await onTaskApproved(data);
+        } else if (topic === 'task-rejected') {
+          await onTaskRejected(data);
         }
       },
     });

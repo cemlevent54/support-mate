@@ -7,7 +7,9 @@ import {
   handleTicketCreated,
   handleAgentAssigned,
   handleTaskAssigned,
-  handleTaskDone
+  handleTaskDone,
+  handleTaskApprovedEvent,
+  handleTaskRejectedEvent
 } from '../events/index.js';
 
 export async function startKafkaConsumer() {
@@ -27,6 +29,10 @@ export async function startKafkaConsumer() {
     logger.info('Kafka consumer subscribed to topic: task-assigned');
     await kafkaService.consumer.subscribe({ topic: 'task-done', fromBeginning: false });
     logger.info('Kafka consumer subscribed to topic: task-done');
+    await kafkaService.consumer.subscribe({ topic: 'task-approved', fromBeginning: false });
+    logger.info('Kafka consumer subscribed to topic: task-approved');
+    await kafkaService.consumer.subscribe({ topic: 'task-rejected', fromBeginning: false });
+    logger.info('Kafka consumer subscribed to topic: task-rejected');
     await kafkaService.consumer.run({
       eachMessage: async ({ topic, message }) => {
         const data = JSON.parse(message.value.toString());
@@ -44,6 +50,10 @@ export async function startKafkaConsumer() {
           await handleTaskAssigned(data);
         } else if (topic === 'task-done') {
           await handleTaskDone(data);
+        } else if (topic === 'task-approved') {
+          await handleTaskApprovedEvent(data);
+        } else if (topic === 'task-rejected') {
+          await handleTaskRejectedEvent(data);
         }
       },
     });

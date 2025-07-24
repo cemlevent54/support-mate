@@ -5,6 +5,8 @@ import handleTicketCreated from './handleTicketCreatedEvent.js';
 import handleAgentAssigned from './handleAgentAssignedEvent.js';
 import handleTaskAssigned from './handleTaskAssignedEvent.js';
 import handleTaskDone from './handleTaskDoneEvent.js';
+import handleTaskApprovedEvent from './handleTaskApprovedEvent.js';
+import handleTaskRejectedEvent from './handleTaskRejectedEvent.js';
 
 export {
   handleUserRegistered,
@@ -13,5 +15,7 @@ export {
   handleTicketCreated,
   handleAgentAssigned,
   handleTaskAssigned,
-  handleTaskDone
+  handleTaskDone,
+  handleTaskApprovedEvent,
+  handleTaskRejectedEvent
 };
