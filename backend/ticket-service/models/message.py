@@ -14,3 +14,4 @@ class Message(BaseModel):
     is_delivered: bool = False 
     deletedAt: Optional[datetime] = None
     receiverId: Optional[str] = None
+    isRead: bool = False  # Bu mesaj okunduysa True, değilse False

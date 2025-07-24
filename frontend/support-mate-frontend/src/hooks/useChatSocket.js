@@ -181,15 +181,18 @@ export const useChatSocket = (chatTicket, chatOpen) => {
 
       // --- SOCKET EMIT ---
       if (isFirstMessage && res.success && res.data && res.data.messages && res.data.messages.length > 0) {
-        // Yeni chat ve ilk mesaj için create_message emit et
-        socket.emit('create_message', {
+        const emitObj = {
           chatId: currentChatId,
-          message: res.data.messages[0], // ilk mesajın DTO'su
-          userId: myUserId
-        });
+          message: res.data.messages[0],
+          userId: myUserId,
+          receiverId: chatTicket?.receiverId // receiverId burada mevcutsa
+        };
+        console.log('[SOCKET][EMIT][create_message]', emitObj);
+        socket.emit('create_message', emitObj);
       } else {
-        // Var olan chat için klasik send_message emit
-        socket.emit('send_message', { chatId: currentChatId, userId: myUserId, message: input });
+        const emitObj = { chatId: currentChatId, userId: myUserId, receiverId: chatTicket?.receiverId, message: input };
+        console.log('[SOCKET][EMIT][send_message]', emitObj);
+        socket.emit('send_message', emitObj);
       }
       // --- /SOCKET EMIT ---
 
@@ -240,6 +243,12 @@ export const useChatSocket = (chatTicket, chatOpen) => {
     setInput("");
     setSomeoneTyping(false);
   };
+
+  useEffect(() => {
+    if (chatOpen && chatId && myUserId) {
+      socket.emit('mark_message_read', { chatId, userId: myUserId });
+    }
+  }, [chatOpen, chatId, myUserId]);
 
   return {
     messages,

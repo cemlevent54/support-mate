@@ -15,7 +15,7 @@ from config.language import get_language, set_language, _
 from config.logger import get_logger
 from dto.message_dto import MessageDTO
 from utils.date_utils import convert_dict_timestamps_to_tr
-# from config.env import get_default_language
+from repositories.MessageRepository import MessageRepository
 import logging
 
 logger = logging.getLogger(__name__)
@@ -37,6 +37,7 @@ class MessageService:
         self.send_handler = SendMessageCommandHandler()
         self.list_handler = ListMessagesQueryHandler()
         self.logger = get_logger()
+        self.message_repository = MessageRepository()
 
     def send_message(self, message_data, user, is_delivered=False):
         logging.info(f"[SERVICE] send_message called with user: {user.get('id')}")
@@ -318,3 +319,6 @@ class MessageService:
             "data": data,
             "total": total,
         }
+
+    def mark_messages_as_read(self, chat_id, user_id):
+        self.message_repository.mark_all_as_read(chat_id, user_id)

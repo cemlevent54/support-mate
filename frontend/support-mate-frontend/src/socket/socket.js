@@ -12,9 +12,24 @@ const socket = io(SOCKET_URL, {
   withCredentials: true,     // gerekiyorsa
 });
 
-// Bağlantı logları
-socket.on("connect", () => {
+// Kullanıcı kimliği ve rolünü localStorage veya JWT'den al
+const token = localStorage.getItem('jwt');
+let userId = null;
+let userRole = null;
+if (token) {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    userId = payload.userId || payload.id || payload.sub;
+    userRole = payload.roleName || payload.role;
+  } catch (e) {}
+}
+
+socket.on('connect', () => {
   console.log("[SOCKET] Connected:", socket.id);
+  // Bağlantı kurulduğunda authenticate_and_join eventini emit et
+  if (userId && userRole) {
+    socket.emit('authenticate_and_join', { userId, userRole });
+  }
 });
 socket.on("disconnect", (reason) => {
   console.log("[SOCKET] Disconnected:", reason);

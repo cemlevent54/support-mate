@@ -27,11 +27,10 @@ const getLastMessage = (chat) => {
   return 'Mesaj yok';
 };
 
-export default function ChatList({ activeChatTicketId, onSelectChat, agentChats, loading, onUserJoinedChat }) {
+export default function ChatList({ activeChatTicketId, onSelectChat, agentChats, loading, onUserJoinedChat, unreadCounts = {} }) {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [newMessageChats, setNewMessageChats] = useState(new Set());
-  const [unreadCounts, setUnreadCounts] = useState({});
 
   // Search fonksiyonu (filtrelenmiş chat listesi)
   const filteredChatList = (agentChats || []).filter(chat => {
@@ -74,11 +73,6 @@ export default function ChatList({ activeChatTicketId, onSelectChat, agentChats,
       const newSet = new Set(prev);
       newSet.delete(realChatId);
       return newSet;
-    });
-    setUnreadCounts(prev => {
-      const newCounts = { ...prev };
-      delete newCounts[realChatId];
-      return newCounts;
     });
     onSelectChat(chat);
   };
@@ -291,39 +285,46 @@ export default function ChatList({ activeChatTicketId, onSelectChat, agentChats,
                   (String(activeChatTicketId) === String(chat._id || chat.chatId || chat.id))
                 }
                 onClick={() => handleChatSelect(chat)}
-                sx={{
-                  color: '#222',
-                  bgcolor: chat.isNewMessage ? '#fff3cd' : (String(activeChatTicketId) === String(chat.id) ? '#f0f8ff' : 'transparent'),
-                  '&:hover': { 
-                    bgcolor: '#f5f5f5',
-                    transform: 'translateX(2px)',
-                  },
-                  py: 2,
-                  px: 3,
-                  borderBottom: index === sortedChatList.length - 1 ? 'none' : '1px solid #f0f0f0',
-                  '&.Mui-selected': {
-                    bgcolor: '#e3f2fd',
-                    '&:hover': { bgcolor: '#e3f2fd' },
-                    borderLeft: '4px solid #1976d2',
-                  },
-                  transition: 'all 0.3s ease-in-out',
-                  transform: chat.isNewMessage ? 'translateX(4px)' : 'translateX(0)',
-                  borderLeft: chat.isNewMessage ? '4px solid #ffc107' : 'none',
-                  animation: chat.isNewMessage ? 'newMessagePulse 2s ease-in-out' : 'none',
-                  '@keyframes newMessagePulse': {
-                    '0%': {
-                      backgroundColor: '#fff3cd',
-                      transform: 'translateX(4px) scale(1.02)',
+                sx={() => {
+                  let sxObj = {
+                    color: '#222',
+                    bgcolor: chat.isNewMessage ? '#fff3cd' : (String(activeChatTicketId) === String(chat.id) ? '#f0f8ff' : 'transparent'),
+                    '&:hover': { 
+                      bgcolor: '#f5f5f5',
+                      transform: 'translateX(2px)',
                     },
-                    '50%': {
-                      backgroundColor: '#fff3cd',
-                      transform: 'translateX(4px) scale(1.01)',
+                    py: 2,
+                    px: 3,
+                    borderBottom: index === sortedChatList.length - 1 ? 'none' : '1px solid #f0f0f0',
+                    '&.Mui-selected': {
+                      bgcolor: '#e3f2fd',
+                      '&:hover': { bgcolor: '#e3f2fd' },
+                      borderLeft: '4px solid #1976d2',
                     },
-                    '100%': {
-                      backgroundColor: 'transparent',
-                      transform: 'translateX(0) scale(1)',
+                    transition: 'all 0.3s ease-in-out',
+                    transform: chat.isNewMessage ? 'translateX(4px)' : 'translateX(0)',
+                    borderLeft: chat.isNewMessage ? '4px solid #ffc107' : 'none',
+                    animation: chat.isNewMessage ? 'newMessagePulse 2s ease-in-out' : 'none',
+                    '@keyframes newMessagePulse': {
+                      '0%': {
+                        backgroundColor: '#fff3cd',
+                        transform: 'translateX(4px) scale(1.02)',
+                      },
+                      '50%': {
+                        backgroundColor: '#fff3cd',
+                        transform: 'translateX(4px) scale(1.01)',
+                      },
+                      '100%': {
+                        backgroundColor: 'transparent',
+                        transform: 'translateX(0) scale(1)',
+                      },
                     },
-                  },
+                  };
+                  const chatKey = String(chat._id || chat.chatId || chat.id);
+                  if (unreadCounts[chatKey] > 0) {
+                    sxObj.bgcolor = 'rgba(255,0,0,0.15)';
+                  }
+                  return sxObj;
                 }}
               >
                 <ListItemAvatar>
@@ -360,34 +361,31 @@ export default function ChatList({ activeChatTicketId, onSelectChat, agentChats,
                   }
                   sx={{ ml: 1 }}
                 />
-                {unreadCounts[chat.id] > 0 && (
-                  <Box
-                    sx={{
+                {/* Badge: ListItemButton içinde, ListItemText dışında */}
+                {(() => {
+                  const chatKey = String(chat._id || chat.chatId || chat.id);
+                  console.log('unreadCounts:', unreadCounts, 'chatKey:', chatKey);
+                  return unreadCounts[chatKey] > 0 && (
+                    <span style={{
                       position: 'absolute',
-                      top: 8,
-                      right: 8,
-                      minWidth: 20,
-                      height: 20,
-                      borderRadius: '10px',
-                      bgcolor: '#1976d2',
+                      top: 2,
+                      right: -20,
+                      background: 'red',
                       color: '#fff',
+                      borderRadius: '50%',
+                      width: 20,
+                      height: 20,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: 11,
-                      fontWeight: 600,
-                      animation: 'bounce 1s infinite',
-                      zIndex: 1,
-                      '@keyframes bounce': {
-                        '0%, 20%, 50%, 80%, 100%': { transform: 'translateY(0)' },
-                        '40%': { transform: 'translateY(-3px)' },
-                        '60%': { transform: 'translateY(-2px)' },
-                      },
-                    }}
-                  >
-                    {unreadCounts[chat.id] > 99 ? '99+' : unreadCounts[chat.id]}
-                  </Box>
-                )}
+                      fontSize: 13,
+                      fontWeight: 700,
+                      boxShadow: '0 0 0 2px #111',
+                    }}>
+                      {unreadCounts[chatKey]}
+                    </span>
+                  );
+                })()}
               </ListItemButton>
             </ListItem>
           ))

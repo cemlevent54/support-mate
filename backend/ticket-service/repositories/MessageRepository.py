@@ -54,4 +54,10 @@ class MessageRepository:
         for doc in docs:
             doc["_id"] = str(doc["_id"])
             result.append(Message.model_validate(doc))
-        return result 
+        return result
+
+    def mark_all_as_read(self, chat_id: str, user_id: str):
+        self.collection.update_many(
+            {"chatId": chat_id, "receiverId": user_id, "isRead": False},
+            {"$set": {"isRead": True}}
+        ) 

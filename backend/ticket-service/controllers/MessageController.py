@@ -129,4 +129,13 @@ class MessageController:
             logger.error(str(e))
             return api_error(error=str(e), message=_("services.messageService.logs.message_list_failed"))
 
+    def mark_messages_as_read(self, chat_id, user, lang: str = None):
+        set_language(lang or self.lang)
+        try:
+            self.message_service.mark_messages_as_read(chat_id, user.get('id'))
+            return {"success": True, "message": _(f"services.messageService.responses.messages_marked_as_read")}
+        except Exception as e:
+            logger.error(str(e))
+            return api_error(error=str(e), message=_("services.messageService.logs.message_list_failed"))
+
 message_controller = MessageController()

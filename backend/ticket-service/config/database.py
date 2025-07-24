@@ -87,3 +87,10 @@ def get_db_status():
         "name": db_name,
         "readyState": ready_state
     }
+
+def get_mongo_client_and_db():
+    uri = get_mongo_uri()
+    db_name = uri.rsplit('/', 1)[-1].split('?')[0]
+    client = MongoClient(uri)
+    db = client[db_name]
+    return client, db

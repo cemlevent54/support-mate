@@ -7,6 +7,8 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from routes import api_router
 from config.language import _
+from config.database import get_mongo_client_and_db
+from services.MessageService import MessageService
 
 logger = logging.getLogger("socketio")
 
@@ -74,6 +76,9 @@ async def authenticate_and_join(sid, data):
         "userRole": user_role,
         "timestamp": str_now()
     }, to=sid)
+    # --- UNREAD COUNTS EMIT ---
+    unread_counts = get_unread_counts_for_user(user_id)
+    await sio.emit('unread_counts', {'counts': unread_counts}, to=sid)
 
 @sio.event
 async def send_chat_message(sid, data):
@@ -91,11 +96,20 @@ async def send_message(sid, data):
     chat_id = data.get("chatId")
     user_id = data.get("userId")
     message = data.get("message")
+    receiver_id = data.get('receiverId')
+    logger.info(f"[SOCKET][send_message] receiver_id: {receiver_id}")
     if not chat_id or not user_id or not message:
         await sio.emit('error', {'message': 'chatId, userId ve message gereklidir'}, to=sid)
         return
     await sio.emit("receive_chat_message", {"chatId": chat_id, "message": message, "userId": user_id}, room=chat_id)
     logger.info(_(f"config.socketio.send_message").format(user=user_id, chat_id=chat_id, message=message, data=data))
+    # --- UNREAD COUNTS EMIT ---
+    # Burada ilgili agent'lara unread_counts emit et (örnek: receiverId'ye)
+    if receiver_id:
+        unread_counts = get_unread_counts_for_user(receiver_id)
+        for sid_, user_info in active_users.items():
+            if user_info['user_id'] == receiver_id:
+                await sio.emit('unread_counts', {'counts': unread_counts}, to=sid_)
 
 @sio.event
 async def typing(sid, data):
@@ -149,9 +163,18 @@ async def mark_message_read(sid, data):
     chat_id = data.get('chatId')
     user_id = data.get('userId')
     message_id = data.get('messageId')
-    if not chat_id or not user_id or not message_id:
+    if not chat_id or not user_id:
         return
+    # Tüm mesajları okundu yap
+    MessageService().mark_messages_as_read(chat_id, user_id)
+    
     await sio.emit("message_read", {"chatId": chat_id, "userId": user_id, "messageId": message_id, "timestamp": str_now()}, room=chat_id, skip_sid=sid)
+    # --- UNREAD COUNT EMIT ---
+    unread_count = get_unread_count_for_user(user_id)
+    await sio.emit('unread_count', {'count': unread_count}, to=sid)
+    # --- UNREAD COUNTS EMIT ---
+    unread_counts = get_unread_counts_for_user(user_id)
+    await sio.emit('unread_counts', {'counts': unread_counts}, to=sid)
 
 @sio.event
 async def join_room(sid, data):
@@ -191,6 +214,8 @@ def create_message(sid, data):
     chat_id = data.get("chatId")
     message = data.get("message")
     user_id = data.get("userId")
+    receiver_id = data.get('receiverId')
+    logger.info(f"[SOCKET][create_message] receiver_id: {receiver_id}")
     if not chat_id or not message or not user_id:
         sio.emit('error', {'message': 'chatId, message ve userId gereklidir'}, to=sid)
         return
@@ -205,6 +230,19 @@ def create_message(sid, data):
         room=chat_id
     )
     logger.info(_(f"config.socketio.create_message_emit").format(user=user_id, chat_id=chat_id, message=message, data=data))
+    # --- UNREAD COUNT EMIT ---
+    # Burada ilgili agent'lara unread_count emit et (örnek: receiverId'ye)
+    if receiver_id:
+        unread_count = get_unread_count_for_user(receiver_id)
+        # Aktif kullanıcılar arasında receiver_id'yi bul
+        for sid_, user_info in active_users.items():
+            if user_info['user_id'] == receiver_id:
+                sio.emit('unread_count', {'count': unread_count}, to=sid_)
+        # --- UNREAD COUNTS EMIT ---
+        unread_counts = get_unread_counts_for_user(receiver_id)
+        for sid_, user_info in active_users.items():
+            if user_info['user_id'] == receiver_id:
+                sio.emit('unread_counts', {'counts': unread_counts}, to=sid_)
 
 def str_now():
     from datetime import datetime
@@ -228,6 +266,28 @@ def get_users_in_room(room):
 
 def get_users_in_chat(chat_id):
     return get_users_in_room(chat_id)
+
+# --- UNREAD COUNT HELPER (mock) ---
+def get_unread_count_for_user(user_id):
+    client, db = get_mongo_client_and_db()
+    messages_collection = db["messages"]
+    count = messages_collection.count_documents({
+        "receiverId": user_id,
+        "isRead": False
+    })
+    client.close()
+    return count
+
+def get_unread_counts_for_user(user_id):
+    client, db = get_mongo_client_and_db()
+    messages_collection = db["messages"]
+    pipeline = [
+        {"$match": {"receiverId": user_id, "isRead": False}},
+        {"$group": {"_id": "$chatId", "count": {"$sum": 1}}}
+    ]
+    result = messages_collection.aggregate(pipeline)
+    client.close()
+    return {doc["_id"]: doc["count"] for doc in result}
 
 # ASGI app
 socket_app = socketio.ASGIApp(sio, other_asgi_app=fastapi_app)

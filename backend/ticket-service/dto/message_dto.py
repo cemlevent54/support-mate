@@ -14,6 +14,7 @@ class MessageDTO(BaseModel):
     is_delivered: bool = False
     deletedAt: Optional[str] = None
     receiverId: Optional[str] = None
+    isRead: bool = False
 
     @classmethod
     def from_model(cls, message_model: Any) -> 'MessageDTO':
