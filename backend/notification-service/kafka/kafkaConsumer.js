@@ -1,7 +1,7 @@
 import kafkaService from '../config/kafka.js';
 import logger from '../config/logger.js';
 
-export async function startKafkaConsumer(onUserRegistered, onPasswordReset, onUserVerified, onTicketCreated, onAgentAssigned) {
+export async function startKafkaConsumer(onUserRegistered, onPasswordReset, onUserVerified, onTicketCreated, onAgentAssigned, onTaskAssigned) {
   try {
     await kafkaService.connectConsumer();
     await kafkaService.consumer.subscribe({ topic: 'user-registered', fromBeginning: false });
@@ -14,6 +14,8 @@ export async function startKafkaConsumer(onUserRegistered, onPasswordReset, onUs
     logger.info('Kafka consumer subscribed to topic: ticket-created');
     await kafkaService.consumer.subscribe({ topic: 'agent-assigned', fromBeginning: false });
     logger.info('Kafka consumer subscribed to topic: agent-assigned');
+    await kafkaService.consumer.subscribe({ topic: 'task-assigned', fromBeginning: false });
+    logger.info('Kafka consumer subscribed to topic: task-assigned');
     await kafkaService.consumer.run({
       eachMessage: async ({ topic, message }) => {
         const data = JSON.parse(message.value.toString());
@@ -27,6 +29,8 @@ export async function startKafkaConsumer(onUserRegistered, onPasswordReset, onUs
           await onTicketCreated(data);
         } else if (topic === 'agent-assigned') {
           await onAgentAssigned(data);
+        } else if (topic === 'task-assigned') {
+          await onTaskAssigned(data);
         }
       },
     });

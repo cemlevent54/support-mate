@@ -29,7 +29,8 @@ def create_task(task: Task, request: Request, user=Depends(get_current_user)):
     task_controller = get_task_controller(lang)
     if user.get("roleName") != "Customer Supporter":
         raise HTTPException(status_code=403, detail="Forbidden")
-    return task_controller.create_task_endpoint_for_customer_supporter(task, user, lang)
+    token = request.headers.get("authorization", "").replace("Bearer ", "")
+    return task_controller.create_task_endpoint_for_customer_supporter(task, user, lang, token)
 
 # full path: /api/tickets/tasks
 @router.get("/tasks")

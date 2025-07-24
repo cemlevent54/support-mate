@@ -11,6 +11,8 @@ from dto.task_dto import TaskResponseDto
 from config.language import _
 from fastapi.responses import JSONResponse
 from fastapi import status
+from kafka_files.kafkaProducer import send_task_assigned_event
+from middlewares.auth import get_user_by_id
 
 logger = get_logger()
 
@@ -31,7 +33,7 @@ class TaskService:
                     dto[key] = value.isoformat()
         return dto
     
-    def create_task(self, task: Task, user: dict):
+    def create_task(self, task: Task, user: dict, language: str = 'tr', token: str = None):
         try:
             task_id = self.create_handler.handle(task.dict())
         except TaskAlreadyExistsException as e:
@@ -57,6 +59,19 @@ class TaskService:
                 "data": None,
                 "message": _(f"services.taskService.logs.task_not_found")
             }
+        # --- TASK ASSIGNED EVENT ---
+        try:
+            # from auth.py use get_user_by_id
+            
+            assignee = get_user_by_id(created_task.assignedEmployeeId, token)
+            html_path = None
+            if language == 'tr':
+                html_path = 'templates/email/task_assigned_tr.html'
+            elif language == 'en':
+                html_path = 'templates/email/task_assigned_en.html'
+            send_task_assigned_event(created_task, assignee, html_path=html_path, language=language)
+        except Exception as e:
+            logger.error(f"Task assigned event gönderilemedi: {e}")
         dto = created_task.dict()
         return {
             "success": True,
@@ -64,7 +79,7 @@ class TaskService:
             "message": _(f"services.taskService.logs.task_created")
         }
 
-    def update_task(self, task_id: str, task: Task, user: dict):
+    def update_task(self, task_id: str, task: Task, user: dict, token: str = None, language: str = 'tr'):
         updated = self.update_handler.handle(task_id, task.dict())
         if not updated:
             return {
@@ -80,6 +95,37 @@ class TaskService:
                 "data": None,
                 "message": _(f"services.taskService.logs.task_not_found")
             }
+        # --- TASK DONE ENTEGRASYONU ---
+        if hasattr(task, 'status') and task.status == 'DONE':
+            try:
+                from cqrs.commands.ticket.UpdateTicketStatusCommandHandler import UpdateTicketStatusCommandHandler
+                from kafka_files.kafkaProducer import send_task_done_event
+                from middlewares.auth import get_user_by_id
+                from cqrs.queries.ticket.GetTicketQueryHandler import GetTicketQueryHandler
+                # CQRS ile ticket status güncelle
+                status_handler = UpdateTicketStatusCommandHandler()
+                status_handler.execute(updated_task.relatedTicketId, 'WAITING_FOR_CUSTOMER_APPROVE')
+                # Ticket ve customer bilgisini çek
+                ticket_handler = GetTicketQueryHandler()
+                ticket = ticket_handler.execute(updated_task.relatedTicketId, user)
+                customer_id = getattr(ticket['data'], 'customerId', None) if ticket and ticket.get('data') else None
+                customer = get_user_by_id(customer_id, token) if customer_id else None
+                employee = get_user_by_id(updated_task.assignedEmployeeId, token)
+                supporter = get_user_by_id(updated_task.createdByCustomerSupporterId, token)
+                # Customer
+                if customer:
+                    html_path = f"templates/email/task_done_customer_{language}.html"
+                    send_task_done_event(updated_task, customer, html_path=html_path, language=language)
+                # Employee
+                if employee:
+                    html_path = f"templates/email/task_done_employee_{language}.html"
+                    send_task_done_event(updated_task, employee, html_path=html_path, language=language)
+                # Supporter
+                if supporter:
+                    html_path = f"templates/email/task_done_supporter_{language}.html"
+                    send_task_done_event(updated_task, supporter, html_path=html_path, language=language)
+            except Exception as e:
+                logger.error(f"Task DONE entegrasyonu sırasında hata: {e}")
         dto = TaskResponseDto.from_model(updated_task).dict()
         return {
             "success": True,

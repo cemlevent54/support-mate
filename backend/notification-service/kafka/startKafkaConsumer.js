@@ -5,7 +5,9 @@ import {
   handlePasswordReset,
   handleUserVerified,
   handleTicketCreated,
-  handleAgentAssigned
+  handleAgentAssigned,
+  handleTaskAssigned,
+  handleTaskDone
 } from '../events/index.js';
 
 export async function startKafkaConsumer() {
@@ -21,6 +23,10 @@ export async function startKafkaConsumer() {
     logger.info('Kafka consumer subscribed to topic: ticket-created');
     await kafkaService.consumer.subscribe({ topic: 'agent-assigned', fromBeginning: false });
     logger.info('Kafka consumer subscribed to topic: agent-assigned');
+    await kafkaService.consumer.subscribe({ topic: 'task-assigned', fromBeginning: false });
+    logger.info('Kafka consumer subscribed to topic: task-assigned');
+    await kafkaService.consumer.subscribe({ topic: 'task-done', fromBeginning: false });
+    logger.info('Kafka consumer subscribed to topic: task-done');
     await kafkaService.consumer.run({
       eachMessage: async ({ topic, message }) => {
         const data = JSON.parse(message.value.toString());
@@ -34,6 +40,10 @@ export async function startKafkaConsumer() {
           await handleTicketCreated(data);
         } else if (topic === 'agent-assigned') {
           await handleAgentAssigned(data);
+        } else if (topic === 'task-assigned') {
+          await handleTaskAssigned(data);
+        } else if (topic === 'task-done') {
+          await handleTaskDone(data);
         }
       },
     });

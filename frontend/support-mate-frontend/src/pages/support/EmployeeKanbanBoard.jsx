@@ -4,7 +4,7 @@ import CustomKanbanCard from '../../components/common/CustomKanbanCard';
 import CustomKanbanDetailsModal from '../../components/common/CustomKanbanDetailsModal';
 import CustomSearchBar from '../../components/common/CustomSearchBar';
 import CustomCategoryFilter from '../../components/common/CustomCategoryFilter';
-import { getTasksEmployee, getTask } from '../../api/taskApi';
+import { getTasksEmployee, getTask, updateTask } from '../../api/taskApi';
 import { useTranslation } from 'react-i18next';
 
 const emptyKanban = {
@@ -68,9 +68,7 @@ export default function EmployeeKanbanBoard() {
     return cats;
   }, [data]);
 
-  const onDragEnd = (result) => {
-    // Employee için drag-drop ile statü değiştirme devre dışı bırakılabilir veya aktif bırakılabilir.
-    // Şimdilik sadece görsel olarak güncelliyoruz, backend'e patch atmıyoruz.
+  const onDragEnd = async (result) => {
     const { source, destination } = result;
     if (!destination) return;
     if (source.droppableId === destination.droppableId && source.index === destination.index) return;
@@ -80,26 +78,37 @@ export default function EmployeeKanbanBoard() {
     const sourceItems = Array.from(sourceCol.items);
     const [removed] = sourceItems.splice(source.index, 1);
 
-    if (source.droppableId === destination.droppableId) {
-      sourceItems.splice(destination.index, 0, removed);
-      setData(prev => ({
-        ...prev,
-        columns: {
-          ...prev.columns,
-          [source.droppableId]: { ...sourceCol, items: sourceItems },
-        },
-      }));
+    // Optimistic UI: Önce local state'i güncelle
+    let destItems = [];
+    let newColumns = {};
+    if (source.droppableId !== destination.droppableId) {
+      destItems = Array.from(destCol.items);
+      destItems.splice(destination.index, 0, { ...removed, status: destination.droppableId });
+      newColumns = {
+        ...data.columns,
+        [source.droppableId]: { ...sourceCol, items: sourceItems },
+        [destination.droppableId]: { ...destCol, items: destItems },
+      };
     } else {
-      const destItems = Array.from(destCol.items);
-      destItems.splice(destination.index, 0, removed);
-      setData(prev => ({
-        ...prev,
-        columns: {
-          ...prev.columns,
-          [source.droppableId]: { ...sourceCol, items: sourceItems },
-          [destination.droppableId]: { ...destCol, items: destItems },
-        },
-      }));
+      sourceItems.splice(destination.index, 0, removed);
+      newColumns = {
+        ...data.columns,
+        [source.droppableId]: { ...sourceCol, items: sourceItems },
+      };
+    }
+    const prevData = data;
+    setData(prev => ({ ...prev, columns: newColumns }));
+
+    // Backend'e güncelleme isteği gönder
+    if (source.droppableId !== destination.droppableId) {
+      try {
+        await updateTaskStatus(removed.id, destination.droppableId);
+        // Başarılı ise ekstra bir şey yapmaya gerek yok
+      } catch (err) {
+        // Hata olursa eski state'e geri al
+        alert('Durum güncellenemedi! Geri alınıyor.');
+        setData(prevData);
+      }
     }
   };
 
@@ -133,6 +142,15 @@ export default function EmployeeKanbanBoard() {
       );
     }
     return filtered;
+  };
+
+  // update task status
+  // { "status": "PENDING" }
+  // { "status": "IN_PROGRESS" }
+  // { "status": "DONE" }
+  const updateTaskStatus = async (taskId, status) => {
+    const token = localStorage.getItem('token');
+    const res = await updateTask(taskId, { status }, token);
   };
 
   return (

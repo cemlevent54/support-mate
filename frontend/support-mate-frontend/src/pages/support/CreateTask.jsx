@@ -6,11 +6,16 @@ import CustomDropdown from '../../components/common/CustomDropdown';
 import CustomDateTimePicker from '../../components/common/CustomDateTimePicker';
 import CustomButton from '../../components/common/CustomButton';
 import { getUsersByRoleName } from '../../api/authApi';
+import { createTask } from '../../api/taskApi';
+import { jwtDecode } from 'jwt-decode';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
 
 const PRIORITIES = [
-  { value: 'low', label: 'Düşük' },
-  { value: 'medium', label: 'Orta' },
-  { value: 'high', label: 'Yüksek' },
+  { value: 'LOW', label: 'Düşük' , labelEn: 'Low' },
+  { value: 'MEDIUM', label: 'Orta' , labelEn: 'Medium' },
+  { value: 'HIGH', label: 'Yüksek' , labelEn: 'High' },
+  { value: 'CRITICAL', label: 'Kritik' , labelEn: 'Critical' },
 ];
 
 // USERS sabitini kaldırıyoruz, onun yerine state olacak
@@ -28,6 +33,7 @@ export default function CreateTask({ open, onClose, ticketId = '123456' }) {
   });
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   React.useEffect(() => {
     if (open) {
@@ -56,10 +62,35 @@ export default function CreateTask({ open, onClose, ticketId = '123456' }) {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Burada form submit işlemi yapılabilir
-    onClose();
+    try {
+      const token = localStorage.getItem('jwt');
+      const decoded = jwtDecode(token);
+      // API'ye uygun veri formatı
+      const payload = {
+        title: form.title,
+        description: form.description,
+        priority: form.priority.toUpperCase(),
+        assignedEmployeeId: form.assignee,
+        deadline: form.dueDate,
+        relatedTicketId: form.ticketId,
+        createdByCustomerSupporterId: decoded.id,
+      };
+      const response = await createTask(payload, token);
+      setSnackbar({ open: true, message: response.data?.message || 'Görev oluşturuldu!', severity: 'success' });
+      setForm({
+        title: '',
+        description: '',
+        priority: '',
+        assignee: '',
+        dueDate: '',
+        ticketId: ticketId || '',
+      });
+      onClose();
+    } catch (err) {
+      setSnackbar({ open: true, message: 'Görev oluşturulamadı!', severity: 'error' });
+    }
   };
 
   return (
@@ -126,6 +157,11 @@ export default function CreateTask({ open, onClose, ticketId = '123456' }) {
           </div>
         </form>
       </div>
+      <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </div>
   );
 }

@@ -19,7 +19,7 @@ class TaskController:
         self.lang = lang
     
     # full path: /api/tickets/tasks
-    def create_task_endpoint_for_customer_supporter(self, task, user, lang):
+    def create_task_endpoint_for_customer_supporter(self, task, user, lang, token=None):
         set_language(lang)
         logger.info(_("services.taskService.logs.create_task"))
         try:
