@@ -1,74 +1,65 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import CustomKanbanCard from '../../components/common/CustomKanbanCard';
 import CustomKanbanDetailsModal from '../../components/common/CustomKanbanDetailsModal';
 import CustomSearchBar from '../../components/common/CustomSearchBar';
 import CustomCategoryFilter from '../../components/common/CustomCategoryFilter';
+import { getTasks, getTask } from '../../api/taskApi';
+import { useTranslation } from 'react-i18next';
 
-const initialData = {
+// initialData ve mock veriler kaldırıldı
+const emptyKanban = {
   columns: {
-    PENDING: {
-      name: 'Pending',
-      items: [
-        {
-          id: '1',
-          title: 'Kullanıcıdan bilgi bekleniyor',
-          category: 'Genel',
-          deadline: '2024-07-01 15:00',
-          description: 'Kullanıcıdan ek bilgi talep edildi. Yanıt bekleniyor.',
-          assignee: 'Ahmet Yılmaz',
-          priority: 'Yüksek',
-        },
-        {
-          id: '2',
-          title: 'Yeni destek talebi oluşturuldu',
-          category: 'Teknik',
-          deadline: '2024-07-02 10:30',
-          description: 'Kullanıcı yeni bir teknik destek talebi açtı.',
-          assignee: 'Mehmet Demir',
-          priority: 'Orta',
-        },
-      ],
-    },
-    IN_PROGRESS: {
-      name: 'In Progress',
-      items: [
-        {
-          id: '3',
-          title: 'Sunucu bakımı yapılıyor',
-          category: 'Yazılım',
-          deadline: '2024-07-03 18:00',
-          description: 'Sunucu güncellemesi ve bakım işlemleri devam ediyor.',
-          assignee: 'Ayşe Kaya',
-          priority: 'Düşük',
-        },
-      ],
-    },
-    DONE: {
-      name: 'Done',
-      items: [
-        {
-          id: '4',
-          title: 'Şifre sıfırlama tamamlandı',
-          category: 'Genel',
-          deadline: '2024-06-30 09:00',
-          description: 'Kullanıcının şifre sıfırlama işlemi başarıyla tamamlandı.',
-          assignee: 'Ahmet Yılmaz',
-          priority: 'Orta',
-        },
-      ],
-    },
+    PENDING: { name: 'Pending', items: [] },
+    IN_PROGRESS: { name: 'In Progress', items: [] },
+    DONE: { name: 'Done', items: [] },
   },
 };
 
 const columnOrder = ['PENDING', 'IN_PROGRESS', 'DONE'];
 
 export default function SupportKanbanBoard() {
-  const [data, setData] = useState(initialData);
+  const { t } = useTranslation();
+  const [data, setData] = useState(emptyKanban);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTask, setModalTask] = useState(null);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
+
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await getTasks(token);
+        const tasks = res.data.data || [];
+        // Kanban board formatına dönüştür
+        const columns = {
+          PENDING: { name: 'Pending', items: [] },
+          IN_PROGRESS: { name: 'In Progress', items: [] },
+          DONE: { name: 'Done', items: [] },
+        };
+        tasks.forEach(task => {
+          let status = task.status;
+          if (!['PENDING', 'IN_PROGRESS', 'DONE'].includes(status)) status = 'PENDING';
+          columns[status]?.items.push({
+            id: task.id,
+            title: task.title,
+            category: task.category?.category_name_tr || '',
+            deadline: task.deadline,
+            description: task.description,
+            assignee: task.assignedEmployee?.firstName ? `${task.assignedEmployee.firstName} ${task.assignedEmployee.lastName}` : '',
+            priority: task.priority,
+            raw: task, // modal için tüm taskı sakla
+          });
+        });
+        setData({ columns });
+      } catch (err) {
+        // Hata yönetimi
+        setData(emptyKanban);
+      }
+    };
+    fetchTasks();
+  }, []);
 
   // Tüm kategorileri tasklardan topla (tekrarsız)
   const allCategories = useMemo(() => {
@@ -114,9 +105,17 @@ export default function SupportKanbanBoard() {
     }
   };
 
-  const handleCardClick = (task) => {
-    setModalTask(task);
-    setModalOpen(true);
+  const handleCardClick = async (item) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await getTask(item.id, token);
+      console.log(res.data.data);
+      setModalTask(res.data.data);
+      setModalOpen(true);
+    } catch (err) {
+      setModalTask(item.raw || item);
+      setModalOpen(true);
+    }
   };
 
   const handleModalClose = () => {
@@ -142,13 +141,13 @@ export default function SupportKanbanBoard() {
 
   return (
     <div className="w-full min-h-screen bg-gray-100 flex flex-col items-center py-8">
-      <h2 className="text-2xl font-bold mb-6">Kanban Board</h2>
+      <h2 className="text-2xl font-bold mb-6">{t('kanbanBoard.title')}</h2>
       <div className="mb-8 w-full max-w-5xl flex flex-col sm:flex-row sm:items-center gap-3 justify-start">
         <div className="flex-1 min-w-[200px]">
           <CustomSearchBar
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Görev veya kategori ara..."
+            placeholder={t('kanbanBoard.searchPlaceholder')}
             className="w-full max-w-xs"
           />
         </div>
@@ -157,6 +156,7 @@ export default function SupportKanbanBoard() {
             categories={allCategories}
             selected={category}
             onSelect={setCategory}
+            label={t('kanbanBoard.categoryFilter')}
           />
         </div>
       </div>
@@ -212,12 +212,7 @@ export default function SupportKanbanBoard() {
       <CustomKanbanDetailsModal
         open={modalOpen && !!modalTask}
         onClose={handleModalClose}
-        title={modalTask?.title}
-        category={modalTask?.category}
-        description={modalTask?.description}
-        assignee={modalTask?.assignee}
-        priority={modalTask?.priority}
-        deadline={modalTask?.deadline}
+        task={modalTask}
       />
     </div>
   );

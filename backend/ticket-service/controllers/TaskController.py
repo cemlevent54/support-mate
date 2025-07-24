@@ -72,6 +72,12 @@ class TaskController:
         logger.info(_("services.taskService.logs.get_tasks_employee"))
         try:
             result = self.service.get_tasks_employee(user)
+            if not result["success"]:
+                return Response(
+                    content=json.dumps(result),
+                    status_code=404,
+                    media_type="application/json"
+                )
             return api_success(data=result["data"], message=result["message"])
         except Exception as e:
             logger.error(_("services.taskService.logs.get_tasks_employee_error"), exc_info=True)

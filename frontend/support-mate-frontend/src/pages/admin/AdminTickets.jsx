@@ -10,12 +10,7 @@ import { listTicketsForAdmin } from '../../api/ticketApi';
 import Button from '@mui/material/Button';
 import { useTranslation } from 'react-i18next';
 
-const categoryLabels = {
-  hardware: "Donanım",
-  software: "Yazılım",
-  network: "Ağ",
-  other: "Diğer"
-};
+
 
 const modalStyle = {
   position: 'absolute',
@@ -50,11 +45,11 @@ const AdminTickets = () => {
           const sorted = response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
           setRows(sorted.map((ticket, idx) => {
             let categoryName = "";
-            if (ticket.category) {
+            if (ticket.category && ticket.category.data) {
               if (i18n.language === "tr") {
-                categoryName = ticket.category.categoryNameTr || ticket.category.categoryNameEn || "-";
+                categoryName = ticket.category.data.category_name_tr || ticket.category.data.category_name_en || "-";
               } else {
-                categoryName = ticket.category.categoryNameEn || ticket.category.categoryNameTr || "-";
+                categoryName = ticket.category.data.category_name_en || ticket.category.data.category_name_tr || "-";
               }
             } else {
               categoryName = "-";
@@ -125,10 +120,10 @@ const AdminTickets = () => {
               <Typography><b>{t('adminTickets.modal.categoryLabel')}</b> {
                 typeof selectedTicket.category === 'string'
                   ? selectedTicket.category
-                  : selectedTicket.category
+                  : selectedTicket.category && selectedTicket.category.data
                     ? (i18n.language === 'tr'
-                        ? selectedTicket.category.categoryNameTr || selectedTicket.category.categoryNameEn || '-'
-                        : selectedTicket.category.categoryNameEn || selectedTicket.category.categoryNameTr || '-')
+                        ? selectedTicket.category.data.category_name_tr || selectedTicket.category.data.category_name_en || '-'
+                        : selectedTicket.category.data.category_name_en || selectedTicket.category.data.category_name_tr || '-')
                     : '-'
               }</Typography>
               <Typography><b>{t('adminTickets.modal.statusLabel')}</b> {selectedTicket.status}</Typography>

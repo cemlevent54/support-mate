@@ -13,6 +13,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../../providers/LanguageProvider';
+import { jwtDecode } from 'jwt-decode';
 
 const LANGUAGES = [
   { code: 'tr', label: 'Türkçe' },
@@ -26,9 +27,32 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Kullanıcı rolünü JWT'den al
+  let roleName = null;
+  const token = localStorage.getItem('jwt');
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      roleName = decoded.roleName;
+    } catch (e) {}
+  }
+
+  // Sadece admin rolü için menüleri göster
+  const sidebarItems = [
+    { key: 'dashboard', label: t('adminDashboard.dashboard'), path: '/admin', roles: ['Admin'] },
+    { key: 'users', label: t('adminDashboard.users'), path: '/admin/users', roles: ['Admin'] },
+    { key: 'roles', label: t('adminDashboard.roles'), path: '/admin/roles', roles: ['Admin'] },
+    { key: 'tickets', label: t('adminDashboard.tickets'), path: '/admin/tickets', roles: ['Admin'] },
+    { key: 'categories', label: t('adminDashboard.categories'), path: '/admin/categories', roles: ['Admin'] },
+    { key: 'kanban', label: t('adminDashboard.kanban'), path: '/admin/kanban', roles: ['Admin'] },
+    { key: 'products', label: t('adminDashboard.products'), path: '/admin/products', roles: ['Admin'] },
+    // { key: 'settings', label: t('adminDashboard.settings'), path: '/admin/settings', roles: ['Admin'] },
+  ];
+  const filteredSidebarItems = sidebarItems.filter(item => !item.roles || (roleName && item.roles.includes(roleName)));
+
   React.useEffect(() => {
     const currentPath = location.pathname;
-    const currentItem = sidebarItems.find(item => currentPath === item.path);
+    const currentItem = filteredSidebarItems.find(item => currentPath === item.path);
     if (currentItem) {
       setSelected(currentItem.key);
     } else if (currentPath.startsWith('/admin/users')) {
@@ -61,17 +85,6 @@ export default function Dashboard() {
     // window.location.reload(); // LanguageProvider zaten context ile değişimi sağlıyor
   };
 
-  const sidebarItems = [
-    { key: 'dashboard', label: t('adminDashboard.dashboard'), path: '/admin' },
-    { key: 'users', label: t('adminDashboard.users'), path: '/admin/users' },
-    { key: 'roles', label: t('adminDashboard.roles'), path: '/admin/roles' },
-    { key: 'tickets', label: t('adminDashboard.tickets'), path: '/admin/tickets' },
-    { key: 'categories', label: t('adminDashboard.categories'), path: '/admin/categories' },
-    { key: 'kanban', label: t('adminDashboard.kanban'), path: '/admin/kanban' },
-    { key: 'products', label: t('adminDashboard.products'), path: '/admin/products' },
-    // { key: 'settings', label: t('adminDashboard.settings'), path: '/admin/settings' },
-  ];
-
   return (
     <Box display="flex" minHeight="100vh" sx={{ background: '#f5f5f5' }}>
       {/* Sidebar */}
@@ -89,7 +102,7 @@ export default function Dashboard() {
             ))}
           </Select>
           <List>
-            {sidebarItems.map(item => (
+            {filteredSidebarItems.map(item => (
               <ListItem key={item.key} disablePadding>
                 <ListItemButton 
                   selected={selected === item.key} 

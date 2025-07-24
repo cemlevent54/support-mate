@@ -122,7 +122,9 @@
     "users": "Users",
     "roles": "Roles",
     "tickets": "Support Requests",
-    "categories": "Categories"
+    "categories": "Categories",
+    "products": "Products",
+    "kanban": "Kanban"
   },
   "adminUsers": {
     "title": "User Management",
@@ -441,5 +443,28 @@
       "save": "Save",
       "cancel": "Cancel"
     }
+  },
+  "kanbanDetails": {
+    "title": "Task Title",
+    "category": "Category",
+    "description": "Description",
+    "priority": "Priority",
+    "status": "Status",
+    "deadline": "Deadline",
+    "assignedEmployee": "Assignee",
+    "createdByCustomerSupporter": "Created By",
+    "createdAt": "Created At",
+    "ticket": "Ticket",
+    "ticketCustomer": "Ticket Customer",
+    "ticketAssignedAgent": "Ticket Assigned Agent",
+    "product": "Product",
+    "isDeleted": "Deleted?",
+    "attachments": "Attachments:",
+    "preview": "Preview"
+  },
+  "kanbanBoard": {
+    "title": "Kanban Board",
+    "searchPlaceholder": "Search task or category...",
+    "categoryFilter": "Category Filter"
   }
 } 

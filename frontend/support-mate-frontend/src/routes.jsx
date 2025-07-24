@@ -1,11 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import SignupCard from './pages/auth/SignupCard';
 import HomePage from './pages/HomePage/HomePage';
 import LoginCard from './pages/auth/LoginCard';
 import Dashboard from './components/layout/Dashboard';
 import SupportRequests from './pages/support/SupportRequests';
 import SupportChatsLayout from './components/chats/SupportChatsLayout';
-import EmployeeDashboard from './components/layout/EmployeeDashboard';
 import MyAccount from './pages/auth/MyAccount';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
@@ -18,13 +17,15 @@ import SixDigitVerifyEmail from './pages/auth/SixDigitVerifyEmail';
 
 import MyRequests from './pages/tickets/MyRequests';
 import ChatDialog from './pages/chat/chatDialog/ChatDialog';
-import { useLocation, Navigate } from 'react-router-dom';
+import { useLocation, Navigate, useNavigate } from 'react-router-dom';
 import AdminTickets from './pages/admin/AdminTickets';
 import AdminCategories from './pages/admin/AdminCategories';
 import SupportLayout from './components/layout/SupportLayout';
 import AdminProducts from './pages/admin/AdminProducts';
 import SupportKanbanBoard from './pages/support/SupportKanbanBoard';
 import AdminKanbanBoard from './pages/admin/AdminKanbanBoard';
+import { jwtDecode } from 'jwt-decode';
+import isEmployee from './auth/isEmployee';
 
 // Global modal handlers - bu fonksiyonlar App.jsx'ten geçirilecek
 let globalOpenCreateTicketModal = () => {};
@@ -104,15 +105,11 @@ export const appRoutes = [
     children: [
       { path: 'requests', element: <SupportRequests /> },
       { path: 'requests/:chatId', element: <SupportRequests /> },
-      { path: 'chats', element: <SupportChatsLayout /> },
-      { path: 'chats/:chatId', element: <SupportChatsLayout /> },
+      { path: 'chats', element: <SupportChatsRoleGuard><SupportChatsLayout /></SupportChatsRoleGuard> },
+      { path: 'chats/:chatId', element: <SupportChatsRoleGuard><SupportChatsLayout /></SupportChatsRoleGuard> },
       { path: 'kanban', element: <SupportKanbanBoard /> },
       { index: true, element: <Navigate to="requests" replace /> }
     ]
-  },
-  {
-    path: '/employee',
-    element: <EmployeeDashboard />,
   },
   {
     path: '/my-account',
@@ -140,6 +137,23 @@ export const appRoutes = [
     element: <ChatChatWrapper />,
   },
 ];
+
+// Role bazlı erişim için özel bir koruma bileşeni
+function SupportChatsRoleGuard({ children }) {
+  const navigate = useNavigate();
+  useEffect(() => {
+    const token = localStorage.getItem('jwt');
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        if (isEmployee(decoded)) {
+          navigate('/support', { replace: true });
+        }
+      } catch (e) {}
+    }
+  }, [navigate]);
+  return children;
+}
 
 // ChatChatWrapper bileşeni
 function ChatChatWrapper() {

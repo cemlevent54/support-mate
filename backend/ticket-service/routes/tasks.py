@@ -42,6 +42,16 @@ def get_tasks(request: Request, user=Depends(get_current_user)):
     token = request.headers.get("authorization", "").replace("Bearer ", "")
     return task_controller.get_tasks_endpoint_for_roles(user, lang, token)
 
+# full path: /api/tickets/tasks/employee
+@router.get("/tasks/employee")
+def get_tasks_employee(request: Request, user=Depends(get_current_user)):
+    lang = get_lang(request)
+    set_language(lang)
+    task_controller = get_task_controller(lang)
+    if user.get("roleName") != "Employee":
+        raise HTTPException(status_code=403, detail="Forbidden")
+    return task_controller.get_tasks_employee(user)
+
 # full path: /api/tickets/tasks/{task_id}
 @router.get("/tasks/{task_id}")
 def get_task(task_id: str, request: Request, user=Depends(get_current_user)):
@@ -53,15 +63,7 @@ def get_task(task_id: str, request: Request, user=Depends(get_current_user)):
     token = request.headers.get("authorization", "").replace("Bearer ", "")
     return task_controller.get_task_endpoint_for_roles(task_id, user, lang, token)
 
-# full path: /api/tickets/tasks/employee
-@router.get("/tasks/employee")
-def get_tasks_employee(request: Request, user=Depends(get_current_user)):
-    lang = get_lang(request)
-    set_language(lang)
-    task_controller = get_task_controller(lang)
-    if user.get("roleName") != "Employee":
-        raise HTTPException(status_code=403, detail="Forbidden")
-    return task_controller.get_tasks_employee(user)
+
 
 # full path: /api/tickets/tasks/{task_id}
 @router.patch("/tasks/{task_id}")

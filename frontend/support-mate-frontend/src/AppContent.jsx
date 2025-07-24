@@ -134,10 +134,9 @@ function AppContent() {
 
   const isAdminPanel = location.pathname.startsWith('/admin');
   const isSupportPanel = location.pathname.startsWith('/support');
-  const isEmployeePanel = location.pathname.startsWith('/employee');
 
   // User rolündeki kullanıcılar için FloatingChatButton göster
-  const shouldShowFloatingButton = isAuth && userRole === 'user' && !(isAdminPanel || isSupportPanel || isEmployeePanel);
+  const shouldShowFloatingButton = isAuth && userRole === 'user' && !(isAdminPanel || isSupportPanel);
 
   // ChatPanel'i kapatırken, mesaj varsa onay iste
   const handleCloseChatPanel = () => {
@@ -153,7 +152,7 @@ function AppContent() {
 
   return (
     <>
-      {!(isAdminPanel || isSupportPanel || isEmployeePanel) && (
+      {!(isAdminPanel || isSupportPanel) && (
         <Navbar
           title=""
           isAuth={isAuth}

@@ -4,7 +4,8 @@ import CustomKanbanCard from '../../components/common/CustomKanbanCard';
 import CustomKanbanDetailsModal from '../../components/common/CustomKanbanDetailsModal';
 import CustomSearchBar from '../../components/common/CustomSearchBar';
 import CustomCategoryFilter from '../../components/common/CustomCategoryFilter';
-import { getTasks, getTask } from '../../api/taskApi';
+import { getTasksEmployee, getTask } from '../../api/taskApi';
+import { useTranslation } from 'react-i18next';
 
 const emptyKanban = {
   columns: {
@@ -16,7 +17,8 @@ const emptyKanban = {
 
 const columnOrder = ['PENDING', 'IN_PROGRESS', 'DONE'];
 
-export default function AdminKanbanBoard() {
+export default function EmployeeKanbanBoard() {
+  const { t } = useTranslation();
   const [data, setData] = useState(emptyKanban);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTask, setModalTask] = useState(null);
@@ -27,9 +29,8 @@ export default function AdminKanbanBoard() {
     const fetchTasks = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await getTasks(token);
+        const res = await getTasksEmployee(token);
         const tasks = res.data.data || [];
-        // Kanban board formatına dönüştür
         const columns = {
           PENDING: { name: 'Pending', items: [] },
           IN_PROGRESS: { name: 'In Progress', items: [] },
@@ -46,7 +47,7 @@ export default function AdminKanbanBoard() {
             description: task.description,
             assignee: task.assignedEmployee?.firstName ? `${task.assignedEmployee.firstName} ${task.assignedEmployee.lastName}` : '',
             priority: task.priority,
-            raw: task, // modal için tüm taskı sakla
+            raw: task,
           });
         });
         setData({ columns });
@@ -57,7 +58,6 @@ export default function AdminKanbanBoard() {
     fetchTasks();
   }, []);
 
-  // Tüm kategorileri tasklardan topla (tekrarsız)
   const allCategories = useMemo(() => {
     const cats = [];
     Object.values(data.columns).forEach(col => {
@@ -69,6 +69,8 @@ export default function AdminKanbanBoard() {
   }, [data]);
 
   const onDragEnd = (result) => {
+    // Employee için drag-drop ile statü değiştirme devre dışı bırakılabilir veya aktif bırakılabilir.
+    // Şimdilik sadece görsel olarak güncelliyoruz, backend'e patch atmıyoruz.
     const { source, destination } = result;
     if (!destination) return;
     if (source.droppableId === destination.droppableId && source.index === destination.index) return;
@@ -118,7 +120,6 @@ export default function AdminKanbanBoard() {
     setModalTask(null);
   };
 
-  // Filtreli kolonlar
   const getFilteredItems = (items) => {
     let filtered = items;
     if (category) {
@@ -136,13 +137,13 @@ export default function AdminKanbanBoard() {
 
   return (
     <div className="w-full min-h-screen bg-gray-100 flex flex-col items-center py-8">
-      <h2 className="text-2xl font-bold mb-6">Kanban Board</h2>
+      <h2 className="text-2xl font-bold mb-6">{t('kanbanBoard.title')}</h2>
       <div className="mb-8 w-full max-w-5xl flex flex-col sm:flex-row sm:items-center gap-3 justify-start">
         <div className="flex-1 min-w-[200px]">
           <CustomSearchBar
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Görev veya kategori ara..."
+            placeholder={t('kanbanBoard.searchPlaceholder')}
             className="w-full max-w-xs"
           />
         </div>
@@ -151,6 +152,7 @@ export default function AdminKanbanBoard() {
             categories={allCategories}
             selected={category}
             onSelect={setCategory}
+            label={t('kanbanBoard.categoryFilter')}
           />
         </div>
       </div>
@@ -202,7 +204,6 @@ export default function AdminKanbanBoard() {
           })}
         </div>
       </DragDropContext>
-      {/* Modalı sadece bir kez aç ve children ile detayları göster */}
       <CustomKanbanDetailsModal
         open={modalOpen && !!modalTask}
         onClose={handleModalClose}
@@ -210,4 +211,4 @@ export default function AdminKanbanBoard() {
       />
     </div>
   );
-}
+} 

@@ -121,7 +121,9 @@
     "users": "Kullanıcılar",
     "tickets": "Destek Talepleri",
     "roles": "Roller",
-    "categories": "Kategoriler"
+    "categories": "Kategoriler",
+    "products": "Ürünler",
+    "kanban": "Kanban"
   },
   "adminUsers": {
     "title": "Kullanıcı Yönetimi",
@@ -442,5 +444,28 @@
       "save": "Kaydet",
       "cancel": "Kapat"
     }
+  },
+  "kanbanDetails": {
+    "title": "Görev başlığı",
+    "category": "Kategori",
+    "description": "Açıklama",
+    "priority": "Öncelik",
+    "status": "Durum",
+    "deadline": "Son Tarih",
+    "assignedEmployee": "Atanan Kişi",
+    "createdByCustomerSupporter": "Oluşturan Destekçi",
+    "createdAt": "Oluşturulma Tarihi",
+    "ticket": "Ticket",
+    "ticketCustomer": "Ticket Müşterisi",
+    "ticketAssignedAgent": "Ticket Atanan Agent",
+    "product": "Ürün",
+    "isDeleted": "Silindi mi?",
+    "attachments": "Ekler:",
+    "preview": "Önizle"
+  },
+  "kanbanBoard": {
+    "title": "Kanban Board",
+    "searchPlaceholder": "Görev veya kategori ara...",
+    "categoryFilter": "Kategori Filtresi"
   }
 } 

@@ -122,13 +122,21 @@ class TaskRepository:
         )
 
     def get_task_by_id(self, task_id: str, token: str = None) -> Optional[TaskResponseDto]:
-        task = self.collection.find_one({"_id": ObjectId(task_id), "isDeleted": False})
+        try:
+            obj_id = ObjectId(task_id)
+        except Exception:
+            return None
+        task = self.collection.find_one({"_id": obj_id, "isDeleted": False})
         if not task:
             return None
         return self._to_dto(task, token)
 
     def get_tasks(self, token: str = None) -> List[TaskResponseDto]:
         tasks = self.collection.find({"isDeleted": False})
+        return [self._to_dto(task, token) for task in tasks]
+
+    def get_tasks_by_employee_id(self, employee_id: str, token: str = None) -> List[TaskResponseDto]:
+        tasks = self.collection.find({"assignedEmployeeId": employee_id, "isDeleted": False})
         return [self._to_dto(task, token) for task in tasks]
 
     def create(self, task: Task) -> str:

@@ -134,5 +134,19 @@ class TaskService:
             "message": _(f"services.taskService.logs.get_task")
         }
     
+    def get_tasks_employee(self, user: dict):
+        employee_id = user.get("id")
+        logger.info(f"Employee id: {employee_id}")
+        if not employee_id:
+            return {"success": False, "data": None, "message": _(f"services.taskService.logs.employee_id_not_found")}
+        tasks = self.list_handler.handle(employee_id=employee_id)
+        if not tasks:
+            return {"success": False, "data": None, "message": _(f"services.taskService.logs.task_not_found")}
+        dto_list = [task.dict() for task in tasks]
+        return {
+            "success": True,
+            "data": [self.dto_to_serializable(dto) for dto in dto_list],
+            "message": _(f"services.taskService.logs.employee_tasks_listed")
+        }
     
     

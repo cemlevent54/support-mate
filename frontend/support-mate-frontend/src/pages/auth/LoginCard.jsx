@@ -18,6 +18,9 @@ import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import { jwtDecode } from "jwt-decode";
 import { GoogleLogin } from '@react-oauth/google';
+import isAdmin from '../../auth/isAdmin';
+import isCustomerSupporter from '../../auth/isCustomerSupporter';
+import isEmployee from '../../auth/isEmployee';
 
 export default function LoginCard({ onUserLogin }) {
   const [showPassword, setShowPassword] = useState(false);
@@ -42,19 +45,14 @@ export default function LoginCard({ onUserLogin }) {
         // JWT'den rol bilgilerini al
         const decoded = jwtDecode(result.data.accessToken);
         const roleName = decoded.roleName;
-        const isAdmin = roleName === 'Admin';
-        const isSupport = roleName === 'Customer Supporter';
-        const isEmployee = roleName === 'Employee';
-
         setSnackbar({ open: true, message: t('pages.login.success'), severity: 'success' });
 
         // App.jsx'teki state'i güncelle
         if (onUserLogin) onUserLogin(roleName || 'User');
 
-        if (isAdmin) navigate('/admin');
-        else if (isSupport) navigate('/support');
-        else if (roleName === 'Support') navigate('/support');
-        else if (isEmployee) navigate('/employee');
+        if (isAdmin(decoded)) navigate('/admin');
+        else if (isCustomerSupporter(decoded)) navigate('/support');
+        else if (isEmployee(decoded)) navigate('/support');
         else {
           setTimeout(() => navigate('/'), 1000);
         }
@@ -131,9 +129,9 @@ export default function LoginCard({ onUserLogin }) {
                   const roleName = decoded.roleName;
                   setSnackbar({ open: true, message: t('pages.login.success'), severity: 'success' });
                   if (onUserLogin) onUserLogin(roleName || 'User');
-                  if (roleName === 'Admin') navigate('/admin');
-                  else if (roleName === 'Customer Supporter' || roleName === 'Support') navigate('/support');
-                  else if (roleName === 'Employee') navigate('/employee');
+                  if (isAdmin(decoded)) navigate('/admin');
+                  else if (isCustomerSupporter(decoded)) navigate('/support');
+                  else if (isEmployee(decoded)) navigate('/support');
                   else setTimeout(() => navigate('/'), 1000);
                 } else {
                   setSnackbar({ open: true, message: t('pages.login.error'), severity: 'error' });
