@@ -32,6 +32,13 @@ class TicketRepository:
         )
         return result.modified_count > 0
 
+    def update_status(self, ticket_id: str, new_status: str) -> bool:
+        result = self.collection.update_one(
+            {"_id": ObjectId(ticket_id)},
+            {"$set": {"status": new_status, "updatedAt": datetime.utcnow()}}
+        )
+        return result.modified_count > 0
+
     def get_by_id(self, ticket_id):
         ticket = self.collection.find_one({"_id": ObjectId(ticket_id)})
         if ticket:

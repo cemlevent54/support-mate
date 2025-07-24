@@ -222,6 +222,22 @@
                 "products_listed": "Products listed successfully.",
                 "product_not_found": "Product not found."
             }
+        },
+        "taskService": {
+            "logs": {
+                "task_created": "Task created successfully.",
+                "task_creation_error": "An error occurred while creating the task.",
+                "task_updated": "Task updated successfully.",
+                "task_update_error": "An error occurred while updating the task.",
+                "task_deleted": "Task deleted successfully.",
+                "task_delete_error": "An error occurred while deleting the task.",
+                "get_tasks": "Tasks listed successfully.",
+                "get_task": "Task retrieved successfully.",
+                "task_not_found": "Task not found."
+            },
+            "responses": {
+                "task_already_exists_for_ticket": "A task has already been assigned to this ticket. "
+            }
         }
     },
 

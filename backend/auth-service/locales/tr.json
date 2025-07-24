@@ -410,6 +410,22 @@
         "getAuthenticatedNotFound": "Kimliği doğrulanmış kullanıcı bulunamadı",
         "getAuthenticatedError": "Kimliği doğrulanmış kullanıcı getirilirken hata oluştu"
       }
+    },
+    "taskService": {
+      "errors": {
+        "task_already_exists_for_ticket": "Bu ticket'a zaten bir görev atanmış. Lütfen önce mevcut görevi tamamlayın veya silin."
+      },
+      "logs": {
+        "task_creation_error": "Görev oluşturulurken hata oluştu",
+        "task_created": "Görev başarıyla oluşturuldu",
+        "task_not_found": "Görev bulunamadı",
+        "task_update_error": "Görev güncellenirken hata oluştu",
+        "task_updated": "Görev başarıyla güncellendi",
+        "task_delete_error": "Görev silinirken hata oluştu",
+        "task_deleted": "Görev başarıyla silindi",
+        "get_tasks": "Görevler başarıyla listelendi",
+        "get_task": "Görev başarıyla getirildi"
+      }
     }
   },
   "config": {

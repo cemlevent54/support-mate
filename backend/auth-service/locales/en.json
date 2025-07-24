@@ -411,6 +411,22 @@
         "getAuthenticatedNotFound": "Authenticated user not found",
         "getAuthenticatedError": "Error occurred while fetching authenticated user"
       }
+    },
+    "taskService": {
+      "errors": {
+        "task_already_exists_for_ticket": "A task has already been assigned to this ticket. Please complete or delete the existing task first."
+      },
+      "logs": {
+        "task_creation_error": "An error occurred while creating the task",
+        "task_created": "Task created successfully",
+        "task_not_found": "Task not found",
+        "task_update_error": "An error occurred while updating the task",
+        "task_updated": "Task updated successfully",
+        "task_delete_error": "An error occurred while deleting the task",
+        "task_deleted": "Task deleted successfully",
+        "get_tasks": "Tasks listed successfully",
+        "get_task": "Task fetched successfully"
+      }
     }
   },
   "config": {

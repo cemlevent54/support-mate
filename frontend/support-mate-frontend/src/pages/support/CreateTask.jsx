@@ -5,6 +5,7 @@ import CustomMultilineTextArea from '../../components/common/CustomMultilineText
 import CustomDropdown from '../../components/common/CustomDropdown';
 import CustomDateTimePicker from '../../components/common/CustomDateTimePicker';
 import CustomButton from '../../components/common/CustomButton';
+import { getUsersByRoleName } from '../../api/authApi';
 
 const PRIORITIES = [
   { value: 'low', label: 'Düşük' },
@@ -12,11 +13,8 @@ const PRIORITIES = [
   { value: 'high', label: 'Yüksek' },
 ];
 
-const USERS = [
-  { value: '1', label: 'Ahmet Yılmaz' },
-  { value: '2', label: 'Mehmet Demir' },
-  { value: '3', label: 'Ayşe Kaya' },
-];
+// USERS sabitini kaldırıyoruz, onun yerine state olacak
+// const USERS = [ ... ];
 
 export default function CreateTask({ open, onClose, ticketId = '123456' }) {
   const { t } = useTranslation();
@@ -28,6 +26,30 @@ export default function CreateTask({ open, onClose, ticketId = '123456' }) {
     dueDate: '',
     ticketId: ticketId || '',
   });
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  React.useEffect(() => {
+    if (open) {
+      setLoadingUsers(true);
+      getUsersByRoleName('Employee')
+        .then((data) => {
+          // API'den dönen kullanıcı listesi data.data içinde
+          const userOptions = (Array.isArray(data?.data) ? data.data : []).map(user => ({
+            value: user.id,
+            label: user.firstName + ' ' + user.lastName
+          }));
+          setUsers(userOptions);
+        })
+        .catch(() => setUsers([]))
+        .finally(() => setLoadingUsers(false));
+    }
+  }, [open]);
+
+  // ticketId prop'u değiştiğinde form.ticketId'yi güncelle
+  React.useEffect(() => {
+    setForm((prev) => ({ ...prev, ticketId: ticketId || '' }));
+  }, [ticketId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -78,8 +100,9 @@ export default function CreateTask({ open, onClose, ticketId = '123456' }) {
               value={form.assignee}
               onChange={handleChange}
               required
-              options={USERS}
-              placeholder={t('createTask.form.assigneePlaceholder')}
+              options={users}
+              placeholder={loadingUsers ? t('createTask.form.loadingAssignees', 'Yükleniyor...') : t('createTask.form.assigneePlaceholder')}
+              disabled={loadingUsers}
             />
           </div>
           <div style={{ display: 'flex', gap: 12, flexDirection: window.innerWidth < 600 ? 'column' : 'row' }}>

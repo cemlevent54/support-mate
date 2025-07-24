@@ -75,19 +75,19 @@ class UserService {
 
   async getUsersByRole(req, res) {
     try {
-      const { role } = req.params;
-      const { page, limit } = req.query;
-      logger.info(translation('services.userService.logs.getByRoleRequest'), { role, page, limit });
-      const getUsersByRoleQuery = {
-        role,
-        page: page ? parseInt(page) : undefined,
-        limit: limit ? parseInt(limit) : undefined
-      };
+      const role = req.query.roleName;
+      if (!role) {
+        logger.warn('Role name is required');
+        notFoundError(res, 'Role name is required');
+        return;
+      }
+      logger.info(translation('services.userService.logs.getByRoleRequest'), { role });
+      const getUsersByRoleQuery = { role };
       const result = await queryHandler.dispatch(QUERY_TYPES.GET_USERS_BY_ROLE, getUsersByRoleQuery);
-      logger.info(translation('services.userService.logs.getByRoleSuccess'), { role, total: result.total });
+      logger.info(translation('services.userService.logs.getByRoleSuccess'), { role, total: result.length });
       apiSuccess(res, result, translation('services.userService.logs.getByRoleSuccess'), 200);
     } catch (err) {
-      logger.error(translation('services.userService.logs.getByRoleError'), { error: err, role: req.params.role });
+      logger.error(translation('services.userService.logs.getByRoleError'), { error: err, role: req.query.roleName });
       internalServerError(res);
     }
   }

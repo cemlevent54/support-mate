@@ -10,10 +10,11 @@ const router = Router();
 // GET /users/profile
 router.get('/profile', authMiddleware, userController.getAuthenticatedUser);
 
+// GET /users/role?roleName=Employee
+router.get('/role', authMiddleware, userController.getUsersByRole);
 // GET /users/:id
 router.get('/:id', userController.getUserById);
 router.get('/', authMiddleware, requireRole('Admin'), userController.getAllUsers);
-router.get('/role/:role', authMiddleware, requireRole('Admin'), userController.getUsersByRole);
 
 // PATCH /users/:id
 router.patch('/:id', authMiddleware, requireRole('Admin'), userController.updateUser);

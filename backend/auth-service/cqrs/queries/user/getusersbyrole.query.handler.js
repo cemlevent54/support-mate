@@ -6,14 +6,10 @@ export class GetUsersByRoleQueryHandler {
   async execute(query) {
     try {
       logger.info(translation('cqrs.queries.user.getUsersByRole.logs.executing'), { role: query.role });
-      const options = {
-        page: query.page || 1,
-        limit: query.limit || 10,
-        role: query.role
-      };
-      const result = await userRepository.findAllUsers(options);
+      // Sadece role ile filtrele, sayfalama yok
+      const users = await userRepository.findUsersByRole(query.role);
       // Kullanıcıları normalize et, rol nesnesini de ekle
-      const normalizedUsers = result.users.map(user => ({
+      const normalizedUsers = users.map(user => ({
         id: user._id,
         email: user.email,
         firstName: user.firstName,
@@ -29,15 +25,8 @@ export class GetUsersByRoleQueryHandler {
         createdAt: user.createdAt,
         updatedAt: user.updatedAt
       }));
-      const normalizedResult = {
-        users: normalizedUsers,
-        total: result.total,
-        page: result.page,
-        limit: result.limit,
-        totalPages: result.totalPages
-      };
-      logger.info(translation('cqrs.queries.user.getUsersByRole.logs.success'), { count: normalizedUsers.length, total: result.total, page: result.page });
-      return normalizedResult;
+      logger.info(translation('cqrs.queries.user.getUsersByRole.logs.success'), { count: normalizedUsers.length });
+      return normalizedUsers;
     } catch (error) {
       logger.error(translation('cqrs.queries.user.getUsersByRole.logs.fail'), { error, query });
       throw error;

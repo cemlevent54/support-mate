@@ -48,7 +48,7 @@ export default function SupportChats({ chat, myUserId }) {
   const messagesEndRef = useRef(null);
   const { t } = useTranslation();
   const userId = getUserIdFromJWT();
-  const ticketId = chat?.ticketId;
+  const ticketId = chat?.ticketId || chat?.ticket?.id;
 
   // Dosya türünü belirleme fonksiyonu
   const getFileType = (fileName) => {
@@ -375,7 +375,7 @@ export default function SupportChats({ chat, myUserId }) {
           </form>
         </Box>
       </Box>
-      <CreateTask open={createTaskModalOpen} onClose={closeTaskModal} />
+      <CreateTask open={createTaskModalOpen} onClose={closeTaskModal} ticketId={ticketId} />
       <CreateSupportTicket open={createTicketModalOpen} onClose={closeTicketModal} chat={chat} />
       <Modal
         open={previewOpen}

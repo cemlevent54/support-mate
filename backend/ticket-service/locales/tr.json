@@ -222,6 +222,22 @@
                 "products_listed": "Ürünler başarıyla listelendi.",
                 "product_not_found": "Ürün bulunamadı."
             }
+        },
+        "taskService": {
+            "logs": {
+                "task_created": "Görev başarıyla oluşturuldu.",
+                "task_creation_error": "Görev oluşturulurken hata oluştu.",
+                "task_updated": "Görev başarıyla güncellendi.",
+                "task_update_error": "Görev güncellenirken hata oluştu.",
+                "task_deleted": "Görev başarıyla silindi.",
+                "task_delete_error": "Görev silinirken hata oluştu.",
+                "get_tasks": "Görevler başarıyla listelendi.",
+                "get_task": "Görev başarıyla getirildi.",
+                "task_not_found": "Görev bulunamadı."
+            },
+            "responses": {
+                "task_already_exists_for_ticket": "Bu ticket'a zaten bir görev atanmış. "
+            }
         }
     },
 

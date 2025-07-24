@@ -71,3 +71,8 @@ export async function googleRegister(credential) {
   const response = await axiosInstance.post(`${API_BASE_URL}/google-register`, { credential });
   return response.data;
 }
+
+export async function getUsersByRoleName(roleName) {
+  const response = await axiosInstance.get(`${API_BASE_URL}/users/role?roleName=${roleName}`);
+  return response.data;
+}

@@ -1,6 +1,7 @@
 import { UserModel } from '../models/user.model.js';
 import logger from '../config/logger.js';
 import translation from '../config/translation.js';
+import roleRepository from './role.repository.js';
 
 class UserRepository {
   async createUser(userData) {
@@ -148,6 +149,26 @@ class UserRepository {
       return user;
     } catch (err) {
       logger.error(translation('repositories.userRepository.logs.errorDeleting'), { error: err, id });
+      throw err;
+    }
+  }
+
+  // Sadece role ile filtreleme yapan ve sayfalama yapmayan fonksiyon
+  async findUsersByRole(roleName) {
+    try {
+      // Önce role adı ile role nesnesini bul
+      const role = await roleRepository.findRoleByName(roleName);
+      if (!role) {
+        throw new Error(`Role not found: ${roleName}`);
+      }
+      const query = { isDeleted: false, role: role._id };
+      const users = await UserModel.find(query)
+        .populate('role')
+        .select('-password')
+        .sort({ createdAt: -1 });
+      return users;
+    } catch (err) {
+      logger.error(translation('repositories.userRepository.logs.errorCreating'), { error: err, roleName });
       throw err;
     }
   }
