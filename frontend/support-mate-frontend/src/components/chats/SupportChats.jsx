@@ -159,6 +159,7 @@ export default function SupportChats({ chat, myUserId }) {
   useEffect(() => {
     if (!chatId) return;
     const handleNewMessage = (data) => {
+      console.log('[SOCKET][AGENT] receive_chat_message:', data, 'chatId:', chatId, 'userId:', userId);
       if (data.chatId === chatId && data.userId !== userId) {
         setMessages(prev => [
           ...prev,

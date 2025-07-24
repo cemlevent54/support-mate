@@ -163,12 +163,14 @@ export const useChatSocket = (chatTicket, chatOpen) => {
     try {
       let currentChatId = chatId;
       let res;
+      let isFirstMessage = false;
       if (!currentChatId) {
         // İlk mesaj, chat yok. createMessage ile başlat.
         res = await createMessage({ text: input, userId: myUserId, receiverId: chatTicket?.receiverId, ticketId: chatTicket?.ticketId });
         if (res.success && res.data && res.data.chatId) {
           currentChatId = res.data.chatId;
           setChatId(currentChatId);
+          isFirstMessage = true;
         } else {
           throw new Error('Chat başlatılamadı');
         }
@@ -176,8 +178,21 @@ export const useChatSocket = (chatTicket, chatOpen) => {
         // Var olan chat, sendMessage ile devam.
         res = await sendMessage({ chatId: currentChatId, userId: myUserId, text: input });
       }
-      // Socket emit her iki durumda da yapılmalı
-      socket.emit('send_message', { chatId: currentChatId, userId: myUserId, message: input });
+
+      // --- SOCKET EMIT ---
+      if (isFirstMessage && res.success && res.data && res.data.messages && res.data.messages.length > 0) {
+        // Yeni chat ve ilk mesaj için create_message emit et
+        socket.emit('create_message', {
+          chatId: currentChatId,
+          message: res.data.messages[0], // ilk mesajın DTO'su
+          userId: myUserId
+        });
+      } else {
+        // Var olan chat için klasik send_message emit
+        socket.emit('send_message', { chatId: currentChatId, userId: myUserId, message: input });
+      }
+      // --- /SOCKET EMIT ---
+
       if (res.success) {
         setMessages(prev => [
           ...prev,

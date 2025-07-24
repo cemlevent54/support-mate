@@ -178,6 +178,34 @@ async def leave_room(sid, data):
         if not rooms[chat_id]["activeUsers"]:
             del rooms[chat_id]
 
+@sio.event
+def create_message(sid, data):
+    """
+    Yeni bir chat ve ilk mesaj oluşturulduğunda frontend tarafından tetiklenir.
+    data: {
+        chatId: str,
+        message: dict,  # Mesaj DTO/dict
+        userId: str
+    }
+    """
+    chat_id = data.get("chatId")
+    message = data.get("message")
+    user_id = data.get("userId")
+    if not chat_id or not message or not user_id:
+        sio.emit('error', {'message': 'chatId, message ve userId gereklidir'}, to=sid)
+        return
+    # Odaya yeni mesajı emit et
+    sio.emit(
+        "receive_chat_message",
+        {
+            "chatId": chat_id,
+            "message": message,
+            "userId": user_id
+        },
+        room=chat_id
+    )
+    logger.info(_(f"config.socketio.create_message_emit").format(user=user_id, chat_id=chat_id, message=message, data=data))
+
 def str_now():
     from datetime import datetime
     return datetime.utcnow().isoformat()

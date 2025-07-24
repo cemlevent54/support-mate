@@ -19,6 +19,61 @@ export default function SupportChatsLayout() {
   const { t } = useTranslation();
   const myUserId = getUserIdFromJWT();
 
+  // fetchAndAddNewChat fonksiyonunu component scope'unda tanımla
+  const fetchAndAddNewChat = async (chatId, data, forceFetchMessages = false) => {
+    try {
+      let found = null;
+      if (forceFetchMessages) {
+        // Yeni chat için mesajları API'den çek
+        const res = await listAgentChatsWithMessages();
+        if (res.success && res.data) {
+          found = res.data.find(chat => String(chat._id || chat.chatId || chat.id) === String(chatId));
+        }
+      }
+      if (found) {
+        setAgentChats(prev => [found, ...prev.filter(chat => String(chat._id || chat.chatId || chat.id) !== String(chatId))]);
+        return;
+      }
+      // Eğer detay bulunamazsa, temel bilgilerle ekle
+      setAgentChats(prev => [
+        {
+          id: chatId,
+          chatId: chatId,
+          messages: [{
+            senderId: data.userId,
+            text: data.message,
+            timestamp: data.timestamp || new Date().toISOString(),
+            createdAt: data.timestamp || new Date().toISOString()
+          }],
+          lastMessage: data.message,
+          lastMessageTime: data.timestamp || new Date().toISOString(),
+        },
+        ...prev
+      ]);
+    } catch (e) {
+      setAgentChats(prev => [
+        {
+          id: chatId,
+          chatId: chatId,
+          messages: [{
+            senderId: data.userId,
+            text: data.message,
+            timestamp: data.timestamp || new Date().toISOString(),
+            createdAt: data.timestamp || new Date().toISOString()
+          }],
+          lastMessage: data.message,
+          lastMessageTime: data.timestamp || new Date().toISOString(),
+        },
+        ...prev
+      ]);
+    }
+  };
+
+  // handleUserJoinedChat fonksiyonunu component scope'unda tanımla
+  const handleUserJoinedChat = (chatId) => {
+    fetchAndAddNewChat(chatId, {}, true);
+  };
+
   // Component mount olduğunda agent chatlerini çek
   useEffect(() => {
     async function fetchAgentChats() {
@@ -47,7 +102,7 @@ export default function SupportChatsLayout() {
 
   // Yeni mesaj geldiğinde agentChats listesini güncelle
   useEffect(() => {
-    const handleNewMessage = (data) => {
+    const handleNewMessage = async (data) => {
       setAgentChats(prevChats => {
         let updated = false;
         let updatedChat = null;
@@ -73,9 +128,15 @@ export default function SupportChatsLayout() {
           return true;
         });
         if (updated && updatedChat) {
-          newChats.unshift(updatedChat);
+          return [updatedChat, ...newChats];
         } else {
-          newChats.unshift({
+          // --- YENİ CHAT GELDİ ---
+          // Agent otomatik olarak join_room emit etsin
+          if (data.chatId && myUserId) {
+            socket.emit('join_room', { chatId: data.chatId, userId: myUserId, userRole: 'Support' });
+          }
+          fetchAndAddNewChat(data.chatId, data, true); // true: yeni chat, mesajları API'den çek
+          setSelectedChat({
             id: data.chatId,
             chatId: data.chatId,
             messages: [{
@@ -87,8 +148,22 @@ export default function SupportChatsLayout() {
             lastMessage: data.message,
             lastMessageTime: data.timestamp || new Date().toISOString(),
           });
+          return [
+            {
+              id: data.chatId,
+              chatId: data.chatId,
+              messages: [{
+                senderId: data.userId,
+                text: data.message,
+                timestamp: data.timestamp || new Date().toISOString(),
+                createdAt: data.timestamp || new Date().toISOString()
+              }],
+              lastMessage: data.message,
+              lastMessageTime: data.timestamp || new Date().toISOString(),
+            },
+            ...newChats
+          ];
         }
-        return newChats;
       });
       setSelectedChat(prev => {
         if (!prev) return prev;
@@ -111,6 +186,7 @@ export default function SupportChatsLayout() {
         return prev;
       });
     };
+
     socket.on('receive_chat_message', handleNewMessage);
     return () => socket.off('receive_chat_message', handleNewMessage);
   }, []);
@@ -138,6 +214,8 @@ export default function SupportChatsLayout() {
         onSelectChat={handleSelectChat}
         refreshTrigger={0}
         agentChats={agentChats}
+        loading={loading}
+        onUserJoinedChat={handleUserJoinedChat}
       />
       <Box flex={1} height="100vh" bgcolor="#f5f5f5">
         {chatId && selectedChat ? (

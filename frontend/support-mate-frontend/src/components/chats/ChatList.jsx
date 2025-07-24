@@ -15,39 +15,26 @@ import { Box } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
+import socket from '../../socket/socket';
+import { listMessagesByChatId } from '../../api/messagesApi';
 
-export default function ChatList({ activeChatTicketId, onSelectChat, agentChats, loading }) {
+// getLastMessage fonksiyonunu en başa taşıdım
+const getLastMessage = (chat) => {
+  const msgs = chat.chatMessages || chat.messages || [];
+  if (Array.isArray(msgs) && msgs.length > 0) {
+    return msgs[msgs.length - 1].text || '';
+  }
+  return 'Mesaj yok';
+};
+
+export default function ChatList({ activeChatTicketId, onSelectChat, agentChats, loading, onUserJoinedChat }) {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [newMessageChats, setNewMessageChats] = useState(new Set());
   const [unreadCounts, setUnreadCounts] = useState({});
-  const [allChats, setAllChats] = useState([]);
-
-  // agentChats prop'u gelirse tüm chatleri güncelle
-  useEffect(() => {
-    if (agentChats && Array.isArray(agentChats)) {
-      // Son mesaj zamanına göre sırala (en yeni yukarıda)
-      const sorted = [...agentChats].sort((a, b) => {
-        const msgsA = a.chatMessages || a.messages || [];
-        const msgsB = b.chatMessages || b.messages || [];
-        const lastA = msgsA.length > 0 ? new Date(msgsA[msgsA.length - 1].timestamp || msgsA[msgsA.length - 1].createdAt) : new Date(a.lastMessageTime || a.updatedAt || a.createdAt || 0);
-        const lastB = msgsB.length > 0 ? new Date(msgsB[msgsB.length - 1].timestamp || msgsB[msgsB.length - 1].createdAt) : new Date(b.lastMessageTime || b.updatedAt || b.createdAt || 0);
-        return lastB - lastA;
-      });
-      setAllChats(sorted);
-    }
-  }, [agentChats]);
-
-  const getLastMessage = (chat) => {
-    const msgs = chat.chatMessages || chat.messages || [];
-    if (Array.isArray(msgs) && msgs.length > 0) {
-      return msgs[msgs.length - 1].text || '';
-    }
-    return 'Mesaj yok';
-  };
 
   // Search fonksiyonu (filtrelenmiş chat listesi)
-  const filteredChatList = allChats.filter(chat => {
+  const filteredChatList = (agentChats || []).filter(chat => {
     let name = chat.ticket && chat.ticket.title ? chat.ticket.title : chat.name || '';
     let last = getLastMessage(chat).toLowerCase();
     let category = '';
@@ -163,6 +150,29 @@ export default function ChatList({ activeChatTicketId, onSelectChat, agentChats,
     }
     return name;
   };
+
+  useEffect(() => {
+    const handleUserJoined = async (payload) => {
+      console.log('[ChatList][SOCKET] user_joined:', payload);
+      if (payload && payload.chatId) {
+        // Eğer parent bir callback verdiyse ona ilet, yoksa burada API'den çek
+        if (onUserJoinedChat) {
+          onUserJoinedChat(payload.chatId);
+        } else {
+          try {
+            const res = await listMessagesByChatId(payload.chatId);
+            // Burada agentChats state'ini güncellemek için bir yolun olmalı (örn: context veya prop callback)
+            // Şimdilik sadece logla
+            console.log('[ChatList][SOCKET] user_joined ile chatId için mesajlar:', res);
+          } catch (e) {
+            console.error('[ChatList][SOCKET] user_joined chatId mesajları çekilemedi:', e);
+          }
+        }
+      }
+    };
+    socket.on('user_joined', handleUserJoined);
+    return () => socket.off('user_joined', handleUserJoined);
+  }, [onUserJoinedChat]);
 
   if (loading) {
     return (
