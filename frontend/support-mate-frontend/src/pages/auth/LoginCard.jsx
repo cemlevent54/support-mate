@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
@@ -10,7 +10,7 @@ import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import Paper from '@mui/material/Paper';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { login, googleLogin } from '../../api/authApi';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../../providers/LanguageProvider';
@@ -22,12 +22,47 @@ import isAdmin from '../../auth/isAdmin';
 import isCustomerSupporter from '../../auth/isCustomerSupporter';
 import isEmployee from '../../auth/isEmployee';
 
-export default function LoginCard({ onUserLogin }) {
+const LoginCard = ({ onUserLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const token = params.get("token");
+  const urlRedirect = params.get("redirect");
+
+  // İlk render'da sessionStorage'a yaz
+  useEffect(() => {
+    if (urlRedirect) {
+      sessionStorage.setItem("redirectAfterLogin", urlRedirect);
+    }
+  }, [urlRedirect]);
+
+  // Kullanıcı zaten login ise ve sessionStorage'da redirect varsa otomatik yönlendir
+  useEffect(() => {
+    const jwt = localStorage.getItem("jwt");
+    const redirect = sessionStorage.getItem("redirectAfterLogin");
+    if (jwt && redirect) {
+      navigate(redirect, { replace: true });
+      sessionStorage.removeItem("redirectAfterLogin");
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    if (token) {
+      localStorage.setItem("jwt", token);
+      const redirect = sessionStorage.getItem("redirectAfterLogin");
+      if (redirect) {
+        navigate(redirect, { replace: true });
+        sessionStorage.removeItem("redirectAfterLogin");
+      } else {
+        navigate("/", { replace: true });
+      }
+    }
+  }, [token, navigate]);
+
   const { t } = useTranslation();
   const { language, onLanguageChange } = useLanguage();
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
@@ -173,4 +208,6 @@ export default function LoginCard({ onUserLogin }) {
       </Snackbar>
     </Box>
   );
-} 
+};
+
+export default LoginCard; 

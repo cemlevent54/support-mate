@@ -26,6 +26,7 @@ import SupportKanbanBoard from './pages/support/SupportKanbanBoard';
 import AdminKanbanBoard from './pages/admin/AdminKanbanBoard';
 import { jwtDecode } from 'jwt-decode';
 import isEmployee from './auth/isEmployee';
+import FeedbackPage from "./pages/feedback/FeedbackPage";
 
 // Global modal handlers - bu fonksiyonlar App.jsx'ten geçirilecek
 let globalOpenCreateTicketModal = () => {};
@@ -126,6 +127,10 @@ export const appRoutes = [
   {
     path: '/verify-email',
     element: <SixDigitVerifyEmail />,
+  },
+  {
+    path: '/feedback',
+    element: <FeedbackPage />,
   },
 
   {

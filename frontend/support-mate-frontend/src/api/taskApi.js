@@ -58,3 +58,12 @@ export const getTasksEmployee = async (token) => {
   });
 };
 
+export const userApproveOrRejectTask = async (taskId, status, token) => {
+  return axiosInstance.patch(`${BASE_URL}/tasks/user/${taskId}`, { status }, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'accept-language': getLang(),
+    },
+  });
+};
+
