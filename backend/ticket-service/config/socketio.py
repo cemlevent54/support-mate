@@ -283,11 +283,26 @@ def get_unread_counts_for_user(user_id):
     messages_collection = db["messages"]
     pipeline = [
         {"$match": {"receiverId": user_id, "isRead": False}},
-        {"$group": {"_id": "$chatId", "count": {"$sum": 1}}}
+        {"$group": {
+            "_id": {
+                "chatId": "$chatId",
+                "receiverId": "$receiverId",
+                "isRead": "$isRead"
+            },
+            "count": {"$sum": 1}
+        }}
     ]
     result = messages_collection.aggregate(pipeline)
     client.close()
-    return {doc["_id"]: doc["count"] for doc in result}
+    return [
+        {
+            "chatId": doc["_id"]["chatId"],
+            "receiverId": doc["_id"]["receiverId"],
+            "isRead": doc["_id"]["isRead"],
+            "count": doc["count"]
+        }
+        for doc in result
+    ]
 
 # ASGI app
 socket_app = socketio.ASGIApp(sio, other_asgi_app=fastapi_app)

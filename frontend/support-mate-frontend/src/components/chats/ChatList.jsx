@@ -17,6 +17,8 @@ import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import socket from '../../socket/socket';
 import { listMessagesByChatId } from '../../api/messagesApi';
+import './ChatList.css';
+import { useChatContext } from './ChatContext';
 
 // getLastMessage fonksiyonunu en başa taşıdım
 const getLastMessage = (chat) => {
@@ -27,10 +29,11 @@ const getLastMessage = (chat) => {
   return 'Mesaj yok';
 };
 
-export default function ChatList({ activeChatTicketId, onSelectChat, agentChats, loading, onUserJoinedChat, unreadCounts = {} }) {
+export default function ChatList({ activeChatTicketId, onSelectChat, loading, onUserJoinedChat }) {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [newMessageChats, setNewMessageChats] = useState(new Set());
+  const { unreadCounts, agentChats } = useChatContext();
 
   // Search fonksiyonu (filtrelenmiş chat listesi)
   const filteredChatList = (agentChats || []).filter(chat => {
@@ -168,6 +171,29 @@ export default function ChatList({ activeChatTicketId, onSelectChat, agentChats,
     return () => socket.off('user_joined', handleUserJoined);
   }, [onUserJoinedChat]);
 
+  // Socket'tan unread_counts eventini dinle
+  useEffect(() => {
+    const handleUnreadCounts = (data) => {
+      if (data && Array.isArray(data.counts)) {
+        const map = {};
+        data.counts.forEach(item => {
+          map[String(item.chatId)] = item.count;
+        });
+        console.log('[DEBUG][handleUnreadCounts] Gelen chatId\'ler:', data.counts.map(i => i.chatId));
+        console.log('[DEBUG][handleUnreadCounts] Oluşan map:', map);
+        // setUnreadCounts(map); // Kaldırıldı
+      }
+    };
+    socket.on('unread_counts', handleUnreadCounts);
+    return () => socket.off('unread_counts', handleUnreadCounts);
+  }, []);
+
+  // agentChats'teki tüm chatKey'leri logla
+  useEffect(() => {
+    const allChatKeys = (agentChats || []).map(chat => String(chat._id || chat.chatId || chat.id));
+    console.log('[DEBUG][ChatList] agentChats chatKey\'ler:', allChatKeys);
+  }, [agentChats]);
+
   if (loading) {
     return (
       <div style={{ width: 350, background: '#fff', borderRight: '1px solid #e0e0e0', display: 'flex', flexDirection: 'column', height: '100vh', alignItems: 'center', justifyContent: 'center' }}>
@@ -286,11 +312,13 @@ export default function ChatList({ activeChatTicketId, onSelectChat, agentChats,
                 }
                 onClick={() => handleChatSelect(chat)}
                 sx={() => {
+                  const chatKey = String(chat._id || chat.chatId || chat.id);
+                  const unreadCount = unreadCounts[chatKey] || 0;
                   let sxObj = {
                     color: '#222',
-                    bgcolor: chat.isNewMessage ? '#fff3cd' : (String(activeChatTicketId) === String(chat.id) ? '#f0f8ff' : 'transparent'),
+                    bgcolor: unreadCount > 0 ? '#ffcdd2' : (String(activeChatTicketId) === String(chat.id) ? '#f0f8ff' : 'transparent'),
                     '&:hover': { 
-                      bgcolor: '#f5f5f5',
+                      bgcolor: unreadCount > 0 ? '#ffb3b3' : '#f5f5f5',
                       transform: 'translateX(2px)',
                     },
                     py: 2,
@@ -320,10 +348,6 @@ export default function ChatList({ activeChatTicketId, onSelectChat, agentChats,
                       },
                     },
                   };
-                  const chatKey = String(chat._id || chat.chatId || chat.id);
-                  if (unreadCounts[chatKey] > 0) {
-                    sxObj.bgcolor = 'rgba(255,0,0,0.15)';
-                  }
                   return sxObj;
                 }}
               >
@@ -364,25 +388,12 @@ export default function ChatList({ activeChatTicketId, onSelectChat, agentChats,
                 {/* Badge: ListItemButton içinde, ListItemText dışında */}
                 {(() => {
                   const chatKey = String(chat._id || chat.chatId || chat.id);
-                  console.log('unreadCounts:', unreadCounts, 'chatKey:', chatKey);
-                  return unreadCounts[chatKey] > 0 && (
-                    <span style={{
-                      position: 'absolute',
-                      top: 2,
-                      right: -20,
-                      background: 'red',
-                      color: '#fff',
-                      borderRadius: '50%',
-                      width: 20,
-                      height: 20,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 13,
-                      fontWeight: 700,
-                      boxShadow: '0 0 0 2px #111',
-                    }}>
-                      {unreadCounts[chatKey]}
+                  const unreadCount = unreadCounts[chatKey] || 0;
+                  // Debug log
+                  console.log('[DEBUG][Badge] chatKey:', chatKey, 'unreadCount:', unreadCount);
+                  return unreadCount > 0 && (
+                    <span className="unread-badge">
+                      {unreadCount}
                     </span>
                   );
                 })()}

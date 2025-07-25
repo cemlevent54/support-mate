@@ -16,6 +16,9 @@ import SupportKanbanBoard from '../../pages/support/SupportKanbanBoard';
 import isEmployee from '../../auth/isEmployee';
 import isCustomerSupporter from '../../auth/isCustomerSupporter';
 import socket from '../../socket/socket';
+import { useChatContext } from '../chats/ChatContext';
+import { listMessagesByChatId , BASE_URL2 } from '../../api/messagesApi';
+import axios from 'axios';
 
 const sidebarItems = [
   { key: 'requests', labelKey: 'supportDashboard.sidebar.requests', path: '/support/requests' },
@@ -34,6 +37,7 @@ export default function SupportLayout() {
   const location = useLocation();
   const { language, onLanguageChange } = useLanguage();
   const { t } = useTranslation();
+  const { unreadCounts, setUnreadCounts, agentChats, setAgentChats } = useChatContext();
 
   // Kullanıcı rolünü JWT'den al
   let roleName = null;
@@ -55,15 +59,13 @@ export default function SupportLayout() {
     : sidebarItems;
 
   // Realtime unread count state
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [unreadCounts, setUnreadCounts] = useState({});
   const totalUnread = Object.values(unreadCounts).reduce((sum, val) => sum + val, 0);
 
   // agentChats propunu veya contextini burada alman gerekiyor. Örneğin:
   // const { agentChats } = useAgentChatsContext();
   // veya prop olarak geliyorsa: props.agentChats
   // Burada örnek olarak window.agentChats üzerinden gösteriyorum, kendi state'inden alman gerek.
-  const agentChats = window.agentChats || [];
+  // const agentChats = window.agentChats || []; // Kaldırıldı, context'ten geliyor
 
   // Tüm chat odalarına otomatik join_room
   useEffect(() => {
@@ -85,7 +87,7 @@ export default function SupportLayout() {
       console.log('[SupportLayout][SOCKET] totalUnread (on receive_chat_message):', totalUnread);
       // Eğer aktif chat sayfasında değilsek unreadCount'u artır
       if (!location.pathname.startsWith('/support/chats')) {
-        setUnreadCount(prev => prev + 1);
+        // setUnreadCount(prev => prev + 1); // Kaldırıldı
       }
     };
     socket.on('receive_chat_message', handleNewMessage);
@@ -95,14 +97,14 @@ export default function SupportLayout() {
   // Chat sayfası açıldığında unreadCount'u sıfırla
   useEffect(() => {
     if (location.pathname.startsWith('/support/chats')) {
-      setUnreadCount(0);
+      // setUnreadCount(0); // Kaldırıldı
     }
   }, [location.pathname]);
 
   useEffect(() => {
     socket.on('unread_count', (data) => {
       console.log('[SOCKET][FRONTEND] unread_count:', data);
-      setUnreadCount(data.count);
+      // setUnreadCount(data.count); // Kaldırıldı
     });
     return () => socket.off('unread_count');
   }, []);
@@ -110,10 +112,40 @@ export default function SupportLayout() {
   useEffect(() => {
     socket.on('unread_counts', (data) => {
       console.log('[SOCKET][FRONTEND] unread_counts:', data);
-      setUnreadCounts(data.counts || {});
+      if (Array.isArray(data.counts)) {
+        const map = {};
+        data.counts.forEach(item => {
+          map[String(item.chatId)] = item.count;
+        });
+        setUnreadCounts(map);
+      }
     });
     return () => socket.off('unread_counts');
-  }, []);
+  }, [setUnreadCounts]);
+
+  // Chat listesi çekme (agentChats)
+  useEffect(() => {
+    async function fetchAgentChats() {
+      try {
+        const token = localStorage.getItem('jwt');
+        const res = await axios.get(BASE_URL2 + '/agent/messages', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.data && res.data.success && Array.isArray(res.data.data)) {
+          setAgentChats(res.data.data);
+        } else if (res.data && res.data.success && res.data.data && Array.isArray(res.data.data.chats)) {
+          setAgentChats(res.data.data.chats);
+        } else {
+          // Fallback: data'nın kendisi chat listesi olabilir
+          setAgentChats(res.data.data || []);
+        }
+      } catch (e) {
+        console.error('[SupportLayout][fetchAgentChats] Hata:', e);
+        setAgentChats([]);
+      }
+    }
+    fetchAgentChats();
+  }, [setAgentChats]);
 
   const handleLogout = async () => {
     try {

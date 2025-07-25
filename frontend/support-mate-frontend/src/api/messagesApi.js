@@ -3,6 +3,8 @@ import axiosInstance from './axiosInstance';
 const BASE_URL = 'http://localhost:9000' + '/api/tickets/messages';
 const BASE_URL2 = 'http://localhost:9000' + '/api/tickets';
 
+export { BASE_URL, BASE_URL2 };
+
 // Mesaj gönder
 export const sendMessage = async (messageData) => {
   const response = await axiosInstance.post(BASE_URL, messageData);
