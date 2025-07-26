@@ -109,10 +109,22 @@
   box-shadow: 0 4px 16px 0 rgba(255, 152, 0, 0.13);
 }
 
+/* Assign button styles */
+.custom-btn.assign {
+  background: linear-gradient(90deg, #9c27b0 60%, #ba68c8 100%);
+  color: #fff;
+  box-shadow: 0 2px 8px 0 rgba(156, 39, 176, 0.10);
+}
+.custom-btn.assign:hover {
+  background: linear-gradient(90deg, #7b1fa2 60%, #9c27b0 100%);
+  color: #fff;
+  box-shadow: 0 4px 16px 0 rgba(156, 39, 176, 0.13);
+}
+
 /* İşlemler sütunu dinamik genişlik */
 .custom-ticket-table td.actions-cell, .custom-ticket-table th.actions-cell {
   white-space: nowrap;
-  min-width: 200px;
+  min-width: 280px;
   width: 1%;
   text-align: left;
   padding-right: 12px;

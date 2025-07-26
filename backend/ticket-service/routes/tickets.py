@@ -1,7 +1,7 @@
 import logging
 from fastapi import APIRouter, Depends, status, UploadFile, File, Form, Request, HTTPException
 from typing import List
-from models.ticket import Ticket, APIResponse
+from models.ticket import Ticket, APIResponse, AssignTicketToLeaderRequest
 from middlewares.auth import get_current_user, verify_agent_permission
 from controllers.TicketController import TicketController
 from utils.file_utils import get_upload_path, ensure_upload_directories, validate_file_size, get_file_size_mb
@@ -184,4 +184,20 @@ def list_tickets_leader(request: Request, user=Depends(get_current_user)):
     if user.get("roleName") != "Leader":
         raise HTTPException(status_code=403, detail="Forbidden")
     return ticket_controller.list_tickets_endpoint_for_leader(user, lang=lang)
+
+# --- Customer Supporter routes ---
+# patch
+# assign ticket to leader
+# full path: /api/tickets/agent/tickets/{ticket_id}
+# request body: {
+#     "assignedLeaderId": "leader_id"
+# }
+@router.patch("/agent/tickets/{ticket_id}")
+def assign_ticket_to_leader(ticket_id: str, request_body: AssignTicketToLeaderRequest, request: Request = None, user=Depends(get_current_user)):
+    lang = get_lang(request)
+    set_language(lang)
+    if user.get("roleName") != "Customer Supporter":
+        raise HTTPException(status_code=403, detail="Forbidden")
+    
+    return ticket_controller.assign_ticket_to_leader_endpoint(ticket_id, request_body.assignedLeaderId, user, lang=lang)
 

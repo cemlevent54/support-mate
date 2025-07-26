@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { jwtDecode } from 'jwt-decode';
+import isCustomerSupporter from '../../../auth/isCustomerSupporter';
 import './CustomTicketTable.css';
 
 const PAGE_SIZE_OPTIONS = [5, 10, 20, 30, 50, 100];
@@ -8,6 +10,7 @@ const CustomTicketTable = ({
   rows = [],
   onChat,
   onDetail,
+  onAssign, // New prop for assign functionality
   loading = false,
   error = null,
   columns,
@@ -15,6 +18,23 @@ const CustomTicketTable = ({
   renderActions = null, // New prop for custom action rendering
 }) => {
   const { t } = useTranslation();
+
+  // Get user role from JWT
+  const getUserRole = () => {
+    const token = localStorage.getItem('jwt');
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        return decoded.roleName;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  };
+
+  const userRole = getUserRole();
+  const isCustomerSupporterRole = isCustomerSupporter({ roleName: userRole });
 
   // Eğer columns verilmemişse i18n'den başlıkları al
   const tableColumns = columns || [
@@ -107,6 +127,9 @@ const CustomTicketTable = ({
                                   <button className="custom-btn chat" onClick={() => onChat && onChat(row)}>{t(`${i18nNamespace}.buttons.chat`, 'CHAT')}</button>
                                 )}
                                 <button className="custom-btn detail" onClick={() => onDetail && onDetail(row)}>{t(`${i18nNamespace}.buttons.detail`, 'DETAY')}</button>
+                                {isCustomerSupporterRole && onAssign && !['IN_REVIEW', 'IN_PROGRESS', 'COMPLETED', 'DONE'].includes(row.status) && (
+                                  <button className="custom-btn assign" onClick={() => onAssign(row)}>{t(`${i18nNamespace}.buttons.assign`, 'ASSIGN')}</button>
+                                )}
                               </>
                             )}
                           </td>

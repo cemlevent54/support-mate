@@ -22,6 +22,7 @@ from cqrs.commands.chat.CreateChatCommandHandler import CreateChatCommandHandler
 from cqrs.commands.chat.AssignAgentToChatCommandHandler import AssignAgentToChatCommandHandler
 from cqrs.queries.agent.SelectAndRotateAgentQueryHandler import SelectAndRotateAgentQueryHandler
 from cqrs.commands.ticket.AssignAgentToPendingTicketCommandHandler import AssignAgentToPendingTicketCommandHandler
+from cqrs.commands.ticket.AssignTicketToLeaderCommandHandler import AssignTicketToLeaderCommandHandler
 from config.language import _
 from dto.ticket_dto import TicketDTO, TicketListDTO
 from config.language import set_language, _
@@ -441,6 +442,47 @@ class TicketService:
             return bad_request_error(_(f"services.ticketService.responses.bad_request"))
         logger.info(_(f"services.ticketService.logs.soft_deleting_ticket").format(ticket_id=ticket_id, user_id=user.get('id', 'unknown')))
         return self.soft_delete_handler.execute(ticket_id, user)
+
+    def assign_ticket_to_leader(self, ticket_id: str, leader_id: str, user: dict, lang='tr'):
+        """
+        Customer Supporter'ın assign olmamış ticket'ı leader'a assign etmesi
+        """
+        if not user:
+            logger.warning(_(f"services.ticketService.logs.unauthorized"))
+            return unauthorized_error(_(f"services.ticketService.responses.unauthorized"))
+        
+        if not ticket_id or not leader_id:
+            logger.warning(_(f"services.ticketService.logs.bad_request"))
+            return bad_request_error(_(f"services.ticketService.responses.bad_request"))
+        
+        # Sadece Customer Supporter'lar bu işlemi yapabilir
+        if user.get('roleName') != 'Customer Supporter':
+            logger.warning(_(f"services.ticketService.logs.forbidden"))
+            return {"success": False, "message": "Only Customer Supporters can assign tickets to leaders"}
+        
+        logger.info(_(f"services.ticketService.logs.assigning_ticket_to_leader").format(
+            ticket_id=ticket_id, 
+            leader_id=leader_id, 
+            user_id=user.get('id', 'unknown')
+        ))
+        
+        # Command handler'ı çağır
+        handler = AssignTicketToLeaderCommandHandler()
+        result = handler.execute(ticket_id, leader_id, user)
+        
+        if result.get("success"):
+            logger.info(_(f"services.ticketService.logs.ticket_assigned_to_leader").format(
+                ticket_id=ticket_id, 
+                leader_id=leader_id
+            ))
+        else:
+            logger.warning(_(f"services.ticketService.logs.ticket_assign_to_leader_failed").format(
+                ticket_id=ticket_id, 
+                leader_id=leader_id,
+                error=result.get("message", "Unknown error")
+            ))
+        
+        return result
 
     async def assign_agent_to_pending_ticket(self, agent_id):
         handler = AssignAgentToPendingTicketCommandHandler()

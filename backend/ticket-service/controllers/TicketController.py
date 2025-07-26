@@ -2,6 +2,8 @@ import logging
 from services.TicketService import TicketService
 from models.ticket import APIResponse
 from config.language import _
+from fastapi import HTTPException
+from fastapi.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +88,21 @@ class TicketController:
         logger.info(_(f"services.ticketController.logs.list_tickets_leader_result").format(result=len(result.get('data', [])) if result.get('success') else 'error'))
         return APIResponse(**result)
 
-
-
-
+    def assign_ticket_to_leader_endpoint(self, ticket_id: str, assignedLeaderId: str, user: dict, lang='tr'):
+        logger.info(_(f"services.ticketController.logs.assign_ticket_to_leader_called").format(user_id=user.get('id'), ticket_id=ticket_id, leader_id=assignedLeaderId))
+        result = self.ticket_service.assign_ticket_to_leader(ticket_id, assignedLeaderId, user, lang=lang)
+        logger.info(_(f"services.ticketController.logs.assign_ticket_to_leader_result").format(result=result.get('success')))
+        
+        # HTTP status code'ları ayarla
+        if not result.get('success'):
+            message = result.get('message', '')
+            if 'already assigned to a leader' in message:
+                return JSONResponse(status_code=409, content=result)
+            elif 'not found' in message:
+                return JSONResponse(status_code=404, content=result)
+            elif 'must be assigned to an agent' in message or 'Invalid leader' in message:
+                return JSONResponse(status_code=400, content=result)
+            else:
+                return JSONResponse(status_code=500, content=result)
+        
+        return JSONResponse(status_code=200, content=result)

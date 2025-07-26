@@ -4,14 +4,18 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import CustomTicketTable from '../../components/tickets/CustomTicketTable/CustomTicketTable';
 import CustomTicketDetailModal from '../../components/tickets/CustomTicketDetailModal/CustomTicketDetailModal';
+import CustomAssignLeaderModal from '../../components/tickets/CustomAssignLeaderModal/CustomAssignLeaderModal';
 import ChatIcon from '@mui/icons-material/Chat';
 import InfoIcon from '@mui/icons-material/Info';
+import AssignmentIcon from '@mui/icons-material/Assignment';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import { listTicketsForAgent } from '../../api/ticketApi';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
+import isCustomerSupporter from '../../auth/isCustomerSupporter';
 
 
 const SupportRequests = ({ onStartChat }) => {
@@ -23,6 +27,8 @@ const SupportRequests = ({ onStartChat }) => {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [assignTicket, setAssignTicket] = useState(null);
   const navigate = useNavigate();
   const params = useParams();
 
@@ -100,6 +106,71 @@ const SupportRequests = ({ onStartChat }) => {
     }
   };
 
+  const handleAssign = (ticket) => {
+    console.log('[SupportRequests] handleAssign called with ticket:', ticket);
+    setAssignTicket(ticket.raw || ticket);
+    setAssignModalOpen(true);
+  };
+
+  const handleAssignModalClose = () => {
+    setAssignModalOpen(false);
+    setAssignTicket(null);
+  };
+
+  const handleAssignSuccess = () => {
+    // Refresh the tickets list after successful assignment
+    const fetchTickets = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await listTicketsForAgent();
+        if (response.success && Array.isArray(response.data)) {
+          const sorted = response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          setRows(sorted.map((ticket, idx) => {
+            let categoryName = "";
+            if (ticket.category) {
+              if (ticket.category.data) {
+                if (i18n.language === "tr") {
+                  categoryName = ticket.category.data.category_name_tr || "-";
+                } else {
+                  categoryName = ticket.category.data.category_name_en || "-";
+                }
+              } else {
+                if (i18n.language === "tr") {
+                  categoryName = ticket.category.category_name_tr || ticket.category.categoryNameTr || "-";
+                } else {
+                  categoryName = ticket.category.category_name_en || ticket.category.categoryNameEn || "-";
+                }
+              }
+            } else {
+              categoryName = "-";
+            }
+            return {
+              id: ticket._id || idx + 1,
+              title: ticket.title,
+              description: ticket.description,
+              category: categoryName,
+              status: ticket.status || "-",
+              createdAt: ticket.createdAt ? new Date(ticket.createdAt).toLocaleString('tr-TR') : "-",
+              files: ticket.attachments || [],
+              chatId: ticket.chatId,
+              raw: { ...ticket, category: categoryName }
+            };
+          }));
+        } else {
+          setRows([]);
+          setError(response.message || "Talepler alınamadı.");
+        }
+      } catch (err) {
+        setError("Talepler alınırken bir hata oluştu.");
+        setRows([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTickets();
+  };
+
   const handlePreviewFile = (file) => {
     setPreviewFile(file);
     setPreviewOpen(true);
@@ -110,6 +181,25 @@ const SupportRequests = ({ onStartChat }) => {
     setPreviewFile(null);
   };
 
+  // Get user role from JWT
+  const getUserRole = () => {
+    const token = localStorage.getItem('jwt');
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        return decoded.roleName;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  };
+
+  const userRole = getUserRole();
+  const isCustomerSupporterRole = isCustomerSupporter({ roleName: userRole });
+
+
+
   const columns = [
     { field: 'title', headerName: 'Başlık', width: 200 },
     { field: 'category', headerName: 'Kategori', width: 200 },
@@ -118,7 +208,7 @@ const SupportRequests = ({ onStartChat }) => {
     {
       field: 'actions',
       headerName: 'İşlemler',
-      width: 200,
+      width: 280,
       sortable: false,
       renderCell: (params) => (
         <Box display="flex" gap={1}>
@@ -140,6 +230,17 @@ const SupportRequests = ({ onStartChat }) => {
           >
             Detay
           </Button>
+          {isCustomerSupporterRole && !['IN_REVIEW', 'IN_PROGRESS', 'COMPLETED', 'DONE'].includes(params.row.status) && (
+            <Button
+              variant="outlined"
+              color="secondary"
+              size="small"
+              startIcon={<AssignmentIcon />}
+              onClick={() => handleAssign(params.row)}
+            >
+              Assign
+            </Button>
+          )}
         </Box>
       ),
     },
@@ -156,6 +257,7 @@ const SupportRequests = ({ onStartChat }) => {
         error={error}
         onChat={handleGoChat}
         onDetail={handleOpenDetail}
+        onAssign={handleAssign}
       />
       <CustomTicketDetailModal
         open={modalOpen}
@@ -165,6 +267,14 @@ const SupportRequests = ({ onStartChat }) => {
         showChatButton={true}
         onChatClick={handleGoChat}
       />
+      
+      <CustomAssignLeaderModal
+        open={assignModalOpen}
+        onClose={handleAssignModalClose}
+        ticket={assignTicket}
+        onSuccess={handleAssignSuccess}
+      />
+      
       <Dialog open={previewOpen} onClose={handleClosePreview} maxWidth="md" fullWidth>
         <DialogTitle>{previewFile?.name}</DialogTitle>
         <DialogContent>

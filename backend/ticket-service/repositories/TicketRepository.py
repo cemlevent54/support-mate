@@ -39,6 +39,17 @@ class TicketRepository:
         )
         return result.modified_count > 0
 
+    def update_fields(self, ticket_id: str, update_fields: dict) -> bool:
+        """
+        Update specific fields of a ticket
+        """
+        update_fields["updatedAt"] = datetime.utcnow()
+        result = self.collection.update_one(
+            {"_id": ObjectId(ticket_id)},
+            {"$set": update_fields}
+        )
+        return result.modified_count > 0
+
     def get_by_id(self, ticket_id):
         ticket = self.collection.find_one({"_id": ObjectId(ticket_id)})
         if ticket:

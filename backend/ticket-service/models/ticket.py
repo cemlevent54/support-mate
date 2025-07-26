@@ -28,6 +28,9 @@ class Ticket(BaseModel):
     isDeleted: bool = False
     deletedAt: Optional[datetime] = None
 
+class AssignTicketToLeaderRequest(BaseModel):
+    assignedLeaderId: str
+
 class APIResponse(BaseModel):
     success: bool
     data: Optional[Any] = None

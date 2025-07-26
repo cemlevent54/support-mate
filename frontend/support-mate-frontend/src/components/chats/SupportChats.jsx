@@ -365,9 +365,9 @@ export default function SupportChats({ chat, myUserId, onChatCreated }) {
             <Button type="submit" variant="contained" color="primary" sx={{ borderRadius: '50%', minWidth: 0, width: 44, height: 44, p: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <MdSend size={22} />
             </Button>
-            <Button variant="outlined" color="primary" sx={{ height: 44, borderRadius: 22, fontWeight: 600, px: 2.5 }} onClick={openTaskModal}>
+            {/* <Button variant="outlined" color="primary" sx={{ height: 44, borderRadius: 22, fontWeight: 600, px: 2.5 }} onClick={openTaskModal}>
               {t('chatArea.createTask')}
-            </Button>
+            </Button> */}
             {(!ticketId) && (
               <Button variant="outlined" color="secondary" sx={{ height: 44, borderRadius: 22, fontWeight: 600, px: 2.5 }} onClick={openTicketModal}>
                 {t('chatArea.createTicket')}
