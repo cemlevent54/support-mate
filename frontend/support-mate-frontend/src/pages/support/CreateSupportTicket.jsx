@@ -13,6 +13,7 @@ import { getCategories } from '../../api/categoryApi';
 import { getProductsUser } from '../../api/productApi';
 import { createTicket } from '../../api/ticketApi';
 import { getUserIdFromJWT } from '../../utils/jwt';
+import { getUsersByRoleName } from '../../api/authApi';
 
 export default function CreateSupportTicket({ open, onClose, isModal = true, chat = null }) {
   const { t } = useTranslation();
@@ -30,6 +31,9 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [previews, setPreviews] = useState([]);
+  const [leaders, setLeaders] = useState([]);
+  const [loadingLeaders, setLoadingLeaders] = useState(false);
+  const [leaderError, setLeaderError] = useState('');
 
   useEffect(() => {
     // Kategorileri API'den çek
@@ -69,6 +73,26 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
       setFilteredProducts([]);
     }
   }, [form.categoryId, products]);
+
+  useEffect(() => {
+    if (open) {
+      setLoadingLeaders(true);
+      setLeaderError('');
+      getUsersByRoleName('Leader')
+        .then((data) => {
+          const leaderOptions = (Array.isArray(data?.data) ? data.data : []).map(leader => ({
+            value: leader.id,
+            label: leader.firstName + ' ' + leader.lastName
+          }));
+          setLeaders(leaderOptions);
+        })
+        .catch(() => {
+          setLeaders([]);
+          setLeaderError('Leader listesi alınamadı.');
+        })
+        .finally(() => setLoadingLeaders(false));
+    }
+  }, [open]);
 
   useEffect(() => {
     if (form.files && form.files.length > 0) {
@@ -144,6 +168,11 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
     setError('');
     setSuccess('');
     setLoading(true);
+    if (!form.assignedLeaderId) {
+      setError(t('pages.createTicket.form.leaderRequired') || 'Lider seçimi zorunludur.');
+      setLoading(false);
+      return;
+    }
     try {
       // Eğer chat prop'u varsa customerId'yi otomatik bul
       let customerId = form.customerId;
@@ -163,6 +192,7 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
         categoryId: form.categoryId,
         productId: form.productId,
         files: form.files || [],
+        ...(form.assignedLeaderId ? { assignedLeaderId: form.assignedLeaderId } : {}),
         ...(customerId ? { customerId } : {}),
         ...(chatId ? { chatId } : {})
       };
@@ -251,6 +281,26 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
               )}
             </TextField>
           )}
+          <TextField
+            select
+            fullWidth
+            label={t('pages.createTicket.form.leader') || 'Leader Seçin'}
+            name="assignedLeaderId"
+            value={form.assignedLeaderId || ''}
+            onChange={handleChange}
+            margin="normal"
+            helperText={t('pages.createTicket.form.leaderRequired')}
+            disabled={loadingLeaders}
+            required
+          >
+            {leaders.map((leader) => (
+              <MenuItem key={leader.value} value={leader.value}>
+                {leader.label}
+              </MenuItem>
+            ))}
+          </TextField>
+          {loadingLeaders && <Typography variant="caption" color="text.secondary">Liderler yükleniyor...</Typography>}
+          {leaderError && <Alert severity="error">{leaderError}</Alert>}
           <Button
             variant="contained"
             component="label"

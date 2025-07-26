@@ -109,11 +109,14 @@
                 "event_mail_failed": "ticket_created event veya mail gönderilemedi: {error}",
                 "listing_tickets": "Kullanıcı için ticket listeleniyor: {user_id}",
                 "listing_tickets_for_agent": "Temsilci için ticket listeleniyor: {user_id}",
+                "listing_tickets_for_leader": "Leader için ticket listeleniyor: {user_id}",
                 "getting_ticket": "Ticket getiriliyor: {ticket_id} kullanıcı: {user_id}",
                 "updating_ticket": "Ticket güncelleniyor: {ticket_id} kullanıcı: {user_id}",
                 "soft_deleting_ticket": "Ticket siliniyor: {ticket_id} kullanıcı: {user_id}",
                 "ticket_created_mail_sent": "Ticket oluşturuldu maili gönderildi: {user_id}",
-                "ticket_created_mail_failed": "Ticket oluşturuldu maili gönderilemedi: {error}"
+                "ticket_created_mail_failed": "Ticket oluşturuldu maili gönderilemedi: {error}",
+                "leader_assigned_status_in_review": "Leader atandı, status IN_REVIEW olarak ayarlandı: {leader_id}",
+                "no_leader_assigned_status_open": "Leader atanmadı, status OPEN olarak kaldı"
             },
             "responses": {
                 "unauthorized": "Kullanıcı doğrulanamadı.",
@@ -281,7 +284,9 @@
                 "soft_delete_ticket_user_called": "soft_delete_ticket_user çağrıldı. user={user_id}, ticket_id={ticket_id}",
                 "soft_delete_ticket_user_result": "soft_delete_ticket_user sonucu: {result}",
                 "list_tickets_agent_called": "list_tickets_agent çağrıldı. user={user_id}",
-                "list_tickets_agent_result": "list_tickets_agent sonucu: {result}"
+                "list_tickets_agent_result": "list_tickets_agent sonucu: {result}",
+                "list_tickets_leader_called": "list_tickets_leader çağrıldı. user={user_id}",
+                "list_tickets_leader_result": "list_tickets_leader sonucu: {result}"
             }
         }
     }

@@ -29,6 +29,10 @@ const sidebarItems = [
   { key: 'profile', labelKey: 'supportDashboard.sidebar.profile', path: '/support/profile' },
 ];
 
+const leaderSidebarItems = [
+  { key: 'leaderTickets', labelKey: 'supportDashboard.sidebar.leaderTickets', path: '/support/tickets' },
+];
+
 const LANGUAGES = [
   { code: 'tr', label: 'Türkçe' },
   { code: 'en', label: 'English' }
@@ -95,11 +99,11 @@ export default function SupportLayout() {
 
   // Employee ise chats ve requests menüsünü gösterme
   // Leader ise hiçbir menüyü gösterme (sadece dil değişimi)
-  const filteredSidebarItems = isEmployee({ roleName })
-    ? sidebarItems.filter(item => item.key !== 'chats' && item.key !== 'requests')
-    : isLeader({ roleName })
-    ? [] // Leader için hiçbir menü gösterme
-    : sidebarItems;
+  const filteredSidebarItems = isLeader({ roleName })
+    ? leaderSidebarItems // Sadece leader için Destek Talepleri
+    : isEmployee({ roleName })
+    ? sidebarItems.filter(item => item.key !== 'chats' && item.key !== 'requests' && item.key !== 'leaderTickets')
+    : sidebarItems.filter(item => item.key !== 'leaderTickets');
 
   // Realtime unread count state
   const totalUnread = Object.values(unreadCounts).reduce((sum, val) => sum + val, 0);

@@ -95,7 +95,11 @@
         "file": "Attach File (Optional)",
         "submit": "Submit",
         "submitting": "Submitting...",
-        "select": "Select"
+        "select": "Select",
+        "leader": "Select Leader",
+        "leaderHelp": "If left blank, automatic selection will be made",
+        "autoSelect": "Auto Select",
+        "leaderRequired": "Leader selection is required."
       },
       "categories": {
         "software": "Software",
@@ -242,7 +246,8 @@
       "requests": "Support Requests",
       "chats": "Chats",
       "profile": "Profile",
-      "kanban": "Kanban"
+      "kanban": "Kanban",
+      "leaderTickets": "Leader Tickets"
     },
     "chatsTitle": "Chats",
     "searchChat": "Search chat...",
@@ -368,23 +373,7 @@
       "download": "Download"
     }
   },
-  "supportRequests": {
-    "title": "My Requests",
-    "modal": {
-      "title": "Request Details",
-      "titleLabel": "Title:",
-      "descriptionLabel": "Description:",
-      "categoryLabel": "Category:",
-      "statusLabel": "Status:",
-      "createdAtLabel": "Created At:",
-      "customerIdLabel": "Customer ID:",
-      "agentIdLabel": "Agent ID:",
-      "attachmentsLabel": "Attachments:",
-      "noAttachments": "None",
-      "preview": "Preview",
-      "download": "Download"
-    }
-  },
+
   "adminCategories": {
     "title": "Categories",
     "add": "Add Category",
@@ -468,5 +457,96 @@
     "title": "Kanban Board",
     "searchPlaceholder": "Search task or category...",
     "categoryFilter": "Category Filter"
+  },
+  "ticketDetail": {
+    "modalTitle": "Ticket Details",
+    "description": "Description",
+    "noDescription": "No description available.",
+    "category": "Category",
+    "categoryNotSpecified": "Category not specified",
+    "unknown": "Unknown",
+    "customerInfo": "Customer Information",
+    "fullName": "Full Name",
+    "email": "Email",
+    "phone": "Phone",
+    "supportAgent": "Support Agent",
+    "timeInfo": "Time Information",
+    "createdAt": "Created At",
+    "closedAt": "Closed At",
+    "deletedAt": "Deleted At",
+    "attachments": "Attachments",
+    "noAttachments": "No attachments available.",
+    "ticketId": "Ticket ID",
+    "chat": "Chat",
+    "close": "Close"
+  },
+  "leaderTickets": {
+    "title": "Assigned Tickets",
+    "error": "An error occurred.",
+    "chatModalTitle": "Chat",
+    "detailModalTitle": "Ticket Details",
+    "emptyChatModal": "Chat content will be shown here.",
+    "noMessages": "No messages yet.",
+    "close": "Close",
+    "detail": {
+      "description": "Description",
+      "noDescription": "No description available.",
+      "category": "Category",
+      "categoryNotSpecified": "Category not specified",
+      "unknown": "Unknown",
+      "customerInfo": "Customer Information",
+      "fullName": "Full Name",
+      "email": "Email",
+      "phone": "Phone",
+      "supportAgent": "Support Agent",
+      "timeInfo": "Time Information",
+      "createdAt": "Created At",
+      "closedAt": "Closed At",
+      "deletedAt": "Deleted At",
+      "attachments": "Attachments",
+      "noAttachments": "No attachments available.",
+      "additionalInfo": "Additional Information",
+      "ticketId": "Ticket ID",
+      "chatId": "Chat ID",
+      "categoryId": "Category ID",
+      "deleted": "Deleted",
+      "active": "Active",
+      "chat": "Chat"
+    },
+    "table": {
+      "title": "Title",
+      "category": "Category",
+      "customer": "Customer",
+      "agent": "Agent",
+      "status": "Status",
+      "createdAt": "Created At",
+      "actions": "Actions"
+    },
+    "buttons": {
+      "chat": "Chat",
+      "detail": "Detail"
+    }
+  },
+  "supportRequests": {
+    "title": "Support Requests",
+    "modalTitle": "Ticket Details",
+    "buttons": {
+      "chat": "Chat",
+      "detail": "Detail"
+    },
+    "modal": {
+      "title": "Ticket Details",
+      "titleLabel": "Title",
+      "descriptionLabel": "Description",
+      "categoryLabel": "Category",
+      "statusLabel": "Status",
+      "createdAtLabel": "Created At",
+      "customerIdLabel": "Customer ID",
+      "agentIdLabel": "Agent ID",
+      "attachmentsLabel": "Attachments",
+      "preview": "Preview",
+      "download": "Download",
+      "noAttachments": "No attachments available"
+    }
   }
 } 

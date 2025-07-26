@@ -29,6 +29,7 @@ import isEmployee from './auth/isEmployee';
 import isLeader from './auth/isLeader';
 import FeedbackPage from "./pages/feedback/FeedbackPage";
 import LeaderPanel from './pages/leader/LeaderPanel';
+import LeaderTickets from './pages/leader/LeaderTickets';
 
 // Global modal handlers - bu fonksiyonlar App.jsx'ten geçirilecek
 let globalOpenCreateTicketModal = () => {};
@@ -111,6 +112,7 @@ export const appRoutes = [
       { path: 'chats', element: <SupportChatsRoleGuard><SupportChatsLayout /></SupportChatsRoleGuard> },
       { path: 'chats/:chatId', element: <SupportChatsRoleGuard><SupportChatsLayout /></SupportChatsRoleGuard> },
       { path: 'kanban', element: <SupportKanbanBoard /> },
+      { path: 'tickets', element: <LeaderTicketsRoleGuard><LeaderTickets /></LeaderTicketsRoleGuard> },
       { index: true, element: <SupportIndexRoute /> }
     ]
   },
@@ -143,6 +145,7 @@ export const appRoutes = [
     path: '/my-requests/chat',
     element: <ChatChatWrapper />,
   },
+  // /support/tickets ana route listesinden kaldırıldı
 ];
 
 // Role bazlı erişim için özel bir koruma bileşeni
@@ -191,4 +194,18 @@ function SupportIndexRoute() {
   }
   
   return <Navigate to="requests" replace />;
+} 
+
+// LeaderTicketsRoleGuard bileşeni eklendi:
+function LeaderTicketsRoleGuard({ children }) {
+  const token = localStorage.getItem('jwt');
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      if (isLeader(decoded) || (decoded.roleName && decoded.roleName.toLowerCase() === 'admin')) {
+        return children;
+      }
+    } catch (e) {}
+  }
+  return <Navigate to="/support" replace />;
 } 

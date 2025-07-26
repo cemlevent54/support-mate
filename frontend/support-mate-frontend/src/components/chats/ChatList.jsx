@@ -473,6 +473,21 @@ export default function ChatList({ activeChatTicketId, onSelectChat, loading: lo
     return () => { isMounted = false; };
   }, [page, pageSize, refreshTrigger, internalRefresh]);
 
+  // activeChatTicketId geldiğinde, bu chat'i bulup otomatik seç
+  useEffect(() => {
+    if (activeChatTicketId && agentChatsPaginated.length > 0) {
+      const targetChat = agentChatsPaginated.find(chat => {
+        const chatId = chat._id || chat.chatId || chat.id;
+        return String(chatId) === String(activeChatTicketId);
+      });
+      
+      if (targetChat && onSelectChat) {
+        console.log('[ChatList] activeChatTicketId ile chat bulundu, seçiliyor:', targetChat);
+        onSelectChat(targetChat);
+      }
+    }
+  }, [activeChatTicketId, agentChatsPaginated, onSelectChat]);
+
   // Search fonksiyonu (filtrelenmiş chat listesi)
   const filteredChatList = (agentChatsPaginated || []).filter(chat => {
     let name = chat.ticket && chat.ticket.title ? chat.ticket.title : chat.name || '';

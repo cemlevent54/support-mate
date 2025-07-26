@@ -57,6 +57,25 @@ class TicketRepository:
             result.append(Ticket(**ticket))
         return result
 
+    def get_all_with_pagination(self, filter_query=None, skip=0, limit=10, sort_by="createdAt", sort_order=-1):
+        """
+        Get tickets with pagination support
+        :param filter_query: MongoDB filter query
+        :param skip: Number of documents to skip
+        :param limit: Number of documents to return
+        :param sort_by: Field to sort by
+        :param sort_order: Sort order (1 for ascending, -1 for descending)
+        :return: List of Ticket objects
+        """
+        filter_query = filter_query or {"isDeleted": False}
+        tickets = self.collection.find(filter_query).sort(sort_by, sort_order).skip(skip).limit(limit)
+        result = []
+        for ticket in tickets:
+            if "_id" in ticket:
+                ticket["_id"] = str(ticket["_id"])
+            result.append(Ticket(**ticket))
+        return result
+
     def soft_delete(self, ticket_id: str) -> bool:
         try:
             result = self.collection.update_one({"_id": ObjectId(ticket_id)}, {"$set": {"isDeleted": True, "deletedAt": datetime.utcnow()}})

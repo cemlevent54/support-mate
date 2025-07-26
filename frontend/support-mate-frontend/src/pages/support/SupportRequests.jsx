@@ -3,9 +3,9 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import CustomTicketTable from '../../components/tickets/CustomTicketTable/CustomTicketTable';
+import CustomTicketDetailModal from '../../components/tickets/CustomTicketDetailModal/CustomTicketDetailModal';
 import ChatIcon from '@mui/icons-material/Chat';
 import InfoIcon from '@mui/icons-material/Info';
-import Modal from '@mui/material/Modal';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -13,19 +13,6 @@ import { listTicketsForAgent } from '../../api/ticketApi';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 
-
-const modalStyle = {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  width: 500,
-  bgcolor: 'background.paper',
-  border: '2px solid #1976d2',
-  boxShadow: 24,
-  borderRadius: 2,
-  p: 4,
-};
 
 const SupportRequests = ({ onStartChat }) => {
   const { t, i18n } = useTranslation();
@@ -102,9 +89,14 @@ const SupportRequests = ({ onStartChat }) => {
   };
 
   const handleGoChat = (ticket) => {
-    const chatId = ticket.chatId || ticket.raw.chatId || ticket.raw.id;
+    console.log('[SupportRequests] handleGoChat called with ticket:', ticket);
+    const chatId = ticket.chatId || ticket.raw?.chatId || ticket.raw?.id;
+    console.log('[SupportRequests] Extracted chatId:', chatId);
     if (chatId) {
+      console.log('[SupportRequests] Navigating to:', `/support/chats/${chatId}`);
       navigate(`/support/chats/${chatId}`);
+    } else {
+      console.error('[SupportRequests] No chatId found in ticket:', ticket);
     }
   };
 
@@ -165,71 +157,14 @@ const SupportRequests = ({ onStartChat }) => {
         onChat={handleGoChat}
         onDetail={handleOpenDetail}
       />
-      <Modal open={modalOpen} onClose={handleCloseDetail}>
-        <Box sx={modalStyle}>
-          <Typography variant="h6" mb={2}>{t('supportRequests.modal.title')}</Typography>
-          {selectedTicket && (
-            <Box>
-              <Typography><b>{t('supportRequests.modal.titleLabel')}</b> {selectedTicket.title}</Typography>
-              <Typography><b>{t('supportRequests.modal.descriptionLabel')}</b> {selectedTicket.description}</Typography>
-              <Typography><b>{t('supportRequests.modal.categoryLabel')}</b>{" "}
-                {typeof selectedTicket.category === "object"
-                  ? (selectedTicket.category.data
-                      ? (i18n.language === "tr"
-                          ? selectedTicket.category.data.category_name_tr || selectedTicket.category.data.category_name_en || "-"
-                          : selectedTicket.category.data.category_name_en || selectedTicket.category.data.category_name_tr || "-")
-                      : (i18n.language === "tr"
-                          ? selectedTicket.category.categoryNameTr || selectedTicket.category.categoryNameEn || "-"
-                          : selectedTicket.category.categoryNameEn || selectedTicket.category.categoryNameTr || "-"))
-                  : selectedTicket.category || "-"}
-              </Typography>
-              <Typography><b>{t('supportRequests.modal.statusLabel')}</b> {selectedTicket.status}</Typography>
-              <Typography><b>{t('supportRequests.modal.createdAtLabel')}</b> {selectedTicket.createdAt ? new Date(selectedTicket.createdAt).toLocaleString('tr-TR') : '-'}</Typography>
-              <Typography><b>{t('supportRequests.modal.customerIdLabel')}</b> {selectedTicket.customerId}</Typography>
-              <Typography><b>{t('supportRequests.modal.agentIdLabel')}</b> {selectedTicket.assignedAgentId}</Typography>
-              <Typography><b>{t('supportRequests.modal.attachmentsLabel')}</b></Typography>
-              <ul>
-                {selectedTicket.attachments && selectedTicket.attachments.length > 0 ? (
-                  selectedTicket.attachments.map((file, i) => (
-                    <li key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, marginBottom: 12 }}>
-                      <a
-                        href={`${process.env.REACT_APP_API_BASE_URL}/uploads/${file.url.split('uploads/')[1]}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ fontWeight: 500, wordBreak: 'break-all' }}
-                      >
-                        {file.name}
-                      </a>
-                      {(file.type && (file.type.startsWith('image/') || file.type === 'application/pdf')) && (
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          sx={{ mt: 1, textTransform: 'none' }}
-                          onClick={() => handlePreviewFile(file)}
-                        >
-                          {t('supportRequests.modal.preview')}
-                        </Button>
-                      )}
-                      {file.type && !(file.type.startsWith('image/') || file.type === 'application/pdf') && (
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          sx={{ mt: 1, textTransform: 'none' }}
-                          component="a"
-                          href={`${process.env.REACT_APP_API_BASE_URL}/uploads/${file.url.split('uploads/')[1]}`}
-                          download
-                        >
-                          {t('supportRequests.modal.download')}
-                        </Button>
-                      )}
-                    </li>
-                  ))
-                ) : <li>{t('supportRequests.modal.noAttachments')}</li>}
-              </ul>
-            </Box>
-          )}
-        </Box>
-      </Modal>
+      <CustomTicketDetailModal
+        open={modalOpen}
+        onClose={handleCloseDetail}
+        ticket={selectedTicket}
+        i18nNamespace="supportRequests"
+        showChatButton={true}
+        onChatClick={handleGoChat}
+      />
       <Dialog open={previewOpen} onClose={handleClosePreview} maxWidth="md" fullWidth>
         <DialogTitle>{previewFile?.name}</DialogTitle>
         <DialogContent>

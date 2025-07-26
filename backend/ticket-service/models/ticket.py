@@ -6,6 +6,7 @@ from datetime import datetime
 class TicketStatus(str, Enum):
     OPEN = "OPEN"
     PENDING = "PENDING"
+    IN_REVIEW = "IN_REVIEW"
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
     WAITING_FOR_CUSTOMER_APPROVE = "WAITING_FOR_CUSTOMER_APPROVE"
@@ -17,6 +18,7 @@ class Ticket(BaseModel):
     description: Optional[str] = None
     customerId: str
     assignedAgentId: Optional[str] = None
+    assignedLeaderId: Optional[str] = None
     attachments: list[dict] = []
     categoryId: str
     productId: Optional[str] = None

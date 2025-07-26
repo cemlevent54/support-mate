@@ -94,7 +94,11 @@
         "file": "Dosya Ekle (İsteğe Bağlı)",
         "submit": "Gönder",
         "submitting": "Gönderiliyor...",
-        "select": "Seçiniz"
+        "select": "Seçiniz",
+        "leader": "Leader Seçin",
+        "leaderHelp": "Boş bırakırsanız otomatik seçim yapılır",
+        "autoSelect": "Otomatik Seçim",
+        "leaderRequired": "Lider seçimi zorunludur."
       },
       "categories": {
         "software": "Yazılım",
@@ -242,7 +246,8 @@
       "requests": "Destek Talepleri",
       "chats": "Sohbetler",
       "profile": "Profil",
-      "kanban": "Kanban"
+      "kanban": "Kanban",
+      "leaderTickets": "Leader Talepleri"
     },
     "chatsTitle": "Sohbetler",
     "searchChat": "Sohbet ara...",
@@ -369,23 +374,7 @@
       "download": "İndir"
     }
   },
-  "supportRequests": {
-    "title": "Atandığım Talepler",
-    "modal": {
-      "title": "Talep Detayları",
-      "titleLabel": "Başlık:",
-      "descriptionLabel": "Açıklama:",
-      "categoryLabel": "Kategori:",
-      "statusLabel": "Durum:",
-      "createdAtLabel": "Oluşturulma:",
-      "customerIdLabel": "Müşteri ID:",
-      "agentIdLabel": "Agent ID:",
-      "attachmentsLabel": "Ekler:",
-      "noAttachments": "Yok",
-      "preview": "Önizle",
-      "download": "İndir"
-    }
-  },
+
   "adminCategories": {
     "fetchError": "Kategoriler alınırken bir hata oluştu.",
     "createError": "Kategori oluşturulurken bir hata oluştu.",
@@ -469,5 +458,96 @@
     "title": "Kanban Board",
     "searchPlaceholder": "Görev veya kategori ara...",
     "categoryFilter": "Kategori Filtresi"
+  },
+  "ticketDetail": {
+    "modalTitle": "Ticket Detayları",
+    "description": "Açıklama",
+    "noDescription": "Açıklama bulunmuyor.",
+    "category": "Kategori",
+    "categoryNotSpecified": "Kategori belirtilmemiş",
+    "unknown": "Bilinmeyen",
+    "customerInfo": "Müşteri Bilgileri",
+    "fullName": "Ad Soyad",
+    "email": "E-posta",
+    "phone": "Telefon",
+    "supportAgent": "Destek Temsilcisi",
+    "timeInfo": "Zaman Bilgileri",
+    "createdAt": "Oluşturulma",
+    "closedAt": "Kapanma",
+    "deletedAt": "Silinme",
+    "attachments": "Ekler",
+    "noAttachments": "Ek dosya bulunmuyor.",
+    "ticketId": "Ticket ID",
+    "chat": "Chat",
+    "close": "Kapat"
+  },
+  "leaderTickets": {
+    "title": "Atandığım Ticketlar",
+    "error": "Bir hata oluştu.",
+    "chatModalTitle": "Chat",
+    "detailModalTitle": "Ticket Detayları",
+    "emptyChatModal": "Burada chat içeriği gösterilecek.",
+    "noMessages": "Henüz mesaj yok.",
+    "close": "Kapat",
+    "detail": {
+      "description": "Açıklama",
+      "noDescription": "Açıklama bulunmuyor.",
+      "category": "Kategori",
+      "categoryNotSpecified": "Kategori belirtilmemiş",
+      "unknown": "Bilinmeyen",
+      "customerInfo": "Müşteri Bilgileri",
+      "fullName": "Ad Soyad",
+      "email": "E-posta",
+      "phone": "Telefon",
+      "supportAgent": "Destek Temsilcisi",
+      "timeInfo": "Zaman Bilgileri",
+      "createdAt": "Oluşturulma",
+      "closedAt": "Kapanma",
+      "deletedAt": "Silinme",
+      "attachments": "Ekler",
+      "noAttachments": "Ek dosya bulunmuyor.",
+      "additionalInfo": "Ek Bilgiler",
+      "ticketId": "Ticket ID",
+      "chatId": "Chat ID",
+      "categoryId": "Kategori ID",
+      "deleted": "Silinmiş",
+      "active": "Aktif",
+      "chat": "Chat"
+    },
+    "table": {
+      "title": "Başlık",
+      "category": "Kategori",
+      "customer": "Müşteri",
+      "agent": "Agent",
+      "status": "Durum",
+      "createdAt": "Oluşturulma",
+      "actions": "İşlemler"
+    },
+    "buttons": {
+      "chat": "Chat",
+      "detail": "Detay"
+    }
+  },
+  "supportRequests": {
+    "title": "Destek Talepleri",
+    "modalTitle": "Ticket Detayları",
+    "buttons": {
+      "chat": "Chat",
+      "detail": "Detay"
+    },
+    "modal": {
+      "title": "Ticket Detayları",
+      "titleLabel": "Başlık",
+      "descriptionLabel": "Açıklama",
+      "categoryLabel": "Kategori",
+      "statusLabel": "Durum",
+      "createdAtLabel": "Oluşturulma Tarihi",
+      "customerIdLabel": "Müşteri ID",
+      "agentIdLabel": "Agent ID",
+      "attachmentsLabel": "Ekler",
+      "preview": "Önizle",
+      "download": "İndir",
+      "noAttachments": "Ek dosya bulunmuyor"
+    }
   }
 } 

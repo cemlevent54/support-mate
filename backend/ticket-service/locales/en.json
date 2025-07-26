@@ -108,11 +108,14 @@
                 "event_mail_failed": "ticket_created event or mail could not be sent: {error}",
                 "listing_tickets": "Listing tickets for user: {user_id}",
                 "listing_tickets_for_agent": "Listing tickets for agent: {user_id}",
+                "listing_tickets_for_leader": "Listing tickets for leader: {user_id}",
                 "getting_ticket": "Getting ticket with ID: {ticket_id} for user: {user_id}",
                 "updating_ticket": "Updating ticket with ID: {ticket_id} for user: {user_id}",
                 "soft_deleting_ticket": "Soft deleting ticket with ID: {ticket_id} for user: {user_id}",
                 "ticket_created_mail_sent": "Ticket created mail sent: {user_id}",
-                "ticket_created_mail_failed": "Ticket created mail failed: {error}"
+                "ticket_created_mail_failed": "Ticket created mail failed: {error}",
+                "leader_assigned_status_in_review": "Leader assigned, status set to IN_REVIEW: {leader_id}",
+                "no_leader_assigned_status_open": "No leader assigned, status remains OPEN"
             },
             "responses": {
                 "unauthorized": "User is not authenticated.",
@@ -281,7 +284,9 @@
                 "soft_delete_ticket_user_called": "soft_delete_ticket_user called. user={user_id}, ticket_id={ticket_id}",
                 "soft_delete_ticket_user_result": "soft_delete_ticket_user result: {result}",
                 "list_tickets_agent_called": "list_tickets_agent called. user={user_id}",
-                "list_tickets_agent_result": "list_tickets_agent result: {result}"
+                "list_tickets_agent_result": "list_tickets_agent result: {result}",
+                "list_tickets_leader_called": "list_tickets_leader called. user={user_id}",
+                "list_tickets_leader_result": "list_tickets_leader result: {result}"
             }
         }
     }

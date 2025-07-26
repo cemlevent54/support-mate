@@ -17,6 +17,9 @@ export default function SupportChatsLayout() {
   const myUserId = getUserIdFromJWT();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+  console.log('[SupportChatsLayout] chatId from params:', chatId);
+  console.log('[SupportChatsLayout] selectedChat:', selectedChat);
+
   // handleUserJoinedChat fonksiyonunu component scope'unda tanımla (isteğe bağlı, gerekirse kullanılabilir)
   const handleUserJoinedChat = (chatId) => {
     // Artık chat listesini burada güncellemiyoruz, ChatList kendi içinde hallediyor
@@ -29,12 +32,22 @@ export default function SupportChatsLayout() {
   }, [chatId]);
 
   const handleSelectChat = (chatObj) => {
+    console.log('[SupportChatsLayout] handleSelectChat called with:', chatObj);
     setSelectedChat(chatObj);
     const chatId = chatObj?._id || chatObj?.chatId || chatObj?.id;
+    console.log('[SupportChatsLayout] Extracted chatId:', chatId);
     if (chatId) {
       navigate(`/support/chats/${chatId}`);
     }
   };
+
+  // URL'den chatId geldiğinde, ChatList'ten bu chat'i bulup selectedChat'e set et
+  useEffect(() => {
+    if (chatId && !selectedChat) {
+      // ChatList'ten chat objesini almak için bir callback mekanizması gerekiyor
+      // Şimdilik bu işlemi ChatList component'inde yapacağız
+    }
+  }, [chatId, selectedChat]);
 
   // ChatPanel veya SupportChats gibi bir componentten yeni chat oluşturulunca tetiklenecek fonksiyon
   const handleChatCreated = () => {

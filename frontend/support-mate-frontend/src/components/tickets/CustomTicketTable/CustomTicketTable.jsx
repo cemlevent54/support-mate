@@ -114,7 +114,7 @@ const CustomTicketTable = ({
                                   : {}
                             }
                           >
-                            {row[col.key]}
+                            {col.render ? col.render(row) : row[col.key]}
                           </td>
                         )
                       )}

@@ -84,12 +84,12 @@ def soft_delete_ticket_user(ticket_id: str, request: Request, user=Depends(get_c
 
 # --- Agent (Customer Supporter) routes ---
 @router.get("/agent/tickets", response_model=APIResponse)
-def list_tickets_agent(request: Request, user=Depends(get_current_user)):
+def list_tickets_agent(request: Request, user=Depends(get_current_user), page: int = None, page_size: int = None):
     lang = get_lang(request)
     set_language(lang)
     if user.get("roleName") != "Customer Supporter":
         raise HTTPException(status_code=403, detail="Forbidden")
-    return ticket_controller.list_tickets_endpoint_for_agent(user, lang=lang)
+    return ticket_controller.list_tickets_endpoint_for_agent(user, lang=lang, page=page, page_size=page_size)
 
 # --- Genel routes ---
 @router.post("", response_model=APIResponse)
@@ -100,6 +100,7 @@ async def create_ticket_route(
     productId: str = Form(None),
     customerId: str = Form(None),
     chatId: str = Form(None),
+    assignedLeaderId: str = Form(None),
     files: List[UploadFile] = File([]),
     user=Depends(get_current_user),
     request: Request = None
@@ -138,7 +139,8 @@ async def create_ticket_route(
         "productId": productId,
         "attachments": attachments,
         "customerId": customerId if customerId else user["id"],
-        "chatId": chatId
+        "chatId": chatId,
+        "assignedLeaderId": assignedLeaderId
     }
     token = None
     if request:
@@ -171,4 +173,15 @@ def delete_ticket(ticket_id: str, request: Request, user=Depends(get_current_use
     set_language(lang)
     return ticket_controller.delete_ticket_endpoint(ticket_id, user, lang=lang)
 
+
+# --- Leader routes ---
+
+# kendisine assign olmuş ticketları listeleyen endpoint
+@router.get("/leader/tickets", response_model=APIResponse)
+def list_tickets_leader(request: Request, user=Depends(get_current_user)):
+    lang = get_lang(request)
+    set_language(lang)
+    if user.get("roleName") != "Leader":
+        raise HTTPException(status_code=403, detail="Forbidden")
+    return ticket_controller.list_tickets_endpoint_for_leader(user, lang=lang)
 

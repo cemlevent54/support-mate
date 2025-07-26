@@ -3,6 +3,7 @@ from typing import List, Optional
 from pymongo import MongoClient
 from config.database import get_mongo_uri
 from datetime import datetime
+from utils.crypto import decrypt_message
 
 class MessageRepository:
     def __init__(self):
@@ -24,6 +25,12 @@ class MessageRepository:
         doc = self.collection.find_one({"_id": message_id, "isDeleted": False})
         if doc:
             doc["_id"] = str(doc["_id"])
+            # Text alanını decrypt et
+            if doc.get("text"):
+                try:
+                    doc["text"] = decrypt_message(doc["text"])
+                except Exception as e:
+                    print(f"Message decrypt failed: {e}")
             return Message.model_validate(doc)
         return None
 
@@ -35,6 +42,12 @@ class MessageRepository:
         result = []
         for doc in docs:
             doc["_id"] = str(doc["_id"])
+            # Text alanını decrypt et
+            if doc.get("text"):
+                try:
+                    doc["text"] = decrypt_message(doc["text"])
+                except Exception as e:
+                    print(f"Message decrypt failed: {e}")
             result.append(Message.model_validate(doc))
         return result
 
@@ -53,6 +66,13 @@ class MessageRepository:
         result = []
         for doc in docs:
             doc["_id"] = str(doc["_id"])
+            # Text alanını decrypt et
+            if doc.get("text"):
+                try:
+                    doc["text"] = decrypt_message(doc["text"])
+                except Exception as e:
+                    # Decrypt başarısız olursa orijinal metni kullan
+                    print(f"Message decrypt failed: {e}")
             result.append(Message.model_validate(doc))
         return result
 

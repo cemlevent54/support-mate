@@ -14,6 +14,7 @@ export const createTicket = async (ticketData) => {
   if (ticketData.productId) formData.append('productId', ticketData.productId);
   if (ticketData.customerId) formData.append('customerId', ticketData.customerId);
   if (ticketData.chatId) formData.append('chatId', ticketData.chatId);
+  formData.append('assignedLeaderId', ticketData.assignedLeaderId);
   (ticketData.files || []).forEach(file => {
     formData.append('files', file);
   });
@@ -135,6 +136,15 @@ export const getFirstOnlineSupporterId = async () => {
   }
   return null;
 };
+
+export const listTicketsForLeader = async () => {
+  const response = await axiosInstance.get(`${BASE_URL}/leader/tickets`, {
+    headers: {
+      'accept-language': getLang(),
+    },
+  });
+  return response.data;
+}
 
 
 

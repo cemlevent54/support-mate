@@ -3,6 +3,7 @@ from cqrs.commands.ticket.CreateTicketCommandHandler import CreateTicketCommandH
 from cqrs.queries.ticket.GetTicketQueryHandler import GetTicketQueryHandler
 from cqrs.queries.ticket.ListTicketsQueryHandler import ListTicketsQueryHandler
 from cqrs.queries.ticket.ListTicketsForAgentQueryHandler import ListTicketsForAgentQueryHandler
+from cqrs.queries.ticket.ListTicketsForLeaderQueryHandler import ListTicketsForLeaderQueryHandler
 from cqrs.commands.ticket.UpdateTicketCommandHandler import UpdateTicketCommandHandler
 from cqrs.commands.ticket.SoftDeleteTicketCommandHandler import SoftDeleteTicketCommandHandler
 from responseHandlers.clientErrors.unauthorized_error import unauthorized_error
@@ -26,6 +27,7 @@ from dto.ticket_dto import TicketDTO, TicketListDTO
 from config.language import set_language, _
 from fastapi import HTTPException
 from cqrs.commands.chat.UpdateChatTicketIdCommandHandler import UpdateChatTicketIdCommandHandler
+from repositories.MessageRepository import MessageRepository
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +37,7 @@ class TicketService:
         self.get_handler = GetTicketQueryHandler()
         self.list_handler = ListTicketsQueryHandler()
         self.list_agent_handler = ListTicketsForAgentQueryHandler()
+        self.list_leader_handler = ListTicketsForLeaderQueryHandler()
         self.update_handler = UpdateTicketCommandHandler()
         self.soft_delete_handler = SoftDeleteTicketCommandHandler()
         self.chat_service = ChatService()
@@ -55,6 +58,14 @@ class TicketService:
             if ticket.get('customerId') == user['id']:
                 logger.warning(_(f"services.ticketService.logs.agent_customer_same").format(agent_id=user['id'], customer_id=ticket.get('customerId')))
                 raise HTTPException(status_code=400, detail=_(f"services.ticketService.responses.customer_supporter_cannot_create_own_ticket"))
+            # Eğer assignedLeaderId varsa status'ü IN_REVIEW yap
+            if ticket.get('assignedLeaderId'):
+                ticket['status'] = 'IN_REVIEW'
+                logger.info(_(f"services.ticketService.logs.leader_assigned_status_in_review").format(leader_id=ticket.get('assignedLeaderId')))
+            else:
+                # assignedLeaderId yoksa mevcut status'ü koru (OPEN)
+                ticket['status'] = 'OPEN'
+                logger.info(_(f"services.ticketService.logs.no_leader_assigned_status_open"))
             result = self.create_handler.execute(ticket, user)
             data = result.get('data')
             ticket_id = data.get('id') if isinstance(data, dict) else getattr(data, 'id', None)
@@ -197,18 +208,18 @@ class TicketService:
         message = _(f"services.ticketService.responses.tickets_listed")
         return {"success": True, "data": ticket_dtos, "message": message}
 
-    def list_tickets_for_agent(self, user, lang='tr'):
+    def list_tickets_for_agent(self, user, lang='tr', page=None, page_size=None):
         from config.language import set_language, _
         set_language(lang)
         if not user:
             logger.warning(_(f"services.ticketService.logs.unauthorized"))
             return unauthorized_error(_(f"services.ticketService.responses.unauthorized"))
         logger.info(_(f"services.ticketService.logs.listing_tickets_for_agent").format(user_id=user.get('id', 'unknown')))
-        tickets = self.list_agent_handler.execute(user)
+        tickets = self.list_agent_handler.execute(user, page=page, page_size=page_size)
         if tickets is None:
             message = _(f"services.ticketService.responses.tickets_list_failed")
             return {"success": False, "data": [], "message": message}
-        # DTO'ya çevir ve kategori + chatId ekle
+        # DTO'ya çevir ve kategori + chatId + detaylı bilgiler ekle
         category_service = None
         ticket_dtos = []
         for ticket in tickets:
@@ -228,7 +239,50 @@ class TicketService:
             chat_repo = ChatRepository()
             chat = chat_repo.find_by_ticket_id(str(ticket.id))
             dto_dict["chatId"] = str(chat.id) if chat else None
+            # --- CUSTOMER & AGENT DETAYLARI (Backward compatibility için ID'ler korunuyor) ---
+            token = None
+            customer_info = get_user_by_id(dto_dict.get('customerId'), token) if dto_dict.get('customerId') else None
+            agent_info = get_user_by_id(dto_dict.get('assignedAgentId'), token) if dto_dict.get('assignedAgentId') else None
+            # Detaylı bilgileri aynı seviyede ekle (ID'ler korunuyor)
+            dto_dict["customer"] = customer_info if customer_info else {"id": dto_dict.get('customerId')}
+            dto_dict["agent"] = agent_info if agent_info else ({"id": dto_dict.get('assignedAgentId')} if dto_dict.get('assignedAgentId') else None)
             ticket_dtos.append(dto_dict)
+        message = _(f"services.ticketService.responses.tickets_listed")
+        return {"success": True, "data": ticket_dtos, "message": message}
+
+    def list_tickets_for_leader(self, user, lang='tr'):
+        from config.language import set_language, _
+        set_language(lang)
+        if not user:
+            logger.warning(_(f"services.ticketService.logs.unauthorized"))
+            return unauthorized_error(_(f"services.ticketService.responses.unauthorized"))
+        logger.info(_(f"services.ticketService.logs.listing_tickets_for_leader").format(user_id=user.get('id', 'unknown')))
+        tickets = self.list_leader_handler.execute(user)
+        if not tickets:
+            message = _(f"services.ticketService.responses.tickets_list_failed")
+            return {"success": False, "data": [], "message": message}
+        category_service = None
+        ticket_dtos = []
+        for ticket_dict in tickets:
+            # Kategori bilgisi ekle
+            category_id = ticket_dict.get("categoryId")
+            if category_id:
+                if not category_service:
+                    from services.CategoryService import CategoryService
+                    category_service = CategoryService()
+                category_info = category_service.get_category_by_id(category_id)
+                ticket_dict["category"] = category_info
+            else:
+                ticket_dict["category"] = None
+            # --- CUSTOMER & AGENT DETAYLARI ---
+            token = None
+            customer_info = get_user_by_id(ticket_dict.get('customerId'), token) if ticket_dict.get('customerId') else None
+            agent_info = get_user_by_id(ticket_dict.get('assignedAgentId'), token) if ticket_dict.get('assignedAgentId') else None
+            ticket_dict["customer"] = customer_info if customer_info else {"id": ticket_dict.get('customerId')}
+            ticket_dict.pop("customerId", None)
+            ticket_dict["agent"] = agent_info if agent_info else ( {"id": ticket_dict.get('assignedAgentId')} if ticket_dict.get('assignedAgentId') else None )
+            ticket_dict.pop("assignedAgentId", None)
+            ticket_dtos.append(ticket_dict)
         message = _(f"services.ticketService.responses.tickets_listed")
         return {"success": True, "data": ticket_dtos, "message": message}
 
