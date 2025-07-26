@@ -41,9 +41,9 @@ class TaskRepository:
                 assigned_employee = get_user_by_id(task["assignedEmployeeId"], token)
             except Exception:
                 assigned_employee = None
-        if task.get("createdByCustomerSupporterId") and token:
+        if task.get("createdBy") and token:
             try:
-                created_by_customer_supporter = get_user_by_id(task["createdByCustomerSupporterId"], token)
+                created_by_customer_supporter = get_user_by_id(task["createdBy"], token)
             except Exception:
                 created_by_customer_supporter = None
         if task.get("relatedTicketId"):
@@ -114,8 +114,8 @@ class TaskRepository:
             product=product,
             ticket=ticket,
             category=category,
-            createdByCustomerSupporterId=task.get("createdByCustomerSupporterId", ""),
-            createdByCustomerSupporter=created_by_customer_supporter,
+            createdBy=task.get("createdBy", ""),
+            createdByUser=created_by_customer_supporter,
             createdAt=task.get("createdAt").isoformat() if task.get("createdAt") else None,
             isDeleted=task.get("isDeleted", False),
             deletedAt=task.get("deletedAt").isoformat() if task.get("deletedAt") else None
@@ -138,6 +138,13 @@ class TaskRepository:
     def get_tasks_by_employee_id(self, employee_id: str, token: str = None) -> List[TaskResponseDto]:
         tasks = self.collection.find({"assignedEmployeeId": employee_id, "isDeleted": False})
         return [self._to_dto(task, token) for task in tasks]
+
+    def get_task_by_ticket_id(self, ticket_id: str, token: str = None) -> Optional[TaskResponseDto]:
+        """Find a task by related ticket ID"""
+        task = self.collection.find_one({"relatedTicketId": ticket_id, "isDeleted": False})
+        if not task:
+            return None
+        return self._to_dto(task, token)
 
     def create(self, task: Task) -> str:
         task_dict = task.dict(by_alias=True)

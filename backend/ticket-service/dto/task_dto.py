@@ -16,7 +16,8 @@ class TaskResponseDto(BaseModel):
     product: Optional[Dict[str, Any]] = None
     ticket: Optional[Dict[str, Any]] = None
     category: Optional[Dict[str, Any]] = None
-    createdByCustomerSupporterId: str
+    createdBy: str
+    createdByUser: Optional[Dict[str, Any]] = None
     createdAt: Optional[str] = None
     isDeleted: bool = False
     deletedAt: Optional[str] = None

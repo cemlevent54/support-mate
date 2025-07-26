@@ -525,8 +525,39 @@
     },
     "buttons": {
       "chat": "Chat",
-      "detail": "Detay"
-    }
+      "detail": "Detay",
+      "createTask": "TASK OLUŞTUR",
+      "viewTasks": "TASKLAR"
+    },
+    "createTaskModal": {
+      "title": "Yeni Task Oluştur",
+      "titleLabel": "Task Başlığı",
+      "descriptionLabel": "Açıklama",
+      "priorityLabel": "Öncelik",
+      "priorityLow": "Düşük",
+      "priorityMedium": "Orta",
+      "priorityHigh": "Yüksek",
+      "dueDateLabel": "Bitiş Tarihi",
+      "cancel": "İptal",
+      "create": "Oluştur"
+    },
+    "viewTasksModal": {
+      "title": "Tasklar"
+    },
+    "taskValidation": "Lütfen başlık ve açıklama alanlarını doldurun.",
+    "taskCreated": "Task başarıyla oluşturuldu!",
+    "noTasks": "Bu ticket için henüz task oluşturulmamış.",
+    "taskPriority": {
+      "low": "Düşük",
+      "medium": "Orta",
+      "high": "Yüksek"
+    },
+    "taskStatus": {
+      "pending": "Bekliyor",
+      "in_progress": "Devam Ediyor",
+      "completed": "Tamamlandı"
+    },
+    "taskDueDate": "Bitiş Tarihi"
   },
   "supportRequests": {
     "title": "Destek Talepleri",

@@ -1,26 +1,18 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Chip from '@mui/material/Chip';
-import Divider from '@mui/material/Divider';
-import Paper from '@mui/material/Paper';
-import Grid from '@mui/material/Grid';
 import { 
-  MdAttachFile, 
-  MdPerson, 
-  MdSupportAgent, 
-  MdCategory, 
-  MdSchedule, 
-  MdDescription, 
-  MdPermIdentity 
-} from 'react-icons/md';
-import { FaTicketAlt } from 'react-icons/fa';
+  FaUser, 
+  FaCalendarAlt, 
+  FaClock, 
+  FaTag, 
+  FaInfoCircle, 
+  FaCheckCircle, 
+  FaExclamationTriangle,
+  FaTicketAlt,
+  FaPaperclip,
+  FaEnvelope,
+  FaPhone
+} from "react-icons/fa";
 
 const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:9000';
 
@@ -34,6 +26,8 @@ const CustomTicketDetailModal = ({
 }) => {
   const { t, i18n } = useTranslation();
   const [forceUpdate, setForceUpdate] = useState(0);
+
+
 
   // Force re-render when language changes
   useEffect(() => {
@@ -90,6 +84,7 @@ const CustomTicketDetailModal = ({
 
   const modalKey = `modal-${i18n.language}-${forceUpdate}-${open ? 'open' : 'closed'}-${Date.now()}`;
 
+  if (!open) return null;
   if (!ticket) return null;
 
   const getCategoryName = (category) => {
@@ -121,18 +116,19 @@ const CustomTicketDetailModal = ({
     }
   };
 
-  const getStatusColor = (status) => {
+  // Status renk belirleme
+  const getStatusConfig = (status) => {
     switch (status) {
       case 'OPEN':
-        return 'success';
+        return { color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200' };
       case 'IN_REVIEW':
-        return 'warning';
+        return { color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200' };
       case 'CLOSED':
-        return 'default';
+        return { color: 'text-gray-600', bg: 'bg-gray-50', border: 'border-gray-200' };
       case 'DELETED':
-        return 'error';
+        return { color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200' };
       default:
-        return 'default';
+        return { color: 'text-gray-600', bg: 'bg-gray-50', border: 'border-gray-200' };
     }
   };
 
@@ -145,464 +141,210 @@ const CustomTicketDetailModal = ({
     link.rel = 'noopener noreferrer';
     link.click();
   };
+
+  const statusConfig = getStatusConfig(ticket?.status);
   
   return (
-    <Dialog 
-      key={modalKey}
-      open={open} 
-      onClose={onClose} 
-      maxWidth="md" 
-      fullWidth
-      sx={{
-        '& .MuiDialog-paper': {
-          maxHeight: '90vh'
-        },
-        '& .MuiDialogContent-root': {
-          padding: 0
-        }
-      }}
-    >
-      <DialogTitle>
-        {translations.modalTitle}
-      </DialogTitle>
-      <DialogContent dividers>
-        <Box sx={{ p: 2 }}>
-          {/* Header Section */}
-          <Paper 
-            elevation={2} 
-            sx={{ 
-              p: 3, 
-              mb: 3, 
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
-              color: 'white' 
-            }}
-          >
-            <Typography variant="h5" fontWeight="bold" gutterBottom>
-              {ticket.title}
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 2 }}>
-              <Chip 
-                label={getStatusText(ticket.status)} 
-                color={getStatusColor(ticket.status)}
-                sx={{ 
-                  color: 'white', 
-                  fontWeight: 'bold' 
-                }}
-              />
-            </Box>
-          </Paper>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl p-8 min-w-[400px] max-w-4xl w-full relative max-h-[90vh] overflow-y-auto">
+        {/* Close Button */}
+        <button
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-2xl font-bold transition-colors duration-200"
+          onClick={onClose}
+          aria-label="Kapat"
+        >
+          ×
+        </button>
 
-          {/* Main Content Grid */}
-          <Grid container spacing={3}>
-            {/* Left Column - Basic Info */}
-            <Grid item xs={12} md={6}>
-              <Paper elevation={1} sx={{ p: 3, height: '100%' }}>
-                <Typography 
-                  variant="h6" 
-                  fontWeight="bold" 
-                  gutterBottom 
-                  sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: 1,
-                    marginBottom: 2
-                  }}
-                >
-                  <MdDescription />
+        {ticket ? (
+          <>
+            {/* Header */}
+            <div className="mb-6">
+              <div className="text-3xl font-bold text-gray-800 mb-2">{ticket.title}</div>
+              <div className="flex items-center gap-3">
+                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${statusConfig.bg} ${statusConfig.color} ${statusConfig.border}`}>
+                  <FaTag className="w-4 h-4" />
+                  {getStatusText(ticket.status)}
+                </div>
+              </div>
+            </div>
+
+            {/* Description */}
+            {ticket.description && (
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                  <FaInfoCircle className="text-blue-500" />
                   {translations.description}
-                </Typography>
-                <Typography 
-                  variant="body1" 
-                  sx={{ 
-                    mb: 3, 
-                    lineHeight: 1.6, 
-                    color: '#666' 
-                  }}
-                >
-                  {ticket.description || translations.noDescription}
-                </Typography>
+                </h3>
+                <p className="text-gray-700 leading-relaxed">{ticket.description}</p>
+              </div>
+            )}
 
-                <Divider sx={{ my: 2 }} />
-
-                <Typography 
-                  variant="h6" 
-                  fontWeight="bold" 
-                  gutterBottom 
-                  sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: 1,
-                    marginBottom: 2
-                  }}
-                >
-                  <MdCategory />
-                  {translations.category}
-                </Typography>
-                <Typography variant="body1" sx={{ mb: 3 }}>
-                  {getCategoryName(ticket.category)}
-                </Typography>
-
-                <Typography 
-                  variant="h6" 
-                  fontWeight="bold" 
-                  gutterBottom 
-                  sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: 1,
-                    marginBottom: 2
-                  }}
-                >
-                  <FaTicketAlt />
-                  {translations.ticketId}:
-                </Typography>
-                <Typography 
-                  variant="body1" 
-                  fontWeight="medium" 
-                  sx={{ 
-                    fontFamily: 'Courier New, monospace',
-                    fontWeight: 500
-                  }}
-                >
-                  {ticket.id}
-                </Typography>
-              </Paper>
-            </Grid>
-
-            {/* Right Column - User & Agent Info */}
-            <Grid item xs={12} md={6}>
-              <Paper elevation={1} sx={{ p: 3, height: '100%' }}>
-                {/* Customer Info */}
-                <Typography 
-                  variant="h6" 
-                  fontWeight="bold" 
-                  gutterBottom 
-                  sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: 1,
-                    marginBottom: 2
-                  }}
-                >
-                  <MdPerson />
+            {/* Ticket Details Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              {/* Customer Info */}
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-100">
+                <h3 className="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                  <FaUser className="text-blue-600" />
                   {translations.customerInfo}
-                </Typography>
-                <Box sx={{ 
-                  mb: 3, 
-                  p: 2, 
-                  bgcolor: '#f8f9fa', 
-                  borderRadius: 2 
-                }}>
-                  <Typography 
-                    variant="body2" 
-                    sx={{ 
-                      color: '#666',
-                      fontSize: '0.875rem',
-                      marginBottom: 1
-                    }}
-                  >
-                    {translations.fullName}:
-                  </Typography>
-                  <Typography 
-                    variant="body1" 
-                    sx={{ 
-                      fontWeight: 500,
-                      marginBottom: 2
-                    }}
-                  >
-                    {ticket.customer?.firstName} {ticket.customer?.lastName}
-                  </Typography>
-                  <Typography 
-                    variant="body2" 
-                    sx={{ 
-                      color: '#666',
-                      fontSize: '0.875rem',
-                      marginBottom: 1
-                    }}
-                  >
-                    {translations.email}:
-                  </Typography>
-                  <Typography 
-                    variant="body1" 
-                    sx={{ 
-                      fontWeight: 500,
-                      marginBottom: 2
-                    }}
-                  >
-                    {ticket.customer?.email}
-                  </Typography>
+                </h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-blue-700">{translations.fullName}:</span>
+                    <span className="text-blue-900 font-medium">
+                      {ticket.customer?.firstName} {ticket.customer?.lastName}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-blue-700">{translations.email}:</span>
+                    <span className="text-blue-900 font-medium">{ticket.customer?.email}</span>
+                  </div>
                   {ticket.customer?.phoneNumber && (
-                    <>
-                      <Typography 
-                        variant="body2" 
-                        sx={{ 
-                          color: '#666',
-                          fontSize: '0.875rem',
-                          marginBottom: 1
-                        }}
-                      >
-                        {translations.phone}:
-                      </Typography>
-                      <Typography 
-                        variant="body1" 
-                        sx={{ 
-                          fontWeight: 500,
-                          marginBottom: 2
-                        }}
-                      >
-                        {ticket.customer.phoneNumber}
-                      </Typography>
-                    </>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-blue-700">{translations.phone}:</span>
+                      <span className="text-blue-900 font-medium">{ticket.customer.phoneNumber}</span>
+                    </div>
                   )}
-                </Box>
+                </div>
+              </div>
 
-                {/* Agent Info */}
-                {ticket.agent && (
-                  <>
-                    <Typography 
-                      variant="h6" 
-                      fontWeight="bold" 
-                      gutterBottom 
-                      sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: 1,
-                        marginBottom: 2
-                      }}
-                    >
-                      <MdSupportAgent />
-                      {translations.supportAgent}
-                    </Typography>
-                    <Box sx={{ 
-                      p: 2, 
-                      bgcolor: '#e3f2fd', 
-                      borderRadius: 2 
-                    }}>
-                      <Typography 
-                        variant="body2" 
-                        sx={{ 
-                          color: '#666',
-                          fontSize: '0.875rem',
-                          marginBottom: 1
-                        }}
-                      >
-                        {translations.fullName}:
-                      </Typography>
-                      <Typography 
-                        variant="body1" 
-                        sx={{ 
-                          fontWeight: 500,
-                          marginBottom: 2
-                        }}
-                      >
+              {/* Agent Info */}
+              {ticket.agent && (
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-lg border border-green-100">
+                  <h3 className="text-sm font-semibold text-green-800 mb-2 flex items-center gap-2">
+                    <FaUser className="text-green-600" />
+                    {translations.supportAgent}
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-green-700">{translations.fullName}:</span>
+                      <span className="text-green-900 font-medium">
                         {ticket.agent.firstName} {ticket.agent.lastName}
-                      </Typography>
-                      <Typography 
-                        variant="body2" 
-                        sx={{ 
-                          color: '#666',
-                          fontSize: '0.875rem',
-                          marginBottom: 1
-                        }}
-                      >
-                        {translations.email}:
-                      </Typography>
-                      <Typography 
-                        variant="body1" 
-                        sx={{ 
-                          fontWeight: 500,
-                          marginBottom: 2
-                        }}
-                      >
-                        {ticket.agent.email}
-                      </Typography>
-                      {ticket.agent.phoneNumber && (
-                        <>
-                          <Typography 
-                            variant="body2" 
-                            sx={{ 
-                              color: '#666',
-                              fontSize: '0.875rem',
-                              marginBottom: 1
-                            }}
-                          >
-                            {translations.phone}:
-                          </Typography>
-                          <Typography 
-                            variant="body1" 
-                            sx={{ 
-                              fontWeight: 500,
-                              marginBottom: 2
-                            }}
-                          >
-                            {ticket.agent.phoneNumber}
-                          </Typography>
-                        </>
-                      )}
-                    </Box>
-                  </>
-                )}
-              </Paper>
-            </Grid>
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-green-700">{translations.email}:</span>
+                      <span className="text-green-900 font-medium">{ticket.agent.email}</span>
+                    </div>
+                    {ticket.agent.phoneNumber && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-green-700">{translations.phone}:</span>
+                        <span className="text-green-900 font-medium">{ticket.agent.phoneNumber}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
-            {/* Bottom Row - Timestamps & Attachments */}
-            <Grid item xs={12} md={6}>
-              <Paper elevation={1} sx={{ p: 3, height: '100%' }}>
-                <Typography 
-                  variant="h6" 
-                  fontWeight="bold" 
-                  gutterBottom 
-                  sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: 1,
-                    marginBottom: 2
-                  }}
-                >
-                  <MdSchedule />
-                  {translations.timeInfo}
-                </Typography>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
-                    <Typography 
-                      variant="body2" 
-                      sx={{ 
-                        color: '#666',
-                        fontSize: '0.875rem',
-                        marginBottom: 1
-                      }}
-                    >
-                      {translations.createdAt}:
-                    </Typography>
-                    <Typography 
-                      variant="body1" 
-                      sx={{ 
-                        fontWeight: 500,
-                        marginBottom: 2
-                      }}
-                    >
-                      {new Date(ticket.createdAt).toLocaleString('tr-TR')}
-                    </Typography>
-                  </Grid>
-                  {ticket.closedAt && (
-                    <Grid item xs={12} sm={6}>
-                      <Typography 
-                        variant="body2" 
-                        sx={{ 
-                          color: '#666',
-                          fontSize: '0.875rem',
-                          marginBottom: 1
-                        }}
-                      >
-                        {translations.closedAt}:
-                      </Typography>
-                      <Typography 
-                        variant="body1" 
-                        sx={{ 
-                          fontWeight: 500,
-                          marginBottom: 2
-                        }}
-                      >
-                        {new Date(ticket.closedAt).toLocaleString('tr-TR')}
-                      </Typography>
-                    </Grid>
-                  )}
-                  {ticket.deletedAt && (
-                    <Grid item xs={12} sm={6}>
-                      <Typography 
-                        variant="body2" 
-                        sx={{ 
-                          color: '#666',
-                          fontSize: '0.875rem',
-                          marginBottom: 1
-                        }}
-                      >
-                        {translations.deletedAt}:
-                      </Typography>
-                      <Typography 
-                        variant="body1" 
-                        sx={{ 
-                          fontWeight: 500,
-                          marginBottom: 2,
-                          color: 'error.main'
-                        }}
-                      >
-                        {new Date(ticket.deletedAt).toLocaleString('tr-TR')}
-                      </Typography>
-                    </Grid>
-                  )}
-                </Grid>
-              </Paper>
-            </Grid>
+              {/* Created At */}
+              <div className="bg-gradient-to-br from-purple-50 to-violet-50 p-4 rounded-lg border border-purple-100">
+                <h3 className="text-sm font-semibold text-purple-800 mb-2 flex items-center gap-2">
+                  <FaClock className="text-purple-600" />
+                  {translations.createdAt}
+                </h3>
+                <p className="text-purple-900 font-medium">
+                  {new Date(ticket.createdAt).toLocaleString('tr-TR')}
+                </p>
+              </div>
+
+              {/* Category */}
+              <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-4 rounded-lg border border-orange-100">
+                <h3 className="text-sm font-semibold text-orange-800 mb-2 flex items-center gap-2">
+                  <FaTag className="text-orange-600" />
+                  {translations.category}
+                </h3>
+                <p className="text-orange-900 font-medium">
+                  {getCategoryName(ticket.category)}
+                </p>
+              </div>
+            </div>
+
+            {/* Additional Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-6">
+              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                <span className="font-medium text-gray-700">{translations.ticketId}:</span>
+                <span className="font-mono text-gray-900">{ticket.id}</span>
+              </div>
+              {ticket.closedAt && (
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <span className="font-medium text-gray-700">{translations.closedAt}:</span>
+                  <span className="text-gray-900">{new Date(ticket.closedAt).toLocaleString('tr-TR')}</span>
+                </div>
+              )}
+              {ticket.deletedAt && (
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <span className="font-medium text-gray-700">{translations.deletedAt}:</span>
+                  <span className="text-red-600">{new Date(ticket.deletedAt).toLocaleString('tr-TR')}</span>
+                </div>
+              )}
+            </div>
 
             {/* Attachments Section */}
-            <Grid item xs={12} md={6}>
-              <Paper elevation={1} sx={{ p: 3, height: '100%' }}>
-                <Typography 
-                  variant="h6" 
-                  fontWeight="bold" 
-                  gutterBottom 
-                  sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: 1,
-                    marginBottom: 2
-                  }}
-                >
-                  <MdAttachFile />
-                  {translations.attachments} 
-                  {ticket.attachments && ticket.attachments.length > 0 ? ` (${ticket.attachments.length})` : ''}
-                </Typography>
-                {ticket.attachments && ticket.attachments.length > 0 ? (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                    {ticket.attachments.map((file, index) => (
-                      <Chip
-                        key={index}
-                        icon={<MdAttachFile />}
-                        label={file.name}
-                        variant="outlined"
+            <div className="mb-6 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-100">
+              <h3 className="text-lg font-semibold text-indigo-800 mb-3 flex items-center gap-2">
+                <FaPaperclip className="text-indigo-600" />
+                {translations.attachments} 
+                {ticket.attachments && ticket.attachments.length > 0 ? ` (${ticket.attachments.length})` : ''}
+              </h3>
+              {ticket.attachments && ticket.attachments.length > 0 ? (
+                <div className="space-y-2">
+                  {ticket.attachments.map((file, index) => (
+                    <div key={index} className="flex items-center bg-white rounded px-3 py-2 border border-indigo-200">
+                      <FaPaperclip className="text-indigo-400 mr-2 flex-shrink-0" />
+                      <button
+                        className="text-indigo-700 underline hover:text-indigo-900 truncate flex-1 text-left"
                         onClick={() => handleFileDownload(file)}
-                        sx={{ 
-                          cursor: 'pointer', 
-                          transition: 'background-color 0.2s ease',
-                          '&:hover': { 
-                            bgcolor: '#f5f5f5' 
-                          } 
-                        }}
-                      />
-                    ))}
-                  </Box>
-                ) : (
-                  <Typography 
-                    variant="body2" 
-                    sx={{ 
-                      fontStyle: 'italic',
-                      color: '#888'
-                    }}
-                  >
-                    {translations.noAttachments}
-                  </Typography>
-                )}
-              </Paper>
-            </Grid>
-          </Grid>
-        </Box>
-      </DialogContent>
-      <DialogActions>
-        {showChatButton && onChatClick && (
-          <Button 
-            onClick={() => onChatClick(ticket)}
-            variant="contained"
-            color="primary"
-          >
-            {translations.chat}
-          </Button>
+                        title={file.name}
+                      >
+                        {file.name}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-indigo-600 italic">
+                  {translations.noAttachments}
+                </p>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-12">
+            <div className="text-gray-400 text-6xl mb-4">🎫</div>
+            <h3 className="text-xl font-semibold text-gray-600 mb-2">
+              {translations.ticketNotFound || 'Ticket Bulunamadı'}
+            </h3>
+            <p className="text-gray-500">
+              {translations.ticketNotFoundDescription || 'Aradığınız ticket bulunamadı veya silinmiş olabilir.'}
+            </p>
+          </div>
         )}
-        <Button onClick={onClose}>
-          {translations.close}
-        </Button>
-      </DialogActions>
-    </Dialog>
+
+        {/* Action Buttons */}
+        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+          {showChatButton && onChatClick && (
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onChatClick(ticket);
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+            >
+              {translations.chat}
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors duration-200"
+          >
+            {translations.close}
+          </button>
+        </div>
+      </div>
+    </div>
+
+
   );
 };
 

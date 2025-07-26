@@ -8,5 +8,5 @@ class TaskUpdateDto(BaseModel):
     status: Optional[str] = None
     assignEmployeeId: Optional[str] = None
     deadline: Optional[str] = None
-    createdByCustomerSupporterId: Optional[str] = None
+    createdBy: Optional[str] = None
     # Diğer alanlar da eklenebilir 

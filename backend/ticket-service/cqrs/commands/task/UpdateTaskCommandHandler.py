@@ -15,7 +15,7 @@ class UpdateTaskCommandHandler:
         if "_id" in existing_task and not isinstance(existing_task["_id"], str):
             existing_task["_id"] = str(existing_task["_id"])
         # Zorunlu alanlar için kontrol
-        required_fields = ["title", "priority", "createdByCustomerSupporterId"]
+        required_fields = ["title", "priority", "createdBy"]
         for field in required_fields:
             if existing_task.get(field) is None:
                 raise ValueError(f"'{field}' alanı güncelleme için zorunludur ve None olamaz.")

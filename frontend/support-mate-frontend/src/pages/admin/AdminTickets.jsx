@@ -1,39 +1,24 @@
 import React, { useState, useEffect } from "react";
-import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import CustomTicketTable from '../../components/tickets/CustomTicketTable/CustomTicketTable';
-import Modal from '@mui/material/Modal';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
+import CustomTicketDetailModal from '../../components/tickets/CustomTicketDetailModal/CustomTicketDetailModal';
+import CustomChatMessagesModal from '../../components/common/CustomChatMessagesModal';
+import CustomTaskDetailsModal from '../../components/common/CustomTaskDetailsModal';
 import { listTicketsForAdmin } from '../../api/ticketApi';
-import Button from '@mui/material/Button';
+import { getTask } from '../../api/taskApi';
 import { useTranslation } from 'react-i18next';
 
-
-
-const modalStyle = {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  width: 500,
-  bgcolor: 'background.paper',
-  border: '2px solid #1976d2',
-  boxShadow: 24,
-  borderRadius: 2,
-  p: 4,
-};
-
+// AdminTickets component with GradientCard Design System
 const AdminTickets = () => {
   const { t, i18n } = useTranslation();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [modalType, setModalType] = useState(null); // 'detail', 'chat', 'task'
   const [selectedTicket, setSelectedTicket] = useState(null);
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewFile, setPreviewFile] = useState(null);
+  const [taskDetails, setTaskDetails] = useState(null);
+  const [taskLoading, setTaskLoading] = useState(false);
 
   useEffect(() => {
     const fetchTickets = async () => {
@@ -43,28 +28,35 @@ const AdminTickets = () => {
         const response = await listTicketsForAdmin();
         if (response.success && Array.isArray(response.data)) {
           const sorted = response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-          setRows(sorted.map((ticket, idx) => {
+          setRows(sorted.map((ticketData, idx) => {
+            // Leader gibi yapı: tüm bilgiler aynı seviyede
+            const customer = ticketData.customer || {};
+            const agent = ticketData.agent || {};
+            
             let categoryName = "";
-            if (ticket.category && ticket.category.data) {
+            if (ticketData.category && ticketData.category.data) {
               if (i18n.language === "tr") {
-                categoryName = ticket.category.data.category_name_tr || ticket.category.data.category_name_en || "-";
+                categoryName = ticketData.category.data.category_name_tr || ticketData.category.data.category_name_en || "-";
               } else {
-                categoryName = ticket.category.data.category_name_en || ticket.category.data.category_name_tr || "-";
+                categoryName = ticketData.category.data.category_name_en || ticketData.category.data.category_name_tr || "-";
               }
             } else {
               categoryName = "-";
             }
+            
             return {
-              id: ticket._id || idx + 1,
-              title: ticket.title,
-              description: ticket.description,
+              id: ticketData._id || ticketData.id || idx + 1,
+              title: ticketData.title,
+              description: ticketData.description,
               category: categoryName,
-              status: ticket.status || "-",
-              createdAt: ticket.createdAt ? new Date(ticket.createdAt).toLocaleString('tr-TR') : "-",
-              files: ticket.attachments || [],
-              customerId: ticket.customerId,
-              assignedAgentId: ticket.assignedAgentId,
-              raw: ticket
+              status: ticketData.status || "-",
+              createdAt: ticketData.createdAt ? new Date(ticketData.createdAt).toLocaleString('tr-TR') : "-",
+              files: ticketData.attachments || [],
+              customer: customer,
+              agent: agent,
+              taskId: ticketData.taskId,
+              chatId: ticketData.chatId,
+              raw: ticketData // Tüm veriyi raw olarak sakla
             };
           }));
         } else {
@@ -81,22 +73,87 @@ const AdminTickets = () => {
     fetchTickets();
   }, []);
 
-  const handleOpenDetail = (ticket) => {
-    setSelectedTicket(ticket.raw || ticket);
-    setModalOpen(true);
-  };
-  const handleCloseDetail = () => {
-    setModalOpen(false);
-    setSelectedTicket(null);
+  // Task detaylarını API'den çek
+  const fetchTaskDetails = async (taskId) => {
+    if (!taskId) return null;
+    
+    setTaskLoading(true);
+    try {
+      const token = localStorage.getItem('jwt');
+      const response = await getTask(taskId, token);
+      if (response.data.success) {
+        return response.data.data;
+      }
+      return null;
+    } catch (error) {
+      console.error('Task detayları çekilemedi:', error);
+      return null;
+    } finally {
+      setTaskLoading(false);
+    }
   };
 
-  const handlePreviewFile = (file) => {
-    setPreviewFile(file);
-    setPreviewOpen(true);
+  const handleOpenDetail = (ticket) => {
+    setSelectedTicket(ticket.raw || ticket);
+    setModalType('detail');
+    setModalOpen(true);
   };
-  const handleClosePreview = () => {
-    setPreviewOpen(false);
-    setPreviewFile(null);
+
+  const handleOpenChat = (ticket) => {
+    setSelectedTicket(ticket.raw || ticket);
+    setModalType('chat');
+    setModalOpen(true);
+  };
+
+  const handleOpenTask = async (ticket) => {
+    setSelectedTicket(ticket.raw || ticket);
+    setModalType('task');
+    setModalOpen(true);
+    // Task detaylarını çek
+    const ticketData = ticket.raw || ticket;
+    const taskData = await fetchTaskDetails(ticketData.taskId);
+    setTaskDetails(taskData);
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setModalType(null);
+    setSelectedTicket(null);
+    setTaskDetails(null);
+  };
+
+  // Admin için özel actions
+  const renderAdminActions = (row) => {
+    const ticketData = row.raw || row;
+    const hasTaskId = ticketData.taskId !== null && ticketData.taskId !== undefined;
+
+    return (
+      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+        {/* Task butonu - sadece taskId varsa göster */}
+        {hasTaskId && (
+          <button 
+            className="custom-btn task" 
+            onClick={() => handleOpenTask(row)}
+          >
+            {t('adminTickets.buttons.viewTask', 'TASK')}
+          </button>
+        )}
+        {/* Chat butonu */}
+        <button 
+          className="custom-btn chat" 
+          onClick={() => handleOpenChat(row)}
+        >
+          {t('adminTickets.buttons.chat', 'CHAT')}
+        </button>
+        {/* Detail butonu */}
+        <button 
+          className="custom-btn detail" 
+          onClick={() => handleOpenDetail(row)}
+        >
+          {t('adminTickets.buttons.detail', 'DETAY')}
+        </button>
+      </div>
+    );
   };
 
   return (
@@ -106,90 +163,41 @@ const AdminTickets = () => {
         rows={rows}
         loading={loading}
         error={error}
-        onChat={null}
+        onChat={handleOpenChat}
         onDetail={handleOpenDetail}
         i18nNamespace="adminTickets"
+        renderActions={renderAdminActions}
       />
-      <Modal open={modalOpen} onClose={handleCloseDetail}>
-        <Box sx={modalStyle}>
-          <Typography variant="h6" mb={2}>{t('adminTickets.modal.title')}</Typography>
-          {selectedTicket && (
-            <Box>
-              <Typography><b>{t('adminTickets.modal.titleLabel')}</b> {selectedTicket.title}</Typography>
-              <Typography><b>{t('adminTickets.modal.descriptionLabel')}</b> {selectedTicket.description}</Typography>
-              <Typography><b>{t('adminTickets.modal.categoryLabel')}</b> {
-                typeof selectedTicket.category === 'string'
-                  ? selectedTicket.category
-                  : selectedTicket.category && selectedTicket.category.data
-                    ? (i18n.language === 'tr'
-                        ? selectedTicket.category.data.category_name_tr || selectedTicket.category.data.category_name_en || '-'
-                        : selectedTicket.category.data.category_name_en || selectedTicket.category.data.category_name_tr || '-')
-                    : '-'
-              }</Typography>
-              <Typography><b>{t('adminTickets.modal.statusLabel')}</b> {selectedTicket.status}</Typography>
-              <Typography><b>{t('adminTickets.modal.createdAtLabel')}</b> {selectedTicket.createdAt ? new Date(selectedTicket.createdAt).toLocaleString('tr-TR') : '-'}</Typography>
-              <Typography><b>{t('adminTickets.modal.customerIdLabel')}</b> {selectedTicket.customerId}</Typography>
-              <Typography><b>{t('adminTickets.modal.agentIdLabel')}</b> {selectedTicket.assignedAgentId}</Typography>
-              <Typography><b>{t('adminTickets.modal.attachmentsLabel')}</b></Typography>
-              <ul>
-                {selectedTicket.attachments && selectedTicket.attachments.length > 0 ? (
-                  selectedTicket.attachments.map((file, i) => (
-                    <li key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, marginBottom: 12 }}>
-                      <a
-                        href={`${process.env.REACT_APP_API_BASE_URL}/uploads/${file.url.split('uploads/')[1]}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ fontWeight: 500, wordBreak: 'break-all' }}
-                      >
-                        {file.name}
-                      </a>
-                      {(file.type && (file.type.startsWith('image/') || file.type === 'application/pdf')) && (
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          sx={{ mt: 1, textTransform: 'none' }}
-                          onClick={() => handlePreviewFile(file)}
-                        >
-                          {t('adminTickets.modal.preview')}
-                        </Button>
-                      )}
-                      {file.type && !(file.type.startsWith('image/') || file.type === 'application/pdf') && (
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          sx={{ mt: 1, textTransform: 'none' }}
-                          component="a"
-                          href={`${process.env.REACT_APP_API_BASE_URL}/uploads/${file.url.split('uploads/')[1]}`}
-                          download
-                        >
-                          {t('adminTickets.modal.download')}
-                        </Button>
-                      )}
-                    </li>
-                  ))
-                ) : <li>{t('adminTickets.modal.noAttachments')}</li>}
-              </ul>
-            </Box>
-          )}
-        </Box>
-      </Modal>
-      <Dialog open={previewOpen} onClose={handleClosePreview} maxWidth="md" fullWidth>
-        <DialogTitle>{previewFile?.name}</DialogTitle>
-        <DialogContent>
-          {previewFile && previewFile.type && previewFile.type.startsWith('image/') && (
-            <img src={`${process.env.REACT_APP_API_BASE_URL}/uploads/${previewFile.url.split('uploads/')[1]}`} alt={previewFile.name} style={{ maxWidth: '100%', maxHeight: '70vh', display: 'block', margin: '0 auto' }} />
-          )}
-          {previewFile && previewFile.type === 'application/pdf' && (
-            <iframe
-              src={`${process.env.REACT_APP_API_BASE_URL}/uploads/${previewFile.url.split('uploads/')[1]}`}
-              title={previewFile.name}
-              width="100%"
-              height="600px"
-              style={{ border: 'none', display: 'block', margin: '0 auto' }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+
+      {/* Custom Ticket Detail Modal */}
+      <CustomTicketDetailModal
+        open={modalType === 'detail' && modalOpen}
+        onClose={handleCloseModal}
+        ticket={selectedTicket}
+        i18nNamespace="adminTickets"
+        showChatButton={true}
+        onChatClick={(ticket) => {
+          setSelectedTicket(ticket);
+          setModalType('chat');
+          setModalOpen(true);
+        }}
+      />
+
+      {/* Custom Chat Messages Modal */}
+      <CustomChatMessagesModal
+        open={modalType === 'chat' && modalOpen}
+        onClose={handleCloseModal}
+        messages={selectedTicket?.messages || []}
+        i18nNamespace="adminTickets"
+      />
+
+      {/* Custom Task Details Modal */}
+      <CustomTaskDetailsModal
+        open={modalType === 'task' && modalOpen}
+        onClose={handleCloseModal}
+        task={taskDetails}
+        loading={taskLoading}
+      />
     </>
   );
 };

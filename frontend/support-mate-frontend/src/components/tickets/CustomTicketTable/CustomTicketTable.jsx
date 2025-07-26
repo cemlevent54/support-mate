@@ -12,6 +12,7 @@ const CustomTicketTable = ({
   error = null,
   columns,
   i18nNamespace = 'myRequests',
+  renderActions = null, // New prop for custom action rendering
 }) => {
   const { t } = useTranslation();
 
@@ -98,10 +99,16 @@ const CustomTicketTable = ({
                       {tableColumns.map((col, i) =>
                         col.key === 'actions' ? (
                           <td className="actions-cell" key={col.key}>
-                            {i18nNamespace !== 'adminTickets' && (
-                              <button className="custom-btn chat" onClick={() => onChat && onChat(row)}>{t(`${i18nNamespace}.buttons.chat`, 'CHAT')}</button>
+                            {renderActions ? (
+                              renderActions(row)
+                            ) : (
+                              <>
+                                {i18nNamespace !== 'adminTickets' && (
+                                  <button className="custom-btn chat" onClick={() => onChat && onChat(row)}>{t(`${i18nNamespace}.buttons.chat`, 'CHAT')}</button>
+                                )}
+                                <button className="custom-btn detail" onClick={() => onDetail && onDetail(row)}>{t(`${i18nNamespace}.buttons.detail`, 'DETAY')}</button>
+                              </>
                             )}
-                            <button className="custom-btn detail" onClick={() => onDetail && onDetail(row)}>{t(`${i18nNamespace}.buttons.detail`, 'DETAY')}</button>
                           </td>
                         ) : (
                           <td

@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { listTicketsForLeader } from '../../api/ticketApi';
+import { getTask } from '../../api/taskApi';
 import CustomTicketTable from '../../components/tickets/CustomTicketTable/CustomTicketTable';
 import CustomTicketDetailModal from '../../components/tickets/CustomTicketDetailModal/CustomTicketDetailModal';
+import CustomTaskDetailsModal from '../../components/common/CustomTaskDetailsModal';
+import CustomChatMessagesModal from '../../components/common/CustomChatMessagesModal';
+import CreateTask from '../support/CreateTask';
 import { useTranslation } from 'react-i18next';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
+
+import { jwtDecode } from 'jwt-decode';
 
 const LeaderTickets = () => {
   const { t, i18n } = useTranslation();
@@ -15,8 +16,25 @@ const LeaderTickets = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalType, setModalType] = useState(null); // 'chat' veya 'detail'
+  const [modalType, setModalType] = useState(null); // 'chat', 'detail', 'viewTasks'
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [createTaskOpen, setCreateTaskOpen] = useState(false);
+  const [userRole, setUserRole] = useState(null);
+  const [taskDetails, setTaskDetails] = useState(null);
+  const [taskLoading, setTaskLoading] = useState(false);
+
+  // Get user role from JWT
+  useEffect(() => {
+    const token = localStorage.getItem('jwt');
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        setUserRole(decoded.roleName);
+      } catch (e) {
+        console.error('Error decoding JWT:', e);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -34,6 +52,28 @@ const LeaderTickets = () => {
       })
       .finally(() => setLoading(false));
   }, [i18n.language]);
+
+  // Task detaylarını API'den çek
+  const fetchTaskDetails = async (taskId) => {
+    if (!taskId) return null;
+    
+    setTaskLoading(true);
+    try {
+      const token = localStorage.getItem('jwt');
+      const response = await getTask(taskId, token);
+      if (response.data.success) {
+        return response.data.data;
+      }
+      return null;
+    } catch (error) {
+      console.error('Task detayları çekilemedi:', error);
+      return null;
+    } finally {
+      setTaskLoading(false);
+    }
+  };
+
+
 
   // Tablo kolonları: başlık, kategori, müşteri, agent, durum, oluşturulma tarihi, aksiyonlar
   const columns = [
@@ -64,6 +104,60 @@ const LeaderTickets = () => {
     { key: 'actions', label: t('leaderTickets.table.actions', 'Aksiyonlar') },
   ];
 
+  // Custom actions for the table
+  const renderActions = (row) => {
+    const ticketId = row.id || row._id;
+    // taskId null ise false, null değilse true döner
+    const hasTaskId = row.taskId !== null && row.taskId !== undefined;
+
+    return (
+      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+        {userRole === 'Leader' && (
+          <>
+            {/* taskId null ise create task butonu göster */}
+            {!hasTaskId && (
+              <button 
+                className="custom-btn task" 
+                onClick={() => {
+                  setSelectedTicket(row);
+                  setCreateTaskOpen(true);
+                }}
+              >
+                {t('leaderTickets.buttons.createTask', 'TASK OLUŞTUR')}
+              </button>
+            )}
+            {/* taskId null değilse view tasks butonu göster */}
+            {hasTaskId && (
+              <button 
+                className="custom-btn view-tasks" 
+                onClick={async () => {
+                  setSelectedTicket(row);
+                  setModalType('viewTasks');
+                  setModalOpen(true);
+                  // Task detaylarını çek
+                  const taskData = await fetchTaskDetails(row.taskId);
+                  setTaskDetails(taskData);
+                }}
+              >
+                {t('leaderTickets.buttons.viewTasks')}
+              </button>
+            )}
+          </>
+        )}
+        <button className="custom-btn chat" onClick={() => {
+          setSelectedTicket(row);
+          setModalType('chat');
+          setModalOpen(true);
+        }}>{t('leaderTickets.buttons.chat', 'CHAT')}</button>
+        <button className="custom-btn detail" onClick={() => {
+          setSelectedTicket(row);
+          setModalType('detail');
+          setModalOpen(true);
+        }}>{t('leaderTickets.buttons.detail', 'DETAY')}</button>
+      </div>
+    );
+  };
+
   // CustomTicketTable'a columns prop'u ile özel render fonksiyonları ilet
   return (
     <div style={{ padding: 24 }}>
@@ -84,59 +178,37 @@ const LeaderTickets = () => {
           setModalType('chat');
           setModalOpen(true);
         }}
+        renderActions={renderActions}
       />
-      {modalType === 'chat' ? (
-        <Dialog open={modalOpen} onClose={() => setModalOpen(false)} maxWidth="md" fullWidth>
-          <DialogTitle>
-            {t('leaderTickets.chatModalTitle', 'Chat')}
-          </DialogTitle>
-          <DialogContent dividers>
-            <div style={{ minHeight: 400, maxHeight: 500, overflow: 'auto' }}>
-              {selectedTicket && selectedTicket.messages && selectedTicket.messages.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {selectedTicket.messages.map((msg, idx) => (
-                    <div
-                      key={msg._id || idx}
-                      style={{
-                        display: 'flex',
-                        justifyContent: msg.senderRole === 'User' ? 'flex-start' : 'flex-end',
-                        marginBottom: '8px'
-                      }}
-                    >
-                      <div
-                        style={{
-                          maxWidth: '70%',
-                          padding: '8px 12px',
-                          borderRadius: '12px',
-                          backgroundColor: msg.senderRole === 'User' ? '#f1f1f1' : '#e3f2fd',
-                          color: '#222',
-                          wordWrap: 'break-word'
-                        }}
-                      >
-                        <div style={{ fontSize: '14px', marginBottom: '4px' }}>
-                          <strong>{msg.senderRole === 'User' ? 'Müşteri' : 'Destek Temsilcisi'}</strong>
-                        </div>
-                        <div style={{ fontSize: '16px' }}>{msg.text}</div>
-                        <div style={{ fontSize: '12px', color: '#888', textAlign: 'right', marginTop: '4px' }}>
-                          {msg.timestamp ? new Date(msg.timestamp).toLocaleString('tr-TR') : 
-                           msg.createdAt ? new Date(msg.createdAt).toLocaleString('tr-TR') : ''}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div style={{ textAlign: 'center', color: '#888', padding: '20px' }}>
-                  {t('leaderTickets.noMessages', 'Henüz mesaj yok.')}
-                </div>
-              )}
-            </div>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setModalOpen(false)}>{t('leaderTickets.close', 'Kapat')}</Button>
-          </DialogActions>
-        </Dialog>
-      ) : (
+
+      {/* CreateTask Component */}
+      <CreateTask 
+        open={createTaskOpen} 
+        onClose={() => setCreateTaskOpen(false)}
+        ticketId={selectedTicket?.id || selectedTicket?._id || ''}
+      />
+
+      {/* Custom Task Details Modal */}
+      <CustomTaskDetailsModal
+        open={modalType === 'viewTasks' && modalOpen}
+        onClose={() => {
+          setModalOpen(false);
+          setTaskDetails(null);
+        }}
+        task={taskDetails}
+        loading={taskLoading}
+      />
+
+      {/* Chat Modal */}
+      <CustomChatMessagesModal
+        open={modalType === 'chat' && modalOpen}
+        onClose={() => setModalOpen(false)}
+        messages={selectedTicket?.messages || []}
+        i18nNamespace="leaderTickets"
+      />
+
+      {/* Detail Modal */}
+      {modalType === 'detail' ? (
         <CustomTicketDetailModal
           open={modalOpen}
           onClose={() => setModalOpen(false)}
@@ -149,7 +221,7 @@ const LeaderTickets = () => {
             setModalOpen(true);
           }}
         />
-      )}
+      ) : null}
     </div>
   );
 };

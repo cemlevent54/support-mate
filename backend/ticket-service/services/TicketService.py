@@ -27,6 +27,7 @@ from dto.ticket_dto import TicketDTO, TicketListDTO
 from config.language import set_language, _
 from fastapi import HTTPException
 from cqrs.commands.chat.UpdateChatTicketIdCommandHandler import UpdateChatTicketIdCommandHandler
+from cqrs.queries.task.GetTaskByTicketIdQueryHandler import GetTaskByTicketIdQueryHandler
 from repositories.MessageRepository import MessageRepository
 
 logger = logging.getLogger(__name__)
@@ -42,6 +43,7 @@ class TicketService:
         self.soft_delete_handler = SoftDeleteTicketCommandHandler()
         self.chat_service = ChatService()
         self.message_service = MessageService()
+        self.get_task_by_ticket_handler = GetTaskByTicketIdQueryHandler()
 
     def create_ticket(self, ticket, user, token=None, lang='tr'):
         if not user:
@@ -208,6 +210,110 @@ class TicketService:
         message = _(f"services.ticketService.responses.tickets_listed")
         return {"success": True, "data": ticket_dtos, "message": message}
 
+    def list_tickets_for_admin(self, user, lang='tr'):
+        if not user:
+            logger.warning(_(f"services.ticketService.logs.unauthorized"))
+            return unauthorized_error(_(f"services.ticketService.responses.unauthorized"))
+        logger.info(_(f"services.ticketService.logs.listing_tickets_for_admin").format(user_id=user.get('id', 'unknown')))
+        tickets = self.list_handler.execute(user, lang=lang)
+        
+        if tickets is None:
+            message = _(f"services.ticketService.responses.tickets_list_failed")
+            return {"success": False, "data": [], "message": message}
+        
+        # DTO'ya çevir ve detaylı bilgiler ekle
+        category_service = None
+        ticket_dtos = []
+        for ticket in tickets:
+            dto = TicketDTO.from_model(ticket)
+            dto_dict = dto.model_dump()
+            
+            # Ticket bilgilerini "ticket" altında organize et
+            ticket_info = {
+                "id": dto_dict.get("id"),
+                "title": dto_dict.get("title"),
+                "description": dto_dict.get("description"),
+                "status": dto_dict.get("status"),
+                "createdAt": dto_dict.get("createdAt"),
+                "closedAt": dto_dict.get("closedAt"),
+                "deletedAt": dto_dict.get("deletedAt"),
+                "taskId": dto_dict.get("taskId"),
+                "attachments": dto_dict.get("attachments", [])
+            }
+            # message bilgisi ekle
+            
+            ticket_info["messages"] = dto_dict.get("message")
+
+            
+            # Kategori bilgisi ekle
+            category_id = getattr(ticket, "categoryId", None)
+            if category_id:
+                if not category_service:
+                    from services.CategoryService import CategoryService
+                    category_service = CategoryService()
+                category_info = category_service.get_category_by_id(category_id)
+                ticket_info["category"] = category_info
+            else:
+                ticket_info["category"] = None
+            
+            # CHAT ID EKLEME
+            chat_repo = ChatRepository()
+            chat = chat_repo.find_by_ticket_id(str(ticket.id))
+            ticket_info["chatId"] = str(chat.id) if chat else None
+            
+            # --- CHAT MESAJLARINI GETİR ---
+            messages = []
+            if chat:
+                message_repo = MessageRepository()
+                messages = message_repo.list_by_chat_id(str(chat.id))
+                # Mesajları dict formatına çevir
+                messages = [msg.model_dump() for msg in messages]
+            
+            # --- CUSTOMER & AGENT DETAYLARI ---
+            token = None
+            customer_info = None
+            agent_info = None
+            
+            try:
+                customer_info = get_user_by_id(dto_dict.get('customerId'), token) if dto_dict.get('customerId') else None
+            except Exception as e:
+                logger.warning(f"Could not fetch customer info for {dto_dict.get('customerId')}: {str(e)}")
+                customer_info = None
+                
+            try:
+                agent_info = get_user_by_id(dto_dict.get('assignedAgentId'), token) if dto_dict.get('assignedAgentId') else None
+            except Exception as e:
+                logger.warning(f"Could not fetch agent info for {dto_dict.get('assignedAgentId')}: {str(e)}")
+                agent_info = None
+            
+            # Leader gibi yapı: customer ve agent bilgileri aynı seviyede
+            result_dict = {
+                "id": ticket_info["id"],
+                "title": ticket_info["title"],
+                "description": ticket_info["description"],
+                "status": ticket_info["status"],
+                "createdAt": ticket_info["createdAt"],
+                "closedAt": ticket_info["closedAt"],
+                "deletedAt": ticket_info["deletedAt"],
+                "taskId": ticket_info["taskId"],
+                "message": ticket_info["messages"],  # ticket_info'dan messages alanını al
+                "attachments": ticket_info["attachments"],
+                "category": ticket_info["category"],
+                "chatId": ticket_info["chatId"],
+                "messages": messages,  # Chat mesajlarını ekle
+                "customer": customer_info if customer_info else {"id": dto_dict.get('customerId')},
+                "agent": agent_info if agent_info else ({"id": dto_dict.get('assignedAgentId')} if dto_dict.get('assignedAgentId') else None)
+            }
+            
+            ticket_dtos.append(result_dict)
+
+        if len(ticket_dtos) == 0:
+            message = _(f"services.ticketService.responses.tickets_list_failed")
+            return {"success": False, "data": [], "message": message}
+        
+        message = _(f"services.ticketService.responses.tickets_listed")
+        return {"success": True, "data": ticket_dtos, "message": message}
+
     def list_tickets_for_agent(self, user, lang='tr', page=None, page_size=None):
         from config.language import set_language, _
         set_language(lang)
@@ -274,6 +380,15 @@ class TicketService:
                 ticket_dict["category"] = category_info
             else:
                 ticket_dict["category"] = None
+            
+            # --- TASK BİLGİSİ EKLE ---
+            ticket_id = ticket_dict.get("id")
+            if ticket_id:
+                task = self.get_task_by_ticket_handler.execute(ticket_id)
+                ticket_dict["taskId"] = task.id if task else None
+            else:
+                ticket_dict["taskId"] = None
+            
             # --- CUSTOMER & AGENT DETAYLARI ---
             token = None
             customer_info = get_user_by_id(ticket_dict.get('customerId'), token) if ticket_dict.get('customerId') else None

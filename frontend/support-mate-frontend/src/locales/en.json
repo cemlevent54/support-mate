@@ -524,8 +524,39 @@
     },
     "buttons": {
       "chat": "Chat",
-      "detail": "Detail"
-    }
+      "detail": "Detail",
+      "createTask": "CREATE TASK",
+      "viewTasks": "TASKS"
+    },
+    "createTaskModal": {
+      "title": "Create New Task",
+      "titleLabel": "Task Title",
+      "descriptionLabel": "Description",
+      "priorityLabel": "Priority",
+      "priorityLow": "Low",
+      "priorityMedium": "Medium",
+      "priorityHigh": "High",
+      "dueDateLabel": "Due Date",
+      "cancel": "Cancel",
+      "create": "Create"
+    },
+    "viewTasksModal": {
+      "title": "Tasks"
+    },
+    "taskValidation": "Please fill in the title and description fields.",
+    "taskCreated": "Task created successfully!",
+    "noTasks": "No tasks have been created for this ticket yet.",
+    "taskPriority": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "taskStatus": {
+      "pending": "Pending",
+      "in_progress": "In Progress",
+      "completed": "Completed"
+    },
+    "taskDueDate": "Due Date"
   },
   "supportRequests": {
     "title": "Support Requests",

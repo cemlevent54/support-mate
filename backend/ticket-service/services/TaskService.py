@@ -116,7 +116,7 @@ class TaskService:
                 customer_id = getattr(ticket['data'], 'customerId', None) if ticket and ticket.get('data') else None
                 customer = get_user_by_id(customer_id, token) if customer_id else None
                 employee = get_user_by_id(updated_task.assignedEmployeeId, token)
-                supporter = get_user_by_id(updated_task.createdByCustomerSupporterId, token)
+                supporter = get_user_by_id(updated_task.createdBy, token)
                 # Customer
                 if customer:
                     html_path = f"templates/email/task_done_customer_{language}.html"
@@ -163,7 +163,7 @@ class TaskService:
                 "data": None,
                 "message": _(f"services.taskService.logs.task_not_found")
             }
-        dto_list = [task.dict() for task in tasks]
+        dto_list = [task.model_dump() if hasattr(task, 'model_dump') else task.dict() for task in tasks]
         return {
             "success": True,
             "data": [self.dto_to_serializable(dto) for dto in dto_list],
@@ -178,7 +178,8 @@ class TaskService:
                 "data": None,
                 "message": _(f"services.taskService.logs.task_not_found")
             }
-        dto = task.dict()
+        # TaskResponseDto'nun model_dump metodunu kullan
+        dto = task.model_dump() if hasattr(task, 'model_dump') else task.dict()
         return {
             "success": True,
             "data": self.dto_to_serializable(dto),
@@ -193,7 +194,7 @@ class TaskService:
         tasks = self.list_handler.handle(employee_id=employee_id)
         if not tasks:
             return {"success": False, "data": None, "message": _(f"services.taskService.logs.task_not_found")}
-        dto_list = [task.dict() for task in tasks]
+        dto_list = [task.model_dump() if hasattr(task, 'model_dump') else task.dict() for task in tasks]
         return {
             "success": True,
             "data": [self.dto_to_serializable(dto) for dto in dto_list],
@@ -220,7 +221,7 @@ class TaskService:
             customer_id = getattr(ticket['data'], 'customerId', None) if ticket and ticket.get('data') else None
             customer = get_user_by_id(customer_id, token) if customer_id else None
             employee = get_user_by_id(task_obj.assignedEmployeeId, token)
-            supporter = get_user_by_id(task_obj.createdByCustomerSupporterId, token)
+            supporter = get_user_by_id(task_obj.createdBy, token)
 
             # Güncelleme işlemleri
             if status == 'APPROVED':

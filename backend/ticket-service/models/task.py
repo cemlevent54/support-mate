@@ -27,7 +27,7 @@ class Task(BaseModel):
     status: TaskStatus = TaskStatus.PENDING
     assignedEmployeeId: str           # uuid (employee)
     relatedTicketId: Optional[str] = None  # ticket-id
-    createdByCustomerSupporterId: str            # uuid (agent)
+    createdBy: str            # uuid (leader)
     deadline: Optional[datetime] = None
     createdAt: Optional[datetime] = None
     isDeleted: bool = False

@@ -27,7 +27,7 @@ def create_task(task: Task, request: Request, user=Depends(get_current_user)):
     lang = get_lang(request)
     set_language(lang)
     task_controller = get_task_controller(lang)
-    if user.get("roleName") != "Customer Supporter":
+    if user.get("roleName") not in ["Customer Supporter", "Leader"]:
         raise HTTPException(status_code=403, detail="Forbidden")
     token = request.headers.get("authorization", "").replace("Bearer ", "")
     return task_controller.create_task_endpoint_for_customer_supporter(task, user, lang, token)
@@ -59,7 +59,7 @@ def get_task(task_id: str, request: Request, user=Depends(get_current_user)):
     lang = get_lang(request)
     set_language(lang)
     task_controller = get_task_controller(lang)
-    if user.get("roleName") not in ["Customer Supporter", "Employee", "Admin"]:
+    if user.get("roleName") not in ["Customer Supporter", "Employee", "Admin", "Leader"]:
         raise HTTPException(status_code=403, detail="Forbidden")
     token = request.headers.get("authorization", "").replace("Bearer ", "")
     return task_controller.get_task_endpoint_for_roles(task_id, user, lang, token)
