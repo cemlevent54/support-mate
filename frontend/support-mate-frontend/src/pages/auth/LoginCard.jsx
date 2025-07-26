@@ -21,6 +21,7 @@ import { GoogleLogin } from '@react-oauth/google';
 import isAdmin from '../../auth/isAdmin';
 import isCustomerSupporter from '../../auth/isCustomerSupporter';
 import isEmployee from '../../auth/isEmployee';
+import isLeader from '../../auth/isLeader';
 
 const LoginCard = ({ onUserLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -70,7 +71,12 @@ const LoginCard = ({ onUserLogin }) => {
   const handleSnackbarClose = () => setSnackbar({ ...snackbar, open: false });
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    // Eğer event varsa prevent default
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     setError('');
     try {
       const result = await login({ email, password });
@@ -88,16 +94,25 @@ const LoginCard = ({ onUserLogin }) => {
         if (isAdmin(decoded)) navigate('/admin');
         else if (isCustomerSupporter(decoded)) navigate('/support');
         else if (isEmployee(decoded)) navigate('/support');
+        else if (isLeader(decoded)) navigate('/support');
         else {
           setTimeout(() => navigate('/'), 1000);
         }
       } else {
-        if (onUserLogin) onUserLogin('user');
-        setTimeout(() => navigate('/'), 1000);
+        // Başarısız login durumunda sayfa yenilenmez, kullanıcı aynı sayfada kalır
+        const errorMessage = t('pages.login.error');
+        setError(errorMessage);
+        setSnackbar({ open: true, message: errorMessage, severity: 'error' });
       }
     } catch (err) {
-      setError(t('pages.login.error'));
-      setSnackbar({ open: true, message: t('pages.login.error'), severity: 'error' });
+      console.log('Login error details:', err);
+      console.log('Error response:', err?.response);
+      console.log('Error data:', err?.response?.data);
+      
+      const errorMessage = err?.response?.data?.message || t('pages.login.error');
+      setError(errorMessage);
+      setSnackbar({ open: true, message: errorMessage, severity: 'error' });
+      // Hata durumunda da sayfa yenilenmez, kullanıcı aynı sayfada kalır
     }
   };
 
@@ -114,40 +129,75 @@ const LoginCard = ({ onUserLogin }) => {
             {t('pages.login.subtitle')}
           </Typography>
         </Box>
-        <Box component="form" noValidate onSubmit={handleSubmit}>
+        <Box component="div" noValidate>
           <Stack spacing={3.5}>
-            <TextField required fullWidth id="email" label={t('pages.login.email')} name="email" autoComplete="email" size="small" value={email} onChange={e => setEmail(e.target.value)} />
-            <TextField
-              required
-              fullWidth
-              name="password"
-              label={t('pages.login.password')}
-              type={showPassword ? 'text' : 'password'}
-              id="password"
-              autoComplete="current-password"
-              size="small"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      aria-label="toggle password visibility"
-                      onClick={() => setShowPassword((show) => !show)}
-                      edge="end"
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
+            <TextField 
+              fullWidth 
+              id="email" 
+              label={t('pages.login.email')} 
+              name="email" 
+              autoComplete="email" 
+              size="small" 
+              value={email} 
+              onChange={e => setEmail(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleSubmit();
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }
               }}
             />
+                          <TextField
+                fullWidth
+                name="password"
+                label={t('pages.login.password')}
+                type={showPassword ? 'text' : 'password'}
+                id="password"
+                autoComplete="current-password"
+                size="small"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleSubmit();
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }
+                }}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label="toggle password visibility"
+                        onClick={() => setShowPassword((show) => !show)}
+                        edge="end"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
           </Stack>
           
           <Button
-            type="submit"
+            type="button"
             fullWidth
             variant="contained"
+            onClick={(e) => handleSubmit(e)}
             sx={{ mt: 3.5, mb: 1.5, py: 1, fontWeight: 600, textTransform: 'none' }}
           >
             {t('pages.login.button')}
@@ -169,16 +219,20 @@ const LoginCard = ({ onUserLogin }) => {
                   else if (isEmployee(decoded)) navigate('/support');
                   else setTimeout(() => navigate('/'), 1000);
                 } else {
+                  // Google login başarısız - sayfa yenilenmez
                   setSnackbar({ open: true, message: t('pages.login.error'), severity: 'error' });
                   console.log('Google login response:', result);
                 }
               } catch (err) {
-                setSnackbar({ open: true, message: t('pages.login.error'), severity: 'error' });
+                const errorMessage = err?.response?.data?.message || t('pages.login.error');
+                setSnackbar({ open: true, message: errorMessage, severity: 'error' });
                 console.error('Google login error:', err);
+                // Google login hata durumunda da sayfa yenilenmez
               }
             }}
             onError={() => {
               setSnackbar({ open: true, message: t('pages.login.error'), severity: 'error' });
+              // Google login error durumunda da sayfa yenilenmez
             }}
             text="signin_with"
             shape="rectangular"
@@ -201,8 +255,25 @@ const LoginCard = ({ onUserLogin }) => {
           </Box>
         </Box>
       </Paper>
-      <Snackbar open={snackbar.open} autoHideDuration={2500} onClose={handleSnackbarClose} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
-        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={snackbar.severity === 'error' ? 5000 : 3000} 
+        onClose={handleSnackbarClose} 
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={handleSnackbarClose} 
+          severity={snackbar.severity} 
+          sx={{ 
+            width: '100%',
+            fontSize: '14px',
+            fontWeight: 500,
+            '& .MuiAlert-message': {
+              fontSize: '14px',
+              fontWeight: 500
+            }
+          }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>

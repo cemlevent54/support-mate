@@ -26,7 +26,9 @@ import SupportKanbanBoard from './pages/support/SupportKanbanBoard';
 import AdminKanbanBoard from './pages/admin/AdminKanbanBoard';
 import { jwtDecode } from 'jwt-decode';
 import isEmployee from './auth/isEmployee';
+import isLeader from './auth/isLeader';
 import FeedbackPage from "./pages/feedback/FeedbackPage";
+import LeaderPanel from './pages/leader/LeaderPanel';
 
 // Global modal handlers - bu fonksiyonlar App.jsx'ten geçirilecek
 let globalOpenCreateTicketModal = () => {};
@@ -109,7 +111,7 @@ export const appRoutes = [
       { path: 'chats', element: <SupportChatsRoleGuard><SupportChatsLayout /></SupportChatsRoleGuard> },
       { path: 'chats/:chatId', element: <SupportChatsRoleGuard><SupportChatsLayout /></SupportChatsRoleGuard> },
       { path: 'kanban', element: <SupportKanbanBoard /> },
-      { index: true, element: <Navigate to="requests" replace /> }
+      { index: true, element: <SupportIndexRoute /> }
     ]
   },
   {
@@ -166,4 +168,27 @@ function ChatChatWrapper() {
   const ticket = location.state?.ticket;
   if (!ticket) return <Navigate to="/my-requests" />;
   return <ChatDialog ticket={ticket} onBack={() => window.history.back()} />;
+}
+
+// Support index route - rol bazlı yönlendirme
+function SupportIndexRoute() {
+  const token = localStorage.getItem('jwt');
+  
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      
+      // Leader rolü için LeaderPanel bileşenini göster
+      if (isLeader(decoded)) {
+        return <LeaderPanel />;
+      }
+      
+      // Diğer roller için requests sayfasına yönlendir
+      return <Navigate to="requests" replace />;
+    } catch (e) {
+      return <Navigate to="requests" replace />;
+    }
+  }
+  
+  return <Navigate to="requests" replace />;
 } 

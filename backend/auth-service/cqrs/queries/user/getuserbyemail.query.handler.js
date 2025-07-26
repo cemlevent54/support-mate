@@ -22,7 +22,9 @@ export class GetUserByEmailQueryHandler {
         roleName: user.roleName,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
-        phoneNumber: user.phoneNumber // <-- Telefon numarası eklendi
+        phoneNumber: user.phoneNumber, // <-- Telefon numarası eklendi
+        isEmailVerified: user.isEmailVerified, // <-- EKLENDİ
+        emailVerifiedAt: user.emailVerifiedAt // <-- EKLENDİ
       };
       logger.info(translation('cqrs.queries.user.getUserByEmail.logs.success'), { user });
       return result;

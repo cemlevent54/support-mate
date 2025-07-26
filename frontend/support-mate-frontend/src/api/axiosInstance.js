@@ -58,22 +58,26 @@ axiosInstance.interceptors.response.use(
           // Refresh token başarısız olduğunda token'ları temizle
           localStorage.removeItem('jwt');
           localStorage.removeItem('refreshToken');
-          // Ticket oluşturma işlemi değilse login'e yönlendir
-          if (!originalRequest.url.includes('/api/tickets') || originalRequest.method !== 'post') {
+          // Login sayfasında değilse ve ticket oluşturma işlemi değilse login'e yönlendir
+          if (!originalRequest.url.includes('/api/tickets') && 
+              originalRequest.method !== 'post' && 
+              !window.location.pathname.includes('/login')) {
             window.location.href = '/login';
           }
           return Promise.reject(refreshError);
         }
-      } else {
-        // Diğer tüm 401 durumlarında token'ları temizle
-        localStorage.removeItem('jwt');
-        localStorage.removeItem('refreshToken');
-        // Ticket oluşturma işlemi değilse login'e yönlendir
-        if (!originalRequest.url.includes('/api/tickets') || originalRequest.method !== 'post') {
-          window.location.href = '/login';
+              } else {
+          // Diğer tüm 401 durumlarında token'ları temizle
+          localStorage.removeItem('jwt');
+          localStorage.removeItem('refreshToken');
+          // Login sayfasında değilse ve ticket oluşturma işlemi değilse login'e yönlendir
+          if (!originalRequest.url.includes('/api/tickets') && 
+              originalRequest.method !== 'post' && 
+              !window.location.pathname.includes('/login')) {
+            window.location.href = '/login';
+          }
+          return Promise.reject(error);
         }
-        return Promise.reject(error);
-      }
     }
     return Promise.reject(error);
   }

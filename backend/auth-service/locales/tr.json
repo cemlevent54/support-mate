@@ -276,6 +276,7 @@
         "loginSuccess": "Giriş başarılı",
         "loginFailed": "Giriş başarısız: email veya şifre hatalı",
         "loginError": "Giriş sırasında hata oluştu",
+        "emailNotVerified": "E-posta adresiniz henüz doğrulanmamış. Lütfen e-posta kutunuzu kontrol edin ve doğrulama linkine tıklayın.",
         "logoutRequest": "Çıkış isteği alındı",
         "logoutSuccess": "Çıkış başarılı",
         "logoutError": "Çıkış sırasında hata oluştu",
@@ -321,7 +322,8 @@
         "googleRedisPushSuccess": "Redis rPush('online_users_queue', userId) (Google) başarılı",
         "googleCurrentOnlineUsers": "Şu anda online Customer Supporter userId'leri (queue) (Google):",
         "googleCustomerSupporterAlreadyOnline": "Customer Supporter zaten online (Google)",
-        "googleCustomerSupporterOnlineError": "Customer Supporter online kaydedilemedi (Google)"
+        "googleCustomerSupporterOnlineError": "Customer Supporter online kaydedilemedi (Google)",
+        "verificationCodeResent": "Kodun süresi doldu. Yeni doğrulama kodu e-posta adresinize gönderildi."
       }
     },
     "permissionService": {

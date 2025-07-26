@@ -9,7 +9,8 @@ import {
   handleTaskAssigned,
   handleTaskDone,
   handleTaskApprovedEvent,
-  handleTaskRejectedEvent
+  handleTaskRejectedEvent,
+  handleUserVerificationResendEvent
 } from '../events/index.js';
 
 export async function startKafkaConsumer() {
@@ -33,6 +34,8 @@ export async function startKafkaConsumer() {
     logger.info('Kafka consumer subscribed to topic: task-approved');
     await kafkaService.consumer.subscribe({ topic: 'task-rejected', fromBeginning: false });
     logger.info('Kafka consumer subscribed to topic: task-rejected');
+    await kafkaService.consumer.subscribe({ topic: 'user-verification-resend', fromBeginning: false });
+    logger.info('Kafka consumer subscribed to topic: user-verification-resend');
     await kafkaService.consumer.run({
       eachMessage: async ({ topic, message }) => {
         const data = JSON.parse(message.value.toString());
@@ -54,6 +57,8 @@ export async function startKafkaConsumer() {
           await handleTaskApprovedEvent(data);
         } else if (topic === 'task-rejected') {
           await handleTaskRejectedEvent(data);
+        } else if (topic === 'user-verification-resend') {
+          await handleUserVerificationResendEvent(data);
         }
       },
     });

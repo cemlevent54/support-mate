@@ -15,6 +15,7 @@ import EmployeeKanbanBoard from '../../pages/support/EmployeeKanbanBoard';
 import SupportKanbanBoard from '../../pages/support/SupportKanbanBoard';
 import isEmployee from '../../auth/isEmployee';
 import isCustomerSupporter from '../../auth/isCustomerSupporter';
+import isLeader from '../../auth/isLeader';
 import socket from '../../socket/socket';
 import { useChatContext } from '../chats/ChatContext';
 import { listMessagesByChatId , BASE_URL2 } from '../../api/messagesApi';
@@ -93,8 +94,11 @@ export default function SupportLayout() {
   // Eğer employee ise support paneline erişimi engelle
 
   // Employee ise chats ve requests menüsünü gösterme
+  // Leader ise hiçbir menüyü gösterme (sadece dil değişimi)
   const filteredSidebarItems = isEmployee({ roleName })
     ? sidebarItems.filter(item => item.key !== 'chats' && item.key !== 'requests')
+    : isLeader({ roleName })
+    ? [] // Leader için hiçbir menü gösterme
     : sidebarItems;
 
   // Realtime unread count state
@@ -261,7 +265,17 @@ export default function SupportLayout() {
       <Paper elevation={3} style={{ width: 220, minHeight: '100vh', borderRadius: 0, padding: 16, display: 'flex', flexDirection: 'column', background: '#111', color: '#fff' }}>
         {/* Sidebar içeriği */}
         <Typography variant="h6" fontWeight={700} mb={1} textAlign="center" sx={{ color: '#fff' }}>
-          {isEmployee({ roleName }) ? 'Employee Panel' : 'Support Panel'}
+          {(() => {
+            if (isCustomerSupporter({ roleName })) {
+              return 'Support Panel';
+            } else if (isEmployee({ roleName })) {
+              return 'Employee Panel';
+            } else if (isLeader({ roleName })) {
+              return 'Leader Panel';
+            } else {
+              return 'Support Panel';
+            }
+          })()}
         </Typography>
         <div style={{ marginBottom: 8 }}>
           <label htmlFor="language-select" style={{ color: '#fff', fontSize: 14, marginBottom: 4, display: 'block' }}>Dil Seçimi</label>

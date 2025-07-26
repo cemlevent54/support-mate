@@ -277,6 +277,7 @@
         "loginSuccess": "Login successful",
         "loginFailed": "Login failed, email or password is incorrect",
         "loginError": "Error during login",
+        "emailNotVerified": "Your email address has not been verified yet. Please check your email inbox and click the verification link.",
         "logoutRequest": "Logout request received",
         "logoutSuccess": "Logout successful",
         "logoutError": "Error during logout",

@@ -7,6 +7,7 @@ import handleTaskAssigned from './handleTaskAssignedEvent.js';
 import handleTaskDone from './handleTaskDoneEvent.js';
 import handleTaskApprovedEvent from './handleTaskApprovedEvent.js';
 import handleTaskRejectedEvent from './handleTaskRejectedEvent.js';
+import handleUserVerificationResendEvent from './handleUserVerificationResendEvent.js';
 
 export {
   handleUserRegistered,
@@ -17,5 +18,6 @@ export {
   handleTaskAssigned,
   handleTaskDone,
   handleTaskApprovedEvent,
-  handleTaskRejectedEvent
+  handleTaskRejectedEvent,
+  handleUserVerificationResendEvent
 };

@@ -18,7 +18,7 @@ import {
 } from '../cqrs/index.js';
 import userRepository from '../repositories/user.repository.js';
 import roleService from './role.service.js';
-import { sendUserRegisteredEvent, sendPasswordResetEvent, sendUserVerifiedEvent, sendAgentOnlineEvent } from '../kafka/kafkaProducer.js';
+import { sendUserRegisteredEvent, sendPasswordResetEvent, sendUserVerifiedEvent, sendAgentOnlineEvent, sendUserVerificationResendEvent } from '../kafka/kafkaProducer.js';
 import translation from '../config/translation.js';
 import { OAuth2Client } from 'google-auth-library';
 import crypto from 'crypto';
@@ -136,12 +136,28 @@ class AuthService {
         unauthorizedError(res, translation('services.authService.logs.loginFailed'));
         return;
       }
-      const isMatch = await PasswordHelper.comparePassword(password, user.password || '');
-      if (!isMatch) {
-        logger.warn(translation('services.authService.logs.loginFailed'), { email });
-        unauthorizedError(res, translation('services.authService.logs.loginFailed'));
+      logger.info('Login email verify check', {
+        isEmailVerified: user.isEmailVerified,
+        emailVerifiedAt: user.emailVerifiedAt,
+        typeofIsEmailVerified: typeof user.isEmailVerified,
+        typeofEmailVerifiedAt: typeof user.emailVerifiedAt
+      });
+      // Email doğrulama kontrolü - daha sağlam
+      if (
+        user.isEmailVerified !== true ||
+        !user.emailVerifiedAt ||
+        user.emailVerifiedAt === null ||
+        user.emailVerifiedAt === undefined
+      ) {
+        logger.warn(translation('services.authService.logs.emailNotVerified'), {
+          email,
+          isEmailVerified: user.isEmailVerified,
+          emailVerifiedAt: user.emailVerifiedAt
+        });
+        unauthorizedError(res, translation('services.authService.logs.emailNotVerified'));
         return;
       }
+      
       const activeSession = await JWTService.findActiveSession(user.id);
       if (activeSession) {
         logger.warn(translation('services.authService.logs.loginFailed'), { userId: user.id });
@@ -504,6 +520,17 @@ class AuthService {
         user.googleId = payload.sub;
         await user.save();
       }
+      
+      // Email doğrulama kontrolü (Google login için) - hem isEmailVerified hem de emailVerifiedAt kontrolü
+      if (!user.isEmailVerified || !user.emailVerifiedAt) {
+        logger.warn(translation('services.authService.logs.emailNotVerified'), { 
+          email: payload.email, 
+          isEmailVerified: user.isEmailVerified, 
+          emailVerifiedAt: user.emailVerifiedAt 
+        });
+        return unauthorizedError(res, translation('services.authService.logs.emailNotVerified'));
+      }
+      
       // JWT üret
       const payloadJwt = {
         id: user.id,
@@ -625,33 +652,79 @@ class AuthService {
 
   async verifyEmail(req, res) {
     try {
+      logger.info('verifyEmail request received', { body: req.body });
       const { code, token } = req.body;
       if (!code || !token) {
+        logger.warn('verifyEmail: Missing code or token', { code: !!code, token: !!token });
         return unauthorizedError(res, translation('services.authService.logs.resetPasswordError'));
       }
       // Token'ı doğrula ve çöz
       let decoded;
       try {
+        logger.info('verifyEmail: Verifying token', { token: token.substring(0, 20) + '...' });
         decoded = jwt.verify(token, EMAIL_VERIFY_TOKEN_SECRET);
+        logger.info('verifyEmail: Token verified successfully', { email: decoded.email, code: decoded.code });
       } catch (err) {
+        logger.error('verifyEmail: Token verification failed', { error: err.message });
+        // Eğer jwt expired ise yeni kod ve mail gönder
+        if (err.name === 'TokenExpiredError' || err.message === 'jwt expired') {
+          try {
+            // Token'ı decode et (expiration kontrolsüz)
+            const decodedPayload = jwt.decode(token);
+            const email = decodedPayload?.email;
+            if (!email) {
+              logger.warn('verifyEmail: No email in expired token');
+              return unauthorizedError(res, translation('repositories.userRepository.logs.notFound'));
+            }
+            // Kullanıcıyı bul
+            const user = await userRepository.findAnyUserByEmail(email);
+            if (!user) {
+              logger.warn('verifyEmail: No user found for expired token', { email });
+              return unauthorizedError(res, translation('repositories.userRepository.logs.notFound'));
+            }
+            // Yeni kod ve token üret
+            const newCode = Math.floor(100000 + Math.random() * 900000).toString();
+            const newExpiresAt = Date.now() + 10 * 60 * 1000;
+            global.emailVerificationCodes[email] = { code: newCode, expiresAt: newExpiresAt };
+            const newToken = JWTService.generateEmailVerifyToken(email, newCode, newExpiresAt, EMAIL_VERIFY_TOKEN_SECRET);
+            // Mail gönder (YENİ EVENT)
+            const frontendUrl = process.env.WEBSITE_URL;
+            const verifyUrl = `${frontendUrl}/verify-email?email=${encodeURIComponent(email)}&token=${encodeURIComponent(newToken)}`;
+            const language = user.language || 'tr';
+            await sendUserVerificationResendEvent(user, language, newCode, verifyUrl);
+            logger.info('verifyEmail: New verification code and email sent (resend event)', { email, newCode });
+            return unauthorizedError(res, translation('services.authService.logs.verificationCodeResent'));
+          } catch (mailErr) {
+            logger.error('verifyEmail: Failed to send new verification code', { error: mailErr });
+            return unauthorizedError(res, translation('services.authService.logs.resetPasswordError'));
+          }
+        }
         return unauthorizedError(res, translation('services.authService.logs.resetPasswordError'));
       }
       const email = decoded.email;
       if (!email) {
+        logger.warn('verifyEmail: No email in token');
         return unauthorizedError(res, translation('repositories.userRepository.logs.notFound'));
       }
+      logger.info('verifyEmail: Checking code match', { tokenCode: decoded.code, providedCode: code });
       if (decoded.code !== code) {
+        logger.warn('verifyEmail: Code mismatch', { tokenCode: decoded.code, providedCode: code });
         return unauthorizedError(res, translation('services.authService.logs.resetPasswordError'));
       }
       // Kodun süresi geçti mi kontrolü (JWT exp zaten kontrol ediyor)
+      logger.info('verifyEmail: Checking global codes', { email, globalCodes: Object.keys(global.emailVerificationCodes || {}) });
       const record = global.emailVerificationCodes[email];
       if (!record) {
+        logger.warn('verifyEmail: No record found in global codes', { email });
         return unauthorizedError(res, translation('services.authService.logs.resetPasswordError'));
       }
+      logger.info('verifyEmail: Record found', { recordCode: record.code, providedCode: code, expiresAt: record.expiresAt });
       if (record.code !== code) {
+        logger.warn('verifyEmail: Record code mismatch', { recordCode: record.code, providedCode: code });
         return unauthorizedError(res, translation('services.authService.logs.resetPasswordError'));
       }
       if (Date.now() > record.expiresAt) {
+        logger.warn('verifyEmail: Code expired', { expiresAt: record.expiresAt, now: Date.now() });
         delete global.emailVerificationCodes[email];
         return unauthorizedError(res, translation('services.authService.logs.resetPasswordError'));
       }

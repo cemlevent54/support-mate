@@ -105,3 +105,40 @@ export async function sendAgentOnlineEvent(agentId, agentToken = null) {
     logger.error(`[KAFKA] Failed to send agent_online event:`, err);
   }
 }
+
+export async function sendUserVerificationResendEvent(user, language = 'tr', code = '', verifyUrl = '') {
+  try {
+    // Template dosyasını oku
+    const templateFile = language === 'en'
+      ? path.join(__dirname, '../templates/email/verification_resend_en.html')
+      : path.join(__dirname, '../templates/email/verification_resend_tr.html');
+    let template = fs.readFileSync(templateFile, 'utf8');
+    // Değişkenleri replace et
+    template = template
+      .replace(/{{firstName}}/g, user.firstName || '')
+      .replace(/{{code}}/g, code)
+      .replace(/{{verifyUrl}}/g, verifyUrl);
+
+    logger.info('--- VERIFICATION RESEND MAIL ---');
+    logger.info(`To: ${user.email}`);
+    logger.info(`Subject: ${language === 'en' ? 'Your New Verification Code' : 'Yeni Doğrulama Kodunuz'}`);
+    logger.info(`HTML: ${template}`);
+    await kafkaService.connectProducer();
+    await kafkaService.producer.send({
+      topic: 'user-verification-resend',
+      messages: [{
+        value: JSON.stringify({
+          email: user.email,
+          firstName: user.firstName,
+          language,
+          code,
+          verifyUrl,
+          html: template
+        })
+      }],
+    });
+    await kafkaService.disconnectProducer();
+  } catch (error) {
+    console.error('Kafka verification resend event or mail could not be sent:', error);
+  }
+}
