@@ -255,6 +255,10 @@ class MessageService:
         handler = ListAgentChatsWithMessagesQueryHandler()
         user_id = user.get("id")
         result = handler.execute(user_id)
+        
+        if not result.get("success", True):
+            return result
+        
         all_data = result["data"]
         total = len(all_data)
         if page is not None and page_size is not None:
@@ -275,6 +279,10 @@ class MessageService:
         handler = ListUserChatsWithMessagesQueryHandler()
         user_id = user.get("id")
         result = handler.execute(user_id)
+        
+        if not result.get("success", True):
+            return result
+        
         all_data = result["data"]
         total = len(all_data)
         if page is not None and page_size is not None:

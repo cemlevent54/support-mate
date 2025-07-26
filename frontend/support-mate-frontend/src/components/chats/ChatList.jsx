@@ -102,6 +102,8 @@ const getChatCategoryName = (chat) => {
 };
 
 function ChatListItems({ sortedChatList, loading, activeChatTicketId, handleChatSelect, unreadCounts, newMessageChatIds }) {
+  const { t } = useTranslation();
+  
   if (loading) {
     return (
       <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 200 }}>
@@ -109,6 +111,28 @@ function ChatListItems({ sortedChatList, loading, activeChatTicketId, handleChat
       </div>
     );
   }
+
+  if (sortedChatList.length === 0) {
+    return (
+      <div style={{ 
+        width: '100%', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        minHeight: 200,
+        flexDirection: 'column',
+        color: '#666'
+      }}>
+        <Typography variant="body2" sx={{ mb: 1 }}>
+          {t('supportDashboard.noChatsFound')}
+        </Typography>
+        <Typography variant="caption" sx={{ color: '#999' }}>
+          {t('supportDashboard.noChatsFoundSubtitle')}
+        </Typography>
+      </div>
+    );
+  }
+
   return (
     <List sx={{ 
       height: '100%', 
@@ -132,166 +156,161 @@ function ChatListItems({ sortedChatList, loading, activeChatTicketId, handleChat
       scrollbarWidth: 'none',
       msOverflowStyle: 'none',
     }}>
-      {sortedChatList.length === 0 ? (
-        <></>
-      ) : (
-        sortedChatList.map((chat, index) => {
-          const chatId = String(chat._id || chat.chatId || chat.id);
-          const unreadCount = unreadCounts && unreadCounts[String(chatId)];
-          // Debug: unreadCounts key'leri ve chatId karşılaştır
-          if (unreadCounts) {
-            const unreadKeys = Object.keys(unreadCounts);
-            if (!unreadKeys.includes(chatId)) {
-              console.warn('[DEBUG][ChatList] chatId eşleşmiyor:', { chatId, unreadKeys, unreadCounts });
-            } else {
-              console.log('[DEBUG][ChatList] chatId eşleşiyor:', { chatId, unreadCount });
-            }
+      {sortedChatList.map((chat, index) => {
+        const chatId = String(chat._id || chat.chatId || chat.id);
+        const unreadCount = unreadCounts && unreadCounts[String(chatId)];
+        // Debug: unreadCounts key'leri ve chatId karşılaştır
+        if (unreadCounts) {
+          const unreadKeys = Object.keys(unreadCounts);
+          if (!unreadKeys.includes(chatId)) {
+            console.warn('[DEBUG][ChatList] chatId eşleşmiyor:', { chatId, unreadKeys, unreadCounts });
+          } else {
+            console.log('[DEBUG][ChatList] chatId eşleşiyor:', { chatId, unreadCount });
           }
-          const isNewMessage = newMessageChatIds.has(chatId);
-          
-          return (
-            <ListItem 
-              key={chat._id || chat.chatId || chat.id} 
-              disablePadding
+        }
+        const isNewMessage = newMessageChatIds.has(chatId);
+        
+        return (
+          <ListItem 
+            key={chat._id || chat.chatId || chat.id} 
+            disablePadding
+            sx={{
+              position: 'relative',
+              animation: 'slideInFromBottom 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+              animationDelay: `${index * 0.1}s`,
+              animationFillMode: 'both',
+              opacity: 0,
+              transform: 'translateY(60px)',
+              backgroundColor: 'transparent',
+              '@keyframes slideInFromBottom': {
+                '0%': {
+                  opacity: 0,
+                  transform: 'translateY(60px) scale(0.9)',
+                  backgroundColor: 'transparent',
+                },
+                '30%': {
+                  opacity: 0.5,
+                  transform: 'translateY(40px) scale(0.95)',
+                  backgroundColor: 'transparent',
+                },
+                '60%': {
+                  opacity: 0.8,
+                  transform: 'translateY(20px) scale(0.98)',
+                  backgroundColor: 'transparent',
+                },
+                '100%': {
+                  opacity: 1,
+                  transform: 'translateY(0) scale(1)',
+                  backgroundColor: 'transparent',
+                },
+              },
+            }}
+          >
+            <ListItemButton
+              selected={
+                !!activeChatTicketId &&
+                (String(activeChatTicketId) === String(chat._id || chat.chatId || chat.id))
+              }
+              onClick={() => handleChatSelect(chat)}
               sx={{
-                position: 'relative',
-                animation: 'slideInFromBottom 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-                animationDelay: `${index * 0.1}s`,
-                animationFillMode: 'both',
-                opacity: 0,
-                transform: 'translateY(60px)',
-                backgroundColor: 'transparent',
-                '@keyframes slideInFromBottom': {
+                color: '#222',
+                bgcolor: (() => {
+                  // chatId ve unreadCount yukarıda tanımlı
+                  if (unreadCount > 0) {
+                    console.log('[ChatList] Kırmızı arka plan uygulanıyor:', chatId);
+                    return '#ffcccc'; // kırmızımsı arka plan
+                  } else if (String(activeChatTicketId) === String(chat._id || chat.chatId || chat.id)) {
+                    return '#f0f8ff';
+                  } else {
+                    return 'transparent';
+                  }
+                })(),
+                '&:hover': {
+                  bgcolor: (() => {
+                    const chatId = String(chat._id || chat.chatId || chat.id);
+                    const unreadCount = unreadCounts && unreadCounts[chatId];
+                    
+                    if (unreadCount > 0) {
+                      return '#ffb3b3'; // daha koyu kırmızı
+                    } else {
+                      return '#f5f5f5';
+                    }
+                  })(),
+                  transform: 'translateX(2px)',
+                },
+                py: 2,
+                px: 3,
+                borderBottom: index === sortedChatList.length - 1 ? 'none' : '1px solid #f0f0f0',
+                '&.Mui-selected': {
+                  bgcolor: '#e3f2fd',
+                  '&:hover': { bgcolor: '#e3f2fd' },
+                  borderLeft: '4px solid #1976d2',
+                },
+                transition: 'all 0.3s ease-in-out',
+                transform: chat.isNewMessage ? 'translateX(4px)' : 'translateX(0)',
+                borderLeft: chat.isNewMessage ? '4px solid #ffc107' : 'none',
+                animation: chat.isNewMessage ? 'newMessagePulse 2s ease-in-out' : 'none',
+                '@keyframes newMessagePulse': {
                   '0%': {
-                    opacity: 0,
-                    transform: 'translateY(60px) scale(0.9)',
-                    backgroundColor: 'transparent',
+                    backgroundColor: '#fff3cd',
+                    transform: 'translateX(4px) scale(1.02)',
                   },
-                  '30%': {
-                    opacity: 0.5,
-                    transform: 'translateY(40px) scale(0.95)',
-                    backgroundColor: 'transparent',
-                  },
-                  '60%': {
-                    opacity: 0.8,
-                    transform: 'translateY(20px) scale(0.98)',
-                    backgroundColor: 'transparent',
+                  '50%': {
+                    backgroundColor: '#fff3cd',
+                    transform: 'translateX(4px) scale(1.01)',
                   },
                   '100%': {
-                    opacity: 1,
-                    transform: 'translateY(0) scale(1)',
                     backgroundColor: 'transparent',
+                    transform: 'translateX(0) scale(1)',
                   },
                 },
               }}
             >
-                              <ListItemButton
-                  selected={
-                    !!activeChatTicketId &&
-                    (String(activeChatTicketId) === String(chat._id || chat.chatId || chat.id))
-                  }
-                  onClick={() => handleChatSelect(chat)}
-                  sx={{
-                    color: '#222',
-                    bgcolor: (() => {
-                      // chatId ve unreadCount yukarıda tanımlı
-                      if (unreadCount > 0) {
-                        console.log('[ChatList] Kırmızı arka plan uygulanıyor:', chatId);
-                        return '#ffcccc'; // kırmızımsı arka plan
-                      } else if (String(activeChatTicketId) === String(chat._id || chat.chatId || chat.id)) {
-                        return '#f0f8ff';
-                      } else {
-                        return 'transparent';
-                      }
-                    })(),
-                    '&:hover': {
-                      bgcolor: (() => {
-                        const chatId = String(chat._id || chat.chatId || chat.id);
-                        const unreadCount = unreadCounts && unreadCounts[chatId];
-                        
-                        if (unreadCount > 0) {
-                          return '#ffb3b3'; // daha koyu kırmızı
-                        } else {
-                          return '#f5f5f5';
-                        }
-                      })(),
-                      transform: 'translateX(2px)',
-                    },
-                  py: 2,
-                  px: 3,
-                  borderBottom: index === sortedChatList.length - 1 ? 'none' : '1px solid #f0f0f0',
-                  '&.Mui-selected': {
-                    bgcolor: '#e3f2fd',
-                    '&:hover': { bgcolor: '#e3f2fd' },
-                    borderLeft: '4px solid #1976d2',
-                  },
-                  transition: 'all 0.3s ease-in-out',
-                  transform: chat.isNewMessage ? 'translateX(4px)' : 'translateX(0)',
-                  borderLeft: chat.isNewMessage ? '4px solid #ffc107' : 'none',
-                  animation: chat.isNewMessage ? 'newMessagePulse 2s ease-in-out' : 'none',
-                  '@keyframes newMessagePulse': {
-                    '0%': {
-                      backgroundColor: '#fff3cd',
-                      transform: 'translateX(4px) scale(1.02)',
-                    },
-                    '50%': {
-                      backgroundColor: '#fff3cd',
-                      transform: 'translateX(4px) scale(1.01)',
-                    },
-                    '100%': {
-                      backgroundColor: 'transparent',
-                      transform: 'translateX(0) scale(1)',
-                    },
-                  },
-                }}
-              >
-                <ListItemAvatar>
-                  <Badge
-                    color="error"
-                    badgeContent={unreadCount > 0 ? unreadCount : 0}
-                    invisible={!unreadCount || unreadCount === 0}
-                    overlap="circular"
-                    anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+              <ListItemAvatar>
+                <Badge
+                  color="error"
+                  badgeContent={unreadCount > 0 ? unreadCount : 0}
+                  invisible={!unreadCount || unreadCount === 0}
+                  overlap="circular"
+                  anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                >
+                  <Avatar 
+                    sx={{ 
+                      bgcolor: '#1976d2', 
+                      width: 48, 
+                      height: 48,
+                      transition: 'all 0.2s ease-in-out',
+                      '&:hover': {
+                        transform: 'scale(1.05)',
+                      },
+                    }}
                   >
-                    <Avatar 
-                      sx={{ 
-                        bgcolor: '#1976d2', 
-                        width: 48, 
-                        height: 48,
-                        transition: 'all 0.2s ease-in-out',
-                        '&:hover': {
-                          transform: 'scale(1.05)',
-                        },
-                      }}
-                    >
-                      <PersonIcon />
-                    </Avatar>
-                  </Badge>
-                </ListItemAvatar>
-                <ListItemText
-                  primary={
-                    <span style={{ fontWeight: 600, fontSize: 15, color: '#222' }}>
-                      {getChatDisplayName(chat)}
-                    </span>
-                  }
-                  secondary={
-                    <span style={{ color: '#666', fontSize: 13, fontWeight: 400 }}>
-                      {getLastMessage(chat)}
-                      <br />
-                      <span style={{ color: '#999', fontSize: 11 }}>{getChatCategoryName(chat)}</span>
-                      {' • '}
-                      <span style={{ color: '#999', fontSize: 11 }}>{getLastMessageTime(chat)}</span>
-                    </span>
-                  }
-                  sx={{ ml: 1 }}
-                />
-              </ListItemButton>
-            </ListItem>
-          );
-        })
-      )}
+                    <PersonIcon />
+                  </Avatar>
+                </Badge>
+              </ListItemAvatar>
+              <ListItemText
+                primary={
+                  <span style={{ fontWeight: 600, fontSize: 15, color: '#222' }}>
+                    {getChatDisplayName(chat)}
+                  </span>
+                }
+                secondary={
+                  <span style={{ color: '#666', fontSize: 13, fontWeight: 400 }}>
+                    {getLastMessage(chat)}
+                    <br />
+                    <span style={{ color: '#999', fontSize: 11 }}>{getChatCategoryName(chat)}</span>
+                    {' • '}
+                    <span style={{ color: '#999', fontSize: 11 }}>{getLastMessageTime(chat)}</span>
+                  </span>
+                }
+                sx={{ ml: 1 }}
+              />
+            </ListItemButton>
+          </ListItem>
+        );
+      })}
     </List>
-    
   );
 }
 

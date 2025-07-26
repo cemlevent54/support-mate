@@ -246,6 +246,8 @@
     },
     "chatsTitle": "Sohbetler",
     "searchChat": "Sohbet ara...",
+    "noChatsFound": "Sohbet bulunamadı",
+    "noChatsFoundSubtitle": "Henüz hiç sohbet yok",
 
     "requestsTitle": "Destek Talepleri",
     "requestsDesc": "Destek talepleri burada görünecek.",
