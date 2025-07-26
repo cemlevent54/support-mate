@@ -36,16 +36,19 @@ except Exception as e:
 # Socket.IO event handling
 @sio.event
 async def connect(sid, environ):
+    active_users[sid] = {"connected": True, "user_id": None, "user_role": None}
     logger.info(_(f"config.socketio.client_connected").format(sid=sid, count=len(active_users)+1))
 
 @sio.event
 async def disconnect(sid):
-    for chat_id, room in list(rooms.items()):
-        for user_id, info in list(room["activeUsers"].items()):
-            if info["socketId"] == sid:
-                del room["activeUsers"][user_id]
-                logger.info(_(f"config.socketio.client_disconnected").format(sid=sid, count=len(active_users)-1))
-        if not room["activeUsers"]:
+    if sid in active_users:
+        del active_users[sid]
+    for chat_id in list(rooms.keys()):
+        rooms[chat_id]["activeUsers"] = {
+            k: v for k, v in rooms[chat_id]["activeUsers"].items() if v["socketId"] != sid
+        }
+        logger.info(_(f"config.socketio.client_disconnected").format(sid=sid, count=len(active_users)-1))
+        if not rooms[chat_id]["activeUsers"]:
             del rooms[chat_id]
     logger.info(_(f"config.socketio.client_disconnected").format(sid=sid, count=len(active_users)-1))
 
@@ -92,23 +95,108 @@ async def send_chat_message(sid, data):
     logger.info(_(f"config.socketio.send_message").format(user=user_id, chat_id=chat_id, message=content, data=data))
 
 @sio.event
+async def new_chat_created(sid, data):
+    """
+    Frontend'den gelen new_chat_created event'ini global olarak yayınla
+    """
+    chat_id = data.get("chatId")
+    user_id = data.get("userId")
+    message = data.get("message")
+    receiver_id = data.get('receiverId')
+    
+    logger.info(f"[SOCKET][new_chat_created] Event alındı: {data}")
+    
+    if not chat_id or not user_id or not message:
+        logger.warning(f"[SOCKET][new_chat_created] Eksik veri: {data}")
+        return
+    
+    # Global olarak tüm kullanıcılara emit et (sadece bir kez)
+    event_data = {
+        "chatId": chat_id,
+        "message": message,
+        "userId": user_id,
+        "receiverId": receiver_id
+    }
+    
+    logger.info(f"[SOCKET][new_chat_created] Global emit ediliyor: {event_data}")
+    await sio.emit("new_chat_created", event_data)
+    logger.info(f"[SOCKET][new_chat_created] Global emit edildi")
+
+@sio.event
 async def send_message(sid, data):
+    """
+    Tek bir endpoint ile mesaj gönderir. Chat yoksa otomatik olarak yeni chat oluşturur.
+    data: {
+        chatId: str,
+        message: dict,  # Mesaj DTO/dict
+        userId: str,
+        receiverId: str (opsiyonel)
+    }
+    """
     chat_id = data.get("chatId")
     user_id = data.get("userId")
     message = data.get("message")
     receiver_id = data.get('receiverId')
     logger.info(f"[SOCKET][send_message] receiver_id: {receiver_id}")
+    
     if not chat_id or not user_id or not message:
         await sio.emit('error', {'message': 'chatId, userId ve message gereklidir'}, to=sid)
         return
+    
+    # Mesajı chat odasına emit et
     await sio.emit("receive_chat_message", {"chatId": chat_id, "message": message, "userId": user_id}, room=chat_id)
     logger.info(_(f"config.socketio.send_message").format(user=user_id, chat_id=chat_id, message=message, data=data))
+    
+    # --- YENİ CHAT KONTROLÜ ---
+    # Chat'in daha önce var olup olmadığını kontrol et
+    client, db = get_mongo_client_and_db()
+    messages_collection = db["messages"]
+    chat_exists = messages_collection.count_documents({"chatId": chat_id}) > 0
+    message_count = messages_collection.count_documents({"chatId": chat_id})
+    client.close()
+    
+    logger.info(f"[SOCKET][send_message] Chat kontrolü - chatId: {chat_id}, chat_exists: {chat_exists}")
+    logger.info(f"[SOCKET][send_message] MongoDB'de bu chatId ile kaç mesaj var: {message_count}")
+    
+    # TEST: Her mesajda new_chat_created emit et (geçici çözüm)
+    event_data = {
+        "chatId": chat_id,
+        "message": message,
+        "userId": user_id,
+        "receiverId": receiver_id
+    }
+    
+    # Eğer chat yoksa, yeni chat oluşturuldu event'i emit et
+    if not chat_exists:
+        logger.info(f"[SOCKET][send_message] Chat yok, yeni chat oluşturuluyor: {chat_id}")
+        
+        # Global olarak tüm support kullanıcılarına emit et
+        logger.info(f"[SOCKET][send_message] Global new_chat_created emit ediliyor: {event_data}")
+        await sio.emit("new_chat_created", event_data)
+        logger.info(f"[SOCKET][send_message] Global new_chat_created emit edildi")
+        
+        # Ayrıca receiver'a da bildirim gönder
+        if receiver_id:
+            logger.info(f"[SOCKET][send_message] Receiver'a özel bildirim gönderiliyor: {receiver_id}")
+            for sid_, user_info in active_users.items():
+                if user_info['user_id'] == receiver_id:
+                    logger.info(f"[SOCKET][send_message] Receiver bulundu, sid: {sid_}")
+                    await sio.emit("new_chat_created", event_data, to=sid_)
+                    logger.info(f"[SOCKET][send_message] Receiver'a new_chat_created gönderildi")
+                    break
+            else:
+                logger.warning(f"[SOCKET][send_message] Receiver bulunamadı: {receiver_id}")
+        else:
+            logger.warning(f"[SOCKET][send_message] receiver_id yok")
+    else:
+        logger.info(f"[SOCKET][send_message] Chat zaten var: {chat_id}")
+    
     # --- UNREAD COUNTS EMIT ---
-    # Burada ilgili agent'lara unread_counts emit et (örnek: receiverId'ye)
     if receiver_id:
         unread_counts = get_unread_counts_for_user(receiver_id)
         for sid_, user_info in active_users.items():
-            if user_info['user_id'] == receiver_id:
+            # Güvenli key kontrolü
+            if isinstance(user_info, dict) and 'user_id' in user_info and user_info['user_id'] == receiver_id:
                 await sio.emit('unread_counts', {'counts': unread_counts}, to=sid_)
 
 @sio.event
@@ -201,48 +289,7 @@ async def leave_room(sid, data):
         if not rooms[chat_id]["activeUsers"]:
             del rooms[chat_id]
 
-@sio.event
-def create_message(sid, data):
-    """
-    Yeni bir chat ve ilk mesaj oluşturulduğunda frontend tarafından tetiklenir.
-    data: {
-        chatId: str,
-        message: dict,  # Mesaj DTO/dict
-        userId: str
-    }
-    """
-    chat_id = data.get("chatId")
-    message = data.get("message")
-    user_id = data.get("userId")
-    receiver_id = data.get('receiverId')
-    logger.info(f"[SOCKET][create_message] receiver_id: {receiver_id}")
-    if not chat_id or not message or not user_id:
-        sio.emit('error', {'message': 'chatId, message ve userId gereklidir'}, to=sid)
-        return
-    # Odaya yeni mesajı emit et
-    sio.emit(
-        "receive_chat_message",
-        {
-            "chatId": chat_id,
-            "message": message,
-            "userId": user_id
-        },
-        room=chat_id
-    )
-    logger.info(_(f"config.socketio.create_message_emit").format(user=user_id, chat_id=chat_id, message=message, data=data))
-    # --- UNREAD COUNT EMIT ---
-    # Burada ilgili agent'lara unread_count emit et (örnek: receiverId'ye)
-    if receiver_id:
-        unread_count = get_unread_count_for_user(receiver_id)
-        # Aktif kullanıcılar arasında receiver_id'yi bul
-        for sid_, user_info in active_users.items():
-            if user_info['user_id'] == receiver_id:
-                sio.emit('unread_count', {'count': unread_count}, to=sid_)
-        # --- UNREAD COUNTS EMIT ---
-        unread_counts = get_unread_counts_for_user(receiver_id)
-        for sid_, user_info in active_users.items():
-            if user_info['user_id'] == receiver_id:
-                sio.emit('unread_counts', {'counts': unread_counts}, to=sid_)
+
 
 def str_now():
     from datetime import datetime

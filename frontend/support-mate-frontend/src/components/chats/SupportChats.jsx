@@ -33,7 +33,7 @@ function getCustomerIdFromParticipants(participants, agentId) {
   return customer ? customer.userId : null;
 }
 
-export default function SupportChats({ chat, myUserId }) {
+export default function SupportChats({ chat, myUserId, onChatCreated }) {
   const [messages, setMessages] = useState(chat?.messages || []);
   const [input, setInput] = useState("");
   const [taskModalOpen, setTaskModalOpen] = useState(false);

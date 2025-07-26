@@ -4,6 +4,7 @@ from config.language import _, set_language
 from responseHandlers.api_success import api_success
 from responseHandlers.api_error import api_error
 import logging
+from fastapi.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
 
@@ -22,15 +23,7 @@ class MessageController:
             logger.error(str(e))
             return api_error(error=str(e), message=_("services.messageService.logs.message_send_failed"))
 
-    def create_message(self, message, user, lang: str = None):
-        set_language(lang or self.lang)
-        logger.info(_("services.messageService.logs.plain_message_before_encryption"))
-        try:
-            result = self.message_service.create_message(message, user)
-            return api_success(data=result.get("data"), message=result.get("message"))
-        except Exception as e:
-            logger.error(str(e))
-            return api_error(error=str(e), message=_("services.messageService.logs.message_send_failed"))
+
 
     def list_messages(self, chat_id, user, lang: str = None):
         set_language(lang or self.lang)
@@ -115,7 +108,15 @@ class MessageController:
         set_language(lang or self.lang)
         try:
             result = self.message_service.list_agent_chats_with_messages(user, page, page_size)
-            return api_success(data=result.get("data"), message=result.get("message"))
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "success": True,
+                    "message": result.get("message"),
+                    "data": result.get("data"),
+                    "total": result.get("total", 0)
+                }
+            )
         except Exception as e:
             logger.error(str(e))
             return api_error(error=str(e), message=_("services.messageService.logs.message_list_failed"))

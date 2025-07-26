@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { listMessagesByTicketId, sendMessage, createMessage } from '../api/messagesApi';
+import { listMessagesByTicketId, sendMessage } from '../api/messagesApi';
 import socket from '../socket/socket';
 
 // JWT çözümleyici yardımcı fonksiyon
@@ -163,40 +163,56 @@ export const useChatSocket = (chatTicket, chatOpen) => {
     try {
       let currentChatId = chatId;
       let res;
-      let isFirstMessage = false;
-      if (!currentChatId) {
-        // İlk mesaj, chat yok. createMessage ile başlat.
-        res = await createMessage({ text: input, userId: myUserId, receiverId: chatTicket?.receiverId, ticketId: chatTicket?.ticketId });
-        if (res.success && res.data && res.data.chatId) {
+      
+      // Artık tek endpoint kullanıyoruz - sendMessage
+      const messageData = {
+        text: input,
+        userId: myUserId,
+        receiverId: chatTicket?.receiverId
+      };
+      
+      // Eğer chatId varsa ekle
+      if (currentChatId) {
+        messageData.chatId = currentChatId;
+      }
+      
+      // Tek endpoint ile mesaj gönder
+      console.log('[DEBUG][useChatSocket] Sending message:', messageData);
+      res = await sendMessage(messageData);
+      console.log('[DEBUG][useChatSocket] API response:', res);
+      
+      if (res.success && res.data) {
+        // Eğer yeni chat oluşturulduysa chatId'yi güncelle
+        const isNewChat = res.data.chatId && !currentChatId;
+        console.log('[DEBUG][useChatSocket] isNewChat:', isNewChat, 'currentChatId:', currentChatId, 'res.data.chatId:', res.data.chatId);
+        if (isNewChat) {
           currentChatId = res.data.chatId;
           setChatId(currentChatId);
-          isFirstMessage = true;
-        } else {
-          throw new Error('Chat başlatılamadı');
         }
-      } else {
-        // Var olan chat, sendMessage ile devam.
-        res = await sendMessage({ chatId: currentChatId, userId: myUserId, text: input });
-      }
-
-      // --- SOCKET EMIT ---
-      if (isFirstMessage && res.success && res.data && res.data.messages && res.data.messages.length > 0) {
+        
+        // Socket emit - artık tek event kullanıyoruz
         const emitObj = {
           chatId: currentChatId,
-          message: res.data.messages[0],
+          message: input,
           userId: myUserId,
-          receiverId: chatTicket?.receiverId // receiverId burada mevcutsa
+          receiverId: chatTicket?.receiverId
         };
-        console.log('[SOCKET][EMIT][create_message]', emitObj);
-        socket.emit('create_message', emitObj);
-      } else {
-        const emitObj = { chatId: currentChatId, userId: myUserId, receiverId: chatTicket?.receiverId, message: input };
         console.log('[SOCKET][EMIT][send_message]', emitObj);
         socket.emit('send_message', emitObj);
-      }
-      // --- /SOCKET EMIT ---
-
-      if (res.success) {
+        
+        // Eğer yeni chat oluşturulduysa, new_chat_created event'ini de emit et
+        if (isNewChat) {
+          const newChatEmitObj = {
+            chatId: currentChatId,
+            message: input,
+            userId: myUserId,
+            receiverId: chatTicket?.receiverId
+          };
+          console.log('[SOCKET][EMIT][new_chat_created]', newChatEmitObj);
+          socket.emit('new_chat_created', newChatEmitObj);
+        }
+        
+        // Mesajı listeye ekle
         setMessages(prev => [
           ...prev,
           {

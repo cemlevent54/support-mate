@@ -54,10 +54,15 @@ const eventList = [
   'user_joined',
   'user_left',
   'new_message',
+  'receive_chat_message',
+  'new_chat_created',
   'typing',
   'stop_typing',
   'delivered',
   'seen',
+  'message_read',
+  'unread_count',
+  'unread_counts',
 ];
 eventList.forEach(event => {
   socket.on(event, (data) => {

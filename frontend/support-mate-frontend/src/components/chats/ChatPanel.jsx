@@ -30,6 +30,11 @@ const ChatPanel = ({
   // console.log('ChatPanel - chatTicket:', chatTicket);
   // console.log('ChatPanel - assignedAgentId:', chatTicket?.assignedAgentId);
   
+  // Mesaj gönderme işlemi
+  const handleSend = () => {
+    if (onSend) onSend();
+  };
+
   // 1. Yeni chat başlatma (hiç mesaj yok)
   if (!messages || messages.length === 0) {
     return (
@@ -84,13 +89,13 @@ const ChatPanel = ({
               placeholder={t('chatPanel.placeholder')}
               value={input}
               onChange={onInputChange}
-              onKeyDown={e => { if (e.key === 'Enter') onSend(); }}
+              onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
               disabled={sending}
               sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, backgroundColor: '#fff' } }}
             />
             <Button 
               variant="contained" 
-              onClick={onSend} 
+              onClick={handleSend} 
               disabled={sending || !input.trim()}
               sx={{ borderRadius: 2, minWidth: 80 }}
             >
@@ -181,13 +186,13 @@ const ChatPanel = ({
             placeholder={t('chatPanel.placeholder')}
             value={input}
             onChange={onInputChange}
-            onKeyDown={e => { if (e.key === 'Enter') onSend(); }}
+            onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
             disabled={sending}
             sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, backgroundColor: '#fff' } }}
           />
           <Button 
             variant="contained" 
-            onClick={onSend} 
+            onClick={handleSend} 
             disabled={sending || !input.trim()}
             sx={{ borderRadius: 2, minWidth: 80 }}
           >

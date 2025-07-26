@@ -38,6 +38,38 @@ export default function SupportLayout() {
   const { language, onLanguageChange } = useLanguage();
   const { t } = useTranslation();
   const { unreadCounts, setUnreadCounts, agentChats, setAgentChats } = useChatContext();
+  
+  // Socket bağlantı durumunu kontrol et
+  useEffect(() => {
+    console.log('[SupportLayout] Socket bağlantı durumu:', socket.connected);
+    console.log('[SupportLayout] Socket ID:', socket.id);
+    
+    // Test için basit bir event dinle
+    const handleTestEvent = (data) => {
+      console.log('[SupportLayout] Test event alındı:', data);
+    };
+    
+    socket.on('test_event', handleTestEvent);
+    
+    // Test event'i emit et
+    setTimeout(() => {
+      console.log('[SupportLayout] Test event emit ediliyor');
+      socket.emit('test_event', { message: 'Test from SupportLayout' });
+    }, 2000);
+    
+    // Socket bağlantı event'lerini dinle
+    socket.on('connect', () => {
+      console.log('[SupportLayout] Socket bağlandı, ID:', socket.id);
+    });
+    
+    socket.on('disconnect', () => {
+      console.log('[SupportLayout] Socket bağlantısı kesildi');
+    });
+    
+    return () => {
+      socket.off('test_event', handleTestEvent);
+    };
+  }, []);
 
   // Kullanıcı rolünü JWT'den al
   let roleName = null;
@@ -123,29 +155,70 @@ export default function SupportLayout() {
     return () => socket.off('unread_counts');
   }, [setUnreadCounts]);
 
-  // Chat listesi çekme (agentChats)
+  // Yeni chat oluşturulduğunda dinle
   useEffect(() => {
-    async function fetchAgentChats() {
-      try {
-        const token = localStorage.getItem('jwt');
-        const res = await axios.get(BASE_URL2 + '/agent/messages', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.data && res.data.success && Array.isArray(res.data.data)) {
-          setAgentChats(res.data.data);
-        } else if (res.data && res.data.success && res.data.data && Array.isArray(res.data.data.chats)) {
-          setAgentChats(res.data.data.chats);
+    console.log('[SupportLayout] new_chat_created event listener kuruluyor, myUserId:', myUserId);
+    
+    const handleNewChatCreated = (data) => {
+      console.log('[SupportLayout][SOCKET] new_chat_created event alındı:', data);
+      console.log('[SupportLayout][SOCKET] myUserId:', myUserId, 'data.receiverId:', data.receiverId);
+      
+      // Yeni chat oluşturulduğunda agentChats'i güncelle
+      if (data && data.chatId) {
+        // Eğer receiverId benim userId'm ise, yeni chat'i listeye ekle
+        if (data.receiverId === myUserId) {
+          console.log('[SupportLayout] ReceiverId eşleşti, chat listeye ekleniyor');
+          
+          setAgentChats(prev => {
+            // Duplicate kontrolü
+            const exists = prev.some(chat => String(chat._id || chat.chatId || chat.id) === String(data.chatId));
+            if (exists) {
+              console.log('[SupportLayout] Chat zaten var, eklenmiyor');
+              return prev;
+            }
+            
+            const newChat = {
+              _id: data.chatId,
+              chatId: data.chatId,
+              id: data.chatId,
+              name: data.userId || '',
+              messages: [
+                {
+                  senderId: data.userId,
+                  text: typeof data.message === 'string' ? data.message : (data.message.text || ''),
+                  timestamp: new Date().toISOString(),
+                  createdAt: new Date().toISOString()
+                }
+              ],
+              lastMessage: typeof data.message === 'string' ? data.message : (data.message.text || ''),
+              lastMessageTime: new Date().toISOString(),
+              createdAt: new Date().toISOString(),
+              timestamp: new Date().toISOString(),
+              ticket: { title: 'Yeni Sohbet' },
+            };
+            
+            console.log('[SupportLayout] Yeni chat objesi oluşturuldu:', newChat);
+            const updated = [newChat, ...prev];
+            console.log('[SupportLayout] Güncellenmiş agentChats:', updated);
+            return updated;
+          });
         } else {
-          // Fallback: data'nın kendisi chat listesi olabilir
-          setAgentChats(res.data.data || []);
+          console.log('[SupportLayout] ReceiverId eşleşmedi, chat eklenmiyor');
         }
-      } catch (e) {
-        console.error('[SupportLayout][fetchAgentChats] Hata:', e);
-        setAgentChats([]);
       }
-    }
-    fetchAgentChats();
-  }, [setAgentChats]);
+    };
+    
+    socket.on('new_chat_created', handleNewChatCreated);
+    console.log('[SupportLayout] new_chat_created event listener kuruldu');
+    
+    return () => {
+      socket.off('new_chat_created', handleNewChatCreated);
+      console.log('[SupportLayout] new_chat_created event listener kaldırıldı');
+    };
+  }, [myUserId, setAgentChats]);
+
+  // Chat listesi çekme (agentChats)
+  
 
   const handleLogout = async () => {
     try {
@@ -196,34 +269,7 @@ export default function SupportLayout() {
                 }}
               >
                 <ListItemText
-                  primary={
-                    item.key === 'chats' ? (
-                      <span style={{ position: 'relative', display: 'inline-block' }}>
-                        {t(item.labelKey)}
-                        {/* Realtime kırmızı badge */}
-                        {totalUnread > 0 && (
-                          <span style={{
-                            position: 'absolute',
-                            top: 2,
-                            right: -90,
-                            background: 'red',
-                            color: '#fff',
-                            borderRadius: '50%',
-                            width: 20,
-                            height: 20,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: 13,
-                            fontWeight: 700,
-                            boxShadow: '0 0 0 2px #111',
-                          }}>
-                            {totalUnread}
-                          </span>
-                        )}
-                      </span>
-                    ) : t(item.labelKey)
-                  }
+                  primary={t(item.labelKey)}
                   sx={{ color: '#fff' }}
                 />
               </ListItemButton>

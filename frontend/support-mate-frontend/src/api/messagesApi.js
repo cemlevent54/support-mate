@@ -11,11 +11,7 @@ export const sendMessage = async (messageData) => {
   return response.data;
 };
 
-// create message
-export const createMessage = async (messageData) => {
-  const response = await axiosInstance.post(BASE_URL + '/create', messageData);
-  return response.data;
-};
+
 
 // Belirli bir chat_id ile mesajları getir
 export const listMessages = async (chatId) => {
@@ -60,6 +56,13 @@ export const listAgentChatsWithMessages = async () => {
   const response = await axiosInstance.get(`${BASE_URL2}/agent/messages`);
   return response.data;
 };
+
+export const listAgentChatsWithMessagesPaginated = async (page, pageSize) => {
+  const response = await axiosInstance.get(`${BASE_URL2}/agent/messages`, {
+    params: { page, pageSize }
+  });
+  return response.data;
+}
 
 
 

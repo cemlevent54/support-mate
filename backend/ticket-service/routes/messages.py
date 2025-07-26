@@ -18,7 +18,7 @@ def get_lang(request: Request):
 def get_message_controller(lang: str = 'tr'):
     return MessageController(lang=lang)
 
-# send messages when ticket id is available
+# send messages - hem mevcut chat'e hem de yeni chat oluşturarak
 # full path: /api/tickets/messages
 @router.post("/messages")
 def send_message_route(message: dict, request: Request, user=Depends(get_current_user)):
@@ -27,14 +27,7 @@ def send_message_route(message: dict, request: Request, user=Depends(get_current
     message_controller = get_message_controller(lang=lang)
     return message_controller.send_message(message, user, lang=lang)
 
-# send messages when ticket id is not available
-# full path: /api/tickets/messages/create
-@router.post("/messages/create")
-def create_message_route(message: dict, request: Request, user=Depends(get_current_user)):
-    lang = get_lang(request)
-    set_language(lang)
-    message_controller = get_message_controller(lang=lang)
-    return message_controller.create_message(message, user, lang=lang)
+
 
 # full path: /api/tickets/messages/chat
 @router.get("/messages/chat")

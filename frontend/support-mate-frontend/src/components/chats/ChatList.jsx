@@ -17,8 +17,9 @@ import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import socket from '../../socket/socket';
 import { listMessagesByChatId } from '../../api/messagesApi';
-import './ChatList.css';
 import { useChatContext } from './ChatContext';
+import CustomPagingComponent from '../common/CustomPagingComponent';
+import { listAgentChatsWithMessagesPaginated } from '../../api/messagesApi';
 
 // getLastMessage fonksiyonunu en başa taşıdım
 const getLastMessage = (chat) => {
@@ -29,14 +30,382 @@ const getLastMessage = (chat) => {
   return 'Mesaj yok';
 };
 
-export default function ChatList({ activeChatTicketId, onSelectChat, loading, onUserJoinedChat }) {
+// formatTime fonksiyonunu yukarı taşı
+const formatTime = (timestamp) => {
+  if (!timestamp) return '';
+  let date;
+  if (typeof timestamp === 'string' && !timestamp.endsWith('Z') && !timestamp.includes('+')) {
+    date = new Date(timestamp + 'Z');
+  } else {
+    date = new Date(timestamp);
+  }
+  const now = new Date();
+  const diffInHours = (now - date) / (1000 * 60 * 60);
+  if (diffInHours < 24) {
+    return date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  } else if (diffInHours < 48) {
+    return 'Dün';
+  } else if (diffInHours < 168) {
+    return date.toLocaleDateString('tr-TR', { weekday: 'short' });
+  } else {
+    return date.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' });
+  }
+};
+
+// getLastMessageTime fonksiyonunu yukarı taşı
+const getLastMessageTime = (chat) => {
+  const msgs = chat.chatMessages || chat.messages || [];
+  if (Array.isArray(msgs) && msgs.length > 0) {
+    return formatTime(msgs[msgs.length - 1].timestamp || msgs[msgs.length - 1].createdAt);
+  }
+  return '';
+};
+
+// getChatDisplayName fonksiyonunu yukarı taşı
+const getChatDisplayName = (chat) => {
+  if (chat.ticket && chat.ticket.title) {
+    return chat.ticket.title;
+  }
+
+  const lang = localStorage.getItem('language') || 'tr';
+  if (lang === 'tr') {
+    return chat.name || chat.userId || chat.customerId || 'Bilinmeyen Kullanıcı';
+  } else {
+    return chat.nameEn || chat.name || chat.userId || chat.customerId || 'Unknown User';
+  }
+};
+
+// getChatCategoryName fonksiyonunu yukarı taşı
+const getChatCategoryName = (chat) => {
+  const lang = localStorage.getItem('language') || 'tr';
+  let name = null;
+  if (chat.ticket && chat.ticket.category) {
+    if (lang === 'tr') {
+      name = chat.ticket.category.categoryNameTr || chat.ticket.category.category_name_tr;
+    } else {
+      name = chat.ticket.category.categoryNameEn || chat.ticket.category.category_name_en;
+    }
+  } else if (typeof chat.category === 'object' && chat.category !== null) {
+    if (lang === 'tr') {
+      name = chat.category.categoryNameTr || chat.category.category_name_tr;
+    } else {
+      name = chat.category.categoryNameEn || chat.category.category_name_en;
+    }
+  } else if (typeof chat.category === 'string') {
+    name = chat.category;
+  }
+  if (!name) {
+    return "";
+  }
+  return name;
+};
+
+function ChatListItems({ sortedChatList, loading, activeChatTicketId, handleChatSelect, unreadCounts, newMessageChatIds }) {
+  if (loading) {
+    return (
+      <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 200 }}>
+        <CircularProgress />
+      </div>
+    );
+  }
+  return (
+    <List sx={{ 
+      height: '100%', 
+      overflowY: 'auto', 
+      flex: 1, 
+      bgcolor: '#fff', 
+      p: 0,
+      '&::-webkit-scrollbar': {
+        width: '0px',
+        display: 'none',
+      },
+      '&::-webkit-scrollbar-track': {
+        display: 'none',
+      },
+      '&::-webkit-scrollbar-thumb': {
+        display: 'none',
+      },
+      '&::-webkit-scrollbar-corner': {
+        display: 'none',
+      },
+      scrollbarWidth: 'none',
+      msOverflowStyle: 'none',
+    }}>
+      {sortedChatList.length === 0 ? (
+        <></>
+      ) : (
+        sortedChatList.map((chat, index) => {
+          const chatId = String(chat._id || chat.chatId || chat.id);
+          const isNewMessage = newMessageChatIds.has(chatId);
+          
+          return (
+            <ListItem 
+              key={chat._id || chat.chatId || chat.id} 
+              disablePadding
+              sx={{
+                position: 'relative',
+                animation: 'slideInFromBottom 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                animationDelay: `${index * 0.1}s`,
+                animationFillMode: 'both',
+                opacity: 0,
+                transform: 'translateY(60px)',
+                backgroundColor: 'transparent',
+                '@keyframes slideInFromBottom': {
+                  '0%': {
+                    opacity: 0,
+                    transform: 'translateY(60px) scale(0.9)',
+                    backgroundColor: 'transparent',
+                  },
+                  '30%': {
+                    opacity: 0.5,
+                    transform: 'translateY(40px) scale(0.95)',
+                    backgroundColor: 'transparent',
+                  },
+                  '60%': {
+                    opacity: 0.8,
+                    transform: 'translateY(20px) scale(0.98)',
+                    backgroundColor: 'transparent',
+                  },
+                  '100%': {
+                    opacity: 1,
+                    transform: 'translateY(0) scale(1)',
+                    backgroundColor: 'transparent',
+                  },
+                },
+              }}
+            >
+              <ListItemButton
+                selected={
+                  !!activeChatTicketId &&
+                  (String(activeChatTicketId) === String(chat._id || chat.chatId || chat.id))
+                }
+                onClick={() => handleChatSelect(chat)}
+                sx={{
+                  color: '#222',
+                  bgcolor: String(activeChatTicketId) === String(chat.id) ? '#f0f8ff' : 'transparent',
+                  '&:hover': { 
+                    bgcolor: '#f5f5f5',
+                    transform: 'translateX(2px)',
+                  },
+                  py: 2,
+                  px: 3,
+                  borderBottom: index === sortedChatList.length - 1 ? 'none' : '1px solid #f0f0f0',
+                  '&.Mui-selected': {
+                    bgcolor: '#e3f2fd',
+                    '&:hover': { bgcolor: '#e3f2fd' },
+                    borderLeft: '4px solid #1976d2',
+                  },
+                  transition: 'all 0.3s ease-in-out',
+                  transform: chat.isNewMessage ? 'translateX(4px)' : 'translateX(0)',
+                  borderLeft: chat.isNewMessage ? '4px solid #ffc107' : 'none',
+                  animation: chat.isNewMessage ? 'newMessagePulse 2s ease-in-out' : 'none',
+                  '@keyframes newMessagePulse': {
+                    '0%': {
+                      backgroundColor: '#fff3cd',
+                      transform: 'translateX(4px) scale(1.02)',
+                    },
+                    '50%': {
+                      backgroundColor: '#fff3cd',
+                      transform: 'translateX(4px) scale(1.01)',
+                    },
+                    '100%': {
+                      backgroundColor: 'transparent',
+                      transform: 'translateX(0) scale(1)',
+                    },
+                  },
+                }}
+              >
+                <ListItemAvatar>
+                  <Avatar 
+                    sx={{ 
+                      bgcolor: '#1976d2', 
+                      width: 48, 
+                      height: 48,
+                      transition: 'all 0.2s ease-in-out',
+                      '&:hover': {
+                        transform: 'scale(1.05)',
+                      },
+                    }}
+                  >
+                    <PersonIcon />
+                  </Avatar>
+                </ListItemAvatar>
+                <ListItemText
+                  primary={
+                    <span style={{ fontWeight: 600, fontSize: 15, color: '#222' }}>
+                      {getChatDisplayName(chat)}
+                    </span>
+                  }
+                  secondary={
+                    <span style={{ color: '#666', fontSize: 13, fontWeight: 400 }}>
+                      {getLastMessage(chat)}
+                      <br />
+                      <span style={{ color: '#999', fontSize: 11 }}>{getChatCategoryName(chat)}</span>
+                      {' • '}
+                      <span style={{ color: '#999', fontSize: 11 }}>{getLastMessageTime(chat)}</span>
+                    </span>
+                  }
+                  sx={{ ml: 1 }}
+                />
+              </ListItemButton>
+            </ListItem>
+          );
+        })
+      )}
+    </List>
+    
+  );
+}
+
+export default function ChatList({ activeChatTicketId, onSelectChat, loading: loadingProp, onUserJoinedChat, refreshTrigger }) {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [newMessageChats, setNewMessageChats] = useState(new Set());
   const { unreadCounts, agentChats } = useChatContext();
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(loadingProp || false);
+  const [agentChatsPaginated, setAgentChatsPaginated] = useState([]);
+  const [internalRefresh, setInternalRefresh] = useState(0);
+  const [newMessageChatIds, setNewMessageChatIds] = useState(new Set());
+
+  useEffect(() => {
+    const handleNewChatCreated = (data) => {
+      console.log('[DEBUG][ChatList] new_chat_created event payload:', data);
+      const chatId = data && (data.chatId || data.id);
+      
+      // Daha güvenli duplicate kontrolü
+      setAgentChatsPaginated(prev => {
+        const exists = prev.some(chat => String(chat._id || chat.chatId || chat.id) === String(chatId));
+        console.log('[DEBUG][ChatList] new_chat_created chatId:', chatId, 'exists:', exists);
+        
+        if (!exists && chatId) {
+          // Socket ile anlık olarak chat objesini başa ekle
+          const now = new Date().toISOString();
+          const newChatObj = {
+            _id: chatId,
+            chatId: chatId,
+            id: chatId,
+            name: data.userId || '',
+            messages: [
+              {
+                senderId: data.userId,
+                text: typeof data.message === 'string' ? data.message : (data.message.text || ''),
+                timestamp: now,
+                createdAt: now
+              }
+            ],
+            lastMessage: typeof data.message === 'string' ? data.message : (data.message.text || ''),
+            lastMessageTime: now,
+            createdAt: now,
+            timestamp: now,
+            ticket: { title: data.message && data.message.title ? data.message.title : 'Yeni Sohbet' },
+          };
+          console.log('[DEBUG][ChatList] new_chat_created agentChatsPaginated adding:', newChatObj);
+          return [newChatObj, ...prev];
+        }
+        return prev; // Değişiklik yoksa aynı array'i döndür
+      });
+    };
+    socket.on('new_chat_created', handleNewChatCreated);
+    return () => socket.off('new_chat_created', handleNewChatCreated);
+  }, []); // agentChatsPaginated dependency'sini kaldırdık
+
+  // Yeni mesaj geldiğinde mevcut sohbetlerin son mesajlarını güncelle
+  useEffect(() => {
+    const handleReceiveChatMessage = (data) => {
+      console.log('[DEBUG][ChatList] receive_chat_message event payload:', data);
+      const { chatId, message, userId } = data;
+      
+      if (!chatId || !message) return;
+      
+      // Yeni mesaj animasyonu için chatId'yi ekle
+      setNewMessageChatIds(prev => new Set([...prev, chatId]));
+      
+      // 3 saniye sonra animasyonu kaldır
+      setTimeout(() => {
+        setNewMessageChatIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(chatId);
+          return newSet;
+        });
+      }, 3000);
+      
+      setAgentChatsPaginated(prev => {
+        const chatIndex = prev.findIndex(chat => 
+          String(chat._id || chat.chatId || chat.id) === String(chatId)
+        );
+        
+        if (chatIndex === -1) {
+          console.log('[DEBUG][ChatList] receive_chat_message chat bulunamadı:', chatId);
+          return prev;
+        }
+        
+        const updatedChats = [...prev];
+        const chat = { ...updatedChats[chatIndex] };
+        
+        // Yeni mesajı ekle
+        const newMessage = {
+          senderId: userId,
+          text: typeof message === 'string' ? message : (message.text || ''),
+          timestamp: new Date().toISOString(),
+          createdAt: new Date().toISOString()
+        };
+        
+        // Mesajları güncelle
+        const messages = chat.messages || chat.chatMessages || [];
+        chat.messages = [...messages, newMessage];
+        chat.chatMessages = chat.messages; // Her iki format için de güncelle
+        
+        // Son mesaj bilgilerini güncelle
+        chat.lastMessage = newMessage.text;
+        chat.lastMessageTime = newMessage.timestamp;
+        chat.timestamp = newMessage.timestamp;
+        
+        // Chat'i listenin başına taşı (en son mesaj alan chat en üstte olsun)
+        updatedChats.splice(chatIndex, 1);
+        updatedChats.unshift(chat);
+        
+        console.log('[DEBUG][ChatList] receive_chat_message chat güncellendi:', chatId);
+        return updatedChats;
+      });
+    };
+    
+    socket.on('receive_chat_message', handleReceiveChatMessage);
+    return () => socket.off('receive_chat_message', handleReceiveChatMessage);
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
+    listAgentChatsWithMessagesPaginated(page, pageSize)
+      .then(res => {
+        if (isMounted) {
+          // Yeni eklenen chat objesini kaybetmemek için birleştir
+          setAgentChatsPaginated(prev => {
+            const fetched = res.data || [];
+            // prev'deki, fetched'de olmayanları başa ekle (id ile)
+            const prevNotInFetched = prev.filter(localChat => !fetched.some(fetchedChat => String(fetchedChat._id || fetchedChat.chatId || fetchedChat.id) === String(localChat._id || localChat.chatId || localChat.id)));
+            return [...prevNotInFetched, ...fetched];
+          });
+          setTotal(res.total || 0);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setAgentChatsPaginated([]);
+          setTotal(0);
+        }
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+    return () => { isMounted = false; };
+  }, [page, pageSize, refreshTrigger, internalRefresh]);
 
   // Search fonksiyonu (filtrelenmiş chat listesi)
-  const filteredChatList = (agentChats || []).filter(chat => {
+  const filteredChatList = (agentChatsPaginated || []).filter(chat => {
     let name = chat.ticket && chat.ticket.title ? chat.ticket.title : chat.name || '';
     let last = getLastMessage(chat).toLowerCase();
     let category = '';
@@ -70,6 +439,7 @@ export default function ChatList({ activeChatTicketId, onSelectChat, loading, on
     return lastB - lastA;
   });
 
+
   const handleChatSelect = (chat) => {
     const realChatId = chat._id || chat.chatId || chat.id;
     setNewMessageChats(prev => {
@@ -78,74 +448,6 @@ export default function ChatList({ activeChatTicketId, onSelectChat, loading, on
       return newSet;
     });
     onSelectChat(chat);
-  };
-
-  const formatTime = (timestamp) => {
-    if (!timestamp) return '';
-    let date;
-    if (typeof timestamp === 'string' && !timestamp.endsWith('Z') && !timestamp.includes('+')) {
-      date = new Date(timestamp + 'Z');
-    } else {
-      date = new Date(timestamp);
-    }
-    const now = new Date();
-    const diffInHours = (now - date) / (1000 * 60 * 60);
-    if (diffInHours < 24) {
-      return date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-    } else if (diffInHours < 48) {
-      return 'Dün';
-    } else if (diffInHours < 168) {
-      return date.toLocaleDateString('tr-TR', { weekday: 'short' });
-    } else {
-      return date.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' });
-    }
-  };
-
-  const getLastMessageTime = (chat) => {
-    const msgs = chat.chatMessages || chat.messages || [];
-    if (Array.isArray(msgs) && msgs.length > 0) {
-      return formatTime(msgs[msgs.length - 1].timestamp || msgs[msgs.length - 1].createdAt);
-    }
-    return '';
-  };
-
-  // Chat başlığı: ticket varsa title, yoksa kullanıcı id veya name
-  const getChatDisplayName = (chat) => {
-    if (chat.ticket && chat.ticket.title) {
-      return chat.ticket.title;
-    }
-  
-    const lang = localStorage.getItem('language') || 'tr';
-    if (lang === 'tr') {
-      return chat.name || chat.userId || chat.customerId || 'Bilinmeyen Kullanıcı';
-    } else {
-      return chat.nameEn || chat.name || chat.userId || chat.customerId || 'Unknown User';
-    }
-  };
-  
-
-  const getChatCategoryName = (chat) => {
-    const lang = localStorage.getItem('language') || 'tr';
-    let name = null;
-    if (chat.ticket && chat.ticket.category) {
-      if (lang === 'tr') {
-        name = chat.ticket.category.categoryNameTr || chat.ticket.category.category_name_tr;
-      } else {
-        name = chat.ticket.category.categoryNameEn || chat.ticket.category.category_name_en;
-      }
-    } else if (typeof chat.category === 'object' && chat.category !== null) {
-      if (lang === 'tr') {
-        name = chat.category.categoryNameTr || chat.category.category_name_tr;
-      } else {
-        name = chat.category.categoryNameEn || chat.category.category_name_en;
-      }
-    } else if (typeof chat.category === 'string') {
-      name = chat.category;
-    }
-    if (!name) {
-      return "";
-    }
-    return name;
   };
 
   useEffect(() => {
@@ -244,164 +546,21 @@ export default function ChatList({ activeChatTicketId, onSelectChat, loading, on
         />
       </div>
       {/* Chat List */}
-      <List sx={{ 
-        height: '100%', 
-        overflowY: 'auto', 
-        flex: 1, 
-        bgcolor: '#fff', 
-        p: 0,
-        '&::-webkit-scrollbar': {
-          width: '0px',
-          display: 'none',
-        },
-        '&::-webkit-scrollbar-track': {
-          display: 'none',
-        },
-        '&::-webkit-scrollbar-thumb': {
-          display: 'none',
-        },
-        '&::-webkit-scrollbar-corner': {
-          display: 'none',
-        },
-        scrollbarWidth: 'none',
-        msOverflowStyle: 'none',
-      }}>
-        {sortedChatList.length === 0 ? (
-          <></>
-        ) : (
-          sortedChatList.map((chat, index) => (
-            <ListItem 
-              key={chat._id || chat.chatId || chat.id} 
-              disablePadding
-              sx={{
-                position: 'relative',
-                animation: 'slideInFromBottom 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-                animationDelay: `${index * 0.1}s`,
-                animationFillMode: 'both',
-                opacity: 0,
-                transform: 'translateY(60px)',
-                backgroundColor: 'transparent',
-                '@keyframes slideInFromBottom': {
-                  '0%': {
-                    opacity: 0,
-                    transform: 'translateY(60px) scale(0.9)',
-                    backgroundColor: 'transparent',
-                  },
-                  '30%': {
-                    opacity: 0.5,
-                    transform: 'translateY(40px) scale(0.95)',
-                    backgroundColor: 'transparent',
-                  },
-                  '60%': {
-                    opacity: 0.8,
-                    transform: 'translateY(20px) scale(0.98)',
-                    backgroundColor: 'transparent',
-                  },
-                  '100%': {
-                    opacity: 1,
-                    transform: 'translateY(0) scale(1)',
-                    backgroundColor: 'transparent',
-                  },
-                },
-              }}
-            >
-              <ListItemButton
-                selected={
-                  !!activeChatTicketId &&
-                  (String(activeChatTicketId) === String(chat._id || chat.chatId || chat.id))
-                }
-                onClick={() => handleChatSelect(chat)}
-                sx={() => {
-                  const chatKey = String(chat._id || chat.chatId || chat.id);
-                  const unreadCount = unreadCounts[chatKey] || 0;
-                  let sxObj = {
-                    color: '#222',
-                    bgcolor: unreadCount > 0 ? '#ffcdd2' : (String(activeChatTicketId) === String(chat.id) ? '#f0f8ff' : 'transparent'),
-                    '&:hover': { 
-                      bgcolor: unreadCount > 0 ? '#ffb3b3' : '#f5f5f5',
-                      transform: 'translateX(2px)',
-                    },
-                    py: 2,
-                    px: 3,
-                    borderBottom: index === sortedChatList.length - 1 ? 'none' : '1px solid #f0f0f0',
-                    '&.Mui-selected': {
-                      bgcolor: '#e3f2fd',
-                      '&:hover': { bgcolor: '#e3f2fd' },
-                      borderLeft: '4px solid #1976d2',
-                    },
-                    transition: 'all 0.3s ease-in-out',
-                    transform: chat.isNewMessage ? 'translateX(4px)' : 'translateX(0)',
-                    borderLeft: chat.isNewMessage ? '4px solid #ffc107' : 'none',
-                    animation: chat.isNewMessage ? 'newMessagePulse 2s ease-in-out' : 'none',
-                    '@keyframes newMessagePulse': {
-                      '0%': {
-                        backgroundColor: '#fff3cd',
-                        transform: 'translateX(4px) scale(1.02)',
-                      },
-                      '50%': {
-                        backgroundColor: '#fff3cd',
-                        transform: 'translateX(4px) scale(1.01)',
-                      },
-                      '100%': {
-                        backgroundColor: 'transparent',
-                        transform: 'translateX(0) scale(1)',
-                      },
-                    },
-                  };
-                  return sxObj;
-                }}
-              >
-                <ListItemAvatar>
-                  <Avatar 
-                    sx={{ 
-                      bgcolor: '#1976d2', 
-                      width: 48, 
-                      height: 48,
-                      transition: 'all 0.2s ease-in-out',
-                      '&:hover': {
-                        transform: 'scale(1.05)',
-                      },
-                    }}
-                  >
-                    <PersonIcon />
-                  </Avatar>
-                </ListItemAvatar>
-                <ListItemText
-                  primary={
-                    <span style={{ fontWeight: 600, fontSize: 15, color: '#222' }}>
-                      {getChatDisplayName(chat)}
-                    </span>
-                  }
-                  secondary={
-                    <span>
-                      <span style={{ color: unreadCounts[chat.id] > 0 ? '#1976d2' : '#666', fontSize: 13, fontWeight: unreadCounts[chat.id] > 0 ? 600 : 400 }}>
-                        {getLastMessage(chat)}
-                      </span>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ color: '#999', fontSize: 11 }}>{getChatCategoryName(chat)}</span>
-                        <span style={{ color: '#999', fontSize: 11 }}>{getLastMessageTime(chat)}</span>
-                      </div>
-                    </span>
-                  }
-                  sx={{ ml: 1 }}
-                />
-                {/* Badge: ListItemButton içinde, ListItemText dışında */}
-                {(() => {
-                  const chatKey = String(chat._id || chat.chatId || chat.id);
-                  const unreadCount = unreadCounts[chatKey] || 0;
-                  // Debug log
-                  console.log('[DEBUG][Badge] chatKey:', chatKey, 'unreadCount:', unreadCount);
-                  return unreadCount > 0 && (
-                    <span className="unread-badge">
-                      {unreadCount}
-                    </span>
-                  );
-                })()}
-              </ListItemButton>
-            </ListItem>
-          ))
-        )}
-      </List>
+      <ChatListItems
+        sortedChatList={sortedChatList}
+        loading={loading}
+        activeChatTicketId={activeChatTicketId}
+        handleChatSelect={handleChatSelect}
+        unreadCounts={unreadCounts}
+        newMessageChatIds={newMessageChatIds}
+      />
+      {/* Paging Component */}
+      <CustomPagingComponent
+        page={page}
+        total={total}
+        pageSize={pageSize}
+        setPage={setPage}
+      />
     </div>
   );
 } 

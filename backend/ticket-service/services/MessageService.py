@@ -40,84 +40,31 @@ class MessageService:
         self.message_repository = MessageRepository()
 
     def send_message(self, message_data, user, is_delivered=False):
+        """
+        Tek bir metod ile mesaj gönderir. Chat yoksa otomatik olarak yeni chat oluşturur.
+        """
         logging.info(f"[SERVICE] send_message called with user: {user.get('id')}")
+        
         # Mesajı AES ile şifrelemeden önce düz metni logla
         if "text" in message_data:
             self.logger.info(_(f"services.messageService.logs.plain_message_before_encryption").format(text=message_data["text"]))
+        
         # Mesajı AES ile şifrele
         if "text" in message_data:
             message_data["text"] = encrypt_message(message_data["text"])
             self.logger.info(_(f"services.messageService.logs.message_encrypted"))
+        
         # senderId ve senderRole user'dan alınsın
         if user:
             message_data["senderId"] = user.get("id")
             message_data["senderRole"] = user.get("roleName", "customer")
-        # receiverId kontrolü - ilk mesaj için daha esnek
-        if "receiverId" not in message_data or not message_data["receiverId"]:
-            # Eğer chat'te tek bir karşı taraf varsa otomatik ata
-            chat_id = message_data.get("chatId")
-            sender_id = message_data.get("senderId")
-            if chat_id and sender_id:
-                chat_repo = GetChatByIdQueryHandler()
-                chat = chat_repo.execute(chat_id)
-                if chat and hasattr(chat, 'participants'):
-                    # Chat'teki diğer katılımcıları bul
-                    other_participants = [p.userId for p in chat.participants if p.userId != sender_id]
-                    if other_participants:
-                        message_data["receiverId"] = other_participants[0]  # İlk diğer katılımcıyı al
-                        self.logger.info(f"[MESSAGE_SERVICE] Receiver otomatik atandı: {message_data['receiverId']}")
-                    else:
-                        # Eğer başka katılımcı yoksa, ilk mesaj olabilir - receiverId'yi None bırak
-                        self.logger.info(f"[MESSAGE_SERVICE] Chat'te başka katılımcı yok, ilk mesaj olabilir")
-                        message_data["receiverId"] = None
-                else:
-                    self.logger.warning(f"[MESSAGE_SERVICE] Chat bulunamadı: {chat_id}")
-                    message_data["receiverId"] = None
-            else:
-                self.logger.warning(f"[MESSAGE_SERVICE] Chat ID veya sender ID eksik")
-                message_data["receiverId"] = None
-        else:
-            # receiverId zaten var, kontrol et
-            if message_data["receiverId"] is None:
-                self.logger.info(f"[MESSAGE_SERVICE] receiverId None olarak ayarlandı (ilk mesaj)")
-        # is_delivered parametresini ayarla
-        message_data["is_delivered"] = is_delivered
-        result = self.send_handler.execute(message_data, user)
-        if result.get("success"):
-            message = result["data"]
-            message_dto = MessageDTO.from_model(message)
-            result["data"] = message_dto.model_dump()
-            self.logger.info(_(f"services.messageService.logs.message_sent"))
-            result["chatId"] = message_data["chatId"]
-        else:
-            self.logger.error(_(f"services.messageService.logs.message_send_failed").format(error=result.get("message", "")))
-        return result
-    
-    def create_message(self, message_data, user):
-        logging.info(f"[SERVICE] create_message called with user: {user.get('id')}")
-        # Mesajı AES ile şifrelemeden önce düz metni logla
-        if "text" in message_data:
-            self.logger.info(_(f"services.messageService.logs.plain_message_before_encryption").format(text=message_data["text"]))
-        # Mesajı AES ile şifrele
-        if "text" in message_data:
-            message_data["text"] = encrypt_message(message_data["text"])
-            self.logger.info(_(f"services.messageService.logs.message_encrypted"))
-
-        # senderId ve senderRole user'dan alınsın
-        if user:
-            message_data["senderId"] = user.get("id")
-            message_data["senderRole"] = user.get("roleName")
-
-        # receiverId alınması - online customer supporter id
-        receiver_id = message_data.get("receiverId")
-        if not receiver_id:
-            self.logger.warning("create_message: receiverId yok, mesaj gönderilemiyor.")
-            return {"success": False, "message": _(f"services.messageService.responses.receiver_id_required")}
-
-        # chatId alınması, yoksa otomatik chat oluşması
+        
+        # --- CHAT KONTROLÜ VE OLUŞTURMA ---
         chat_id = message_data.get("chatId")
-        if not chat_id:
-            # CQRS ile chat oluştur
+        receiver_id = message_data.get("receiverId")
+        
+        # Eğer chatId yoksa ve receiverId varsa, yeni chat oluştur
+        if not chat_id and receiver_id:
             chat_handler = CreateChatCommandHandler()
             participants = [
                 {"userId": user.get("id"), "role": user.get("roleName", "customer")},
@@ -127,16 +74,36 @@ class MessageService:
             chat = chat_handler.execute(chat_data)
             chat_id = getattr(chat, "id", None) or getattr(chat, "_id", None)
             if not chat_id:
-                self.logger.error("create_message: Chat oluşturulamadı.")
+                self.logger.error("send_message: Chat oluşturulamadı.")
                 return {"success": False, "message": _(f"services.messageService.responses.chat_could_not_be_created")}
             message_data["chatId"] = chat_id
-            self.logger.info(f"create_message: Yeni chat oluşturuldu, chatId={chat_id}")
-
+            self.logger.info(f"send_message: Yeni chat oluşturuldu, chatId={chat_id}")
+        
+        # --- RECEIVER ID KONTROLÜ ---
+        # Eğer receiverId yoksa ve chat varsa, chat'ten otomatik bul
+        if not receiver_id and chat_id:
+            chat_repo = GetChatByIdQueryHandler()
+            chat = chat_repo.execute(chat_id)
+            if chat and hasattr(chat, 'participants'):
+                # Chat'teki diğer katılımcıları bul
+                sender_id = message_data.get("senderId")
+                other_participants = [p.userId for p in chat.participants if p.userId != sender_id]
+                if other_participants:
+                    message_data["receiverId"] = other_participants[0]  # İlk diğer katılımcıyı al
+                    self.logger.info(f"[MESSAGE_SERVICE] Receiver otomatik atandı: {message_data['receiverId']}")
+                else:
+                    # Eğer başka katılımcı yoksa, ilk mesaj olabilir - receiverId'yi None bırak
+                    self.logger.info(f"[MESSAGE_SERVICE] Chat'te başka katılımcı yok, ilk mesaj olabilir")
+                    message_data["receiverId"] = None
+            else:
+                self.logger.warning(f"[MESSAGE_SERVICE] Chat bulunamadı: {chat_id}")
+                message_data["receiverId"] = None
+        
         # is_delivered parametresini ayarla
-        message_data["is_delivered"] = False
-        # CQRS ile mesajı gönder
-        send_handler = SendMessageCommandHandler()
-        result = send_handler.execute(message_data, user)
+        message_data["is_delivered"] = is_delivered
+        
+        # Mesajı gönder
+        result = self.send_handler.execute(message_data, user)
         if result.get("success"):
             message = result["data"]
             message_dto = MessageDTO.from_model(message)
@@ -145,7 +112,10 @@ class MessageService:
             result["chatId"] = message_data["chatId"]
         else:
             self.logger.error(_(f"services.messageService.logs.message_send_failed").format(error=result.get("message", "")))
+        
         return result
+    
+
 
     def list_messages(self, chat_id, user):
         logging.info(f"[SERVICE] list_messages called with chat_id: {chat_id}, user: {user.get('id')}")
