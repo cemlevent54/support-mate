@@ -20,6 +20,7 @@ import { listMessagesByChatId } from '../../api/messagesApi';
 import { useChatContext } from './ChatContext';
 import CustomPagingComponent from '../common/CustomPagingComponent';
 import { listAgentChatsWithMessagesPaginated } from '../../api/messagesApi';
+import Badge from '@mui/material/Badge';
 
 // getLastMessage fonksiyonunu en başa taşıdım
 const getLastMessage = (chat) => {
@@ -136,6 +137,16 @@ function ChatListItems({ sortedChatList, loading, activeChatTicketId, handleChat
       ) : (
         sortedChatList.map((chat, index) => {
           const chatId = String(chat._id || chat.chatId || chat.id);
+          const unreadCount = unreadCounts && unreadCounts[String(chatId)];
+          // Debug: unreadCounts key'leri ve chatId karşılaştır
+          if (unreadCounts) {
+            const unreadKeys = Object.keys(unreadCounts);
+            if (!unreadKeys.includes(chatId)) {
+              console.warn('[DEBUG][ChatList] chatId eşleşmiyor:', { chatId, unreadKeys, unreadCounts });
+            } else {
+              console.log('[DEBUG][ChatList] chatId eşleşiyor:', { chatId, unreadCount });
+            }
+          }
           const isNewMessage = newMessageChatIds.has(chatId);
           
           return (
@@ -174,19 +185,38 @@ function ChatListItems({ sortedChatList, loading, activeChatTicketId, handleChat
                 },
               }}
             >
-              <ListItemButton
-                selected={
-                  !!activeChatTicketId &&
-                  (String(activeChatTicketId) === String(chat._id || chat.chatId || chat.id))
-                }
-                onClick={() => handleChatSelect(chat)}
-                sx={{
-                  color: '#222',
-                  bgcolor: String(activeChatTicketId) === String(chat.id) ? '#f0f8ff' : 'transparent',
-                  '&:hover': { 
-                    bgcolor: '#f5f5f5',
-                    transform: 'translateX(2px)',
-                  },
+                              <ListItemButton
+                  selected={
+                    !!activeChatTicketId &&
+                    (String(activeChatTicketId) === String(chat._id || chat.chatId || chat.id))
+                  }
+                  onClick={() => handleChatSelect(chat)}
+                  sx={{
+                    color: '#222',
+                    bgcolor: (() => {
+                      // chatId ve unreadCount yukarıda tanımlı
+                      if (unreadCount > 0) {
+                        console.log('[ChatList] Kırmızı arka plan uygulanıyor:', chatId);
+                        return '#ffcccc'; // kırmızımsı arka plan
+                      } else if (String(activeChatTicketId) === String(chat._id || chat.chatId || chat.id)) {
+                        return '#f0f8ff';
+                      } else {
+                        return 'transparent';
+                      }
+                    })(),
+                    '&:hover': {
+                      bgcolor: (() => {
+                        const chatId = String(chat._id || chat.chatId || chat.id);
+                        const unreadCount = unreadCounts && unreadCounts[chatId];
+                        
+                        if (unreadCount > 0) {
+                          return '#ffb3b3'; // daha koyu kırmızı
+                        } else {
+                          return '#f5f5f5';
+                        }
+                      })(),
+                      transform: 'translateX(2px)',
+                    },
                   py: 2,
                   px: 3,
                   borderBottom: index === sortedChatList.length - 1 ? 'none' : '1px solid #f0f0f0',
@@ -216,19 +246,27 @@ function ChatListItems({ sortedChatList, loading, activeChatTicketId, handleChat
                 }}
               >
                 <ListItemAvatar>
-                  <Avatar 
-                    sx={{ 
-                      bgcolor: '#1976d2', 
-                      width: 48, 
-                      height: 48,
-                      transition: 'all 0.2s ease-in-out',
-                      '&:hover': {
-                        transform: 'scale(1.05)',
-                      },
-                    }}
+                  <Badge
+                    color="error"
+                    badgeContent={unreadCount > 0 ? unreadCount : 0}
+                    invisible={!unreadCount || unreadCount === 0}
+                    overlap="circular"
+                    anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
                   >
-                    <PersonIcon />
-                  </Avatar>
+                    <Avatar 
+                      sx={{ 
+                        bgcolor: '#1976d2', 
+                        width: 48, 
+                        height: 48,
+                        transition: 'all 0.2s ease-in-out',
+                        '&:hover': {
+                          transform: 'scale(1.05)',
+                        },
+                      }}
+                    >
+                      <PersonIcon />
+                    </Avatar>
+                  </Badge>
                 </ListItemAvatar>
                 <ListItemText
                   primary={
@@ -320,17 +358,29 @@ export default function ChatList({ activeChatTicketId, onSelectChat, loading: lo
       
       if (!chatId || !message) return;
       
-      // Yeni mesaj animasyonu için chatId'yi ekle
-      setNewMessageChatIds(prev => new Set([...prev, chatId]));
+      // Yeni mesaj animasyonu için chatId'yi ekle (sadece başka kullanıcılardan gelen mesajlar için)
+      const token = localStorage.getItem('jwt');
+      let myUserId = null;
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          myUserId = payload.userId || payload.id || payload.sub;
+        } catch (e) {}
+      }
       
-      // 3 saniye sonra animasyonu kaldır
-      setTimeout(() => {
-        setNewMessageChatIds(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(chatId);
-          return newSet;
-        });
-      }, 3000);
+      // Sadece başka kullanıcılardan gelen mesajlar için animasyon göster
+      if (userId !== myUserId) {
+        setNewMessageChatIds(prev => new Set([...prev, chatId]));
+        
+        // 3 saniye sonra animasyonu kaldır
+        setTimeout(() => {
+          setNewMessageChatIds(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(chatId);
+            return newSet;
+          });
+        }, 3000);
+      }
       
       setAgentChatsPaginated(prev => {
         const chatIndex = prev.findIndex(chat => 
@@ -448,6 +498,19 @@ export default function ChatList({ activeChatTicketId, onSelectChat, loading: lo
       return newSet;
     });
     onSelectChat(chat);
+
+    // Ekstra: Okundu bildirimi anında gönder
+    const token = localStorage.getItem('jwt');
+    let myUserId = null;
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        myUserId = payload.userId || payload.id || payload.sub;
+      } catch (e) {}
+    }
+    if (realChatId && myUserId) {
+      socket.emit('mark_message_read', { chatId: realChatId, userId: myUserId });
+    }
   };
 
   useEffect(() => {

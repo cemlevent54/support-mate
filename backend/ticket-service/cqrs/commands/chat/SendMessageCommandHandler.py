@@ -10,15 +10,21 @@ class SendMessageCommandHandler:
     def execute(self, message_data, user):
         try:
             message_id = str(uuid.uuid4())
+            
+            # Customer Supporter rolündeki kullanıcıların mesajları otomatik okundu olarak işaretlensin
+            sender_role = message_data.get("senderRole", user.get("role", "customer"))
+            is_read = sender_role == "Customer Supporter"  # Customer Supporter ise True, değilse False
+            
             message = Message(
                 id=message_id,
                 chatId=message_data.get("chatId"),
                 senderId=message_data.get("senderId", user.get("id")),
                 receiverId=message_data.get("receiverId"),
-                senderRole=message_data.get("senderRole", user.get("role", "customer")),
+                senderRole=sender_role,
                 text=message_data.get("text"),
                 isDeleted=False,
-                is_delivered=message_data.get("is_delivered", False)
+                is_delivered=message_data.get("is_delivered", False),
+                isRead=is_read  # Customer Supporter mesajları otomatik okundu
             )
             saved_message = self.message_repository.create(message)
             return {"success": True, "data": saved_message, "message": "Message sent successfully."}

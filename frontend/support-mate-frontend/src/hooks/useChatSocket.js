@@ -164,11 +164,23 @@ export const useChatSocket = (chatTicket, chatOpen) => {
       let currentChatId = chatId;
       let res;
       
+      // receiverId'yi doğru belirle
+      let receiverId = null;
+      if (chatTicket) {
+        if (chatTicket.assignedAgentId && chatTicket.assignedAgentId !== myUserId) {
+          receiverId = chatTicket.assignedAgentId;
+        } else if (chatTicket.customerId && chatTicket.customerId !== myUserId) {
+          receiverId = chatTicket.customerId;
+        } else if (chatTicket.userId && chatTicket.userId !== myUserId) {
+          receiverId = chatTicket.userId;
+        }
+      }
+
       // Artık tek endpoint kullanıyoruz - sendMessage
       const messageData = {
         text: input,
         userId: myUserId,
-        receiverId: chatTicket?.receiverId
+        receiverId
       };
       
       // Eğer chatId varsa ekle
@@ -195,7 +207,7 @@ export const useChatSocket = (chatTicket, chatOpen) => {
           chatId: currentChatId,
           message: input,
           userId: myUserId,
-          receiverId: chatTicket?.receiverId
+          receiverId
         };
         console.log('[SOCKET][EMIT][send_message]', emitObj);
         socket.emit('send_message', emitObj);
@@ -206,7 +218,7 @@ export const useChatSocket = (chatTicket, chatOpen) => {
             chatId: currentChatId,
             message: input,
             userId: myUserId,
-            receiverId: chatTicket?.receiverId
+            receiverId
           };
           console.log('[SOCKET][EMIT][new_chat_created]', newChatEmitObj);
           socket.emit('new_chat_created', newChatEmitObj);
@@ -262,9 +274,18 @@ export const useChatSocket = (chatTicket, chatOpen) => {
 
   useEffect(() => {
     if (chatOpen && chatId && myUserId) {
-      socket.emit('mark_message_read', { chatId, userId: myUserId });
+      // Sadece başkasından okunmamış mesaj varsa okundu bildirimi gönder
+      const hasUnreadFromOther = messages.some(
+        msg => msg.senderId !== myUserId && !msg.isRead
+      );
+      if (hasUnreadFromOther) {
+        console.log('[useChatSocket] mark_message_read emit ediliyor (başkasından okunmamış mesaj var):', { chatId, userId: myUserId });
+        socket.emit('mark_message_read', { chatId, userId: myUserId });
+      } else {
+        console.log('[useChatSocket] mark_message_read emit edilmiyor (okunmamış başkasından mesaj yok)');
+      }
     }
-  }, [chatOpen, chatId, myUserId]);
+  }, [chatOpen, chatId, myUserId, messages]);
 
   return {
     messages,

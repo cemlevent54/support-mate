@@ -66,7 +66,13 @@ const eventList = [
 ];
 eventList.forEach(event => {
   socket.on(event, (data) => {
-    console.log(`[SOCKET EVENT] ${event}:`, data);
+    if (event === 'unread_counts') {
+      console.log(`[SOCKET EVENT] ${event}:`, data);
+      console.log(`[SOCKET EVENT] ${event} counts array:`, data.counts);
+      console.log(`[SOCKET EVENT] ${event} counts length:`, data.counts ? data.counts.length : 'undefined');
+    } else {
+      console.log(`[SOCKET EVENT] ${event}:`, data);
+    }
   });
 });
 

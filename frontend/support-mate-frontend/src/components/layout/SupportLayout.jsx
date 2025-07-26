@@ -19,6 +19,7 @@ import socket from '../../socket/socket';
 import { useChatContext } from '../chats/ChatContext';
 import { listMessagesByChatId , BASE_URL2 } from '../../api/messagesApi';
 import axios from 'axios';
+import Badge from '@mui/material/Badge';
 
 const sidebarItems = [
   { key: 'requests', labelKey: 'supportDashboard.sidebar.requests', path: '/support/requests' },
@@ -39,6 +40,18 @@ export default function SupportLayout() {
   const { t } = useTranslation();
   const { unreadCounts, setUnreadCounts, agentChats, setAgentChats } = useChatContext();
   
+  // Kullanıcı rolünü JWT'den al
+  let roleName = null;
+  const token = localStorage.getItem('jwt');
+  let myUserId = null;
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      roleName = decoded.roleName;
+      myUserId = decoded.userId || decoded.id || decoded.sub;
+    } catch (e) {}
+  }
+
   // Socket bağlantı durumunu kontrol et
   useEffect(() => {
     console.log('[SupportLayout] Socket bağlantı durumu:', socket.connected);
@@ -60,6 +73,12 @@ export default function SupportLayout() {
     // Socket bağlantı event'lerini dinle
     socket.on('connect', () => {
       console.log('[SupportLayout] Socket bağlandı, ID:', socket.id);
+      
+      // Socket bağlandıktan sonra unread counts'u çek
+      if (myUserId) {
+        console.log('[SupportLayout] Socket bağlandı, unread counts çekiliyor...');
+        socket.emit('get_unread_counts', { userId: myUserId });
+      }
     });
     
     socket.on('disconnect', () => {
@@ -69,19 +88,7 @@ export default function SupportLayout() {
     return () => {
       socket.off('test_event', handleTestEvent);
     };
-  }, []);
-
-  // Kullanıcı rolünü JWT'den al
-  let roleName = null;
-  const token = localStorage.getItem('jwt');
-  let myUserId = null;
-  if (token) {
-    try {
-      const decoded = jwtDecode(token);
-      roleName = decoded.roleName;
-      myUserId = decoded.userId || decoded.id || decoded.sub;
-    } catch (e) {}
-  }
+  }, [myUserId]);
 
   // Eğer employee ise support paneline erişimi engelle
 
@@ -143,17 +150,26 @@ export default function SupportLayout() {
 
   useEffect(() => {
     socket.on('unread_counts', (data) => {
-      console.log('[SOCKET][FRONTEND] unread_counts:', data);
+      console.log('[SOCKET][FRONTEND] unread_counts event alındı:', data);
+      console.log('[SOCKET][FRONTEND] data.counts:', data.counts);
+      console.log('[SOCKET][FRONTEND] Array.isArray(data.counts):', Array.isArray(data.counts));
+      
       if (Array.isArray(data.counts)) {
         const map = {};
         data.counts.forEach(item => {
+          console.log('[SOCKET][FRONTEND] Processing item:', item);
           map[String(item.chatId)] = item.count;
         });
+        console.log('[SOCKET][FRONTEND] Oluşturulan map:', map);
+        console.log('[SOCKET][FRONTEND] Mevcut unreadCounts:', unreadCounts);
         setUnreadCounts(map);
+        console.log('[SOCKET][FRONTEND] setUnreadCounts çağrıldı');
+      } else {
+        console.warn('[SOCKET][FRONTEND] data.counts array değil:', data.counts);
       }
     });
     return () => socket.off('unread_counts');
-  }, [setUnreadCounts]);
+  }, [setUnreadCounts, unreadCounts]);
 
   // Yeni chat oluşturulduğunda dinle
   useEffect(() => {
@@ -232,6 +248,14 @@ export default function SupportLayout() {
     }
   };
 
+  // myUserId veya socket.connected değiştiğinde unread counts'u çek
+  useEffect(() => {
+    if (myUserId && socket.connected) {
+      console.log('[SupportLayout] myUserId veya socket.connected değişti, unread counts çekiliyor...');
+      socket.emit('get_unread_counts', { userId: myUserId });
+    }
+  }, [myUserId, socket.connected]);
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       <Paper elevation={3} style={{ width: 220, minHeight: '100vh', borderRadius: 0, padding: 16, display: 'flex', flexDirection: 'column', background: '#111', color: '#fff' }}>
@@ -269,7 +293,27 @@ export default function SupportLayout() {
                 }}
               >
                 <ListItemText
-                  primary={t(item.labelKey)}
+                  primary={
+                    item.key === 'chats' ? (
+                      <Badge
+                        color="error"
+                        badgeContent={totalUnread > 0 ? totalUnread : 0}
+                        invisible={totalUnread === 0}
+                        sx={{
+                          '& .MuiBadge-badge': {
+                            backgroundColor: '#ff4444',
+                            color: '#fff',
+                            fontSize: '12px',
+                            fontWeight: 'bold',
+                          },
+                        }}
+                      >
+                        <span>{t(item.labelKey)}</span>
+                      </Badge>
+                    ) : (
+                      t(item.labelKey)
+                    )
+                  }
                   sx={{ color: '#fff' }}
                 />
               </ListItemButton>
