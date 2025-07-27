@@ -10,7 +10,10 @@ import {
   QUERY_TYPES,
   CreateUserCommandHandler,
   GetUserByEmailQueryHandler,
-  GetUserByIdQueryHandler
+  GetUserByIdQueryHandler,
+  FindAnyUserByEmailQueryHandler,
+  FindUserByGoogleIdQueryHandler,
+  UpdateUserGoogleIdCommandHandler
 } from '../cqrs/index.js';
 import userRepository from '../repositories/user.repository.js';
 import roleService from './role.service.js';
@@ -85,7 +88,7 @@ class AuthService {
       // JWT tabanlı doğrulama token'ı üret
       const token = this.jwtService.generateEmailVerifyToken(registerData.email, code, expiresAt, EMAIL_VERIFY_TOKEN_SECRET);
       // isDeleted filtresi olmadan kullanıcıyı bul
-      const existingUser = await this.userRepository.findAnyUserByEmail(registerData.email);
+      const existingUser = await this.queryHandler.dispatch(QUERY_TYPES.FIND_ANY_USER_BY_EMAIL, { email: registerData.email });
       if (existingUser) {
         if (existingUser.isDeleted) {
           // Soft deleted kullanıcıyı tekrar aktif et ve bilgilerini güncelle
@@ -491,7 +494,7 @@ class AuthService {
       }
 
       // Kullanıcıyı CQRS ile bul
-      const user = await this.queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_EMAIL, { email });
+      const user = await this.queryHandler.dispatch(QUERY_TYPES.FIND_ANY_USER_BY_EMAIL, { email });
       if (!user) {
         logger.warn(this.translation('services.authService.logs.forgotPasswordError'), { email });
         // Güvenlik için her zaman aynı mesajı döndür
@@ -647,10 +650,12 @@ class AuthService {
   }
 
   async findOrUpdateGoogleUser(googlePayload) {
-    // Kullanıcıyı googleId ile bul, yoksa email ile bul
-    let user = await this.userRepository.findAnyUserByEmail(googlePayload.email);
+    // Kullanıcıyı email ile bul
+    let user = await this.queryHandler.dispatch(QUERY_TYPES.FIND_ANY_USER_BY_EMAIL, { email: googlePayload.email });
+    
+    // Email ile bulunamazsa googleId ile bul
     if (!user && googlePayload.sub) {
-      user = await this.userRepository.model.findOne({ googleId: googlePayload.sub });
+      user = await this.queryHandler.dispatch(QUERY_TYPES.FIND_USER_BY_GOOGLE_ID, { googleId: googlePayload.sub });
     }
     
     // Kullanıcı yoksa hata döndür
@@ -661,8 +666,11 @@ class AuthService {
     
     // Kullanıcıda googleId yoksa ekle
     if (!user.googleId && googlePayload.sub) {
-      user.googleId = googlePayload.sub;
-      await user.save();
+      const updateCommand = {
+        userId: user.id,
+        googleId: googlePayload.sub
+      };
+      user = await this.commandHandler.dispatch(COMMAND_TYPES.UPDATE_USER_GOOGLE_ID, updateCommand);
     }
     
     return user;
@@ -686,9 +694,9 @@ class AuthService {
           logger.warn(this.translation('services.authService.logs.registerConflict'), { provider: 'google', reason: 'Token doğrulanamadı' });
           throw new Error(this.translation('services.authService.logs.registerConflict'));
         }
-              let user = await this.userModel.findOne({ googleId: payload.sub });
+              let user = await this.queryHandler.dispatch(QUERY_TYPES.FIND_USER_BY_GOOGLE_ID, { googleId: payload.sub });
         if (!user) {
-          user = await this.userRepository.findAnyUserByEmail(payload.email);
+          user = await this.queryHandler.dispatch(QUERY_TYPES.FIND_ANY_USER_BY_EMAIL, { email: payload.email });
         }
         if (user) {
           logger.warn(this.translation('services.authService.logs.registerConflict'), { provider: 'google', email: payload.email });
@@ -813,7 +821,7 @@ class AuthService {
         throw new Error(this.translation('services.authService.logs.resetPasswordError'));
       }
       // Kullanıcıyı CQRS ile bul
-      const user = await this.queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_EMAIL, { email });
+      const user = await this.queryHandler.dispatch(QUERY_TYPES.FIND_ANY_USER_BY_EMAIL, { email });
       if (!user) {
         throw new Error(this.translation('repositories.userRepository.logs.notFound'));
       }
@@ -877,7 +885,10 @@ const authService = new AuthService();
 
 export function registerAuthHandlers() {
   commandHandler.register(COMMAND_TYPES.CREATE_USER, new CreateUserCommandHandler());
+  commandHandler.register(COMMAND_TYPES.UPDATE_USER_GOOGLE_ID, new UpdateUserGoogleIdCommandHandler());
   queryHandler.register(QUERY_TYPES.GET_USER_BY_EMAIL, new GetUserByEmailQueryHandler());
+  queryHandler.register(QUERY_TYPES.FIND_ANY_USER_BY_EMAIL, new FindAnyUserByEmailQueryHandler());
+  queryHandler.register(QUERY_TYPES.FIND_USER_BY_GOOGLE_ID, new FindUserByGoogleIdQueryHandler());
   // Diğer handler kayıtları gerekiyorsa buraya eklenir
 }
 

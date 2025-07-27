@@ -6,6 +6,7 @@ export { QueryHandler, queryHandler } from './handler/query.handler.js';
 export { CreateUserCommandHandler } from './commands/user/createuser.command.handler.js';
 export { UpdateUserCommandHandler } from './commands/user/updateuser.command.handler.js';
 export { DeleteUserCommandHandler } from './commands/user/deleteuser.command.handler.js';
+export { UpdateUserGoogleIdCommandHandler } from './commands/user/updateusergoogleid.command.handler.js';
 
 // Command Handlers - Role
 export { CreateRoleCommandHandler } from './commands/role/createrole.command.handler.js';
@@ -22,6 +23,8 @@ export { GetUserByIdQueryHandler } from './queries/user/getuserbyid.query.handle
 export { GetUserByEmailQueryHandler } from './queries/user/getuserbyemail.query.handler.js';
 export { GetAllUsersQueryHandler } from './queries/user/getallusers.query.handler.js';
 export { GetUsersByRoleQueryHandler } from './queries/user/getusersbyrole.query.handler.js';
+export { FindAnyUserByEmailQueryHandler } from './queries/user/findanyuserbyemail.query.handler.js';
+export { FindUserByGoogleIdQueryHandler } from './queries/user/finduserbygoogleid.query.handler.js';
 
 // Query Handlers - Role
 export { GetRoleByIdQueryHandler } from './queries/role/getrolebyid.query.handler.js';
@@ -38,6 +41,7 @@ export const COMMAND_TYPES = {
   CREATE_USER: 'CREATE_USER',
   UPDATE_USER: 'UPDATE_USER',
   DELETE_USER: 'DELETE_USER',
+  UPDATE_USER_GOOGLE_ID: 'UPDATE_USER_GOOGLE_ID',
   CREATE_ROLE: 'CREATE_ROLE',
   UPDATE_ROLE: 'UPDATE_ROLE',
   DELETE_ROLE: 'DELETE_ROLE',
@@ -52,6 +56,8 @@ export const QUERY_TYPES = {
   GET_USER_BY_EMAIL: 'GET_USER_BY_EMAIL',
   GET_ALL_USERS: 'GET_ALL_USERS',
   GET_USERS_BY_ROLE: 'GET_USERS_BY_ROLE',
+  FIND_ANY_USER_BY_EMAIL: 'FIND_ANY_USER_BY_EMAIL',
+  FIND_USER_BY_GOOGLE_ID: 'FIND_USER_BY_GOOGLE_ID',
   GET_ROLE_BY_ID: 'GET_ROLE_BY_ID',
   GET_ALL_ROLES: 'GET_ALL_ROLES',
   GET_PERMISSION_BY_ID: 'GET_PERMISSION_BY_ID',
