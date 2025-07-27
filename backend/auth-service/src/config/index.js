@@ -5,6 +5,7 @@ import { KafkaService } from './kafka.js';
 import i18n from './i18n.js';
 import translation from './translation.js';
 import { testGoogleConnection } from './google.js';
+import { checkForSwearWords, createSwearWordResponse } from './badword/swearConfig.js';
 
 // Locale (dil) ayarı ve logu server.js dosyasında yapılmaktadır.
 // initializeApp fonksiyonu içinde tekrar locale ayarı yapılmamalı ve handler kayıtları burada yer almamalı.
@@ -62,5 +63,5 @@ export const initializeApp = async () => {
   }
 };
 
-export { kafkaService };
+export { kafkaService, checkForSwearWords, createSwearWordResponse };
 

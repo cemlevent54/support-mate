@@ -327,7 +327,23 @@
         "googleCurrentOnlineUsers": "Şu anda online Customer Supporter userId'leri (queue) (Google):",
         "googleCustomerSupporterAlreadyOnline": "Customer Supporter zaten online (Google)",
         "googleCustomerSupporterOnlineError": "Customer Supporter online kaydedilemedi (Google)",
-        "verificationCodeResent": "Kodun süresi doldu. Yeni doğrulama kodu e-posta adresinize gönderildi."
+        "verificationCodeResent": "Kodun süresi doldu. Yeni doğrulama kodu e-posta adresinize gönderildi.",
+        "validationError": "Doğrulama hatası: {0}",
+        "verificationCodeSaved": "Doğrulama kodu Redis'e kaydedildi",
+        "verificationCodeSaveError": "Doğrulama kodu Redis'e kaydedilemedi",
+        "verificationCodeNotFound": "Doğrulama kodu bulunamadı",
+        "verificationCodeGetError": "Doğrulama kodu alınırken hata oluştu",
+        "verificationCodeDeleted": "Doğrulama kodu silindi",
+        "verificationCodeDeleteError": "Doğrulama kodu silinirken hata oluştu",
+        "verificationCodeVerifyError": "Doğrulama kodu doğrulanırken hata oluştu",
+        "verificationEmailSent": "Doğrulama emaili gönderildi",
+        "emailVerificationSuccess": "Email başarıyla doğrulandı",
+        "missingVerificationData": "Doğrulama kodu veya token eksik",
+        "invalidVerificationToken": "Geçersiz doğrulama token'ı",
+        "invalidTokenEmail": "Token'da geçerli email bulunamadı",
+        "invalidVerificationCode": "Geçersiz doğrulama kodu",
+        "userAction": "Kullanıcı işlemi gerçekleştirildi",
+        "emailAlreadyInUse": "Bu e-posta adresi zaten kullanımda. Lütfen farklı bir e-posta adresi kullanın veya giriş yapın."
       }
     },
     "permissionService": {

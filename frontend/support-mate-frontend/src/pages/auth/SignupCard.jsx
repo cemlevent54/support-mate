@@ -41,37 +41,40 @@ export default function SignupCard() {
     e.preventDefault();
     setError('');
     setSuccess('');
+    
+    // Frontend validasyonları - sadece error state'e set et, snackbar gösterme
     if (!firstName || !email || !password || !confirmPassword) {
       setError(t('pages.signup.required'));
-      setSnackbarType('error');
-      setSnackbarMsg(t('pages.signup.required'));
-      setOpenSnackbar(true);
       return;
     }
     if (password !== confirmPassword) {
       setError(t('pages.signup.passwordsNoMatch'));
-      setSnackbarType('error');
-      setSnackbarMsg(t('pages.signup.passwordsNoMatch'));
-      setOpenSnackbar(true);
       return;
     }
+    
     try {
       const result = await register({ firstName, lastName, email, password, language: localLang });
-      setSuccess(t('pages.signup.success'));
+      
+      // API başarılı response'unda snackbar göster
+      const successMsg = result?.message || t('pages.signup.success');
       setSnackbarType('success');
-      setSnackbarMsg(t('pages.signup.success'));
+      setSnackbarMsg(successMsg);
       setOpenSnackbar(true);
+      
+      // Form temizle
       setFirstName('');
       setLastName('');
       setEmail('');
       setPassword('');
       setConfirmPassword('');
+      setError('');
     } catch (err) {
-      const msg = err?.response?.data?.message || err?.message || t('pages.signup.error');
-      setError(msg);
+      // API error response'unda snackbar göster
+      const errorMsg = err?.response?.data?.message || err?.message || t('pages.signup.error');
       setSnackbarType('error');
-      setSnackbarMsg(msg);
+      setSnackbarMsg(errorMsg);
       setOpenSnackbar(true);
+      setError(errorMsg);
     }
   };
 
@@ -149,6 +152,17 @@ export default function SignupCard() {
               }}
             />
           </Stack>
+          {/* Frontend validation error mesajı */}
+          {error && (
+            <Typography 
+              variant="body2" 
+              color="error" 
+              sx={{ mt: 1, textAlign: 'center' }}
+            >
+              {error}
+            </Typography>
+          )}
+          
           <Button
             type="submit"
             fullWidth
@@ -161,30 +175,49 @@ export default function SignupCard() {
           <GoogleLogin
             onSuccess={async credentialResponse => {
               try {
+                console.log('Google register starting with locale:', localLang);
                 const result = await googleRegister(credentialResponse.credential, localLang);
-                const accessToken = result?.accessToken || result?.data?.accessToken;
+                console.log('Google register result:', result);
+                
+                // Response yapısını kontrol et
+                const responseData = result?.data || result;
+                const accessToken = responseData?.accessToken;
+                const successMessage = responseData?.message || result?.message;
+                
                 if (accessToken) {
                   localStorage.setItem('jwt', accessToken);
+                  
+                  // API başarılı response'unda snackbar göster
+                  const successMsg = successMessage;
                   setSnackbarType('success');
-                  setSnackbarMsg(t('pages.signup.success'));
+                  setSnackbarMsg(successMsg);
                   setOpenSnackbar(true);
+                  
                   setTimeout(() => window.location.href = '/', 1000);
                 } else {
+                  // Access token yoksa hata olarak değerlendir
+                  const errorMsg = successMessage || t('pages.signup.error');
                   setSnackbarType('error');
-                  setSnackbarMsg(t('pages.signup.error'));
+                  setSnackbarMsg(errorMsg);
                   setOpenSnackbar(true);
-                  console.log('Google register response:', result);
+                  console.log('Google register response without access token:', result);
                 }
               } catch (err) {
+                console.error('Google register error details:', err);
+                
+                // API error response'unda snackbar göster
+                const errorMsg = err?.response?.data?.message || err?.message || t('pages.signup.error');
                 setSnackbarType('error');
-                setSnackbarMsg(t('pages.signup.error'));
+                setSnackbarMsg(errorMsg);
                 setOpenSnackbar(true);
-                console.error('Google register error:', err);
               }
             }}
-            onError={() => {
+            onError={(error) => {
+              // Google OAuth hatası - API response değil, bu yüzden snackbar gösterme
+              console.error('Google OAuth error:', error);
+              // Opsiyonel: Kullanıcıya bilgi ver
               setSnackbarType('error');
-              setSnackbarMsg(t('pages.signup.error'));
+              setSnackbarMsg(t('pages.signup.googleOAuthError') || 'Google ile giriş yapılırken bir hata oluştu');
               setOpenSnackbar(true);
             }}
             text="signup_with"

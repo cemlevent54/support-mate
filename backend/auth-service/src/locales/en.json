@@ -326,7 +326,24 @@
         "googleRedisPushSuccess": "Redis rPush('online_users_queue', userId) (Google) success",
         "googleCurrentOnlineUsers": "Currently online Customer Supporter userId's (queue) (Google):",
         "googleCustomerSupporterAlreadyOnline": "Customer Supporter already online (Google)",
-        "googleCustomerSupporterOnlineError": "Customer Supporter online error (Google)"
+        "googleCustomerSupporterOnlineError": "Customer Supporter online error (Google)",
+        "verificationCodeResent": "Code expired. New verification code sent to your email address.",
+        "validationError": "Validation error: {0}",
+        "verificationCodeSaved": "Verification code saved to Redis",
+        "verificationCodeSaveError": "Failed to save verification code to Redis",
+        "verificationCodeNotFound": "Verification code not found",
+        "verificationCodeGetError": "Error getting verification code",
+        "verificationCodeDeleted": "Verification code deleted",
+        "verificationCodeDeleteError": "Error deleting verification code",
+        "verificationCodeVerifyError": "Error verifying code",
+        "verificationEmailSent": "Verification email sent",
+        "emailVerificationSuccess": "Email verified successfully",
+        "missingVerificationData": "Missing verification code or token",
+        "invalidVerificationToken": "Invalid verification token",
+        "invalidTokenEmail": "No valid email found in token",
+        "invalidVerificationCode": "Invalid verification code",
+        "userAction": "User action performed",
+        "emailAlreadyInUse": "This email address is already in use. Please use a different email address or log in."
       }
     },
     "permissionService": {

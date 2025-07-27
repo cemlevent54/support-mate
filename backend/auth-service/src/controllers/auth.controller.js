@@ -26,10 +26,17 @@ class AuthController {
 
   async register(req, res) {
     try {
-      const user = await authService.register(req.body);
+      const locale = res.getLocale();
+      const registerData = { 
+        ...req.body, 
+        locale,
+        // Password eksikse geçici password ekle (Google register için)
+        password: req.body.password || 'temporary_password_123'
+      };
+      
+      const user = await authService.register(registerData);
       
       const message = res.__('services.authService.logs.registerSuccess');
-      const locale = res.getLocale();
       
       logger.info('=== Register Response Log ===');
       logger.info(`Response message: ${message}`);
@@ -40,6 +47,24 @@ class AuthController {
       apiSuccess(res, user, message, 201);
     } catch (error) {
       logger.error('Register controller error', { error: error.message });
+      
+      // Email zaten kullanımda hatası kontrolü
+      try {
+        const errorData = JSON.parse(error.message);
+        if (errorData.success === false && errorData.message) {
+          // Locale'e göre mesajı al
+          const localeMessage = errorData.message === 'EMAIL_ALREADY_IN_USE' 
+            ? res.__('services.authService.logs.emailAlreadyInUse')
+            : errorData.message;
+          return res.status(409).json({
+            success: false,
+            message: localeMessage,
+            data: null
+          });
+        }
+      } catch (parseError) {
+        // JSON parse hatası, normal error handling'e devam et
+      }
       
       if (error.message === res.__('services.authService.logs.registerConflict')) {
         conflictError(res, res.__('services.authService.logs.registerConflict'), 409);
@@ -210,7 +235,8 @@ class AuthController {
   async forgotPassword(req, res) {
     try {
       const { email } = req.body;
-      const result = await authService.forgotPassword(email);
+      const locale = res.getLocale();
+      const result = await authService.forgotPassword(email, locale);
       
       apiSuccess(res, null, result.message, 200);
     } catch (error) {
@@ -312,10 +338,13 @@ class AuthController {
   }
   async googleRegister(req, res) {
     try {
-      const result = await authService.googleRegister(req.body);
-      
-      const message = res.__('services.authService.logs.registerSuccess');
       const locale = res.getLocale();
+      const googleRegisterData = { ...req.body, locale };
+      
+      const result = await authService.googleRegister(googleRegisterData);
+      
+      // Locale'e göre mesaj al
+      const message = res.__('services.authService.logs.registerSuccess');
       
       logger.info('=== Google Register Response Log ===');
       logger.info(`Response message: ${message}`);
@@ -331,6 +360,24 @@ class AuthController {
     } catch (error) {
       logger.error('Google register controller error', { error: error.message });
       
+      // Email zaten kullanımda hatası kontrolü
+      try {
+        const errorData = JSON.parse(error.message);
+        if (errorData.success === false && errorData.message) {
+          // Locale'e göre mesajı al
+          const localeMessage = errorData.message === 'EMAIL_ALREADY_IN_USE' 
+            ? res.__('services.authService.logs.emailAlreadyInUse')
+            : errorData.message;
+          return res.status(409).json({
+            success: false,
+            message: localeMessage,
+            data: null
+          });
+        }
+      } catch (parseError) {
+        // JSON parse hatası, normal error handling'e devam et
+      }
+      
       if (error.message === res.__('services.authService.logs.registerConflict')) {
         conflictError(res, res.__('services.authService.logs.registerConflict'));
       } else {
@@ -340,7 +387,10 @@ class AuthController {
   }
   async verifyEmail(req, res) {
     try {
-      const result = await authService.verifyEmail(req.body);
+      const locale = res.getLocale();
+      const verifyEmailData = { ...req.body, locale };
+      
+      const result = await authService.verifyEmail(verifyEmailData);
       
       apiSuccess(res, null, result.message, 200);
     } catch (error) {

@@ -2,18 +2,31 @@ import logger from '../config/logger.js';
 import emailService from '../services/emailService.js';
 
 export default async function handleUserVerified(data) {
-  logger.info('User verified event received (notification-service):', { email: data.email });
+  // Accept-Language header'ından gelen dil bilgisini kullan
+  const locale = data.locale;
+  
+  logger.info('User verified event received (notification-service):', { 
+    email: data.email,
+    locale: locale 
+  });
   try {
     await emailService.send({
       to: data.email,
-      subject: data.language === 'en' ? 'Your Account Has Been Verified' : 'Hesabınız Doğrulandı',
-      text: data.language === 'en'
-        ? `Hello ${data.firstName}, your account has been successfully verified.`
-        : `Merhaba ${data.firstName}, hesabınız başarıyla doğrulandı.`,
+      subject: locale === 'en' ? 'Your Email Has Been Verified' : 'Email Adresiniz Doğrulandı',
+      text: locale === 'en'
+        ? `Hello ${data.firstName}, your email has been successfully verified.`
+        : `Merhaba ${data.firstName}, email adresiniz başarıyla doğrulandı.`,
       html: data.html
     });
-    logger.info('Verification email sent', { email: data.email });
+    logger.info('Verification email sent', { 
+      email: data.email,
+      locale: locale 
+    });
   } catch (err) {
-    logger.error('Verification email could not be sent', { email: data.email, error: err });
+    logger.error('Verification email could not be sent', { 
+      email: data.email, 
+      error: err,
+      locale: locale 
+    });
   }
 }

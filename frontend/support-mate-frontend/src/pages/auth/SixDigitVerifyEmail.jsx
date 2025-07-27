@@ -8,8 +8,7 @@ import Alert from '@mui/material/Alert';
 import { MuiOtpInput } from 'mui-one-time-password-input';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { login } from '../../api/authApi';
-import axiosInstance from '../../api/axiosInstance';
+import { login, verifyEmail } from '../../api/authApi';
 
 const SixDigitVerifyEmail = ({ onVerify }) => {
   const [otp, setOtp] = useState('');
@@ -38,7 +37,7 @@ const SixDigitVerifyEmail = ({ onVerify }) => {
         return;
       }
       // API'ye doğrulama isteği gönder
-      await axiosInstance.post('/api/auth/verify-email', { code: otp, token });
+      await verifyEmail({ code: otp, token });
       setSnackbar({ open: true, message: t('pages.verifyEmail.success', 'Kod doğrulandı! Giriş ekranına yönlendiriliyorsunuz...'), severity: 'success' });
       setTimeout(() => {
         navigate('/login');

@@ -1,4 +1,4 @@
-import userRepository from '../../../repositories/user.repository.js';
+import { UserModel } from '../../../models/user.model.js';
 import logger from '../../../config/logger.js';
 import translation from '../../../config/translation.js';
 
@@ -6,7 +6,7 @@ export class FindUserByGoogleIdQueryHandler {
   async execute(query) {
     try {
       logger.info('FindUserByGoogleIdQuery: executing', { googleId: query.googleId });
-      const user = await userRepository.model.findOne({ googleId: query.googleId });
+      const user = await UserModel.findOne({ googleId: query.googleId });
       if (!user) {
         logger.info('FindUserByGoogleIdQuery: user not found', { googleId: query.googleId });
         return null;

@@ -24,9 +24,12 @@ const handleAgentAssignedEvent = async (data) => {
       } catch (e) {
         userHtml = `<p>Destek talebinize müşteri temsilcisi atanmıştır.</p>`;
       }
+      // Accept-Language header'ından gelen dil bilgisini kullan
+      const userLocale = data.user.locale;
+      
       await emailService.send({
         to: data.user.email,
-        subject: data.user.language === 'tr' ? 'Müşteri Temsilciniz Atandı' : 'Your Customer Representative Has Been Assigned',
+        subject: userLocale === 'tr' ? 'Müşteri Temsilciniz Atandı' : 'Your Customer Representative Has Been Assigned',
         html: userHtml
       });
       console.log(`Agent assigned email sent to user: ${data.user.email}`);
@@ -48,9 +51,12 @@ const handleAgentAssignedEvent = async (data) => {
       } catch (e) {
         agentHtml = `<p>Yeni bir destek talebi size atandı.</p>`;
       }
+      // Accept-Language header'ından gelen dil bilgisini kullan
+      const agentLocale = data.agent.locale;
+      
       await emailService.send({
         to: data.agent.email,
-        subject: data.agent.language === 'tr' ? 'Yeni Destek Talebi Size Atandı' : 'A New Support Ticket Has Been Assigned to You',
+        subject: agentLocale === 'tr' ? 'Yeni Destek Talebi Size Atandı' : 'A New Support Ticket Has Been Assigned to You',
         html: agentHtml
       });
       console.log(`Agent assigned email sent to agent: ${data.agent.email}`);

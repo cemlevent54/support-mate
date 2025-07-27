@@ -101,8 +101,11 @@ export async function googleLogin(credential) {
 }
 
 // Google ile kayıt
-export async function googleRegister(credential) {
-  const response = await axiosInstance.post(`${API_BASE_URL}/google-register`, { credential }, {
+export async function googleRegister(credential, locale) {
+  const response = await axiosInstance.post(`${API_BASE_URL}/google-register`, { 
+    credential,
+    locale: getLanguage()
+  }, {
     headers: {
       'Accept-Language': getLanguage()
     }
@@ -112,6 +115,16 @@ export async function googleRegister(credential) {
 
 export async function getUsersByRoleName(roleName) {
   const response = await axiosInstance.get(`${API_BASE_URL}/users/role?roleName=${roleName}`, {
+    headers: {
+      'Accept-Language': getLanguage()
+    }
+  });
+  return response.data;
+}
+
+// Email doğrulama
+export async function verifyEmail({ code, token }) {
+  const response = await axiosInstance.post(`${API_BASE_URL}/verify-email`, { code, token }, {
     headers: {
       'Accept-Language': getLanguage()
     }

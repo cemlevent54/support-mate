@@ -23,6 +23,7 @@ import { corsMiddleware } from './middlewares/cors.middleware.js';
 import { languageMiddleware } from './middlewares/language.middleware.js';
 import { errorHandler } from './middlewares/error.handler.js';
 import { seedPermissions } from './migrations/seedPermissions.js';
+import { swearCheckMiddleware } from './middlewares/swear.middleware.js';
 
 
 
@@ -40,6 +41,17 @@ app.use(i18n.init);
 
 // Language middleware (Accept-Language header'ını işler)
 app.use(languageMiddleware);
+
+// Küfür kontrolü middleware'i (Google login/register ve verify-email hariç)
+app.use((req, res, next) => {
+  // Google login/register ve verify-email endpoint'lerini kontrol etme
+  if (req.path === '/api/auth/google-login' || 
+      req.path === '/api/auth/google-register' || 
+      req.path === '/api/auth/verify-email') {
+    return next();
+  }
+  return swearCheckMiddleware(req, res, next);
+});
 
 app.use('/api', router); 
 

@@ -27,6 +27,14 @@ import path from 'path';
 import fs from 'fs';
 import cacheService from '../config/cache.js';
 import PasswordHelper from '../utils/passwordHelper.js';
+import EmailVerificationHelper from '../utils/emailVerificationHelper.js';
+import UserHelper from '../utils/userHelper.js';
+import { 
+  UserAlreadyExistsError, 
+  ValidationError, 
+  NotFoundError,
+  createTranslatedError 
+} from '../utils/customErrors.js';
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
 const REFRESH_TOKEN_EXPIRES = process.env.JWT_REFRESH_EXPIRES_IN;
@@ -40,8 +48,7 @@ export const AUTH_PERMISSIONS = [
   // Örnek: { code: 'auth:login', name: 'Giriş', description: 'Kullanıcı girişi', category: 'auth' }
 ];
 
-// Geçici olarak kodları saklamak için (production için cache/redis önerilir)
-global.emailVerificationCodes = global.emailVerificationCodes || {};
+// Email verification codes are now stored in Redis via EmailVerificationHelper
 
 class AuthService {
   constructor(
@@ -74,58 +81,198 @@ class AuthService {
     this.bcrypt = bcryptInstance;
     this.crypto = cryptoInstance;
     this.jwt = jwtInstance;
+    
+    // Helper sınıflarını başlat
+    this.emailVerificationHelper = new EmailVerificationHelper(cacheServiceInstance);
+    this.userHelper = new UserHelper();
   }
 
+  /**
+   * Kullanıcı kaydı işlemi
+   * @param {Object} registerData - Kayıt verileri
+   * @returns {Object} Kayıt edilen kullanıcı
+   */
   async register(registerData) {
     try {
-      logger.info(this.translation('services.authService.logs.registerRequest'), { body: registerData });
-      const language = registerData.language || 'tr'; // Sadece mail için kullanılacak
-      // 6 haneli kod üret
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      // Kodun geçerlilik süresi (10 dakika)
-      const expiresAt = Date.now() + 10 * 60 * 1000;
-      global.emailVerificationCodes[registerData.email] = { code, expiresAt };
-      // JWT tabanlı doğrulama token'ı üret
-      const token = this.jwtService.generateEmailVerifyToken(registerData.email, code, expiresAt, EMAIL_VERIFY_TOKEN_SECRET);
-      // isDeleted filtresi olmadan kullanıcıyı bul
-      const existingUser = await this.queryHandler.dispatch(QUERY_TYPES.FIND_ANY_USER_BY_EMAIL, { email: registerData.email });
-      if (existingUser) {
-        if (existingUser.isDeleted) {
-          // Soft deleted kullanıcıyı tekrar aktif et ve bilgilerini güncelle
-          logger.info(translation('services.authService.logs.userReactivated'), { email: registerData.email });
-          existingUser.firstName = registerData.firstName;
-          existingUser.lastName = registerData.lastName;
-          existingUser.password = registerData.password;
-          let roleId = registerData.role;
-          let roleName = registerData.roleName;
-          if (!roleId || !roleName) {
-            const userRole = await this.roleService.getRoleByName('User');
-            roleId = userRole ? userRole._id : null;
-            roleName = userRole ? userRole.name : null;
-          }
-          existingUser.role = roleId;
-          existingUser.roleName = roleName;
-          existingUser.isDeleted = false;
-          existingUser.deletedAt = null;
-          await existingUser.save();
-          logger.info(translation('services.authService.logs.userReactivated'), { user: existingUser });
-          // Doğrulama linki
-          const frontendUrl = process.env.WEBSITE_URL;
-          const verifyUrl = `${frontendUrl}/verify-email?email=${encodeURIComponent(existingUser.email)}&token=${encodeURIComponent(token)}`;
-          await this.kafkaProducer.sendUserRegisteredEvent(existingUser, language, code, verifyUrl);
-          return existingUser;
-        } else {
-          logger.warn(this.translation('services.authService.logs.registerConflict'), { email: registerData.email });
-          throw new Error(this.translation('services.authService.logs.registerConflict'));
+      logger.info(this.translation('services.authService.logs.registerRequest'), { 
+        email: registerData.email,
+        firstName: registerData.firstName,
+        lastName: registerData.lastName
+      });
+
+      // 1. Veri doğrulama
+      await this.validateRegistrationData(registerData);
+
+      // 2. Email doğrulama kodu ve token üretimi
+      const { code, expiresAt, token } = await this.generateEmailVerification(registerData.email);
+
+      // 3. Kullanıcı kontrolü ve işlemi
+      const user = await this.processUserRegistration(registerData);
+
+      // 4. Doğrulama kodunu Redis'e kaydet
+      await this.emailVerificationHelper.saveVerificationCode(registerData.email, code, expiresAt);
+
+      // 5. Email gönderimi - Accept-Language header'ından gelen dil bilgisini kullan
+      const emailLocale = registerData.locale;
+      if (!emailLocale) {
+        throw createTranslatedError(
+          ValidationError,
+          'services.authService.logs.validationError',
+          this.translation,
+          'Dil bilgisi bulunamadı'
+        );
+      }
+      await this.sendVerificationEmail(user, emailLocale, code, token);
+      
+      logger.info('Register: Email sent with Accept-Language locale', { 
+        email: user.email, 
+        locale: emailLocale,
+        acceptLanguage: registerData.locale 
+      });
+
+      // 6. Başarılı kayıt logu
+      this.userHelper.logUserAction('register', user, { 
+        email: registerData.email,
+        verificationCode: code 
+      });
+
+      return this.userHelper.sanitizeUser(user);
+    } catch (err) {
+      logger.error(this.translation('services.authService.logs.registerError'), { 
+        error: err.message, 
+        email: registerData.email 
+      });
+      throw err;
+    }
+  }
+
+  /**
+   * Kayıt verilerini doğrular
+   * @param {Object} registerData - Kayıt verileri
+   */
+  async validateRegistrationData(registerData) {
+    // Google register kontrolü
+    const isGoogleRegister = !!registerData.credential;
+    const validation = this.userHelper.validateUserData(registerData, isGoogleRegister);
+    
+    if (!validation.isValid) {
+      logger.error('Validation failed', { 
+        errors: validation.errors,
+        isGoogleRegister,
+        registerData: {
+          email: registerData.email,
+          firstName: registerData.firstName,
+          lastName: registerData.lastName,
+          hasPassword: !!registerData.password,
+          locale: registerData.locale
         }
+      });
+      
+      throw createTranslatedError(
+        ValidationError,
+        'services.authService.logs.validationError',
+        this.translation,
+        validation.errors.join(', ')
+      );
+    }
+  }
+
+  /**
+   * Email doğrulama kodu ve token üretir
+   * @param {string} email - Kullanıcı emaili
+   * @returns {Object} Kod, süre ve token bilgileri
+   */
+  async generateEmailVerification(email) {
+    const code = this.emailVerificationHelper.generateVerificationCode();
+    const expiresAt = this.emailVerificationHelper.calculateExpirationTime();
+    const token = this.jwtService.generateEmailVerifyToken(email, code, expiresAt, EMAIL_VERIFY_TOKEN_SECRET);
+    
+    return { code, expiresAt, token };
+  }
+
+  /**
+   * Kullanıcı kayıt işlemini gerçekleştirir
+   * @param {Object} registerData - Kayıt verileri
+   * @returns {Object} İşlenmiş kullanıcı
+   */
+  async processUserRegistration(registerData) {
+    // Mevcut kullanıcıyı kontrol et
+    const existingUser = await this.queryHandler.dispatch(
+      QUERY_TYPES.FIND_ANY_USER_BY_EMAIL, 
+      { email: registerData.email }
+    );
+
+      if (existingUser) {
+      return await this.handleExistingUser(existingUser, registerData);
+    } else {
+      return await this.createNewUser(registerData);
+    }
+  }
+
+  /**
+   * Mevcut kullanıcıyı işler
+   * @param {Object} existingUser - Mevcut kullanıcı
+   * @param {Object} registerData - Kayıt verileri
+   * @returns {Object} İşlenmiş kullanıcı
+   */
+  async handleExistingUser(existingUser, registerData) {
+    if (existingUser.isDeleted) {
+      return await this.reactivateUser(existingUser, registerData);
+        } else {
+      // Email zaten kullanımda olduğunda özel response döndür
+      const errorResponse = {
+        success: false,
+        message: this.translation('services.authService.logs.emailAlreadyInUse'),
+        data: null
+      };
+      
+      throw new Error(JSON.stringify(errorResponse));
+    }
+  }
+
+  /**
+   * Soft deleted kullanıcıyı yeniden aktifleştirir
+   * @param {Object} existingUser - Mevcut kullanıcı
+   * @param {Object} registerData - Kayıt verileri
+   * @returns {Object} Yeniden aktifleştirilmiş kullanıcı
+   */
+  async reactivateUser(existingUser, registerData) {
+    logger.info(this.translation('services.authService.logs.userReactivated'), { 
+      email: registerData.email 
+    });
+
+    const { roleId, roleName } = await this.getUserRole(registerData);
+
+    const updateUserCommand = {
+      id: existingUser.id,
+      updateData: {
+        firstName: registerData.firstName,
+        lastName: registerData.lastName,
+        password: registerData.password,
+        role: roleId,
+        roleName: roleName,
+        isDeleted: false,
+        deletedAt: null
       }
-      let roleId = registerData.role;
-      let roleName = registerData.roleName;
-      if (!roleId || !roleName) {
-        const userRole = await this.roleService.getRoleByName('User');
-        roleId = userRole ? userRole._id : null;
-        roleName = userRole ? userRole.name : null;
-      }
+    };
+
+    const reactivatedUser = await this.commandHandler.dispatch(COMMAND_TYPES.UPDATE_USER, updateUserCommand);
+    
+    logger.info(this.translation('services.authService.logs.userReactivated'), { 
+      user: this.userHelper.prepareUserForLog(reactivatedUser) 
+    });
+
+    return reactivatedUser;
+  }
+
+  /**
+   * Yeni kullanıcı oluşturur
+   * @param {Object} registerData - Kayıt verileri
+   * @returns {Object} Oluşturulan kullanıcı
+   */
+  async createNewUser(registerData) {
+    const { roleId, roleName } = await this.getUserRole(registerData);
+
       const createUserCommand = {
         email: registerData.email,
         password: registerData.password,
@@ -134,17 +281,51 @@ class AuthService {
         role: roleId,
         roleName: roleName
       };
+
       const user = await this.commandHandler.dispatch(COMMAND_TYPES.CREATE_USER, createUserCommand);
-      logger.info(this.translation('services.authService.logs.registerSuccess'), { user });
-      // Doğrulama linki
-      const frontendUrl = process.env.WEBSITE_URL;
-      const verifyUrl = `${frontendUrl}/verify-email?email=${encodeURIComponent(user.email)}&token=${encodeURIComponent(token)}`;
-      await this.kafkaProducer.sendUserRegisteredEvent(user, language, code, verifyUrl);
+    
+    logger.info(this.translation('services.authService.logs.registerSuccess'), { 
+      user: this.userHelper.prepareUserForLog(user) 
+    });
+
       return user;
-    } catch (err) {
-      logger.error(this.translation('services.authService.logs.registerError'), { error: err, body: registerData });
-      throw err;
+  }
+
+  /**
+   * Kullanıcı rolünü alır
+   * @param {Object} registerData - Kayıt verileri
+   * @returns {Object} Rol ID ve adı
+   */
+  async getUserRole(registerData) {
+    let roleId = registerData.role;
+    let roleName = registerData.roleName;
+
+    if (!roleId || !roleName) {
+      const userRole = await this.roleService.getRoleByName('User');
+      roleId = userRole ? userRole._id : null;
+      roleName = userRole ? userRole.name : null;
     }
+
+    return { roleId, roleName };
+  }
+
+  /**
+   * Doğrulama emaili gönderir
+   * @param {Object} user - Kullanıcı
+   * @param {string} locale - Dil
+   * @param {string} code - Doğrulama kodu
+   * @param {string} token - Doğrulama token'ı
+   */
+  async sendVerificationEmail(user, locale, code, token) {
+    const frontendUrl = process.env.WEBSITE_URL;
+    const verifyUrl = `${frontendUrl}/verify-email?email=${encodeURIComponent(user.email)}&token=${encodeURIComponent(token)}`;
+    
+    await this.kafkaProducer.sendUserRegisteredEvent(user, locale, code, verifyUrl);
+    
+    logger.info(this.translation('services.authService.logs.verificationEmailSent'), { 
+      email: user.email,
+      locale: locale 
+    });
   }
 
   async login(loginData) {
@@ -486,7 +667,7 @@ class AuthService {
     }
   }
 
-  async forgotPassword(email) {
+  async forgotPassword(email, locale = 'tr') {
     try {
       if (!email) {
         logger.error(this.translation('services.authService.logs.forgotPasswordError'));
@@ -508,10 +689,14 @@ class AuthService {
       const frontendUrl = process.env.WEBSITE_URL;
       const resetLink = `${frontendUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
 
-      // Kafka ile event gönder
-      await this.kafkaProducer.sendPasswordResetEvent({ email, resetLink });
+      // Kafka ile event gönder - Accept-Language header'ından gelen dil bilgisini kullan
+      await this.kafkaProducer.sendPasswordResetEvent({ email, resetLink, locale });
 
-      logger.info(this.translation('services.authService.logs.forgotPasswordSuccess'), { email, resetLink });
+      logger.info(this.translation('services.authService.logs.forgotPasswordSuccess'), { 
+        email, 
+        resetLink,
+        locale: locale 
+      });
       return { success: true, message: this.translation('services.authService.logs.forgotPasswordSuccess') };
     } catch (error) {
       logger.error(this.translation('services.authService.logs.forgotPasswordError'), { error: error.message, email });
@@ -679,31 +864,46 @@ class AuthService {
   async googleRegister(googleRegisterData) {
     try {
       logger.info(this.translation('services.authService.logs.registerRequest'), { provider: 'google', body: googleRegisterData });
-      const { credential, language } = googleRegisterData;
+      const { credential, locale } = googleRegisterData;
+      
               if (!credential) {
           logger.warn(this.translation('services.authService.logs.registerConflict'), { provider: 'google', reason: 'No credential' });
           throw new Error(this.translation('services.authService.logs.registerConflict'));
         }
+      
               // Google token'ı doğrula
         const ticket = await this.googleClient.verifyIdToken({
           idToken: credential,
           audience: GOOGLE_CLIENT_ID,
         });
-              const payload = ticket.getPayload();
+      
+        const payload = ticket.getPayload();
         if (!payload) {
           logger.warn(this.translation('services.authService.logs.registerConflict'), { provider: 'google', reason: 'Token doğrulanamadı' });
           throw new Error(this.translation('services.authService.logs.registerConflict'));
         }
-              let user = await this.queryHandler.dispatch(QUERY_TYPES.FIND_USER_BY_GOOGLE_ID, { googleId: payload.sub });
+      
+        let user = await this.queryHandler.dispatch(QUERY_TYPES.FIND_USER_BY_GOOGLE_ID, { googleId: payload.sub });
         if (!user) {
           user = await this.queryHandler.dispatch(QUERY_TYPES.FIND_ANY_USER_BY_EMAIL, { email: payload.email });
         }
         if (user) {
           logger.warn(this.translation('services.authService.logs.registerConflict'), { provider: 'google', email: payload.email });
-          throw new Error(this.translation('services.authService.logs.registerConflict'));
+          
+          // Email zaten kullanımda olduğunda özel response döndür
+          // Locale'e göre mesaj al - service'te locale kullanamadığımız için controller'da düzeltilecek
+          const errorResponse = {
+            success: false,
+            message: 'EMAIL_ALREADY_IN_USE', // Controller'da locale'e göre değiştirilecek
+            data: null
+          };
+          
+          throw new Error(JSON.stringify(errorResponse));
         }
-              const userRole = await this.roleService.getRoleByName('User');
+      
+        const userRole = await this.roleService.getRoleByName('User');
         const randomPassword = this.crypto.randomBytes(32).toString('hex');
+      
       const createUserCommand = {
         email: payload.email,
         password: randomPassword, // dummy password
@@ -714,26 +914,38 @@ class AuthService {
         googleId: payload.sub,
         isEmailVerified: payload.email_verified || false
               };
+      
         user = await this.commandHandler.dispatch(COMMAND_TYPES.CREATE_USER, createUserCommand);
-      // 6 haneli kod üret
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiresAt = Date.now() + 10 * 60 * 1000;
-      global.emailVerificationCodes[user.email] = { code, expiresAt };
-              // JWT tabanlı doğrulama token'ı üret
-        const token = this.jwtService.generateEmailVerifyToken(googleRegisterData.email, code, expiresAt, EMAIL_VERIFY_TOKEN_SECRET);
+      
+      // Email doğrulama kodu ve token üretimi
+      const { code, expiresAt, token } = await this.generateEmailVerification(user.email);
+      
+      // Doğrulama kodunu Redis'e kaydet
+      await this.emailVerificationHelper.saveVerificationCode(user.email, code, expiresAt);
+      
       // Doğrulama linki
       const frontendUrl = process.env.WEBSITE_URL;
               const verifyUrl = `${frontendUrl}/verify-email?email=${encodeURIComponent(user.email)}&token=${encodeURIComponent(token)}`;
-        await this.kafkaProducer.sendUserRegisteredEvent(user, language || 'tr', code, verifyUrl);
+      
+      await this.kafkaProducer.sendUserRegisteredEvent(user, locale || 'tr', code, verifyUrl);
+      
+      logger.info('GoogleRegister: Email sent with Accept-Language locale', { 
+        email: user.email, 
+        locale: locale || 'tr',
+        acceptLanguage: locale 
+      });
+      
       const payloadJwt = {
         id: user.id,
         email: user.email,
         roleId: user.role && user.role._id ? user.role._id.toString() : user.role?.toString ? user.role.toString() : user.role,
         roleName: user.role && user.role.name ? user.role.name : user.roleName
       };
+      
               const accessToken = this.jwtService.generateAccessToken(payloadJwt, JWT_EXPIRES_IN);
         let expireAt = this.jwtService.getTokenExpireDate(JWT_EXPIRES_IN);
         await this.jwtService.addActiveSession(user.id, accessToken, expireAt);
+      
         logger.info(this.translation('services.authService.logs.registerSuccess'), { provider: 'google', user, accessToken, expireAt });
       return { user, accessToken, expireAt };
           } catch (err) {
@@ -742,95 +954,190 @@ class AuthService {
       }
   }
 
+  /**
+   * Email doğrulama işlemi
+   * @param {Object} verifyEmailData - Doğrulama verileri
+   * @returns {Object} Doğrulama sonucu
+   */
   async verifyEmail(verifyEmailData) {
     try {
-      logger.info('verifyEmail request received', { body: verifyEmailData });
+      logger.info('verifyEmail request received', { 
+        email: verifyEmailData.email,
+        hasCode: !!verifyEmailData.code,
+        hasToken: !!verifyEmailData.token 
+      });
+
       const { code, token } = verifyEmailData;
+      
+      // 1. Veri doğrulama
+      this.validateVerificationData(code, token);
+      
+      // 2. Token doğrulama ve çözme
+      const decoded = await this.verifyAndDecodeToken(token, verifyEmailData.locale);
+
+      // 3. Email doğrulama kodu kontrolü
+      const email = decoded.email;
+      await this.validateVerificationCode(email, code);
+
+      // 4. Kullanıcı kontrolü ve güncelleme
+      const user = await this.processEmailVerification(email);
+
+      // 5. Başarılı doğrulama emaili gönderimi - Accept-Language header'ından gelen dil bilgisini kullan
+      logger.info('verifyEmail: Sending verification success email', { 
+        email: user.email, 
+        locale: verifyEmailData.locale,
+        userLocale: user.locale 
+      });
+      await this.sendVerificationSuccessEmail(user, verifyEmailData.locale);
+
+      return { 
+        success: true, 
+        message: this.translation('services.authService.logs.emailVerificationSuccess') 
+      };
+    } catch (err) {
+      logger.error('verifyEmail error', { error: err.message, email: verifyEmailData.email });
+      throw err;
+    }
+  }
+
+  /**
+   * Doğrulama verilerini kontrol eder
+   * @param {string} code - Doğrulama kodu
+   * @param {string} token - Doğrulama token'ı
+   */
+  validateVerificationData(code, token) {
       if (!code || !token) {
-        logger.warn('verifyEmail: Missing code or token', { code: !!code, token: !!token });
-        throw new Error(this.translation('services.authService.logs.resetPasswordError'));
+      throw createTranslatedError(
+        ValidationError,
+        'services.authService.logs.missingVerificationData',
+        this.translation
+      );
       }
-      // Token'ı doğrula ve çöz
-      let decoded;
+  }
+
+  /**
+   * Token'ı doğrular ve çözer
+   * @param {string} token - Doğrulama token'ı
+   * @param {string} locale - Dil bilgisi
+   * @returns {Object} Çözülmüş token verisi
+   */
+  async verifyAndDecodeToken(token, locale) {
       try {
         logger.info('verifyEmail: Verifying token', { token: token.substring(0, 20) + '...' });
-        decoded = this.jwt.verify(token, EMAIL_VERIFY_TOKEN_SECRET);
-        logger.info('verifyEmail: Token verified successfully', { email: decoded.email, code: decoded.code });
+      const decoded = this.jwt.verify(token, EMAIL_VERIFY_TOKEN_SECRET);
+      logger.info('verifyEmail: Token verified successfully', { email: decoded.email });
+      return decoded;
       } catch (err) {
         logger.error('verifyEmail: Token verification failed', { error: err.message });
-        // Eğer jwt expired ise yeni kod ve mail gönder
+      
+      // Token süresi dolmuşsa yeni kod gönder
         if (err.name === 'TokenExpiredError' || err.message === 'jwt expired') {
-          try {
-            // Token'ı decode et (expiration kontrolsüz)
-            const decodedPayload = jwt.decode(token);
+        await this.handleExpiredToken(token, locale);
+      }
+      
+      throw createTranslatedError(
+        ValidationError,
+        'services.authService.logs.invalidVerificationToken',
+        this.translation
+      );
+    }
+  }
+
+  /**
+   * Süresi dolmuş token için yeni kod gönderir
+   * @param {string} token - Süresi dolmuş token
+   * @param {string} locale - Accept-Language header'ından gelen dil bilgisi
+   */
+  async handleExpiredToken(token, locale) {
+    try {
+            const decodedPayload = this.jwt.decode(token);
             const email = decodedPayload?.email;
+      
             if (!email) {
-              logger.warn('verifyEmail: No email in expired token');
-              throw new Error(this.translation('repositories.userRepository.logs.notFound'));
+        throw createTranslatedError(
+          ValidationError,
+          'services.authService.logs.invalidTokenEmail',
+          this.translation
+        );
             }
-            // Kullanıcıyı bul
-            const user = await this.userRepository.findAnyUserByEmail(email);
-            if (!user) {
-              logger.warn('verifyEmail: No user found for expired token', { email });
-              throw new Error(this.translation('repositories.userRepository.logs.notFound'));
-            }
-            // Yeni kod ve token üret
-            const newCode = Math.floor(100000 + Math.random() * 900000).toString();
-            const newExpiresAt = Date.now() + 10 * 60 * 1000;
-            global.emailVerificationCodes[email] = { code: newCode, expiresAt: newExpiresAt };
-            const newToken = this.jwtService.generateEmailVerifyToken(email, newCode, newExpiresAt, EMAIL_VERIFY_TOKEN_SECRET);
-            // Mail gönder (YENİ EVENT)
-            const frontendUrl = process.env.WEBSITE_URL;
-            const verifyUrl = `${frontendUrl}/verify-email?email=${encodeURIComponent(email)}&token=${encodeURIComponent(newToken)}`;
-            const language = user.language || 'tr';
-            await this.kafkaProducer.sendUserVerificationResendEvent(user, language, newCode, verifyUrl);
-            logger.info('verifyEmail: New verification code and email sent (resend event)', { email, newCode });
-            throw new Error(this.translation('services.authService.logs.verificationCodeResent'));
-          } catch (mailErr) {
-            logger.error('verifyEmail: Failed to send new verification code', { error: mailErr });
-            throw new Error(this.translation('services.authService.logs.resetPasswordError'));
-          }
-        }
-        throw new Error(this.translation('services.authService.logs.resetPasswordError'));
-      }
-      const email = decoded.email;
-      if (!email) {
-        logger.warn('verifyEmail: No email in token');
-        throw new Error(this.translation('repositories.userRepository.logs.notFound'));
-      }
-      logger.info('verifyEmail: Checking code match', { tokenCode: decoded.code, providedCode: code });
-      if (decoded.code !== code) {
-        logger.warn('verifyEmail: Code mismatch', { tokenCode: decoded.code, providedCode: code });
-        throw new Error(this.translation('services.authService.logs.resetPasswordError'));
-      }
-      // Kodun süresi geçti mi kontrolü (JWT exp zaten kontrol ediyor)
-      logger.info('verifyEmail: Checking global codes', { email, globalCodes: Object.keys(global.emailVerificationCodes || {}) });
-      const record = global.emailVerificationCodes[email];
-      if (!record) {
-        logger.warn('verifyEmail: No record found in global codes', { email });
-        throw new Error(this.translation('services.authService.logs.resetPasswordError'));
-      }
-      logger.info('verifyEmail: Record found', { recordCode: record.code, providedCode: code, expiresAt: record.expiresAt });
-      if (record.code !== code) {
-        logger.warn('verifyEmail: Record code mismatch', { recordCode: record.code, providedCode: code });
-        throw new Error(this.translation('services.authService.logs.resetPasswordError'));
-      }
-      if (Date.now() > record.expiresAt) {
-        logger.warn('verifyEmail: Code expired', { expiresAt: record.expiresAt, now: Date.now() });
-        delete global.emailVerificationCodes[email];
-        throw new Error(this.translation('services.authService.logs.resetPasswordError'));
-      }
-      // Kullanıcıyı CQRS ile bul
+
       const user = await this.queryHandler.dispatch(QUERY_TYPES.FIND_ANY_USER_BY_EMAIL, { email });
+            if (!user) {
+        throw createTranslatedError(
+          NotFoundError,
+          'repositories.userRepository.logs.notFound',
+          this.translation
+        );
+            }
+
+            // Yeni kod ve token üret
+      const { code, expiresAt, token: newToken } = await this.generateEmailVerification(email);
+      
+      // Redis'e kaydet
+      await this.emailVerificationHelper.saveVerificationCode(email, code, expiresAt);
+      
+      // Yeni email gönder - Accept-Language header'ından gelen dil bilgisini kullan
+      const emailLocale = locale || user.locale;
+      const frontendUrl = process.env.WEBSITE_URL;
+      const verifyUrl = `${frontendUrl}/verify-email?email=${encodeURIComponent(user.email)}&token=${encodeURIComponent(newToken)}`;
+      await this.kafkaProducer.sendUserRegisteredEvent(user, emailLocale, code, verifyUrl);
+      
+      logger.info('verifyEmail: New verification code sent for expired token', { 
+        email,
+        locale: emailLocale,
+        acceptLanguage: locale 
+      });
+      
+      throw createTranslatedError(
+        ValidationError,
+        'services.authService.logs.verificationCodeResent',
+        this.translation
+      );
+    } catch (error) {
+      logger.error('verifyEmail: Failed to handle expired token', { error: error.message });
+      throw error;
+      }
+  }
+
+  /**
+   * Doğrulama kodunu kontrol eder
+   * @param {string} email - Kullanıcı emaili
+   * @param {string} code - Girilen kod
+   */
+  async validateVerificationCode(email, code) {
+    const isValid = await this.emailVerificationHelper.verifyCode(email, code);
+    
+    if (!isValid) {
+      throw createTranslatedError(
+        ValidationError,
+        'services.authService.logs.invalidVerificationCode',
+        this.translation
+      );
+      }
+  }
+
+  /**
+   * Email doğrulama işlemini gerçekleştirir
+   * @param {string} email - Kullanıcı emaili
+   * @returns {Object} Güncellenmiş kullanıcı
+   */
+  async processEmailVerification(email) {
+      const user = await this.queryHandler.dispatch(QUERY_TYPES.FIND_ANY_USER_BY_EMAIL, { email });
+    
       if (!user) {
-        throw new Error(this.translation('repositories.userRepository.logs.notFound'));
+      throw createTranslatedError(
+        NotFoundError,
+        'repositories.userRepository.logs.notFound',
+        this.translation
+      );
       }
+
       // Zaten doğrulanmışsa
-      if (user.isEmailVerified) {
-        delete global.emailVerificationCodes[email];
-        return { success: true, message: this.translation('services.authService.logs.resetPasswordSuccess') };
+    if (this.userHelper.isEmailVerified(user)) {
+      return user;
       }
-      // CQRS ile kullanıcıyı güncelle
+
+    // Kullanıcıyı güncelle
       const updateUserCommand = {
         id: user.id,
         updateData: {
@@ -838,23 +1145,40 @@ class AuthService {
           emailVerifiedAt: new Date()
         }
       };
-      await this.commandHandler.dispatch(COMMAND_TYPES.UPDATE_USER, updateUserCommand);
-      // Başarıyla doğrulandıktan sonra kullanıcıya "Hesabınız doğrulandı" maili için Kafka event'i gönder
-      try {
-        const language = user.language || 'tr';
+
+    const updatedUser = await this.commandHandler.dispatch(COMMAND_TYPES.UPDATE_USER, updateUserCommand);
+    
+    logger.info('verifyEmail: User email verified successfully', { 
+      user: this.userHelper.prepareUserForLog(updatedUser) 
+    });
+
+    return updatedUser;
+  }
+
+  /**
+   * Doğrulama başarı emaili gönderir
+   * @param {Object} user - Kullanıcı
+   * @param {string} locale - Accept-Language header'ından gelen dil bilgisi
+   */
+  async sendVerificationSuccessEmail(user, locale) {
+    try {
+      // Accept-Language header'ından gelen dil bilgisini kullan
+      const emailLocale = locale || user.locale || 'tr';
+      logger.info('sendVerificationSuccessEmail: Locale calculation', { 
+        passedLocale: locale, 
+        userLocale: user.locale, 
+        finalEmailLocale: emailLocale 
+      });
         await this.kafkaProducer.sendUserVerifiedEvent({
           email: user.email,
           firstName: user.firstName,
-          language
+          locale: emailLocale
         });
-      } catch (mailErr) {
-        logger.error('Verification success mail could not be sent', { error: mailErr });
-      }
-      delete global.emailVerificationCodes[email];
-      return { success: true, message: this.translation('services.authService.logs.resetPasswordSuccess') };
-    } catch (err) {
-      logger.error('verifyEmail error', { error: err });
-      throw err;
+      
+      logger.info('verifyEmail: Verification success email sent', { email: user.email, locale: emailLocale });
+    } catch (error) {
+      logger.error('verifyEmail: Failed to send verification success email', { error: error.message });
+      // Email gönderimi başarısız olsa bile işlemi durdurma
     }
   }
 
