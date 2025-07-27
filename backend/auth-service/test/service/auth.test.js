@@ -1,509 +1,720 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import bcrypt from 'bcrypt';
-import authService from '../../src/services/auth.service.js';
-import { commandHandler, queryHandler, QUERY_TYPES } from '../../src/cqrs/index.js';
-import JWTService from '../../src/middlewares/jwt.service.js';
-import cacheService from '../../src/config/cache.js';
-import { sendAgentOnlineEvent } from '../../src/kafka/kafkaProducer.js';
-import translation from '../../src/config/translation.js';
+import { AuthService } from '../../src/services/auth.service.js';
 
-// Environment variables for testing
-process.env.JWT_SECRET = 'test-jwt-secret-key-for-testing-purposes-only';
-process.env.JWT_REFRESH_SECRET = 'test-jwt-refresh-secret-key-for-testing-purposes-only';
-process.env.JWT_EXPIRES_IN = '24h';
-process.env.JWT_REFRESH_EXPIRES_IN = '7d';
-process.env.EMAIL_VERIFY_TOKEN_SECRET = 'test-email-verify-secret';
-process.env.MONGODB_URI = 'mongodb://localhost:27017/auth-service-test';
-process.env.REDIS_URL = 'redis://localhost:6379';
-process.env.KAFKA_BROKERS = 'localhost:9092';
-process.env.WEBSITE_URL = 'http://localhost:3000';
-process.env.GOOGLE_CLIENT_ID = 'test-google-client-id';
-process.env.NODE_ENV = 'test';
+describe('AuthService.login', () => {
+  let authService;
+  let mockDeps;
 
-describe('AuthService - Login Tests', () => {
-  let sandbox;
-  let mockReq;
-  let mockRes;
-  let mockUser;
-
-  beforeEach(async () => {
-    sandbox = sinon.createSandbox();
-    
-    // Mock request objesi
-    mockReq = {
-      body: {
-        email: 'test@example.com',
-        password: 'password123'
+  beforeEach(() => {
+    mockDeps = {
+      jwtService: {},
+      cacheService: { 
+        client: {
+          get: sinon.stub(),
+          set: sinon.stub(),
+          del: sinon.stub(),
+          incr: sinon.stub(),
+          expire: sinon.stub(),
+          lRange: sinon.stub(),
+          rPush: sinon.stub()
+        } 
       },
-      user: null
+      userRepository: {},
+      roleService: {},
+      kafkaProducer: {
+        sendAgentOnlineEvent: sinon.stub()
+      },
+      translation: () => 'translated-text',
+      googleClient: {},
+      userModel: {},
+      passwordHelper: {},
+      commandHandler: {
+        dispatch: sinon.stub()
+      },
+      queryHandler: {
+        dispatch: sinon.stub()
+      },
+      bcrypt: {
+        compare: sinon.stub()
+      },
+      crypto: {},
+      jwt: {}
     };
 
-    // Mock response objesi
-    mockRes = {
-      cookie: sandbox.stub(),
-      status: sandbox.stub().returnsThis(),
-      json: sandbox.stub()
-    };
+    authService = new AuthService(
+      mockDeps.jwtService,
+      mockDeps.cacheService,
+      mockDeps.userRepository,
+      mockDeps.roleService,
+      mockDeps.kafkaProducer,
+      mockDeps.translation,
+      mockDeps.googleClient,
+      mockDeps.userModel,
+      mockDeps.passwordHelper,
+      mockDeps.commandHandler,
+      mockDeps.queryHandler,
+      mockDeps.bcrypt,
+      mockDeps.crypto,
+      mockDeps.jwt
+    );
+  });
 
-    // Mock kullanıcı objesi
-    mockUser = {
-      id: '507f1f77bcf86cd799439011',
+  after(() => {
+    // Tüm stub'ları restore et
+    sinon.restore();
+    
+    // Global değişkenleri temizle
+    if (global.emailVerificationCodes) {
+      delete global.emailVerificationCodes;
+    }
+    
+    // Process'i sonlandır
+    setTimeout(() => {
+      process.exit(0);
+    }, 100);
+  });
+
+  it('should login successfully', async () => {
+    const fakeUser = { 
+      id: 'user123', 
       email: 'test@example.com',
+      password: 'hashedPassword123',
+      firstName: 'Test',
+      lastName: 'User',
+      roleName: 'User',
+      isEmailVerified: true,
+      emailVerifiedAt: new Date(),
+      role: { _id: 'role123', name: 'User' }
+    };
+    const fakeTokens = { 
+      accessToken: 'token123', 
+      refreshToken: 'ref123', 
+      expireAt: new Date(Date.now() + 3600000) 
+    };
+
+    // Mock queryHandler to return user
+    mockDeps.queryHandler.dispatch.resolves(fakeUser);
+    
+    // Mock bcrypt to return true for password comparison
+    mockDeps.bcrypt.compare.resolves(true);
+    
+    // Mock cache methods
+    mockDeps.cacheService.client.get.resolves(null); // No lock
+    mockDeps.cacheService.client.incr.resolves(1); // First attempt
+    mockDeps.cacheService.client.set.resolves('OK');
+
+    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns(true);
+    const ensureNoActiveSessionStub = sinon.stub(authService, 'ensureNoActiveSession').resolves(true);
+    const createSessionStub = sinon.stub(authService, 'createSession').resolves(fakeTokens);
+    const handleOnlineQueueStub = sinon.stub(authService, 'handleOnlineQueue').resolves();
+
+    const result = await authService.login({ 
+      email: 'test@example.com', 
+      password: '123456',
+      ipAddress: '192.168.1.1',
+      locale: 'tr'
+    });
+
+    expect(result).to.have.property('accessToken', 'token123');
+    expect(result).to.have.property('refreshToken', 'ref123');
+    expect(result).to.have.property('user', fakeUser);
+    expect(ensureEmailVerifiedStub.calledOnce).to.be.true;
+    expect(createSessionStub.calledOnce).to.be.true;
+    expect(handleOnlineQueueStub.calledOnce).to.be.true;
+  });
+
+  it('should reset failed attempts after successful login', async () => {
+    const fakeUser = { 
+      id: 'user123', 
+      email: 'resetattempts@example.com',
+      password: 'hashedPassword123',
+      firstName: 'Test',
+      lastName: 'User',
+      roleName: 'User',
+      isEmailVerified: true,
+      emailVerifiedAt: new Date(),
+      role: { _id: 'role123', name: 'User' }
+    };
+    const fakeTokens = { 
+      accessToken: 'token123', 
+      refreshToken: 'ref123', 
+      expireAt: new Date(Date.now() + 3600000) 
+    };
+
+    // Mock queryHandler to return user
+    mockDeps.queryHandler.dispatch.resolves(fakeUser);
+    
+    // Mock bcrypt to return true for password comparison
+    mockDeps.bcrypt.compare.resolves(true);
+    
+    // Mock cache methods - simulate existing failed attempts
+    mockDeps.cacheService.client.get.resolves(null); // No lock
+    mockDeps.cacheService.client.incr.resolves(1); // First attempt
+    mockDeps.cacheService.client.set.resolves('OK');
+    mockDeps.cacheService.client.del.resolves(1); // Successfully deleted
+
+    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns(true);
+    const ensureNoActiveSessionStub = sinon.stub(authService, 'ensureNoActiveSession').resolves(true);
+    const createSessionStub = sinon.stub(authService, 'createSession').resolves(fakeTokens);
+    const handleOnlineQueueStub = sinon.stub(authService, 'handleOnlineQueue').resolves();
+
+    const result = await authService.login({ 
+      email: 'resetattempts@example.com', 
+      password: '123456',
+      ipAddress: '192.168.1.1',
+      locale: 'tr'
+    });
+
+    expect(result).to.have.property('accessToken', 'token123');
+    expect(result).to.have.property('refreshToken', 'ref123');
+    expect(result).to.have.property('user', fakeUser);
+    
+    // Check that failed attempts were reset (del method called twice for both keys)
+    expect(mockDeps.cacheService.client.del.calledTwice).to.be.true;
+    
+    // Verify the correct keys were deleted
+    const delCalls = mockDeps.cacheService.client.del.getCalls();
+    expect(delCalls[0].args[0]).to.equal('failed_login_attempts:resetattempts@example.com');
+    expect(delCalls[1].args[0]).to.equal('account_locked:resetattempts@example.com');
+    
+    expect(ensureEmailVerifiedStub.calledOnce).to.be.true;
+    expect(createSessionStub.calledOnce).to.be.true;
+    expect(handleOnlineQueueStub.calledOnce).to.be.true;
+  });
+
+  it('should call handleOnlineQueue with correct parameters for Customer Supporter', async () => {
+    const fakeUser = { 
+      id: 'supporter123', 
+      email: 'supporter@example.com',
+      password: 'hashedPassword123',
+      firstName: 'Support',
+      lastName: 'Agent',
+      roleName: 'Customer Supporter', // Customer Supporter role
+      isEmailVerified: true,
+      emailVerifiedAt: new Date(),
+      role: { _id: 'role456', name: 'Customer Supporter' }
+    };
+    const fakeTokens = { 
+      accessToken: 'supporter_token123', 
+      refreshToken: 'supporter_ref123', 
+      expireAt: new Date(Date.now() + 3600000) 
+    };
+
+    // Mock queryHandler to return user
+    mockDeps.queryHandler.dispatch.resolves(fakeUser);
+    
+    // Mock bcrypt to return true for password comparison
+    mockDeps.bcrypt.compare.resolves(true);
+    
+    // Mock cache methods
+    mockDeps.cacheService.client.get.resolves(null); // No lock
+    mockDeps.cacheService.client.incr.resolves(1); // First attempt
+    mockDeps.cacheService.client.set.resolves('OK');
+
+    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns(true);
+    const ensureNoActiveSessionStub = sinon.stub(authService, 'ensureNoActiveSession').resolves(true);
+    const createSessionStub = sinon.stub(authService, 'createSession').resolves(fakeTokens);
+    const handleOnlineQueueStub = sinon.stub(authService, 'handleOnlineQueue').resolves();
+
+    const result = await authService.login({ 
+      email: 'supporter@example.com', 
+      password: '123456',
+      ipAddress: '192.168.1.1',
+      locale: 'tr'
+    });
+
+    expect(result).to.have.property('accessToken', 'supporter_token123');
+    expect(result).to.have.property('user', fakeUser);
+    
+    // Verify handleOnlineQueue was called with correct parameters
+    expect(handleOnlineQueueStub.calledOnce).to.be.true;
+    expect(handleOnlineQueueStub.calledWith(fakeUser, 'supporter_token123')).to.be.true;
+    
+    expect(ensureEmailVerifiedStub.calledOnce).to.be.true;
+    expect(createSessionStub.calledOnce).to.be.true;
+  });
+
+  it('should call handleOnlineQueue with correct parameters for normal user', async () => {
+    const fakeUser = { 
+      id: 'user456', 
+      email: 'normaluser@example.com',
+      password: 'hashedPassword123',
+      firstName: 'Normal',
+      lastName: 'User',
+      roleName: 'User', // Normal user role
+      isEmailVerified: true,
+      emailVerifiedAt: new Date(),
+      role: { _id: 'role789', name: 'User' }
+    };
+    const fakeTokens = { 
+      accessToken: 'user_token456', 
+      refreshToken: 'user_ref456', 
+      expireAt: new Date(Date.now() + 3600000) 
+    };
+
+    // Mock queryHandler to return user
+    mockDeps.queryHandler.dispatch.resolves(fakeUser);
+    
+    // Mock bcrypt to return true for password comparison
+    mockDeps.bcrypt.compare.resolves(true);
+    
+    // Mock cache methods
+    mockDeps.cacheService.client.get.resolves(null); // No lock
+    mockDeps.cacheService.client.incr.resolves(1); // First attempt
+    mockDeps.cacheService.client.set.resolves('OK');
+
+    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns(true);
+    const ensureNoActiveSessionStub = sinon.stub(authService, 'ensureNoActiveSession').resolves(true);
+    const createSessionStub = sinon.stub(authService, 'createSession').resolves(fakeTokens);
+    const handleOnlineQueueStub = sinon.stub(authService, 'handleOnlineQueue').resolves();
+
+    const result = await authService.login({ 
+      email: 'normaluser@example.com', 
+      password: '123456',
+      ipAddress: '192.168.1.1',
+      locale: 'tr'
+    });
+
+    expect(result).to.have.property('accessToken', 'user_token456');
+    expect(result).to.have.property('user', fakeUser);
+    
+    // Verify handleOnlineQueue was called with correct parameters
+    expect(handleOnlineQueueStub.calledOnce).to.be.true;
+    expect(handleOnlineQueueStub.calledWith(fakeUser, 'user_token456')).to.be.true;
+    
+    expect(ensureEmailVerifiedStub.calledOnce).to.be.true;
+    expect(createSessionStub.calledOnce).to.be.true;
+  });
+
+  it('should use default ipAddress when not provided', async () => {
+    const fakeUser = { 
+      id: 'user123', 
+      email: 'noip@example.com',
+      password: 'hashedPassword123',
+      firstName: 'Test',
+      lastName: 'User',
+      roleName: 'User',
+      isEmailVerified: true,
+      emailVerifiedAt: new Date(),
+      role: { _id: 'role123', name: 'User' }
+    };
+    const fakeTokens = { 
+      accessToken: 'token123', 
+      refreshToken: 'ref123', 
+      expireAt: new Date(Date.now() + 3600000) 
+    };
+
+    // Mock queryHandler to return user
+    mockDeps.queryHandler.dispatch.resolves(fakeUser);
+    
+    // Mock bcrypt to return true for password comparison
+    mockDeps.bcrypt.compare.resolves(true);
+    
+    // Mock cache methods
+    mockDeps.cacheService.client.get.resolves(null); // No lock
+    mockDeps.cacheService.client.incr.resolves(1); // First attempt
+    mockDeps.cacheService.client.set.resolves('OK');
+
+    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns(true);
+    const ensureNoActiveSessionStub = sinon.stub(authService, 'ensureNoActiveSession').resolves(true);
+    const createSessionStub = sinon.stub(authService, 'createSession').resolves(fakeTokens);
+    const handleOnlineQueueStub = sinon.stub(authService, 'handleOnlineQueue').resolves();
+
+    // Login without ipAddress
+    const result = await authService.login({ 
+      email: 'noip@example.com', 
+      password: '123456',
+      locale: 'tr'
+      // ipAddress not provided
+    });
+
+    expect(result).to.have.property('accessToken', 'token123');
+    expect(result).to.have.property('user', fakeUser);
+    
+    // Verify that ensureNoActiveSession was called with default locale
+    expect(ensureNoActiveSessionStub.calledWith(fakeUser, 'tr')).to.be.true;
+    
+    expect(ensureEmailVerifiedStub.calledOnce).to.be.true;
+    expect(createSessionStub.calledOnce).to.be.true;
+    expect(handleOnlineQueueStub.calledOnce).to.be.true;
+  });
+
+  it('should use default locale when not provided', async () => {
+    const fakeUser = { 
+      id: 'user123', 
+      email: 'nolocale@example.com',
+      password: 'hashedPassword123',
+      firstName: 'Test',
+      lastName: 'User',
+      roleName: 'User',
+      isEmailVerified: true,
+      emailVerifiedAt: new Date(),
+      role: { _id: 'role123', name: 'User' }
+    };
+    const fakeTokens = { 
+      accessToken: 'token123', 
+      refreshToken: 'ref123', 
+      expireAt: new Date(Date.now() + 3600000) 
+    };
+
+    // Mock queryHandler to return user
+    mockDeps.queryHandler.dispatch.resolves(fakeUser);
+    
+    // Mock bcrypt to return true for password comparison
+    mockDeps.bcrypt.compare.resolves(true);
+    
+    // Mock cache methods
+    mockDeps.cacheService.client.get.resolves(null); // No lock
+    mockDeps.cacheService.client.incr.resolves(1); // First attempt
+    mockDeps.cacheService.client.set.resolves('OK');
+
+    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns(true);
+    const ensureNoActiveSessionStub = sinon.stub(authService, 'ensureNoActiveSession').resolves(true);
+    const createSessionStub = sinon.stub(authService, 'createSession').resolves(fakeTokens);
+    const handleOnlineQueueStub = sinon.stub(authService, 'handleOnlineQueue').resolves();
+
+    // Login without locale
+    const result = await authService.login({ 
+      email: 'nolocale@example.com', 
+      password: '123456',
+      ipAddress: '192.168.1.1'
+      // locale not provided
+    });
+
+    expect(result).to.have.property('accessToken', 'token123');
+    expect(result).to.have.property('user', fakeUser);
+    
+    // Verify that ensureNoActiveSession was called (locale will be undefined, which is handled by the method)
+    expect(ensureNoActiveSessionStub.calledOnce).to.be.true;
+    expect(ensureNoActiveSessionStub.calledWith(fakeUser, undefined)).to.be.true;
+    
+    expect(ensureEmailVerifiedStub.calledOnce).to.be.true;
+    expect(createSessionStub.calledOnce).to.be.true;
+    expect(handleOnlineQueueStub.calledOnce).to.be.true;
+  });
+
+  it('should handle locale normalization for different formats', async () => {
+    const fakeUser = { 
+      id: 'user123', 
+      email: 'localeformat@example.com',
+      password: 'hashedPassword123',
+      firstName: 'Test',
+      lastName: 'User',
+      roleName: 'User',
+      isEmailVerified: true,
+      emailVerifiedAt: new Date(),
+      role: { _id: 'role123', name: 'User' }
+    };
+    const fakeTokens = { 
+      accessToken: 'token123', 
+      refreshToken: 'ref123', 
+      expireAt: new Date(Date.now() + 3600000) 
+    };
+
+    // Mock queryHandler to return user
+    mockDeps.queryHandler.dispatch.resolves(fakeUser);
+    
+    // Mock bcrypt to return true for password comparison
+    mockDeps.bcrypt.compare.resolves(true);
+    
+    // Mock cache methods
+    mockDeps.cacheService.client.get.resolves(null); // No lock
+    mockDeps.cacheService.client.incr.resolves(1); // First attempt
+    mockDeps.cacheService.client.set.resolves('OK');
+
+    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns(true);
+    const ensureNoActiveSessionStub = sinon.stub(authService, 'ensureNoActiveSession').resolves(true);
+    const createSessionStub = sinon.stub(authService, 'createSession').resolves(fakeTokens);
+    const handleOnlineQueueStub = sinon.stub(authService, 'handleOnlineQueue').resolves();
+
+    // Login with different locale formats
+    const result = await authService.login({ 
+      email: 'localeformat@example.com', 
+      password: '123456',
+      ipAddress: '192.168.1.1',
+      locale: 'EN' // Uppercase locale
+    });
+
+    expect(result).to.have.property('accessToken', 'token123');
+    expect(result).to.have.property('user', fakeUser);
+    
+    // Verify that ensureNoActiveSession was called with the provided locale
+    expect(ensureNoActiveSessionStub.calledWith(fakeUser, 'EN')).to.be.true;
+    
+    expect(ensureEmailVerifiedStub.calledOnce).to.be.true;
+    expect(createSessionStub.calledOnce).to.be.true;
+    expect(handleOnlineQueueStub.calledOnce).to.be.true;
+  });
+
+  it('should throw error if validateUser fails', async () => {
+    mockDeps.queryHandler.dispatch.resolves(null); // User not found
+
+    try {
+      await authService.login({ email: 'wrong@example.com', password: 'wrong' });
+      expect.fail('Should have thrown an error');
+    } catch (err) {
+      expect(err.message).to.equal('translated-text');
+    }
+  });
+
+  it('should throw error if email is not verified', async () => {
+    const fakeUser = { 
+      id: 'user123', 
+      email: 'test@example.com',
+      isEmailVerified: false,
+      emailVerifiedAt: null
+    };
+
+    mockDeps.queryHandler.dispatch.resolves(fakeUser);
+    mockDeps.bcrypt.compare.resolves(true);
+    mockDeps.cacheService.client.get.resolves(null);
+    mockDeps.cacheService.client.incr.resolves(1);
+    mockDeps.cacheService.client.set.resolves('OK');
+
+    sinon.stub(authService, 'ensureEmailVerified').throws(new Error('Email not verified'));
+
+    try {
+      await authService.login({ email: 'test@example.com', password: '123456' });
+      expect.fail('Should have thrown an error');
+    } catch (err) {
+      expect(err.message).to.equal('Email not verified');
+    }
+  });
+
+  it('should throw error if user already has active session', async () => {
+    const fakeUser = { 
+      id: 'user123', 
+      email: 'test@example.com',
+      isEmailVerified: true,
+      emailVerifiedAt: new Date()
+    };
+
+    mockDeps.queryHandler.dispatch.resolves(fakeUser);
+    mockDeps.bcrypt.compare.resolves(true);
+    mockDeps.cacheService.client.get.resolves(null);
+    mockDeps.cacheService.client.incr.resolves(1);
+    mockDeps.cacheService.client.set.resolves('OK');
+
+    sinon.stub(authService, 'ensureEmailVerified').returns(true);
+    sinon.stub(authService, 'ensureNoActiveSession').throws(new Error('User already logged in'));
+
+    try {
+      await authService.login({ email: 'test@example.com', password: '123456' });
+      expect.fail('Should have thrown an error');
+    } catch (err) {
+      expect(err.message).to.equal('User already logged in');
+    }
+  });
+
+  it('should throw error if user not found', async () => {
+    mockDeps.queryHandler.dispatch.resolves(null); // User not found
+
+    try {
+      await authService.login({ email: 'nonexistent@example.com', password: '123456' });
+      expect.fail('Should have thrown an error');
+    } catch (err) {
+      expect(err.message).to.equal('translated-text');
+    }
+  });
+
+  it('should throw error and record failed attempt for wrong password (before 5 attempts)', async () => {
+    const fakeUser = { 
+      id: 'user123', 
+      email: 'test@example.com',
+      password: 'hashedPassword123',
+      failedAttempts: 2
+    };
+
+    mockDeps.queryHandler.dispatch.resolves(fakeUser);
+    mockDeps.bcrypt.compare.resolves(false); // Wrong password
+    mockDeps.cacheService.client.get.resolves(null); // No lock
+    mockDeps.cacheService.client.incr.resolves(3); // 3rd failed attempt
+    mockDeps.cacheService.client.set.resolves('OK');
+
+    try {
+      await authService.login({ email: 'test@example.com', password: 'wrongpassword' });
+      expect.fail('Should have thrown an error');
+    } catch (err) {
+      expect(err.message).to.equal('translated-text');
+      expect(mockDeps.cacheService.client.incr.calledOnce).to.be.true;
+    }
+  });
+
+  it('should lock account after 5 failed attempts', async () => {
+    const fakeUser = { 
+      id: 'user123', 
+      email: 'test@example.com',
+      password: 'hashedPassword123',
+      failedAttempts: 5
+    };
+
+    mockDeps.queryHandler.dispatch.resolves(fakeUser);
+    mockDeps.bcrypt.compare.resolves(false); // Wrong password
+    mockDeps.cacheService.client.get.resolves(null); // No lock initially
+    mockDeps.cacheService.client.incr.resolves(5); // 5th failed attempt
+    mockDeps.cacheService.client.set.resolves('OK');
+
+    try {
+      await authService.login({ email: 'test@example.com', password: 'wrongpassword' });
+      expect.fail('Should have thrown an error');
+    } catch (err) {
+      expect(err.message).to.equal('ACCOUNT_LOCKED_15_MINUTES');
+      expect(mockDeps.cacheService.client.incr.calledOnce).to.be.true;
+      expect(mockDeps.cacheService.client.set.called).to.be.true;
+    }
+  });
+
+  it('should reject login when account is locked', async () => {
+    const fakeUser = { 
+      id: 'user123', 
+      email: 'locked@example.com',
+      password: 'hashedPassword123'
+    };
+
+    mockDeps.queryHandler.dispatch.resolves(fakeUser);
+    // Mock cache to return locked status
+    mockDeps.cacheService.client.get.resolves(Date.now() + 900000); // Locked for 15 minutes
+
+    try {
+      await authService.login({ email: 'locked@example.com', password: '123456' });
+      expect.fail('Should have thrown an error');
+    } catch (err) {
+      expect(err.message).to.include('ACCOUNT_LOCKED');
+    }
+  });
+
+  it('should throw error if email is not verified (detailed test)', async () => {
+    const fakeUser = { 
+      id: 'user123', 
+      email: 'unverified@example.com',
+      password: 'hashedPassword123',
+      firstName: 'Test',
+      lastName: 'User',
+      isEmailVerified: false,
+      emailVerifiedAt: null,
+      role: { _id: 'role123', name: 'User' }
+    };
+
+    mockDeps.queryHandler.dispatch.resolves(fakeUser);
+    mockDeps.bcrypt.compare.resolves(true);
+    mockDeps.cacheService.client.get.resolves(null);
+    mockDeps.cacheService.client.incr.resolves(1);
+    mockDeps.cacheService.client.set.resolves('OK');
+
+    sinon.stub(authService, 'ensureEmailVerified').throws(new Error('Email address not verified. Please check your email and verify your account.'));
+
+    try {
+      await authService.login({ email: 'unverified@example.com', password: '123456' });
+      expect.fail('Should have thrown an error');
+    } catch (err) {
+      expect(err.message).to.equal('Email address not verified. Please check your email and verify your account.');
+    }
+  });
+
+  it('should throw error if user already has active session (detailed test)', async () => {
+    const fakeUser = { 
+      id: 'user123', 
+      email: 'loggedin@example.com',
       password: 'hashedPassword123',
       firstName: 'Test',
       lastName: 'User',
       isEmailVerified: true,
       emailVerifiedAt: new Date(),
-      role: {
-        _id: '507f1f77bcf86cd799439012',
-        name: 'User'
-      },
-      roleName: 'User'
+      role: { _id: 'role123', name: 'User' }
     };
 
-    // CQRS handler'ları kaydet
-    const { registerAuthHandlers } = await import('../../src/services/auth.service.js');
-    registerAuthHandlers();
+    mockDeps.queryHandler.dispatch.resolves(fakeUser);
+    mockDeps.bcrypt.compare.resolves(true);
+    mockDeps.cacheService.client.get.resolves(null);
+    mockDeps.cacheService.client.incr.resolves(1);
+    mockDeps.cacheService.client.set.resolves('OK');
+
+    sinon.stub(authService, 'ensureEmailVerified').returns(true);
+    sinon.stub(authService, 'ensureNoActiveSession').throws(new Error('User is already logged in. Please logout from other devices first.'));
+
+    try {
+      await authService.login({ email: 'loggedin@example.com', password: '123456' });
+      expect.fail('Should have thrown an error');
+    } catch (err) {
+      expect(err.message).to.equal('User is already logged in. Please logout from other devices first.');
+    }
   });
 
-  afterEach(() => {
-    sandbox.restore();
+  it('should login successfully when isEmailVerified is string "true"', async () => {
+    const fakeUser = { 
+      id: 'user123', 
+      email: 'stringtrue@example.com',
+      password: 'hashedPassword123',
+      firstName: 'Test',
+      lastName: 'User',
+      roleName: 'User',
+      isEmailVerified: 'true', // String "true" değeri
+      emailVerifiedAt: new Date(),
+      role: { _id: 'role123', name: 'User' }
+    };
+    const fakeTokens = { 
+      accessToken: 'token123', 
+      refreshToken: 'ref123', 
+      expireAt: new Date(Date.now() + 3600000) 
+    };
+
+    // Mock queryHandler to return user
+    mockDeps.queryHandler.dispatch.resolves(fakeUser);
+    
+    // Mock bcrypt to return true for password comparison
+    mockDeps.bcrypt.compare.resolves(true);
+    
+    // Mock cache methods
+    mockDeps.cacheService.client.get.resolves(null); // No lock
+    mockDeps.cacheService.client.incr.resolves(1); // First attempt
+    mockDeps.cacheService.client.set.resolves('OK');
+
+    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns(true);
+    const ensureNoActiveSessionStub = sinon.stub(authService, 'ensureNoActiveSession').resolves(true);
+    const createSessionStub = sinon.stub(authService, 'createSession').resolves(fakeTokens);
+    const handleOnlineQueueStub = sinon.stub(authService, 'handleOnlineQueue').resolves();
+
+    const result = await authService.login({ 
+      email: 'stringtrue@example.com', 
+      password: '123456',
+      ipAddress: '192.168.1.1',
+      locale: 'tr'
+    });
+
+    expect(result).to.have.property('accessToken', 'token123');
+    expect(result).to.have.property('refreshToken', 'ref123');
+    expect(result).to.have.property('user', fakeUser);
+    expect(ensureEmailVerifiedStub.calledOnce).to.be.true;
+    expect(createSessionStub.calledOnce).to.be.true;
+    expect(handleOnlineQueueStub.calledOnce).to.be.true;
   });
 
-  describe('login() - Başarılı Login Testleri', () => {
-    it('geçerli email ve şifre ile başarılı login yapmalı', async () => {
-      // Arrange
-      const hashedPassword = await bcrypt.hash('password123', 10);
-      const userWithHashedPassword = { ...mockUser, password: hashedPassword };
-      
-      // Mock queryHandler.dispatch to return our user
-      const originalDispatch = queryHandler.dispatch;
-      queryHandler.dispatch = sandbox.stub().resolves(userWithHashedPassword);
-      
-      // Mock JWTService methods
-      sandbox.stub(JWTService, 'findActiveSession').resolves(null);
-      sandbox.stub(JWTService, 'buildJWTPayload').returns({
-        id: mockUser.id,
-        email: mockUser.email,
-        roleId: mockUser.role._id,
-        roleName: mockUser.roleName
-      });
-      sandbox.stub(JWTService, 'generateAccessToken').returns('mock-access-token');
-      sandbox.stub(JWTService, 'generateRefreshToken').returns('mock-refresh-token');
-      sandbox.stub(JWTService, 'getTokenExpireDate').returns(new Date());
-      sandbox.stub(JWTService, 'addActiveSession').resolves();
-      
-      // Mock cache and kafka
-      sandbox.stub(cacheService.client, 'lRange').resolves([]);
-      sandbox.stub(cacheService.client, 'rPush').resolves();
-      sandbox.stub(sendAgentOnlineEvent).resolves();
+  it('should throw error when emailVerifiedAt is null even if isEmailVerified is true', async () => {
+    const fakeUser = { 
+      id: 'user123', 
+      email: 'nullverifiedat@example.com',
+      password: 'hashedPassword123',
+      firstName: 'Test',
+      lastName: 'User',
+      isEmailVerified: true, // Email doğrulanmış
+      emailVerifiedAt: null, // Ama tarih null
+      role: { _id: 'role123', name: 'User' }
+    };
 
-      // Act
-      await authService.login(mockReq, mockRes);
+    mockDeps.queryHandler.dispatch.resolves(fakeUser);
+    mockDeps.bcrypt.compare.resolves(true);
+    mockDeps.cacheService.client.get.resolves(null);
+    mockDeps.cacheService.client.incr.resolves(1);
+    mockDeps.cacheService.client.set.resolves('OK');
 
-      // Assert
-      expect(mockRes.json.calledOnce).to.be.true;
-      const responseCall = mockRes.json.getCall(0);
-      expect(responseCall.args[0]).to.have.property('success', true);
-      expect(responseCall.args[0]).to.have.property('data');
-      expect(responseCall.args[0].data).to.have.property('user');
-      expect(responseCall.args[0].data).to.have.property('accessToken');
-      
-      // Restore original method
-      queryHandler.dispatch = originalDispatch;
-    });
+    sinon.stub(authService, 'ensureEmailVerified').throws(new Error('translated-text'));
 
-    it('Customer Supporter rolü ile login yapıldığında online queue\'ya eklenmeli', async () => {
-      // Arrange
-      const customerSupporterUser = {
-        ...mockUser,
-        roleName: 'Customer Supporter',
-        password: await bcrypt.hash('password123', 10)
-      };
-
-      // Mock queryHandler.dispatch
-      const originalDispatch = queryHandler.dispatch;
-      queryHandler.dispatch = sandbox.stub().resolves(customerSupporterUser);
-      
-      // Mock JWTService methods
-      sandbox.stub(JWTService, 'findActiveSession').resolves(null);
-      sandbox.stub(JWTService, 'buildJWTPayload').returns({
-        id: customerSupporterUser.id,
-        email: customerSupporterUser.email,
-        roleId: customerSupporterUser.role._id,
-        roleName: customerSupporterUser.roleName
-      });
-      sandbox.stub(JWTService, 'generateAccessToken').returns('mock-access-token');
-      sandbox.stub(JWTService, 'generateRefreshToken').returns('mock-refresh-token');
-      sandbox.stub(JWTService, 'getTokenExpireDate').returns(new Date());
-      sandbox.stub(JWTService, 'addActiveSession').resolves();
-      
-      const lRangeStub = sandbox.stub(cacheService.client, 'lRange').resolves([]);
-      const rPushStub = sandbox.stub(cacheService.client, 'rPush').resolves();
-      const sendAgentOnlineEventStub = sandbox.stub(sendAgentOnlineEvent).resolves();
-
-      // Act
-      await authService.login(mockReq, mockRes);
-
-      // Assert
-      expect(lRangeStub.calledOnce).to.be.true;
-      expect(rPushStub.calledOnce).to.be.true;
-      expect(sendAgentOnlineEventStub.calledOnce).to.be.true;
-      expect(rPushStub.calledWith('online_users_queue', customerSupporterUser.id)).to.be.true;
-      
-      // Restore original method
-      queryHandler.dispatch = originalDispatch;
-    });
-
-    it('Customer Supporter zaten online ise tekrar eklenmemeli', async () => {
-      // Arrange
-      const customerSupporterUser = {
-        ...mockUser,
-        roleName: 'Customer Supporter',
-        password: await bcrypt.hash('password123', 10)
-      };
-
-      // Mock queryHandler.dispatch
-      const originalDispatch = queryHandler.dispatch;
-      queryHandler.dispatch = sandbox.stub().resolves(customerSupporterUser);
-      
-      // Mock JWTService methods
-      sandbox.stub(JWTService, 'findActiveSession').resolves(null);
-      sandbox.stub(JWTService, 'buildJWTPayload').returns({
-        id: customerSupporterUser.id,
-        email: customerSupporterUser.email,
-        roleId: customerSupporterUser.role._id,
-        roleName: customerSupporterUser.roleName
-      });
-      sandbox.stub(JWTService, 'generateAccessToken').returns('mock-access-token');
-      sandbox.stub(JWTService, 'generateRefreshToken').returns('mock-refresh-token');
-      sandbox.stub(JWTService, 'getTokenExpireDate').returns(new Date());
-      sandbox.stub(JWTService, 'addActiveSession').resolves();
-      
-      const lRangeStub = sandbox.stub(cacheService.client, 'lRange').resolves([customerSupporterUser.id]);
-      const rPushStub = sandbox.stub(cacheService.client, 'rPush').resolves();
-      const sendAgentOnlineEventStub = sandbox.stub(sendAgentOnlineEvent).resolves();
-
-      // Act
-      await authService.login(mockReq, mockRes);
-
-      // Assert
-      expect(lRangeStub.calledOnce).to.be.true;
-      expect(rPushStub.called).to.be.false;
-      expect(sendAgentOnlineEventStub.called).to.be.false;
-      
-      // Restore original method
-      queryHandler.dispatch = originalDispatch;
-    });
+    try {
+      await authService.login({ email: 'nullverifiedat@example.com', password: '123456' });
+      expect.fail('Should have thrown an error');
+    } catch (err) {
+      expect(err.message).to.equal('translated-text');
+    }
   });
-
-  describe('login() - Hata Testleri', () => {
-    it('kullanıcı bulunamadığında hata dönmeli', async () => {
-      // Arrange
-      const originalDispatch = queryHandler.dispatch;
-      queryHandler.dispatch = sandbox.stub().resolves(null);
-
-      // Act
-      await authService.login(mockReq, mockRes);
-
-      // Assert
-      expect(mockRes.json.calledOnce).to.be.true;
-      const responseCall = mockRes.json.getCall(0);
-      expect(responseCall.args[0]).to.have.property('success', false);
-      expect(responseCall.args[0]).to.have.property('message');
-      
-      // Restore original method
-      queryHandler.dispatch = originalDispatch;
-    });
-
-    it('email doğrulanmamış kullanıcı ile login yapılamamalı', async () => {
-      // Arrange
-      const unverifiedUser = {
-        ...mockUser,
-        isEmailVerified: false,
-        emailVerifiedAt: null,
-        password: await bcrypt.hash('password123', 10)
-      };
-
-      const originalDispatch = queryHandler.dispatch;
-      queryHandler.dispatch = sandbox.stub().resolves(unverifiedUser);
-
-      // Act
-      await authService.login(mockReq, mockRes);
-
-      // Assert
-      expect(mockRes.json.calledOnce).to.be.true;
-      const responseCall = mockRes.json.getCall(0);
-      expect(responseCall.args[0]).to.have.property('success', false);
-      expect(responseCall.args[0]).to.have.property('message');
-      
-      // Restore original method
-      queryHandler.dispatch = originalDispatch;
-    });
-
-    it('email doğrulanmış ama emailVerifiedAt null olan kullanıcı ile login yapılamamalı', async () => {
-      // Arrange
-      const unverifiedUser = {
-        ...mockUser,
-        isEmailVerified: true,
-        emailVerifiedAt: null,
-        password: await bcrypt.hash('password123', 10)
-      };
-
-      const originalDispatch = queryHandler.dispatch;
-      queryHandler.dispatch = sandbox.stub().resolves(unverifiedUser);
-
-      // Act
-      await authService.login(mockReq, mockRes);
-
-      // Assert
-      expect(mockRes.json.calledOnce).to.be.true;
-      const responseCall = mockRes.json.getCall(0);
-      expect(responseCall.args[0]).to.have.property('success', false);
-      expect(responseCall.args[0]).to.have.property('message');
-      
-      // Restore original method
-      queryHandler.dispatch = originalDispatch;
-    });
-
-    it('aktif oturum varsa hata dönmeli', async () => {
-      // Arrange
-      const userWithHashedPassword = {
-        ...mockUser,
-        password: await bcrypt.hash('password123', 10)
-      };
-
-      const originalDispatch = queryHandler.dispatch;
-      queryHandler.dispatch = sandbox.stub().resolves(userWithHashedPassword);
-      sandbox.stub(JWTService, 'findActiveSession').resolves({ token: 'existing-token' });
-
-      // Act
-      await authService.login(mockReq, mockRes);
-
-      // Assert
-      expect(mockRes.json.calledOnce).to.be.true;
-      const responseCall = mockRes.json.getCall(0);
-      expect(responseCall.args[0]).to.have.property('success', false);
-      expect(responseCall.args[0]).to.have.property('message');
-      
-      // Restore original method
-      queryHandler.dispatch = originalDispatch;
-    });
-
-    it('yanlış şifre ile login yapılamamalı', async () => {
-      // Arrange
-      const userWithHashedPassword = {
-        ...mockUser,
-        password: await bcrypt.hash('wrongpassword', 10)
-      };
-
-      const originalDispatch = queryHandler.dispatch;
-      queryHandler.dispatch = sandbox.stub().resolves(userWithHashedPassword);
-      sandbox.stub(JWTService, 'findActiveSession').resolves(null);
-
-      // Act
-      await authService.login(mockReq, mockRes);
-
-      // Assert
-      expect(mockRes.json.calledOnce).to.be.true;
-      const responseCall = mockRes.json.getCall(0);
-      expect(responseCall.args[0]).to.have.property('success', false);
-      expect(responseCall.args[0]).to.have.property('message');
-      
-      // Restore original method
-      queryHandler.dispatch = originalDispatch;
-    });
-  });
-
-  describe('login() - Servis İçi Kullanım Testleri', () => {
-    it('response objesi olmadan çağrıldığında obje dönmeli', async () => {
-      // Arrange
-      const userWithHashedPassword = {
-        ...mockUser,
-        password: await bcrypt.hash('password123', 10)
-      };
-
-      const originalDispatch = queryHandler.dispatch;
-      queryHandler.dispatch = sandbox.stub().resolves(userWithHashedPassword);
-      
-      sandbox.stub(JWTService, 'findActiveSession').resolves(null);
-      sandbox.stub(JWTService, 'buildJWTPayload').returns({
-        id: mockUser.id,
-        email: mockUser.email,
-        roleId: mockUser.role._id,
-        roleName: mockUser.roleName
-      });
-      sandbox.stub(JWTService, 'generateAccessToken').returns('mock-access-token');
-      sandbox.stub(JWTService, 'generateRefreshToken').returns('mock-refresh-token');
-      sandbox.stub(JWTService, 'getTokenExpireDate').returns(new Date());
-      sandbox.stub(JWTService, 'addActiveSession').resolves();
-      sandbox.stub(cacheService.client, 'lRange').resolves([]);
-      sandbox.stub(cacheService.client, 'rPush').resolves();
-      sandbox.stub(sendAgentOnlineEvent).resolves();
-
-      // Act
-      const result = await authService.login(mockReq, null);
-
-      // Assert
-      expect(result).to.have.property('user');
-      expect(result).to.have.property('accessToken');
-      expect(result).to.have.property('refreshToken');
-      expect(result).to.have.property('expireAt');
-      
-      // Restore original method
-      queryHandler.dispatch = originalDispatch;
-    });
-
-    it('hata durumunda response objesi yoksa exception fırlatmalı', async () => {
-      // Arrange
-      const originalDispatch = queryHandler.dispatch;
-      queryHandler.dispatch = sandbox.stub().rejects(new Error('Database error'));
-
-      // Act & Assert
-      try {
-        await authService.login(mockReq, null);
-        expect.fail('Exception fırlatılmalıydı');
-      } catch (error) {
-        expect(error).to.be.instanceOf(Error);
-        expect(error.message).to.equal('Database error');
-      }
-      
-      // Restore original method
-      queryHandler.dispatch = originalDispatch;
-    });
-  });
-
-  describe('login() - Edge Case Testleri', () => {
-    it('boş email ile login yapılamamalı', async () => {
-      // Arrange
-      mockReq.body.email = '';
-
-      // Act
-      await authService.login(mockReq, mockRes);
-
-      // Assert
-      expect(mockRes.json.calledOnce).to.be.true;
-      const responseCall = mockRes.json.getCall(0);
-      expect(responseCall.args[0]).to.have.property('success', false);
-    });
-
-    it('boş şifre ile login yapılamamalı', async () => {
-      // Arrange
-      mockReq.body.password = '';
-
-      // Act
-      await authService.login(mockReq, mockRes);
-
-      // Assert
-      expect(mockRes.json.calledOnce).to.be.true;
-      const responseCall = mockRes.json.getCall(0);
-      expect(responseCall.args[0]).to.have.property('success', false);
-    });
-
-    it('null request body ile hata dönmeli', async () => {
-      // Arrange
-      mockReq.body = null;
-
-      // Act
-      await authService.login(mockReq, mockRes);
-
-      // Assert
-      expect(mockRes.json.calledOnce).to.be.true;
-      const responseCall = mockRes.json.getCall(0);
-      expect(responseCall.args[0]).to.have.property('success', false);
-    });
-
-    it('undefined request body ile hata dönmeli', async () => {
-      // Arrange
-      mockReq.body = undefined;
-
-      // Act
-      await authService.login(mockReq, mockRes);
-
-      // Assert
-      expect(mockRes.json.calledOnce).to.be.true;
-      const responseCall = mockRes.json.getCall(0);
-      expect(responseCall.args[0]).to.have.property('success', false);
-    });
-  });
-
-  describe('login() - Redis Hata Testleri', () => {
-    it('Redis bağlantı hatası durumunda login devam etmeli', async () => {
-      // Arrange
-      const customerSupporterUser = {
-        ...mockUser,
-        roleName: 'Customer Supporter',
-        password: await bcrypt.hash('password123', 10)
-      };
-
-      const originalDispatch = queryHandler.dispatch;
-      queryHandler.dispatch = sandbox.stub().resolves(customerSupporterUser);
-      
-      sandbox.stub(JWTService, 'findActiveSession').resolves(null);
-      sandbox.stub(JWTService, 'buildJWTPayload').returns({
-        id: customerSupporterUser.id,
-        email: customerSupporterUser.email,
-        roleId: customerSupporterUser.role._id,
-        roleName: customerSupporterUser.roleName
-      });
-      sandbox.stub(JWTService, 'generateAccessToken').returns('mock-access-token');
-      sandbox.stub(JWTService, 'generateRefreshToken').returns('mock-refresh-token');
-      sandbox.stub(JWTService, 'getTokenExpireDate').returns(new Date());
-      sandbox.stub(JWTService, 'addActiveSession').resolves();
-      
-      sandbox.stub(cacheService.client, 'lRange').rejects(new Error('Redis connection error'));
-      sandbox.stub(sendAgentOnlineEvent).resolves();
-
-      // Act
-      await authService.login(mockReq, mockRes);
-
-      // Assert
-      expect(mockRes.json.calledOnce).to.be.true;
-      const responseCall = mockRes.json.getCall(0);
-      expect(responseCall.args[0]).to.have.property('success', true);
-      
-      // Restore original method
-      queryHandler.dispatch = originalDispatch;
-    });
-
-    it('Kafka event gönderme hatası durumunda login devam etmeli', async () => {
-      // Arrange
-      const customerSupporterUser = {
-        ...mockUser,
-        roleName: 'Customer Supporter',
-        password: await bcrypt.hash('password123', 10)
-      };
-
-      const originalDispatch = queryHandler.dispatch;
-      queryHandler.dispatch = sandbox.stub().resolves(customerSupporterUser);
-      
-      sandbox.stub(JWTService, 'findActiveSession').resolves(null);
-      sandbox.stub(JWTService, 'buildJWTPayload').returns({
-        id: customerSupporterUser.id,
-        email: customerSupporterUser.email,
-        roleId: customerSupporterUser.role._id,
-        roleName: customerSupporterUser.roleName
-      });
-      sandbox.stub(JWTService, 'generateAccessToken').returns('mock-access-token');
-      sandbox.stub(JWTService, 'generateRefreshToken').returns('mock-refresh-token');
-      sandbox.stub(JWTService, 'getTokenExpireDate').returns(new Date());
-      sandbox.stub(JWTService, 'addActiveSession').resolves();
-      
-      sandbox.stub(cacheService.client, 'lRange').resolves([]);
-      sandbox.stub(cacheService.client, 'rPush').resolves();
-      sandbox.stub(sendAgentOnlineEvent).rejects(new Error('Kafka error'));
-
-      // Act
-      await authService.login(mockReq, mockRes);
-
-      // Assert
-      expect(mockRes.json.calledOnce).to.be.true;
-      const responseCall = mockRes.json.getCall(0);
-      expect(responseCall.args[0]).to.have.property('success', true);
-      
-      // Restore original method
-      queryHandler.dispatch = originalDispatch;
-    });
-  });
-});
+}); 

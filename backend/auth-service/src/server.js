@@ -20,6 +20,7 @@ import { initializeApp } from './config/index.js';
 import router from './routes/index.routes.js';
 import { healthCheck } from './config/health.js';
 import { corsMiddleware } from './middlewares/cors.middleware.js';
+import { languageMiddleware } from './middlewares/language.middleware.js';
 import { errorHandler } from './middlewares/error.handler.js';
 import { seedPermissions } from './migrations/seedPermissions.js';
 
@@ -36,6 +37,9 @@ app.use(corsMiddleware);
 
 // i18n middleware
 app.use(i18n.init);
+
+// Language middleware (Accept-Language header'ını işler)
+app.use(languageMiddleware);
 
 app.use('/api', router); 
 

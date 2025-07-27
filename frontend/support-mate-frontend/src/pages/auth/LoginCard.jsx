@@ -80,13 +80,13 @@ const LoginCard = ({ onUserLogin }) => {
     setError('');
     try {
       const result = await login({ email, password });
-      if (result && result.data && result.data.accessToken) {
+      if (result && result.success && result.data && result.data.accessToken) {
         localStorage.setItem('jwt', result.data.accessToken);
   
         // JWT'den rol bilgilerini al
         const decoded = jwtDecode(result.data.accessToken);
         const roleName = decoded.roleName;
-        setSnackbar({ open: true, message: t('pages.login.success'), severity: 'success' });
+        setSnackbar({ open: true, message: result.message, severity: 'success' });
 
         // App.jsx'teki state'i güncelle
         if (onUserLogin) onUserLogin(roleName || 'User');
@@ -100,7 +100,7 @@ const LoginCard = ({ onUserLogin }) => {
         }
       } else {
         // Başarısız login durumunda sayfa yenilenmez, kullanıcı aynı sayfada kalır
-        const errorMessage = t('pages.login.error');
+        const errorMessage = result?.message || t('pages.login.error');
         setError(errorMessage);
         setSnackbar({ open: true, message: errorMessage, severity: 'error' });
       }
@@ -108,8 +108,19 @@ const LoginCard = ({ onUserLogin }) => {
       console.log('Login error details:', err);
       console.log('Error response:', err?.response);
       console.log('Error data:', err?.response?.data);
+      console.log('Error status:', err?.response?.status);
       
-      const errorMessage = err?.response?.data?.message || t('pages.login.error');
+      // Backend'den gelen detaylı hata mesajını kullan
+      let errorMessage = t('pages.login.error'); // Default fallback
+      
+      if (err?.response?.data?.message) {
+        errorMessage = err.response.data.message;
+        console.log('Using backend error message:', errorMessage);
+      } else if (err?.message) {
+        errorMessage = err.message;
+        console.log('Using error.message:', errorMessage);
+      }
+      
       setError(errorMessage);
       setSnackbar({ open: true, message: errorMessage, severity: 'error' });
       // Hata durumunda da sayfa yenilenmez, kullanıcı aynı sayfada kalır
@@ -207,12 +218,11 @@ const LoginCard = ({ onUserLogin }) => {
             onSuccess={async credentialResponse => {
               try {
                 const result = await googleLogin(credentialResponse.credential);
-                const accessToken = result?.accessToken || result?.data?.accessToken;
-                if (accessToken) {
-                  localStorage.setItem('jwt', accessToken);
-                  const decoded = jwtDecode(accessToken);
+                if (result && result.success && result.data && result.data.accessToken) {
+                  localStorage.setItem('jwt', result.data.accessToken);
+                  const decoded = jwtDecode(result.data.accessToken);
                   const roleName = decoded.roleName;
-                  setSnackbar({ open: true, message: t('pages.login.success'), severity: 'success' });
+                  setSnackbar({ open: true, message: result.message, severity: 'success' });
                   if (onUserLogin) onUserLogin(roleName || 'User');
                   if (isAdmin(decoded)) navigate('/admin');
                   else if (isCustomerSupporter(decoded)) navigate('/support');
@@ -220,11 +230,20 @@ const LoginCard = ({ onUserLogin }) => {
                   else setTimeout(() => navigate('/'), 1000);
                 } else {
                   // Google login başarısız - sayfa yenilenmez
-                  setSnackbar({ open: true, message: t('pages.login.error'), severity: 'error' });
+                  const errorMessage = result?.message || t('pages.login.error');
+                  setSnackbar({ open: true, message: errorMessage, severity: 'error' });
                   console.log('Google login response:', result);
                 }
               } catch (err) {
-                const errorMessage = err?.response?.data?.message || t('pages.login.error');
+                // Backend'den gelen detaylı hata mesajını kullan
+                let errorMessage = t('pages.login.error'); // Default fallback
+                
+                if (err?.response?.data?.message) {
+                  errorMessage = err.response.data.message;
+                } else if (err?.message) {
+                  errorMessage = err.message;
+                }
+                
                 setSnackbar({ open: true, message: errorMessage, severity: 'error' });
                 console.error('Google login error:', err);
                 // Google login hata durumunda da sayfa yenilenmez

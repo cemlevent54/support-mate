@@ -267,7 +267,7 @@
     "authService": {
       "logs": {
         "registerRequest": "Register request received",
-        "alreadyLoggedIn": "User already logged in",
+        "alreadyLoggedIn": "User already logged in, session is active in another device",
         "userExists": "User already exists",
         "userReactivated": "Soft deleted user reactivated",
         "registerSuccess": "Registration successful",
@@ -277,6 +277,9 @@
         "loginSuccess": "Login successful",
         "loginFailed": "Login failed, email or password is incorrect",
         "loginError": "Error during login",
+        "accountLocked": "Account temporarily locked. Try again in 15 minutes.",
+        "tooManyFailedAttempts": "Too many failed attempts. Your account has been temporarily locked.",
+        "accountLockedMinutes": "Account temporarily locked. Try again in {minutes} minutes.",
         "emailNotVerified": "Your email address has not been verified yet. Please check your email inbox and click the verification link.",
         "logoutRequest": "Logout request received",
         "logoutSuccess": "Logout successful",

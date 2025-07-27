@@ -1,9 +1,5 @@
 import userService from './user.service.js';
 import bcrypt from 'bcrypt';
-import { conflictError } from '../responseHandlers/clientErrors/conflict.error.js';
-import { unauthorizedError } from '../responseHandlers/clientErrors/unauthorized.error.js';
-import { apiSuccess } from '../responseHandlers/api.success.js';
-import { internalServerError } from '../responseHandlers/serverErrors/internalserver.error.js';
 import logger from '../config/logger.js';
 import JWTService from '../middlewares/jwt.service.js';
 import TimeHelper from '../utils/timeHelper.js';
@@ -45,34 +41,62 @@ export const AUTH_PERMISSIONS = [
 global.emailVerificationCodes = global.emailVerificationCodes || {};
 
 class AuthService {
-  constructor() {
-    // Handler kayıtları constructor'dan çıkarıldı.
+  constructor(
+    jwtService = JWTService,
+    cacheServiceInstance = cacheService,
+    userRepositoryInstance = userRepository,
+    roleServiceInstance = roleService,
+    kafkaProducer = { sendUserRegisteredEvent, sendPasswordResetEvent, sendUserVerifiedEvent, sendAgentOnlineEvent, sendUserVerificationResendEvent },
+    translationService = translation,
+    googleClientInstance = googleClient,
+    userModel = UserModel,
+    passwordHelper = PasswordHelper,
+    commandHandlerInstance = commandHandler,
+    queryHandlerInstance = queryHandler,
+    bcryptInstance = bcrypt,
+    cryptoInstance = crypto,
+    jwtInstance = jwt
+  ) {
+    this.jwtService = jwtService;
+    this.cacheService = cacheServiceInstance;
+    this.userRepository = userRepositoryInstance;
+    this.roleService = roleServiceInstance;
+    this.kafkaProducer = kafkaProducer;
+    this.translation = translationService;
+    this.googleClient = googleClientInstance;
+    this.userModel = userModel;
+    this.passwordHelper = passwordHelper;
+    this.commandHandler = commandHandlerInstance;
+    this.queryHandler = queryHandlerInstance;
+    this.bcrypt = bcryptInstance;
+    this.crypto = cryptoInstance;
+    this.jwt = jwtInstance;
   }
 
-  async register(req, res) {
+  async register(registerData) {
     try {
-      logger.info(translation('services.authService.logs.registerRequest'), { body: req.body });
-      const language = req.body.language || 'tr'; // Sadece mail için kullanılacak
+      logger.info(this.translation('services.authService.logs.registerRequest'), { body: registerData });
+      const language = registerData.language || 'tr'; // Sadece mail için kullanılacak
       // 6 haneli kod üret
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       // Kodun geçerlilik süresi (10 dakika)
       const expiresAt = Date.now() + 10 * 60 * 1000;
-      global.emailVerificationCodes[req.body.email] = { code, expiresAt };
+      global.emailVerificationCodes[registerData.email] = { code, expiresAt };
       // JWT tabanlı doğrulama token'ı üret
-      const token = JWTService.generateEmailVerifyToken(req.body.email, code, expiresAt, EMAIL_VERIFY_TOKEN_SECRET);
+      const token = this.jwtService.generateEmailVerifyToken(registerData.email, code, expiresAt, EMAIL_VERIFY_TOKEN_SECRET);
       // isDeleted filtresi olmadan kullanıcıyı bul
-      const existingUser = await userRepository.findAnyUserByEmail(req.body.email);
+      const existingUser = await this.userRepository.findAnyUserByEmail(registerData.email);
       if (existingUser) {
         if (existingUser.isDeleted) {
           // Soft deleted kullanıcıyı tekrar aktif et ve bilgilerini güncelle
-          logger.info(translation('services.authService.logs.userReactivated'), { email: req.body.email });
-          existingUser.firstName = req.body.firstName;
-          existingUser.lastName = req.body.lastName;
-          existingUser.password = req.body.password;
-          let roleId = req.body.role;
-          let roleName = req.body.roleName;
+          logger.info(translation('services.authService.logs.userReactivated'), { email: registerData.email });
+          existingUser.firstName = registerData.firstName;
+          existingUser.lastName = registerData.lastName;
+          existingUser.password = registerData.password;
+          let roleId = registerData.role;
+          let roleName = registerData.roleName;
           if (!roleId || !roleName) {
-            const userRole = await roleService.getRoleByName('User');
+            const userRole = await this.roleService.getRoleByName('User');
             roleId = userRole ? userRole._id : null;
             roleName = userRole ? userRole.name : null;
           }
@@ -85,533 +109,593 @@ class AuthService {
           // Doğrulama linki
           const frontendUrl = process.env.WEBSITE_URL;
           const verifyUrl = `${frontendUrl}/verify-email?email=${encodeURIComponent(existingUser.email)}&token=${encodeURIComponent(token)}`;
-          await sendUserRegisteredEvent(existingUser, language, code, verifyUrl);
-          apiSuccess(res, existingUser, translation('services.authService.logs.registerSuccess'), 201);
-          return;
+          await this.kafkaProducer.sendUserRegisteredEvent(existingUser, language, code, verifyUrl);
+          return existingUser;
         } else {
-          logger.warn(translation('services.authService.logs.registerConflict'), { email: req.body.email });
-          conflictError(res, translation('services.authService.logs.registerConflict'), 409);
-          return;
+          logger.warn(this.translation('services.authService.logs.registerConflict'), { email: registerData.email });
+          throw new Error(this.translation('services.authService.logs.registerConflict'));
         }
       }
-      let roleId = req.body.role;
-      let roleName = req.body.roleName;
+      let roleId = registerData.role;
+      let roleName = registerData.roleName;
       if (!roleId || !roleName) {
-        const userRole = await roleService.getRoleByName('User');
+        const userRole = await this.roleService.getRoleByName('User');
         roleId = userRole ? userRole._id : null;
         roleName = userRole ? userRole.name : null;
       }
       const createUserCommand = {
-        email: req.body.email,
-        password: req.body.password,
-        firstName: req.body.firstName,
-        lastName: req.body.lastName,
+        email: registerData.email,
+        password: registerData.password,
+        firstName: registerData.firstName,
+        lastName: registerData.lastName,
         role: roleId,
         roleName: roleName
       };
-      const user = await commandHandler.dispatch(COMMAND_TYPES.CREATE_USER, createUserCommand);
-      logger.info(translation('services.authService.logs.registerSuccess'), { user });
+      const user = await this.commandHandler.dispatch(COMMAND_TYPES.CREATE_USER, createUserCommand);
+      logger.info(this.translation('services.authService.logs.registerSuccess'), { user });
       // Doğrulama linki
       const frontendUrl = process.env.WEBSITE_URL;
       const verifyUrl = `${frontendUrl}/verify-email?email=${encodeURIComponent(user.email)}&token=${encodeURIComponent(token)}`;
-      await sendUserRegisteredEvent(user, language, code, verifyUrl);
-      apiSuccess(res, user, translation('services.authService.logs.registerSuccess'), 201);
+      await this.kafkaProducer.sendUserRegisteredEvent(user, language, code, verifyUrl);
+      return user;
     } catch (err) {
-      logger.error(translation('services.authService.logs.registerError'), { error: err, body: req.body });
-      internalServerError(res, translation('services.authService.logs.registerError'));
+      logger.error(this.translation('services.authService.logs.registerError'), { error: err, body: registerData });
+      throw err;
     }
   }
 
-  async login(req, res) {
+  async login(loginData) {
     try {
       logger.info('JWT_EXPIRES_IN', { JWT_EXPIRES_IN });
       logger.info('REFRESH_TOKEN_EXPIRES', { REFRESH_TOKEN_EXPIRES });
       logger.info('JWT_SECRET', { JWT_SECRET });
-      logger.info(translation('services.authService.logs.loginRequest'), { body: req.body });
-      const { email, password } = req.body;
-      const getUserQuery = { email };
-      const user = await queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_EMAIL, getUserQuery);
-      if (!user) {
-        logger.warn(translation('services.authService.logs.loginFailed'), { email });
-        unauthorizedError(res, translation('services.authService.logs.loginFailed'));
-        return;
-      }
-      logger.info('Login email verify check', {
-        isEmailVerified: user.isEmailVerified,
-        emailVerifiedAt: user.emailVerifiedAt,
-        typeofIsEmailVerified: typeof user.isEmailVerified,
-        typeofEmailVerifiedAt: typeof user.emailVerifiedAt
-      });
-      // Email doğrulama kontrolü - daha sağlam
-      if (
-        user.isEmailVerified !== true ||
-        !user.emailVerifiedAt ||
-        user.emailVerifiedAt === null ||
-        user.emailVerifiedAt === undefined
-      ) {
-        logger.warn(translation('services.authService.logs.emailNotVerified'), {
-          email,
-          isEmailVerified: user.isEmailVerified,
-          emailVerifiedAt: user.emailVerifiedAt
-        });
-        unauthorizedError(res, translation('services.authService.logs.emailNotVerified'));
-        return;
-      }
+      logger.info(this.translation('services.authService.logs.loginRequest'), { body: loginData });
       
-      const activeSession = await JWTService.findActiveSession(user.id);
-      if (activeSession) {
-        logger.warn(translation('services.authService.logs.loginFailed'), { userId: user.id });
-        conflictError(res, translation('services.authService.logs.alreadyLoggedIn'));
-        return;
-      }
-      const payload = JWTService.buildJWTPayload(user);
-      const accessToken = JWTService.generateAccessToken(payload, JWT_EXPIRES_IN);
-      let expireAt = JWTService.getTokenExpireDate(JWT_EXPIRES_IN);
-      const refreshToken = JWTService.generateRefreshToken(payload);
-      // Aktif oturumu kaydet
-      await JWTService.addActiveSession(user.id, accessToken, expireAt);
-      // CUSTOMER SUPPORTER ONLINE KAYDI
-      logger.info(`[ONLINE] ${translation('services.authService.logs.onlineRoleName')}: ${user.roleName}`);
-      logger.info(`[ONLINE] User detayları - ID: ${user.id}, Email: ${user.email}, Role: ${user.roleName}, Role Object: ${JSON.stringify(user.role)}`);
+      const { email, password, ipAddress } = loginData;
+      const user = await this.validateUser(email, password, ipAddress);
       
-      if (user.roleName === 'Customer Supporter') {
-        try {
-          logger.info(`[ONLINE] ${translation('services.authService.logs.customerSupportLoginDetected')}. userId=${user.id}, email=${user.email}`);
-          // Önce queue'da var mı kontrol et
-          const currentOnline = await cacheService.client.lRange('online_users_queue', 0, -1);
-          const isAlreadyOnline = currentOnline.includes(user.id);
-          
-          logger.info(`[ONLINE] Redis queue durumu - Mevcut online kullanıcılar: ${JSON.stringify(currentOnline)}`);
-          logger.info(`[ONLINE] Kullanıcı zaten online mi: ${isAlreadyOnline}`);
-          
-          if (!isAlreadyOnline) {
-            // Yoksa ekle
-            await cacheService.client.rPush('online_users_queue', user.id);
-            logger.info(translation('services.authService.logs.redisPushSuccess'), { userId: user.id });
-            const updatedOnline = await cacheService.client.lRange('online_users_queue', 0, -1);
-            logger.info(translation('services.authService.logs.currentOnlineUsers'), updatedOnline);
-            logger.info(`[ONLINE] Redis queue güncellendi - Yeni online kullanıcılar: ${JSON.stringify(updatedOnline)}`);
-            // KAFKA EVENT: agent_online - token ile birlikte gönder
-            await sendAgentOnlineEvent(user.id, accessToken);
-          } else {
-            logger.info(translation('services.authService.logs.customerSupporterAlreadyOnline'), { userId: user.id });
-            logger.info(translation('services.authService.logs.currentOnlineUsers'), currentOnline);
-            logger.info(`[ONLINE] Kullanıcı zaten queue'da mevcut, ekleme yapılmadı`);
-          }
-        } catch (err) {
-          logger.error(translation('services.authService.logs.customerSupporterOnlineError'), { userId: user.id, email: user.email, error: err });
-        }
-      } else {
-        logger.info(`[ONLINE] Kullanıcı Customer Supporter değil (${user.roleName}), queue'ya eklenmedi`);
-      }
-      // Eğer response objesi varsa (HTTP endpoint)
-      if (res) {
-        res.cookie('refreshToken', refreshToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          expires: new Date(Date.now() + TimeHelper.parseDuration(REFRESH_TOKEN_EXPIRES))
-        });
-        logger.info(translation('services.authService.logs.refreshTokenSet'));
-        logger.info(translation('services.authService.logs.loginSuccess'), { user, accessToken, expireAt });
-        // Response'da sadece accessToken ve user dön
-        apiSuccess(res, { user, accessToken, expireAt }, translation('services.authService.logs.loginSuccess'), 200);
-      } else {
-        // Servis içi kullanım için (örneğin test)
-        return { user, accessToken, refreshToken, expireAt };
-      }
+      this.ensureEmailVerified(user);
+      await this.ensureNoActiveSession(user, loginData.locale);
+      
+      const tokens = await this.createSession(user);
+      await this.handleOnlineQueue(user, tokens.accessToken);
+      
+      logger.info(this.translation('services.authService.logs.loginSuccess'), { user, accessToken: tokens.accessToken, expireAt: tokens.expireAt });
+      
+      return { 
+        user, 
+        accessToken: tokens.accessToken, 
+        refreshToken: tokens.refreshToken, 
+        expireAt: tokens.expireAt 
+      };
     } catch (err) {
-      logger.error(translation('services.authService.logs.loginError'), { error: err, body: req.body });
-      if (res) internalServerError(res, translation('services.authService.logs.loginError'));
-      else throw err;
+      logger.error(this.translation('services.authService.logs.loginError'), { error: err, body: loginData });
+      throw err;
     }
   }
 
-  async logout(req, res) {
-    logger.info(translation('services.authService.logs.logoutRequest'), { user: req.user });
-    const userId = req.user?.id;
-    if (!userId) {
-      unauthorizedError(res, translation('services.authService.logs.useridRequired'));
-      return;
+  async validateUser(email, password, ipAddress = 'unknown') {
+    const getUserQuery = { email };
+    const user = await this.queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_EMAIL, getUserQuery);
+    
+    if (!user) {
+      logger.warn(this.translation('services.authService.logs.loginFailed'), { email, ipAddress });
+      throw new Error(this.translation('services.authService.logs.loginFailed'));
     }
-    try {
-      logger.info(`${translation('services.authService.logs.userLogoutProcessStarted')} - User ID: ${userId}`);
-      await JWTService.removeActiveSession(userId);
-      JWTService.addToBlacklist(userId);
-      if (res) {
-        res.clearCookie('refreshToken');
-      }
-      // CUSTOMER SUPPORTER ONLINE KAYDI (Logout)
-      logger.info(`[ONLINE] (Logout) User roleName: ${req.user?.roleName}`);
-      logger.info(`[ONLINE] (Logout) User detayları - ID: ${req.user?.id}, Email: ${req.user?.email}, Role: ${req.user?.roleName}, Role Object: ${JSON.stringify(req.user?.role)}`);
+
+    // Rate limiting kontrolü
+    await this.checkRateLimit(email, ipAddress);
+    
+    // Şifre kontrolü
+    const isPasswordValid = await this.bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      await this.recordFailedAttempt(email, ipAddress);
+      logger.warn(this.translation('services.authService.logs.loginFailed'), { email, ipAddress });
+      throw new Error(this.translation('services.authService.logs.loginFailed'));
+    }
+
+    // Başarılı giriş - failed attempts'ı sıfırla
+    await this.resetFailedAttempts(email, ipAddress);
+    
+    return user;
+  }
+
+  async checkRateLimit(email, ipAddress = 'unknown') {
+    const failedAttemptsKey = `failed_login_attempts:${email}`;
+    const lockoutKey = `account_locked:${email}`;
+    
+    // Hesap kilitli mi kontrol et
+    const isLocked = await this.cacheService.client.get(lockoutKey);
+    if (isLocked) {
+      const lockoutTime = parseInt(isLocked);
+      const now = Date.now();
+      const remainingTime = lockoutTime - now;
       
-      if (req.user?.roleName === 'Customer Supporter') {
+      if (remainingTime > 0) {
+        const minutes = Math.ceil(remainingTime / (1000 * 60));
+        logger.warn('Account temporarily locked due to too many failed attempts', { 
+          email, 
+          ipAddress,
+          remainingMinutes: minutes 
+        });
+        throw new Error(`ACCOUNT_LOCKED_${minutes}_MINUTES`);
+      } else {
+        // Lockout süresi dolmuş, kilidi kaldır
+        await this.cacheService.client.del(lockoutKey);
+        await this.cacheService.client.del(failedAttemptsKey);
+        logger.info('Account lockout expired, lock removed', { email, ipAddress });
+      }
+    }
+  }
+
+  async recordFailedAttempt(email, ipAddress = 'unknown') {
+    const failedAttemptsKey = `failed_login_attempts:${email}`;
+    const lockoutKey = `account_locked:${email}`;
+    
+    // Failed attempts sayısını artır
+    const failedAttempts = await this.cacheService.client.incr(failedAttemptsKey);
+    
+    // İlk deneme ise 15 dakika TTL ayarla
+    if (failedAttempts === 1) {
+      await this.cacheService.client.expire(failedAttemptsKey, 15 * 60); // 15 dakika
+    }
+    
+    // 5 deneme sonrası hesabı kilitle
+    if (failedAttempts >= 5) {
+      const lockoutDuration = 15 * 60 * 1000; // 15 dakika (milisaniye)
+      const lockoutExpiry = Date.now() + lockoutDuration;
+      
+      // Modern Redis client için set + expire kullan
+      await this.cacheService.client.set(lockoutKey, lockoutExpiry.toString(), 'EX', 15 * 60);
+      
+      logger.warn('Account locked due to too many failed login attempts', { 
+        email, 
+        ipAddress,
+        failedAttempts,
+        lockoutExpiry: new Date(lockoutExpiry),
+        remainingAttempts: 0
+      });
+      
+      // Dinamik dakika ile hata fırlat (15 dakika)
+      throw new Error('ACCOUNT_LOCKED_15_MINUTES');
+    }
+    
+    // Sadece loglarda kalan deneme sayısını göster, response'ta verme
+    logger.warn('Failed login attempt recorded', { 
+      email, 
+      ipAddress,
+      failedAttempts,
+      remainingAttempts: 5 - failedAttempts,
+      nextLockoutThreshold: 5
+    });
+  }
+
+  async resetFailedAttempts(email, ipAddress = 'unknown') {
+    const failedAttemptsKey = `failed_login_attempts:${email}`;
+    const lockoutKey = `account_locked:${email}`;
+    
+    // Başarılı giriş sonrası tüm failed attempts kayıtlarını temizle
+    await this.cacheService.client.del(failedAttemptsKey);
+    await this.cacheService.client.del(lockoutKey);
+    
+    logger.info('Failed attempts reset after successful login', { email, ipAddress });
+  }
+
+  ensureEmailVerified(user) {
+    logger.info('Login email verify check', {
+      isEmailVerified: user.isEmailVerified,
+      emailVerifiedAt: user.emailVerifiedAt,
+      typeofIsEmailVerified: typeof user.isEmailVerified,
+      typeofEmailVerifiedAt: typeof user.emailVerifiedAt
+    });
+    
+    // Email doğrulama kontrolü - daha sağlam
+    // String "true" değerini de kabul et
+    const isVerified = user.isEmailVerified === true || user.isEmailVerified === 'true';
+    
+    if (
+      !isVerified ||
+      !user.emailVerifiedAt ||
+      user.emailVerifiedAt === null ||
+      user.emailVerifiedAt === undefined
+    ) {
+      logger.warn(this.translation('services.authService.logs.emailNotVerified'), {
+        email: user.email,
+        isEmailVerified: user.isEmailVerified,
+        emailVerifiedAt: user.emailVerifiedAt
+      });
+      throw new Error(this.translation('services.authService.logs.emailNotVerified'));
+    }
+  }
+
+  async ensureNoActiveSession(user, locale = 'tr') {
+    const activeSession = await this.jwtService.findActiveSession(user.id);
+    if (activeSession) {
+      // Locale'i normalize et
+      const normalizedLocale = (locale || '').trim().toLowerCase();
+      const errorMessage = normalizedLocale === 'tr'
+        ? 'Kullanıcı zaten giriş yapmış durumda. Başka bir oturum açık.'
+        : 'User already logged in, session is active in another device';
+      logger.info('ensureNoActiveSession: alreadyLoggedIn', { userId: user.id, locale: normalizedLocale });
+      throw new Error(errorMessage);
+    }
+  }
+
+  async createSession(user) {
+    const payload = this.jwtService.buildJWTPayload(user);
+    const accessToken = this.jwtService.generateAccessToken(payload, JWT_EXPIRES_IN);
+    const expireAt = this.jwtService.getTokenExpireDate(JWT_EXPIRES_IN);
+    const refreshToken = this.jwtService.generateRefreshToken(payload);
+    
+    // Aktif oturumu kaydet
+    await this.jwtService.addActiveSession(user.id, accessToken, expireAt);
+    
+    return { accessToken, refreshToken, expireAt };
+  }
+
+  async handleOnlineQueue(user, accessToken) {
+    // CUSTOMER SUPPORTER ONLINE KAYDI
+    logger.info(`[ONLINE] ${this.translation('services.authService.logs.onlineRoleName')}: ${user.roleName}`);
+    logger.info(`[ONLINE] User detayları - ID: ${user.id}, Email: ${user.email}, Role: ${user.roleName}, Role Object: ${JSON.stringify(user.role)}`);
+    
+    if (user.roleName === 'Customer Supporter') {
+      try {
+        logger.info(`[ONLINE] ${this.translation('services.authService.logs.customerSupportLoginDetected')}. userId=${user.id}, email=${user.email}`);
+        // Önce queue'da var mı kontrol et
+        const currentOnline = await this.cacheService.client.lRange('online_users_queue', 0, -1);
+        const isAlreadyOnline = currentOnline.includes(user.id);
+        
+        logger.info(`[ONLINE] Redis queue durumu - Mevcut online kullanıcılar: ${JSON.stringify(currentOnline)}`);
+        logger.info(`[ONLINE] Kullanıcı zaten online mi: ${isAlreadyOnline}`);
+        
+        if (!isAlreadyOnline) {
+          // Yoksa ekle
+          await this.cacheService.client.rPush('online_users_queue', user.id);
+          logger.info(this.translation('services.authService.logs.redisPushSuccess'), { userId: user.id });
+          const updatedOnline = await this.cacheService.client.lRange('online_users_queue', 0, -1);
+          logger.info(this.translation('services.authService.logs.currentOnlineUsers'), updatedOnline);
+          logger.info(`[ONLINE] Redis queue güncellendi - Yeni online kullanıcılar: ${JSON.stringify(updatedOnline)}`);
+          // KAFKA EVENT: agent_online - token ile birlikte gönder
+          await this.kafkaProducer.sendAgentOnlineEvent(user.id, accessToken);
+                  } else {
+            logger.info(this.translation('services.authService.logs.customerSupporterAlreadyOnline'), { userId: user.id });
+            logger.info(this.translation('services.authService.logs.currentOnlineUsers'), currentOnline);
+          logger.info(`[ONLINE] Kullanıcı zaten queue'da mevcut, ekleme yapılmadı`);
+        }
+      } catch (err) {
+        logger.error(this.translation('services.authService.logs.customerSupporterOnlineError'), { userId: user.id, email: user.email, error: err });
+      }
+    } else {
+      logger.info(`[ONLINE] Kullanıcı Customer Supporter değil (${user.roleName}), queue'ya eklenmedi`);
+    }
+  }
+
+  async logout(user) {
+    logger.info(this.translation('services.authService.logs.logoutRequest'), { user });
+    const userId = user?.id;
+          if (!userId) {
+        throw new Error(this.translation('services.authService.logs.useridRequired'));
+      }
+    
+    try {
+      logger.info(`${this.translation('services.authService.logs.userLogoutProcessStarted')} - User ID: ${userId}`);
+      await this.jwtService.removeActiveSession(userId);
+      this.jwtService.addToBlacklist(userId);
+      
+      // CUSTOMER SUPPORTER ONLINE KAYDI (Logout)
+      logger.info(`[ONLINE] (Logout) User roleName: ${user?.roleName}`);
+      logger.info(`[ONLINE] (Logout) User detayları - ID: ${user?.id}, Email: ${user?.email}, Role: ${user?.roleName}, Role Object: ${JSON.stringify(user?.role)}`);
+      
+      if (user?.roleName === 'Customer Supporter') {
         try {
-          logger.info(`[ONLINE] (Logout) Customer Supporter logout detected. userId=${req.user.id}`);
+          logger.info(`[ONLINE] (Logout) Customer Supporter logout detected. userId=${user.id}`);
           
           // Logout öncesi queue durumu
-          const beforeLogout = await cacheService.client.lRange('online_users_queue', 0, -1);
+          const beforeLogout = await this.cacheService.client.lRange('online_users_queue', 0, -1);
           logger.info(`[ONLINE] (Logout) Logout öncesi Redis queue: ${JSON.stringify(beforeLogout)}`);
           
-          await cacheService.client.lRem('online_users_queue', 0, req.user.id);
-          logger.info(`[ONLINE] (Logout) Redis lRem('online_users_queue', 0, ${req.user.id}) sonucu:`);
+          await this.cacheService.client.lRem('online_users_queue', 0, user.id);
+          logger.info(`[ONLINE] (Logout) Redis lRem('online_users_queue', 0, ${user.id}) sonucu:`);
           
           // Logout sonrası queue durumu
-          const afterLogout = await cacheService.client.lRange('online_users_queue', 0, -1);
+          const afterLogout = await this.cacheService.client.lRange('online_users_queue', 0, -1);
           logger.info(`[ONLINE] (Logout) Logout sonrası Redis queue: ${JSON.stringify(afterLogout)}`);
         } catch (err) {
-          logger.error(`[ONLINE] (Logout) Customer Supporter online kaydedilemedi! userId=${req.user.id}, error=`, err);
+          logger.error(`[ONLINE] (Logout) Customer Supporter online kaydedilemedi! userId=${user.id}, error=`, err);
         }
       } else {
-        logger.info(`[ONLINE] (Logout) Kullanıcı Customer Supporter değil (${req.user?.roleName}), queue'dan çıkarılmadı`);
+        logger.info(`[ONLINE] (Logout) Kullanıcı Customer Supporter değil (${user?.roleName}), queue'dan çıkarılmadı`);
       }
-      logger.info(translation('services.authService.logs.logoutSuccess'), { userId });
-      apiSuccess(res, null, translation('services.authService.logs.logoutSuccess'), 200);
-      logger.info(translation('services.authService.logs.logoutRequest'), { userId });
+      
+      logger.info(this.translation('services.authService.logs.logoutSuccess'), { userId });
+      return { success: true, userId };
     } catch (error) {
-      logger.error(translation('services.authService.logs.logoutError'), { error: error.message, userId });
-      internalServerError(res, error.message);
+      logger.error(this.translation('services.authService.logs.logoutError'), { error: error.message, userId });
+      throw error;
     }
   }
 
-  async refreshToken(req, res) {
+  async refreshToken(refreshTokenData) {
     try {
-      logger.info(translation('services.authService.logs.refreshRequest'), { body: req.body, cookies: req.cookies });
+      logger.info(this.translation('services.authService.logs.refreshRequest'), { refreshTokenData });
+      
       // Refresh token'ı önce cookie'den, yoksa body'den al
-      let refreshToken = req.cookies?.refreshToken;
+      let refreshToken = refreshTokenData.cookies?.refreshToken;
       if (!refreshToken) {
-        refreshToken = req.body?.refreshToken;
+        refreshToken = refreshTokenData.body?.refreshToken;
       }
+      
       logger.info(translation('services.authService.logs.refreshRequest'), { refreshToken });
       logger.info('JWT_SECRET', { JWT_SECRET });
       logger.info('JWT_SECRET used for verify', { JWT_SECRET });
 
       if (!refreshToken) {
-        logger.error(translation('services.authService.logs.refreshError'));
-        unauthorizedError(res, translation('services.authService.logs.refreshError'));
-        return;
+        logger.error(this.translation('services.authService.logs.refreshError'));
+        throw new Error(this.translation('services.authService.logs.refreshError'));
       }
 
       let decoded;
       try {
         logger.info('Trying to verify refresh token', { refreshToken, JWT_SECRET });
-        decoded = JWTService.verifyRefreshToken(refreshToken);
-        logger.info(translation('services.authService.logs.refreshSuccess'), { decoded });
-      } catch (verifyErr) {
-        logger.warn(translation('services.authService.logs.refreshError'), { error: verifyErr.message, refreshToken, JWT_SECRET });
-        unauthorizedError(res, translation('services.authService.logs.refreshError'));
-        return;
-      }
+        decoded = this.jwtService.verifyRefreshToken(refreshToken);
+        logger.info(this.translation('services.authService.logs.refreshSuccess'), { decoded });
+              } catch (verifyErr) {
+          logger.warn(this.translation('services.authService.logs.refreshError'), { error: verifyErr.message, refreshToken, JWT_SECRET });
+          throw new Error(this.translation('services.authService.logs.refreshError'));
+        }
 
       // CQRS ile kullanıcıyı bul
-      logger.info(translation('services.authService.logs.refreshRequest'), { userId: decoded.id });
-      const user = await queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_ID, { id: decoded.id });
-      logger.info(translation('services.authService.logs.refreshSuccess'), { user });
+      logger.info(this.translation('services.authService.logs.refreshRequest'), { userId: decoded.id });
+      const user = await this.queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_ID, { id: decoded.id });
+      logger.info(this.translation('services.authService.logs.refreshSuccess'), { user });
+      
       if (!user) {
-        logger.warn(translation('services.authService.logs.refreshError'), { userId: decoded.id });
-        conflictError(res, translation('repositories.userRepository.logs.notFound'));
-        return;
+        logger.warn(this.translation('services.authService.logs.refreshError'), { userId: decoded.id });
+        throw new Error(this.translation('repositories.userRepository.logs.notFound'));
       }
 
       // Eski session'ı sil
-      logger.info(translation('services.authService.logs.refreshRequest'), { userId: user.id });
-      await JWTService.removeActiveSession(user.id);
+      logger.info(this.translation('services.authService.logs.refreshRequest'), { userId: user.id });
+      await this.jwtService.removeActiveSession(user.id);
 
       // Yeni token'lar üret
       logger.info('Generating new access and refresh tokens', { userId: user.id });
-      const payload = JWTService.buildJWTPayload(user);
-      const accessToken = JWTService.generateAccessToken(payload, JWT_EXPIRES_IN);
+      const payload = this.jwtService.buildJWTPayload(user);
+      const accessToken = this.jwtService.generateAccessToken(payload, JWT_EXPIRES_IN);
+      const newRefreshToken = this.jwtService.generateRefreshToken(payload);
+      
+      logger.info(this.translation('services.authService.logs.refreshSuccess'), { accessToken, newRefreshToken });
 
-      const newRefreshToken = JWTService.generateRefreshToken(payload);
-      logger.info(translation('services.authService.logs.refreshSuccess'), { accessToken, newRefreshToken });
-
-      // Cookie'ye yeni refresh token'ı yaz (HTTP endpoint ise)
-      if (res) {
-        res.cookie('refreshToken', newRefreshToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          expires: new Date(Date.now() + TimeHelper.parseDuration(REFRESH_TOKEN_EXPIRES))
-        });
-        logger.info('New refresh token set as httpOnly cookie');
-        apiSuccess(res, {
-          accessToken,
-          accessTokenExpiresAt: JWTService.getTokenExpireDate(JWT_EXPIRES_IN),
-          user: {
-            id: user.id,
-            email: user.email,
-            role: user.role && user.role._id ? user.role._id.toString() : user.role?.toString ? user.role.toString() : user.role,
-            roleName: user.role && user.role.name ? user.role.name : user.roleName
-          }
-        }, translation('services.authService.logs.refreshSuccess'), 200);
-      } else {
-        // Servis içi kullanım için
-        return {
-          accessToken,
-          refreshToken: newRefreshToken,
-          accessTokenExpiresAt: JWTService.getTokenExpireDate(JWT_EXPIRES_IN),
-          user: {
-            id: user.id,
-            email: user.email,
-            role: user.role && user.role._id ? user.role._id.toString() : user.role?.toString ? user.role.toString() : user.role,
-            roleName: user.role && user.role.name ? user.role.name : user.roleName
-          }
-        };
-      }
+      return {
+        accessToken,
+        refreshToken: newRefreshToken,
+        accessTokenExpiresAt: JWTService.getTokenExpireDate(JWT_EXPIRES_IN),
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role && user.role._id ? user.role._id.toString() : user.role?.toString ? user.role.toString() : user.role,
+          roleName: user.role && user.role.name ? user.role.name : user.roleName
+        }
+      };
     } catch (error) {
-      logger.error(translation('services.authService.logs.refreshError'), { error: error.message, stack: error.stack });
-      if (res) internalServerError(res, translation('services.authService.logs.refreshError'));
-      else throw error;
+      logger.error(this.translation('services.authService.logs.refreshError'), { error: error.message, stack: error.stack });
+      throw error;
     }
   }
 
-  async forgotPassword(req, res) {
+  async forgotPassword(email) {
     try {
-      const { email } = req.body;
       if (!email) {
-        logger.error(translation('services.authService.logs.forgotPasswordError'));
-        return unauthorizedError(res, translation('services.authService.logs.forgotPasswordError'));
+        logger.error(this.translation('services.authService.logs.forgotPasswordError'));
+        throw new Error(this.translation('services.authService.logs.forgotPasswordError'));
       }
 
       // Kullanıcıyı CQRS ile bul
-      const user = await queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_EMAIL, { email });
+      const user = await this.queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_EMAIL, { email });
       if (!user) {
-        logger.warn(translation('services.authService.logs.forgotPasswordError'), { email });
+        logger.warn(this.translation('services.authService.logs.forgotPasswordError'), { email });
         // Güvenlik için her zaman aynı mesajı döndür
-        return apiSuccess(res, null, translation('services.authService.logs.forgotPasswordSuccess'), 200);
+        return { success: true, message: this.translation('services.authService.logs.forgotPasswordSuccess') };
       }
 
       // Şifre sıfırlama token'ı üret
-      const resetToken = JWTService.generatePasswordResetToken(user);
+      const resetToken = this.jwtService.generatePasswordResetToken(user);
 
       // Frontend linki
       const frontendUrl = process.env.WEBSITE_URL;
       const resetLink = `${frontendUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
 
       // Kafka ile event gönder
-      await sendPasswordResetEvent({ email, resetLink });
+      await this.kafkaProducer.sendPasswordResetEvent({ email, resetLink });
 
-      logger.info(translation('services.authService.logs.forgotPasswordSuccess'), { email, resetLink });
-      return apiSuccess(res, null, translation('services.authService.logs.forgotPasswordSuccess'), 200);
+      logger.info(this.translation('services.authService.logs.forgotPasswordSuccess'), { email, resetLink });
+      return { success: true, message: this.translation('services.authService.logs.forgotPasswordSuccess') };
     } catch (error) {
-      logger.error(translation('services.authService.logs.forgotPasswordError'), { error: error.message, email: req.body?.email });
-      return internalServerError(res, translation('services.authService.logs.forgotPasswordError'));
+      logger.error(this.translation('services.authService.logs.forgotPasswordError'), { error: error.message, email });
+      throw error;
     }
   }
 
-  async resetPassword(req, res) {
+  async resetPassword(resetData) {
     try {
-      const { token, password, confirmPassword } = req.body;
+      const { token, password, confirmPassword } = resetData;
       if (!token || !password || !confirmPassword) {
-        logger.error(translation('services.authService.logs.resetPasswordError'));
-        return unauthorizedError(res, translation('services.authService.logs.resetPasswordError'));
+        logger.error(this.translation('services.authService.logs.resetPasswordError'));
+        throw new Error(this.translation('services.authService.logs.resetPasswordError'));
       }
       if (password !== confirmPassword) {
-        logger.error(translation('services.authService.logs.resetPasswordError'));
-        return unauthorizedError(res, translation('services.authService.logs.resetPasswordError'));
+        logger.error(this.translation('services.authService.logs.resetPasswordError'));
+        throw new Error(this.translation('services.authService.logs.resetPasswordError'));
       }
       if (password.length < 8) {
-        logger.error(translation('services.authService.logs.resetPasswordError'));
-        return unauthorizedError(res, translation('services.authService.logs.resetPasswordError'));
+        logger.error(this.translation('services.authService.logs.resetPasswordError'));
+        throw new Error(this.translation('services.authService.logs.resetPasswordError'));
       }
 
       // Token'ı doğrula
       let decoded;
       try {
-        decoded = JWTService.verifyPasswordResetToken(token);
+        decoded = this.jwtService.verifyPasswordResetToken(token);
         if (decoded && decoded.id) {
-          logger.info(translation('services.authService.logs.resetPasswordSuccess'), { userId: decoded.id });
+          logger.info(this.translation('services.authService.logs.resetPasswordSuccess'), { userId: decoded.id });
         } else {
-          logger.warn(translation('services.authService.logs.resetPasswordError'), { error: 'Decoded token does not contain user id' });
-          return unauthorizedError(res, translation('services.authService.logs.resetPasswordError'));
+          logger.warn(this.translation('services.authService.logs.resetPasswordError'), { error: 'Decoded token does not contain user id' });
+          throw new Error(this.translation('services.authService.logs.resetPasswordError'));
         }
       } catch (verifyErr) {
-        logger.warn(translation('services.authService.logs.resetPasswordError'), { error: verifyErr.message });
-        return unauthorizedError(res, translation('services.authService.logs.resetPasswordError'));
+        logger.warn(this.translation('services.authService.logs.resetPasswordError'), { error: verifyErr.message });
+        throw new Error(this.translation('services.authService.logs.resetPasswordError'));
       }
+      
       // Şifreyi hashle
-      const hashedPassword = await PasswordHelper.hashPassword(password);
+      const hashedPassword = await this.passwordHelper.hashPassword(password);
 
       // CQRS ile kullanıcıyı güncelle
       const updateUserCommand = {
         id: decoded.id,
         updateData: { password: hashedPassword }
       };
-      const updatedUser = await commandHandler.dispatch(COMMAND_TYPES.UPDATE_USER, updateUserCommand);
+      const updatedUser = await this.commandHandler.dispatch(COMMAND_TYPES.UPDATE_USER, updateUserCommand);
 
       if (!updatedUser) {
-        logger.warn(translation('services.authService.logs.resetPasswordError'), { userId: decoded.id });
-        return unauthorizedError(res, translation('repositories.userRepository.logs.notFound'));
+        logger.warn(this.translation('services.authService.logs.resetPasswordError'), { userId: decoded.id });
+        throw new Error(this.translation('repositories.userRepository.logs.notFound'));
       }
 
-      logger.info(translation('services.authService.logs.resetPasswordSuccess'), { userId: updatedUser.id, email: updatedUser.email });
-      return apiSuccess(res, null, translation('services.authService.logs.resetPasswordSuccess'), 200);
+      logger.info(this.translation('services.authService.logs.resetPasswordSuccess'), { userId: updatedUser.id, email: updatedUser.email });
+      return { success: true, message: this.translation('services.authService.logs.resetPasswordSuccess') };
     } catch (error) {
-      logger.error(translation('services.authService.logs.resetPasswordError'), { error: error.message });
-      return internalServerError(res, translation('services.authService.logs.resetPasswordError'));
+      logger.error(this.translation('services.authService.logs.resetPasswordError'), { error: error.message });
+      throw error;
     }
   }
 
-  async changePassword(req, res) {
+  async changePassword(userId, changePasswordData) {
     try {
-      const userId = req.user.id; // JWT'den geliyor
-      const { newPassword, confirmPassword } = req.body;
+      const { newPassword, confirmPassword } = changePasswordData;
   
       if (!newPassword || !confirmPassword) {
-        return unauthorizedError(res, translation('services.authService.logs.resetPasswordError'));
+        throw new Error(this.translation('services.authService.logs.resetPasswordError'));
       }
       if (newPassword !== confirmPassword) {
-        return unauthorizedError(res, translation('services.authService.logs.resetPasswordError'));
+        throw new Error(this.translation('services.authService.logs.resetPasswordError'));
       }
       if (newPassword.length < 8) {
-        return unauthorizedError(res, translation('services.authService.logs.resetPasswordError'));
+        throw new Error(this.translation('services.authService.logs.resetPasswordError'));
       }
   
-      // CQRS ile kullanıcıyı bul
-      const user = await queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_ID, { id: userId });
+            // CQRS ile kullanıcıyı bul
+      const user = await this.queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_ID, { id: userId });
       if (!user) {
-        return unauthorizedError(res, translation('repositories.userRepository.logs.notFound'));
+        throw new Error(this.translation('repositories.userRepository.logs.notFound'));
       }
-  
-      const hashedPassword = await PasswordHelper.hashPassword(newPassword);
+
+      const hashedPassword = await this.passwordHelper.hashPassword(newPassword);
       // CQRS ile kullanıcıyı güncelle
       const updateUserCommand = {
         id: userId,
         updateData: { password: hashedPassword }
       };
-      await commandHandler.dispatch(COMMAND_TYPES.UPDATE_USER, updateUserCommand);
-  
-      return apiSuccess(res, null, translation('services.authService.logs.resetPasswordSuccess'), 200);
+      await this.commandHandler.dispatch(COMMAND_TYPES.UPDATE_USER, updateUserCommand);
+
+      return { success: true, message: this.translation('services.authService.logs.resetPasswordSuccess') };
     } catch (error) {
-      return internalServerError(res, translation('services.authService.logs.resetPasswordError'));
+      throw error;
     }
   }
 
-  async googleLogin(req, res) {
+  async googleLogin(googleLoginData) {
     try {
-      logger.info(translation('services.authService.logs.loginRequest'), { provider: 'google', body: req.body });
-      const { credential } = req.body;
-      if (!credential) {
-        logger.warn(translation('services.authService.logs.loginFailed'), { provider: 'google', reason: 'No credential' });
-        return unauthorizedError(res, translation('services.authService.logs.loginFailed'));
-      }
-      // Google token'ı doğrula
-      const ticket = await googleClient.verifyIdToken({
-        idToken: credential,
-        audience: GOOGLE_CLIENT_ID,
-      });
-      const payload = ticket.getPayload();
-      if (!payload) {
-        logger.warn(translation('services.authService.logs.loginFailed'), { provider: 'google', reason: 'Token doğrulanamadı' });
-        return unauthorizedError(res, translation('services.authService.logs.loginFailed'));
-      }
-      // Kullanıcıyı googleId ile bul, yoksa email ile bul
-      let user = await userRepository.findAnyUserByEmail(payload.email);
-      if (!user && payload.sub) {
-        user = await userRepository.model.findOne({ googleId: payload.sub });
-      }
-      // Kullanıcı yoksa hata döndür
-      if (!user) {
-        logger.warn(translation('services.authService.logs.loginFailed'), { provider: 'google', email: payload.email });
-        return unauthorizedError(res, translation('repositories.userRepository.logs.notFound'));
-      }
-      // Kullanıcıda googleId yoksa ekle
-      if (!user.googleId && payload.sub) {
-        user.googleId = payload.sub;
-        await user.save();
-      }
+      logger.info(this.translation('services.authService.logs.loginRequest'), { provider: 'google', body: googleLoginData });
       
-      // Email doğrulama kontrolü (Google login için) - hem isEmailVerified hem de emailVerifiedAt kontrolü
-      if (!user.isEmailVerified || !user.emailVerifiedAt) {
-        logger.warn(translation('services.authService.logs.emailNotVerified'), { 
-          email: payload.email, 
-          isEmailVerified: user.isEmailVerified, 
-          emailVerifiedAt: user.emailVerifiedAt 
-        });
-        return unauthorizedError(res, translation('services.authService.logs.emailNotVerified'));
-      }
+      const { credential } = googleLoginData;
+      const googlePayload = await this.validateGoogleCredential(credential);
+      const user = await this.findOrUpdateGoogleUser(googlePayload);
       
-      // JWT üret
-      const payloadJwt = {
-        id: user.id,
-        email: user.email,
-        roleId: user.role && user.role._id ? user.role._id.toString() : user.role?.toString ? user.role.toString() : user.role,
-        roleName: user.role && user.role.name ? user.role.name : user.roleName
-      };
-      const accessToken = JWTService.generateAccessToken(payloadJwt, JWT_EXPIRES_IN);
-      let expireAt = JWTService.getTokenExpireDate(JWT_EXPIRES_IN);
-      // Aktif oturumu kaydet
-      await JWTService.addActiveSession(user.id, accessToken, expireAt);
-      // CUSTOMER SUPPORTER ONLINE KAYDI (Google Login)
-      logger.info(`[ONLINE] (Google) User roleName: ${user.roleName}`);
-      logger.info(`[ONLINE] (Google) User detayları - ID: ${user.id}, Email: ${user.email}, Role: ${user.roleName}, Role Object: ${JSON.stringify(user.role)}`);
+      this.ensureEmailVerified(user);
+      await this.ensureNoActiveSession(user, googleLoginData.locale || 'tr');
       
-      if (user.roleName === 'Customer Supporter') {
-        try {
-          logger.info(`[ONLINE] (Google) Customer Supporter login detected. userId=${user.id}, email=${user.email}`);
-          // Önce queue'da var mı kontrol et
-          const currentOnline = await cacheService.client.lRange('online_users_queue', 0, -1);
-          const isAlreadyOnline = currentOnline.includes(user.id);
-          
-          logger.info(`[ONLINE] (Google) Redis queue durumu - Mevcut online kullanıcılar: ${JSON.stringify(currentOnline)}`);
-          logger.info(`[ONLINE] (Google) Kullanıcı zaten online mi: ${isAlreadyOnline}`);
-          
-          if (!isAlreadyOnline) {
-            // Yoksa ekle
-            await cacheService.client.rPush('online_users_queue', user.id);
-            logger.info(translation('services.authService.logs.googleRedisPushSuccess'), { userId: user.id });
-            const updatedOnline = await cacheService.client.lRange('online_users_queue', 0, -1);
-            logger.info(translation('services.authService.logs.googleCurrentOnlineUsers'), updatedOnline);
-            logger.info(`[ONLINE] (Google) Redis queue güncellendi - Yeni online kullanıcılar: ${JSON.stringify(updatedOnline)}`);
-            // KAFKA EVENT: agent_online
-            await sendAgentOnlineEvent(user.id);
-          } else {
-            logger.info(translation('services.authService.logs.googleCustomerSupporterAlreadyOnline'), { userId: user.id });
-            logger.info(translation('services.authService.logs.googleCurrentOnlineUsers'), currentOnline);
-            logger.info(`[ONLINE] (Google) Kullanıcı zaten queue'da mevcut, ekleme yapılmadı`);
-          }
-        } catch (err) {
-          logger.error(translation('services.authService.logs.googleCustomerSupporterOnlineError'), { userId: user.id, email: user.email, error: err });
-        }
-      } else {
-        logger.info(`[ONLINE] (Google) Kullanıcı Customer Supporter değil (${user.roleName}), queue'ya eklenmedi`);
-      }
-      logger.info(translation('services.authService.logs.loginSuccess'), { provider: 'google', user, accessToken, expireAt });
-      apiSuccess(res, { user, accessToken, expireAt }, translation('services.authService.logs.loginSuccess'), 200);
+      const tokens = await this.createSession(user);
+      await this.handleOnlineQueue(user, tokens.accessToken);
+      
+      logger.info(this.translation('services.authService.logs.loginSuccess'), { provider: 'google', user, accessToken: tokens.accessToken, expireAt: tokens.expireAt });
+      return { user, accessToken: tokens.accessToken, expireAt: tokens.expireAt };
     } catch (err) {
-      logger.error(translation('services.authService.logs.loginError'), { provider: 'google', error: err.message });
-      internalServerError(res, translation('services.authService.logs.loginError'));
+      logger.error(this.translation('services.authService.logs.loginError'), { provider: 'google', error: err.message });
+      throw err;
     }
   }
 
-  async googleRegister(req, res) {
+  async validateGoogleCredential(credential) {
+    if (!credential) {
+      logger.warn(this.translation('services.authService.logs.loginFailed'), { provider: 'google', reason: 'No credential' });
+      throw new Error(this.translation('services.authService.logs.loginFailed'));
+    }
+    
+    // Google token'ı doğrula
+    const ticket = await this.googleClient.verifyIdToken({
+      idToken: credential,
+      audience: GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    if (!payload) {
+      logger.warn(this.translation('services.authService.logs.loginFailed'), { provider: 'google', reason: 'Token doğrulanamadı' });
+      throw new Error(this.translation('services.authService.logs.loginFailed'));
+    }
+    
+    return payload;
+  }
+
+  async findOrUpdateGoogleUser(googlePayload) {
+    // Kullanıcıyı googleId ile bul, yoksa email ile bul
+    let user = await this.userRepository.findAnyUserByEmail(googlePayload.email);
+    if (!user && googlePayload.sub) {
+      user = await this.userRepository.model.findOne({ googleId: googlePayload.sub });
+    }
+    
+    // Kullanıcı yoksa hata döndür
+    if (!user) {
+      logger.warn(this.translation('services.authService.logs.loginFailed'), { provider: 'google', email: googlePayload.email });
+      throw new Error(this.translation('repositories.userRepository.logs.notFound'));
+    }
+    
+    // Kullanıcıda googleId yoksa ekle
+    if (!user.googleId && googlePayload.sub) {
+      user.googleId = googlePayload.sub;
+      await user.save();
+    }
+    
+    return user;
+  }
+
+  async googleRegister(googleRegisterData) {
     try {
-      logger.info(translation('services.authService.logs.registerRequest'), { provider: 'google', body: req.body });
-      const { credential, language } = req.body;
-      if (!credential) {
-        logger.warn(translation('services.authService.logs.registerConflict'), { provider: 'google', reason: 'No credential' });
-        return unauthorizedError(res, translation('services.authService.logs.registerConflict'));
-      }
-      // Google token'ı doğrula
-      const ticket = await googleClient.verifyIdToken({
-        idToken: credential,
-        audience: GOOGLE_CLIENT_ID,
-      });
-      const payload = ticket.getPayload();
-      if (!payload) {
-        logger.warn(translation('services.authService.logs.registerConflict'), { provider: 'google', reason: 'Token doğrulanamadı' });
-        return unauthorizedError(res, translation('services.authService.logs.registerConflict'));
-      }
-      let user = await UserModel.findOne({ googleId: payload.sub });
-      if (!user) {
-        user = await userRepository.findAnyUserByEmail(payload.email);
-      }
-      if (user) {
-        logger.warn(translation('services.authService.logs.registerConflict'), { provider: 'google', email: payload.email });
-        return conflictError(res, translation('services.authService.logs.registerConflict'));
-      }
-      const userRole = await roleService.getRoleByName('User');
-      const randomPassword = crypto.randomBytes(32).toString('hex');
+      logger.info(this.translation('services.authService.logs.registerRequest'), { provider: 'google', body: googleRegisterData });
+      const { credential, language } = googleRegisterData;
+              if (!credential) {
+          logger.warn(this.translation('services.authService.logs.registerConflict'), { provider: 'google', reason: 'No credential' });
+          throw new Error(this.translation('services.authService.logs.registerConflict'));
+        }
+              // Google token'ı doğrula
+        const ticket = await this.googleClient.verifyIdToken({
+          idToken: credential,
+          audience: GOOGLE_CLIENT_ID,
+        });
+              const payload = ticket.getPayload();
+        if (!payload) {
+          logger.warn(this.translation('services.authService.logs.registerConflict'), { provider: 'google', reason: 'Token doğrulanamadı' });
+          throw new Error(this.translation('services.authService.logs.registerConflict'));
+        }
+              let user = await this.userModel.findOne({ googleId: payload.sub });
+        if (!user) {
+          user = await this.userRepository.findAnyUserByEmail(payload.email);
+        }
+        if (user) {
+          logger.warn(this.translation('services.authService.logs.registerConflict'), { provider: 'google', email: payload.email });
+          throw new Error(this.translation('services.authService.logs.registerConflict'));
+        }
+              const userRole = await this.roleService.getRoleByName('User');
+        const randomPassword = this.crypto.randomBytes(32).toString('hex');
       const createUserCommand = {
         email: payload.email,
         password: randomPassword, // dummy password
@@ -621,48 +705,48 @@ class AuthService {
         roleName: userRole ? userRole.name : null,
         googleId: payload.sub,
         isEmailVerified: payload.email_verified || false
-      };
-      user = await commandHandler.dispatch(COMMAND_TYPES.CREATE_USER, createUserCommand);
+              };
+        user = await this.commandHandler.dispatch(COMMAND_TYPES.CREATE_USER, createUserCommand);
       // 6 haneli kod üret
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = Date.now() + 10 * 60 * 1000;
       global.emailVerificationCodes[user.email] = { code, expiresAt };
-      // JWT tabanlı doğrulama token'ı üret
-      const token = JWTService.generateEmailVerifyToken(req.body.email, code, expiresAt, EMAIL_VERIFY_TOKEN_SECRET);
+              // JWT tabanlı doğrulama token'ı üret
+        const token = this.jwtService.generateEmailVerifyToken(googleRegisterData.email, code, expiresAt, EMAIL_VERIFY_TOKEN_SECRET);
       // Doğrulama linki
       const frontendUrl = process.env.WEBSITE_URL;
-      const verifyUrl = `${frontendUrl}/verify-email?email=${encodeURIComponent(user.email)}&token=${encodeURIComponent(token)}`;
-      await sendUserRegisteredEvent(user, language || 'tr', code, verifyUrl);
+              const verifyUrl = `${frontendUrl}/verify-email?email=${encodeURIComponent(user.email)}&token=${encodeURIComponent(token)}`;
+        await this.kafkaProducer.sendUserRegisteredEvent(user, language || 'tr', code, verifyUrl);
       const payloadJwt = {
         id: user.id,
         email: user.email,
         roleId: user.role && user.role._id ? user.role._id.toString() : user.role?.toString ? user.role.toString() : user.role,
         roleName: user.role && user.role.name ? user.role.name : user.roleName
       };
-      const accessToken = JWTService.generateAccessToken(payloadJwt, JWT_EXPIRES_IN);
-      let expireAt = JWTService.getTokenExpireDate(JWT_EXPIRES_IN);
-      await JWTService.addActiveSession(user.id, accessToken, expireAt);
-      logger.info(translation('services.authService.logs.registerSuccess'), { provider: 'google', user, accessToken, expireAt });
-      apiSuccess(res, { user, accessToken, expireAt }, translation('services.authService.logs.registerSuccess'), 201);
-    } catch (err) {
-      logger.error(translation('services.authService.logs.registerError'), { provider: 'google', error: err.message });
-      internalServerError(res, translation('services.authService.logs.registerError'));
-    }
+              const accessToken = this.jwtService.generateAccessToken(payloadJwt, JWT_EXPIRES_IN);
+        let expireAt = this.jwtService.getTokenExpireDate(JWT_EXPIRES_IN);
+        await this.jwtService.addActiveSession(user.id, accessToken, expireAt);
+        logger.info(this.translation('services.authService.logs.registerSuccess'), { provider: 'google', user, accessToken, expireAt });
+      return { user, accessToken, expireAt };
+          } catch (err) {
+        logger.error(this.translation('services.authService.logs.registerError'), { provider: 'google', error: err.message });
+        throw err;
+      }
   }
 
-  async verifyEmail(req, res) {
+  async verifyEmail(verifyEmailData) {
     try {
-      logger.info('verifyEmail request received', { body: req.body });
-      const { code, token } = req.body;
+      logger.info('verifyEmail request received', { body: verifyEmailData });
+      const { code, token } = verifyEmailData;
       if (!code || !token) {
         logger.warn('verifyEmail: Missing code or token', { code: !!code, token: !!token });
-        return unauthorizedError(res, translation('services.authService.logs.resetPasswordError'));
+        throw new Error(this.translation('services.authService.logs.resetPasswordError'));
       }
       // Token'ı doğrula ve çöz
       let decoded;
       try {
         logger.info('verifyEmail: Verifying token', { token: token.substring(0, 20) + '...' });
-        decoded = jwt.verify(token, EMAIL_VERIFY_TOKEN_SECRET);
+        decoded = this.jwt.verify(token, EMAIL_VERIFY_TOKEN_SECRET);
         logger.info('verifyEmail: Token verified successfully', { email: decoded.email, code: decoded.code });
       } catch (err) {
         logger.error('verifyEmail: Token verification failed', { error: err.message });
@@ -674,69 +758,69 @@ class AuthService {
             const email = decodedPayload?.email;
             if (!email) {
               logger.warn('verifyEmail: No email in expired token');
-              return unauthorizedError(res, translation('repositories.userRepository.logs.notFound'));
+              throw new Error(this.translation('repositories.userRepository.logs.notFound'));
             }
             // Kullanıcıyı bul
-            const user = await userRepository.findAnyUserByEmail(email);
+            const user = await this.userRepository.findAnyUserByEmail(email);
             if (!user) {
               logger.warn('verifyEmail: No user found for expired token', { email });
-              return unauthorizedError(res, translation('repositories.userRepository.logs.notFound'));
+              throw new Error(this.translation('repositories.userRepository.logs.notFound'));
             }
             // Yeni kod ve token üret
             const newCode = Math.floor(100000 + Math.random() * 900000).toString();
             const newExpiresAt = Date.now() + 10 * 60 * 1000;
             global.emailVerificationCodes[email] = { code: newCode, expiresAt: newExpiresAt };
-            const newToken = JWTService.generateEmailVerifyToken(email, newCode, newExpiresAt, EMAIL_VERIFY_TOKEN_SECRET);
+            const newToken = this.jwtService.generateEmailVerifyToken(email, newCode, newExpiresAt, EMAIL_VERIFY_TOKEN_SECRET);
             // Mail gönder (YENİ EVENT)
             const frontendUrl = process.env.WEBSITE_URL;
             const verifyUrl = `${frontendUrl}/verify-email?email=${encodeURIComponent(email)}&token=${encodeURIComponent(newToken)}`;
             const language = user.language || 'tr';
-            await sendUserVerificationResendEvent(user, language, newCode, verifyUrl);
+            await this.kafkaProducer.sendUserVerificationResendEvent(user, language, newCode, verifyUrl);
             logger.info('verifyEmail: New verification code and email sent (resend event)', { email, newCode });
-            return unauthorizedError(res, translation('services.authService.logs.verificationCodeResent'));
+            throw new Error(this.translation('services.authService.logs.verificationCodeResent'));
           } catch (mailErr) {
             logger.error('verifyEmail: Failed to send new verification code', { error: mailErr });
-            return unauthorizedError(res, translation('services.authService.logs.resetPasswordError'));
+            throw new Error(this.translation('services.authService.logs.resetPasswordError'));
           }
         }
-        return unauthorizedError(res, translation('services.authService.logs.resetPasswordError'));
+        throw new Error(this.translation('services.authService.logs.resetPasswordError'));
       }
       const email = decoded.email;
       if (!email) {
         logger.warn('verifyEmail: No email in token');
-        return unauthorizedError(res, translation('repositories.userRepository.logs.notFound'));
+        throw new Error(this.translation('repositories.userRepository.logs.notFound'));
       }
       logger.info('verifyEmail: Checking code match', { tokenCode: decoded.code, providedCode: code });
       if (decoded.code !== code) {
         logger.warn('verifyEmail: Code mismatch', { tokenCode: decoded.code, providedCode: code });
-        return unauthorizedError(res, translation('services.authService.logs.resetPasswordError'));
+        throw new Error(this.translation('services.authService.logs.resetPasswordError'));
       }
       // Kodun süresi geçti mi kontrolü (JWT exp zaten kontrol ediyor)
       logger.info('verifyEmail: Checking global codes', { email, globalCodes: Object.keys(global.emailVerificationCodes || {}) });
       const record = global.emailVerificationCodes[email];
       if (!record) {
         logger.warn('verifyEmail: No record found in global codes', { email });
-        return unauthorizedError(res, translation('services.authService.logs.resetPasswordError'));
+        throw new Error(this.translation('services.authService.logs.resetPasswordError'));
       }
       logger.info('verifyEmail: Record found', { recordCode: record.code, providedCode: code, expiresAt: record.expiresAt });
       if (record.code !== code) {
         logger.warn('verifyEmail: Record code mismatch', { recordCode: record.code, providedCode: code });
-        return unauthorizedError(res, translation('services.authService.logs.resetPasswordError'));
+        throw new Error(this.translation('services.authService.logs.resetPasswordError'));
       }
       if (Date.now() > record.expiresAt) {
         logger.warn('verifyEmail: Code expired', { expiresAt: record.expiresAt, now: Date.now() });
         delete global.emailVerificationCodes[email];
-        return unauthorizedError(res, translation('services.authService.logs.resetPasswordError'));
+        throw new Error(this.translation('services.authService.logs.resetPasswordError'));
       }
       // Kullanıcıyı CQRS ile bul
-      const user = await queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_EMAIL, { email });
+      const user = await this.queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_EMAIL, { email });
       if (!user) {
-        return unauthorizedError(res, translation('repositories.userRepository.logs.notFound'));
+        throw new Error(this.translation('repositories.userRepository.logs.notFound'));
       }
       // Zaten doğrulanmışsa
       if (user.isEmailVerified) {
         delete global.emailVerificationCodes[email];
-        return apiSuccess(res, null, translation('services.authService.logs.resetPasswordSuccess'), 200);
+        return { success: true, message: this.translation('services.authService.logs.resetPasswordSuccess') };
       }
       // CQRS ile kullanıcıyı güncelle
       const updateUserCommand = {
@@ -746,11 +830,11 @@ class AuthService {
           emailVerifiedAt: new Date()
         }
       };
-      await commandHandler.dispatch(COMMAND_TYPES.UPDATE_USER, updateUserCommand);
+      await this.commandHandler.dispatch(COMMAND_TYPES.UPDATE_USER, updateUserCommand);
       // Başarıyla doğrulandıktan sonra kullanıcıya "Hesabınız doğrulandı" maili için Kafka event'i gönder
       try {
         const language = user.language || 'tr';
-        await sendUserVerifiedEvent({
+        await this.kafkaProducer.sendUserVerifiedEvent({
           email: user.email,
           firstName: user.firstName,
           language
@@ -759,32 +843,32 @@ class AuthService {
         logger.error('Verification success mail could not be sent', { error: mailErr });
       }
       delete global.emailVerificationCodes[email];
-      return apiSuccess(res, null, translation('services.authService.logs.resetPasswordSuccess'), 200);
+      return { success: true, message: this.translation('services.authService.logs.resetPasswordSuccess') };
     } catch (err) {
       logger.error('verifyEmail error', { error: err });
-      return internalServerError(res, translation('services.authService.logs.resetPasswordError'));
+      throw err;
     }
   }
 
-  async onlineUsers(req, res) {
+  async onlineUsers() {
     try {
-      const onlineUserIds = await cacheService.client.lRange('online_users_queue', 0, -1);
+      const onlineUserIds = await this.cacheService.client.lRange('online_users_queue', 0, -1);
       // Her id için kullanıcı detayını CQRS ile çek
       const userDetails = [];
       for (const id of onlineUserIds) {
         // id string olabilir, boşsa atla
         if (!id) continue;
         try {
-          const user = await queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_ID, { id });
+          const user = await this.queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_ID, { id });
           if (user) userDetails.push(user);
         } catch (err) {
           logger.warn('onlineUsers: Kullanıcı detayı alınamadı', { id, error: err });
         }
       }
-      return apiSuccess(res, userDetails, translation('services.authService.logs.onlineUsers'), 200);
+      return userDetails;
     } catch (err) {
       logger.error('onlineUsers error', { error: err });
-      return internalServerError(res, translation('services.authService.logs.onlineUsersError'));
+      throw err;
     }
   }
 }
@@ -797,4 +881,5 @@ export function registerAuthHandlers() {
   // Diğer handler kayıtları gerekiyorsa buraya eklenir
 }
 
+export { AuthService };
 export default authService; 
