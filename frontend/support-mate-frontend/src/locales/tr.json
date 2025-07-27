@@ -70,8 +70,8 @@
       "confirmPassword": "Yeni Şifreyi Onayla",
       "updatePassword": "Şifreyi Güncelle",
       "deleteAccount": "Hesabımı Sil",
-      "updateSuccess": "Bilgiler başarıyla güncellendi.",
       "updateError": "Bilgiler güncellenemedi.",
+      "updateSuccess": "Bilgileriniz başarıyla güncellendi.",
       "loading": "İşlem yapılıyor...",
       "passwordResetSuccess": "Şifreniz başarıyla güncellendi. Giriş sayfasına yönlendiriliyorsunuz..."
     },

@@ -70,6 +70,24 @@ class UserController {
 
   updateUser = async (req, res) => {
     try {
+      // Kullanıcının sadece kendi profilini güncelleyebilmesi için yetki kontrolü
+      const userId = req.params.id;
+      const authenticatedUserId = req.user?.id;
+      
+      // Eğer kullanıcı kendi profilini güncellemiyorsa ve Admin değilse hata ver
+      if (userId !== authenticatedUserId && req.user?.roleName !== 'Admin') {
+        logger.warn('Unauthorized user update attempt', { 
+          authenticatedUserId, 
+          targetUserId: userId, 
+          userRole: req.user?.roleName 
+        });
+        return res.status(403).json({
+          success: false,
+          message: 'You can only update your own profile',
+          data: null
+        });
+      }
+      
       const user = await userService.updateUser(req);
       const message = res.__('services.userService.logs.updateSuccess');
       const locale = res.getLocale();

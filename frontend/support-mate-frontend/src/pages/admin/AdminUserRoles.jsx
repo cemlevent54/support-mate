@@ -38,7 +38,7 @@ export default function AdminUserRoles() {
       console.log('Roles data:', rolesData);
       console.log('Permissions data:', permissionsData);
       setRoles(Array.isArray(rolesData) ? rolesData : []);
-      setPermissions(Array.isArray(permissionsData) ? permissionsData : []);
+      setPermissions(Array.isArray(permissionsData.permissions) ? permissionsData.permissions : []);
     } catch (err) {
       console.error('Error fetching data:', err);
       setRoles([]);
@@ -135,8 +135,9 @@ export default function AdminUserRoles() {
 
   // Yetki adını güzel gösterme
   const getPermissionDisplayName = (permObj) => {
+    console.log('Permission object:', permObj);
     if (typeof permObj === 'object' && permObj !== null) {
-      const displayName = permObj.name_tr || permObj.name_en || permObj.name || '';
+      const displayName = permObj.name_tr || permObj.name_en || permObj.name || permObj.code || '';
       return `${displayName} (${permObj.code})`;
     }
     return permObj;
@@ -213,19 +214,24 @@ export default function AdminUserRoles() {
         <DialogTitle>{t('adminUserRoles.permissionModalTitle', { roleName: permRole?.name })}</DialogTitle>
         <DialogContent>
           <Stack spacing={1} mt={1}>
-            {permissions.map(perm => (
-              <Tooltip key={perm.code} title={`${t('adminUserRoles.category')}: ${perm.category || '-'}`} placement="right">
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={permChecked.includes(perm.code)}
-                      onChange={() => handlePermChange(perm.code)}
-                    />
-                  }
-                  label={getPermissionDisplayName(perm)}
-                />
-              </Tooltip>
-            ))}
+            {console.log('Permissions in modal:', permissions)}
+            {permissions.length === 0 ? (
+              <Typography color="text.secondary">Yükleniyor...</Typography>
+            ) : (
+              permissions.map(perm => (
+                <Tooltip key={perm.code} title={`${t('adminUserRoles.category')}: ${perm.category || '-'}`} placement="right">
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={permChecked.includes(perm.code)}
+                        onChange={() => handlePermChange(perm.code)}
+                      />
+                    }
+                    label={getPermissionDisplayName(perm)}
+                  />
+                </Tooltip>
+              ))
+            )}
           </Stack>
         </DialogContent>
         <DialogActions>

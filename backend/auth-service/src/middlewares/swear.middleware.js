@@ -12,7 +12,7 @@ export const swearCheckMiddleware = (req, res, next) => {
     const checkTextFields = (obj) => {
       for (const [key, value] of Object.entries(obj)) {
         // credential, code ve token alanlarını kontrol etme
-        if (key === 'credential' || key === 'code' || key === 'token') continue;
+        if (key === 'credential' || key === 'code' || key === 'token' || key === 'permissions') continue;
         
         if (typeof value === 'string') {
           // Refresh token'ları kontrol etme

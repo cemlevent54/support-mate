@@ -53,10 +53,13 @@ export default function MyAccount() {
 
   // Snackbar tetikleyici
   useEffect(() => {
+    console.log('useEffect triggered - message:', message, 'error:', error);
     if (message) {
+      console.log('Setting snackbar to success with message:', message);
       setSnackbarType('success');
       setOpenSnackbar(true);
     } else if (error) {
+      console.log('Setting snackbar to error with error:', error);
       setSnackbarType('error');
       setOpenSnackbar(true);
     }
@@ -78,13 +81,16 @@ export default function MyAccount() {
     try {
       const updateData = { firstName, lastName, email, phoneNumber: phone };
       const res = await updateUser(userId, updateData);
-      setMessage(t('pages.myAccount.updateSuccess'));
+      // API'den gelen message'ı kullan, yoksa translation key'i kullan
+      setMessage(res.message || t('pages.myAccount.updateSuccess'));
     } catch (err) {
       setError(err.message || t('pages.myAccount.updateError'));
     } finally {
       setLoading(false);
     }
   };
+  
+  
 
   const handlePasswordUpdate = async (e) => {
     e.preventDefault();
@@ -92,16 +98,18 @@ export default function MyAccount() {
     setMessage(null);
     setError(null);
     try {
-      await changePassword({
+      const res = await changePassword({
         newPassword,
         confirmPassword
       });
-      setMessage(t('pages.myAccount.passwordUpdateSuccess', 'Şifreniz başarıyla güncellendi.'));
+      console.log('Change password response:', res);
+      setMessage(res.message || res.data?.message);
       setNewPassword('');
       setConfirmPassword('');
     } catch (err) {
+      console.error('Change password error:', err);
       setError(
-        err?.response?.data?.message || t('pages.myAccount.passwordUpdateError', 'Şifre güncellenemedi.')
+        err?.response?.data?.message || err.message 
       );
     } finally {
       setLoading(false);
@@ -119,13 +127,15 @@ export default function MyAccount() {
     setMessage(null);
     setError(null);
     try {
-      await deleteUser(userId);
+      const res = await deleteUser(userId);
+      console.log('Delete user response:', res);
       localStorage.removeItem('jwt');
-      setMessage(t('accountDeleteSuccess'));
+      setMessage(res.message || res.data?.message);
       setTimeout(() => navigate('/login'), 1500);
       // Hesap silindikten sonra logout veya yönlendirme yapılabilir
     } catch (err) {
-      setError(t('accountDeleteError'));
+      console.error('Delete user error:', err);
+      setError(err.message || err.response?.data?.message);
     } finally {
       setLoading(false);
     }
@@ -182,7 +192,12 @@ export default function MyAccount() {
         />
       </Box>
       {/* Snackbar Popup */}
-      <Snackbar open={openSnackbar} autoHideDuration={4000} onClose={handleSnackbarClose} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+      <Snackbar 
+        open={openSnackbar} 
+        autoHideDuration={4000} 
+        onClose={handleSnackbarClose} 
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
         <Alert onClose={handleSnackbarClose} severity={snackbarType} sx={{ width: '100%' }}>
           {snackbarType === 'success' ? message : error}
         </Alert>

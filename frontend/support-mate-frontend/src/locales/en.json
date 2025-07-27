@@ -71,8 +71,8 @@
       "confirmPassword": "Confirm New Password",
       "updatePassword": "Update Password",
       "deleteAccount": "Delete My Account",
-      "updateSuccess": "Information updated successfully.",
       "updateError": "Failed to update information.",
+      "updateSuccess": "Your information has been updated successfully.",
       "loading": "Processing...",
       "passwordResetSuccess": "Your password has been reset successfully. Redirecting to login..."
     },

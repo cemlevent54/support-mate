@@ -16,8 +16,8 @@ router.get('/role', authMiddleware, userController.getUsersByRole);
 router.get('/:id', userController.getUserById);
 router.get('/', authMiddleware, requireRole('Admin'), userController.getAllUsers);
 
-// PATCH /users/:id
-router.patch('/:id', authMiddleware, requireRole('Admin'), userController.updateUser);
+// PATCH /users/:id - Kullanıcı kendi profilini güncelleyebilir veya Admin tüm kullanıcıları güncelleyebilir
+router.patch('/:id', authMiddleware, userController.updateUser);
 
 // soft delete /users/:id
 router.delete('/:id', authMiddleware, requireRole('Admin'), userController.deleteUser);
