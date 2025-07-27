@@ -15,8 +15,14 @@ export const swearCheckMiddleware = (req, res, next) => {
         if (key === 'credential' || key === 'code' || key === 'token') continue;
         
         if (typeof value === 'string') {
+          // Refresh token'ları kontrol etme
+          if (key === 'refreshToken' || key === 'accessToken' || key === 'token') {
+            continue;
+          }
+          
           const result = checkForSwearWords(value);
           if (result.hasSwearWords) {
+            console.log('Uygunsuz kelime bulundu:', { field: key, value: value, originalText: result.originalText, filteredText: result.filteredText });
             const locale = req.getLocale ? req.getLocale() : 'tr';
             return res.status(400).json(createSwearWordResponse(locale));
           }
@@ -36,6 +42,11 @@ export const swearCheckMiddleware = (req, res, next) => {
   if (req.query && typeof req.query === 'object') {
     for (const [key, value] of Object.entries(req.query)) {
       if (typeof value === 'string') {
+        // Token'ları kontrol etme
+        if (key === 'refreshToken' || key === 'accessToken' || key === 'token') {
+          continue;
+        }
+        
         const result = checkForSwearWords(value);
         if (result.hasSwearWords) {
           const locale = req.getLocale ? req.getLocale() : 'tr';

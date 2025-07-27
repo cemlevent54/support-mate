@@ -9,17 +9,20 @@ export default async function handlePasswordReset(data) {
     email: data.email,
     locale: locale 
   });
+  
   try {
+    // Kafka'dan gelen HTML template'i kullan
+    const htmlTemplate = data.html;
+    
     await emailService.send({
       to: data.email,
       subject: locale === 'en' ? 'Password Reset Request' : 'Şifre Sıfırlama Talebi',
       text: locale === 'en'
         ? `To reset your password, click the following link: ${data.resetLink}`
         : `Şifrenizi sıfırlamak için aşağıdaki linke tıklayın: ${data.resetLink}`,
-      html: locale === 'en'
-        ? `<p>To reset your password, click the following link:</p><a href="${data.resetLink}">${data.resetLink}</a>`
-        : `<p>Şifrenizi sıfırlamak için aşağıdaki linke tıklayın:</p><a href="${data.resetLink}">${data.resetLink}</a>`
+      html: htmlTemplate
     });
+    
     logger.info('Password reset email sent', { 
       email: data.email,
       locale: locale 

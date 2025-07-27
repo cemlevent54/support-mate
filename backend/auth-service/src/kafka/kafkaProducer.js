@@ -54,12 +54,22 @@ export async function sendUserRegisteredEvent(user, locale = 'tr', code = '', ve
 export async function sendPasswordResetEvent({ email, resetLink, locale = 'tr' }) {
   try {
     // Accept-Language header'ından gelen dil bilgisini kullan
-    const emailLocale = locale || 'tr';
+    const emailLocale = locale;
+    
+    // Template dosyasını oku
+    const templateFile = emailLocale === 'en'
+      ? path.join(__dirname, '../templates/email/forgot_password_en.html')
+      : path.join(__dirname, '../templates/email/forgot_password_tr.html');
+    let template = fs.readFileSync(templateFile, 'utf8');
+    
+    // Değişkenleri replace et
+    template = template.replace(/{{resetLink}}/g, resetLink);
     
     logger.info('--- PASSWORD RESET MAIL ---');
     logger.info(`To: ${email}`);
     logger.info(`Locale: ${emailLocale} (from Accept-Language header)`);
     logger.info(`Subject: ${emailLocale === 'en' ? 'Password Reset Request' : 'Şifre Sıfırlama Talebi'}`);
+    logger.info(`HTML: ${template}`);
     
     await kafkaService.connectProducer();
     await kafkaService.producer.send({
@@ -68,7 +78,8 @@ export async function sendPasswordResetEvent({ email, resetLink, locale = 'tr' }
         value: JSON.stringify({ 
           email, 
           resetLink,
-          locale: emailLocale // Accept-Language header'ından gelen dil bilgisi
+          locale: emailLocale, // Accept-Language header'ından gelen dil bilgisi
+          html: template
         }) 
       }],
     });

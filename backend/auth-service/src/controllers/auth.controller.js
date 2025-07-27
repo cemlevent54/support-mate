@@ -114,6 +114,7 @@ class AuthController {
     apiSuccess(res, { 
       user: loginResult.user, 
       accessToken: loginResult.accessToken, 
+      refreshToken: loginResult.refreshToken, // Refresh token'ı da döndür
       expireAt: loginResult.expireAt 
     }, message, 200);
   }
@@ -217,6 +218,7 @@ class AuthController {
       
       apiSuccess(res, {
         accessToken: refreshResult.accessToken,
+        refreshToken: refreshResult.refreshToken, // Yeni refresh token'ı da döndür
         accessTokenExpiresAt: refreshResult.accessTokenExpiresAt,
         user: refreshResult.user
       }, message, 200);
@@ -242,7 +244,11 @@ class AuthController {
     } catch (error) {
       logger.error('Forgot password controller error', { error: error.message });
       
-      if (error.message === res.__('services.authService.logs.forgotPasswordError')) {
+      // Hata mesajını direkt olarak response'da döndür
+      if (error.message.includes('Daily password reset limit exceeded') ||
+          error.message.includes('Günlük şifre sıfırlama limiti aşıldı')) {
+        unauthorizedError(res, error.message);
+      } else if (error.message === res.__('services.authService.logs.forgotPasswordError')) {
         unauthorizedError(res, res.__('services.authService.logs.forgotPasswordError'));
       } else {
         internalServerError(res, res.__('services.authService.logs.forgotPasswordError'));
@@ -251,14 +257,39 @@ class AuthController {
   }
   async resetPassword(req, res) {
     try {
-      const result = await authService.resetPassword(req.body);
+      // Locale'i direkt header'dan al
+      const acceptLanguage = req.headers['accept-language'];
+      const locale = acceptLanguage && acceptLanguage.startsWith('en') ? 'en' : 'tr';
+      
+      // Debug log ekle
+      logger.info('resetPassword controller: Locale calculation', { 
+        acceptLanguage,
+        calculatedLocale: locale,
+        resGetLocale: res.getLocale()
+      });
+      
+      const result = await authService.resetPassword(req.body, locale);
+      
+      // Debug log ekle
+      logger.info('resetPassword controller: Result from service', { 
+        resultMessage: result.message,
+        locale 
+      });
       
       apiSuccess(res, null, result.message, 200);
     } catch (error) {
       logger.error('Reset password controller error', { error: error.message });
       
-      if (error.message === res.__('services.authService.logs.resetPasswordError')) {
-        unauthorizedError(res, res.__('services.authService.logs.resetPasswordError'));
+      // Hata mesajını direkt olarak response'da döndür
+      if (error.message.includes('token has already been used') || 
+          error.message.includes('token\'ı zaten kullanılmış') ||
+          error.message.includes('Daily password reset limit exceeded') ||
+          error.message.includes('Günlük şifre sıfırlama limiti aşıldı') ||
+          error.message.includes('Invalid reset token') ||
+          error.message.includes('Geçersiz sıfırlama token') ||
+          error.message.includes('Invalid or expired reset token') ||
+          error.message.includes('Geçersiz veya süresi dolmuş sıfırlama token')) {
+        unauthorizedError(res, error.message);
       } else if (error.message === res.__('repositories.userRepository.logs.notFound')) {
         unauthorizedError(res, res.__('repositories.userRepository.logs.notFound'));
       } else {
@@ -269,14 +300,25 @@ class AuthController {
   async changePassword(req, res) {
     try {
       const userId = req.user.id; // JWT'den geliyor
-      const result = await authService.changePassword(userId, req.body);
+      // Locale'i direkt header'dan al
+      const acceptLanguage = req.headers['accept-language'];
+      const locale = acceptLanguage && acceptLanguage.startsWith('en') ? 'en' : 'tr';
+      
+      const result = await authService.changePassword(userId, req.body, locale);
       
       apiSuccess(res, null, result.message, 200);
     } catch (error) {
       logger.error('Change password controller error', { error: error.message });
       
-      if (error.message === res.__('services.authService.logs.resetPasswordError')) {
-        unauthorizedError(res, res.__('services.authService.logs.resetPasswordError'));
+      // Hata mesajını direkt olarak response'da döndür
+      if (error.message.includes('Passwords are required') ||
+          error.message.includes('Şifre alanları gereklidir') ||
+          error.message.includes('Passwords do not match') ||
+          error.message.includes('Şifreler eşleşmiyor') ||
+          error.message.includes('Password must be at least 8 characters') ||
+          error.message.includes('Şifre en az 8 karakter olmalıdır') ||
+          error.message.includes('User not found')) {
+        unauthorizedError(res, error.message);
       } else if (error.message === res.__('repositories.userRepository.logs.notFound')) {
         unauthorizedError(res, res.__('repositories.userRepository.logs.notFound'));
       } else {

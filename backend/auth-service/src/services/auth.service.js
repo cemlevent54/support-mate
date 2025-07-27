@@ -33,6 +33,7 @@ import {
   UserAlreadyExistsError, 
   ValidationError, 
   NotFoundError,
+  UnauthorizedError,
   createTranslatedError 
 } from '../utils/customErrors.js';
 
@@ -603,16 +604,7 @@ class AuthService {
     try {
       logger.info(this.translation('services.authService.logs.refreshRequest'), { refreshTokenData });
       
-      // Refresh token'ı önce cookie'den, yoksa body'den al
-      let refreshToken = refreshTokenData.cookies?.refreshToken;
-      if (!refreshToken) {
-        refreshToken = refreshTokenData.body?.refreshToken;
-      }
-      
-      logger.info(translation('services.authService.logs.refreshRequest'), { refreshToken });
-      logger.info('JWT_SECRET', { JWT_SECRET });
-      logger.info('JWT_SECRET used for verify', { JWT_SECRET });
-
+      const refreshToken = this.getRefreshToken(refreshTokenData);
       if (!refreshToken) {
         logger.error(this.translation('services.authService.logs.refreshError'));
         throw new Error(this.translation('services.authService.logs.refreshError'));
@@ -620,46 +612,23 @@ class AuthService {
 
       let decoded;
       try {
-        logger.info('Trying to verify refresh token', { refreshToken, JWT_SECRET });
-        decoded = this.jwtService.verifyRefreshToken(refreshToken);
-        logger.info(this.translation('services.authService.logs.refreshSuccess'), { decoded });
-              } catch (verifyErr) {
-          logger.warn(this.translation('services.authService.logs.refreshError'), { error: verifyErr.message, refreshToken, JWT_SECRET });
-          throw new Error(this.translation('services.authService.logs.refreshError'));
-        }
+        decoded = this.verifyRefreshToken(refreshToken);
+      } catch (verifyError) {
+        logger.error(this.translation('services.authService.logs.refreshError'), { error: verifyError.message });
+        throw new Error(this.translation('services.authService.logs.refreshError'));
+      }
 
-      // CQRS ile kullanıcıyı bul
-      logger.info(this.translation('services.authService.logs.refreshRequest'), { userId: decoded.id });
-      const user = await this.queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_ID, { id: decoded.id });
-      logger.info(this.translation('services.authService.logs.refreshSuccess'), { user });
-      
+      const user = await this.getUser(decoded.id);
       if (!user) {
         logger.warn(this.translation('services.authService.logs.refreshError'), { userId: decoded.id });
         throw new Error(this.translation('repositories.userRepository.logs.notFound'));
       }
 
-      // Eski session'ı sil
-      logger.info(this.translation('services.authService.logs.refreshRequest'), { userId: user.id });
-      await this.jwtService.removeActiveSession(user.id);
-
-      // Yeni token'lar üret
-      logger.info('Generating new access and refresh tokens', { userId: user.id });
-      const payload = this.jwtService.buildJWTPayload(user);
-      const accessToken = this.jwtService.generateAccessToken(payload, JWT_EXPIRES_IN);
-      const newRefreshToken = this.jwtService.generateRefreshToken(payload);
-      
-      logger.info(this.translation('services.authService.logs.refreshSuccess'), { accessToken, newRefreshToken });
+      const tokens = await this.rotateSession(user);
 
       return {
-        accessToken,
-        refreshToken: newRefreshToken,
-        accessTokenExpiresAt: JWTService.getTokenExpireDate(JWT_EXPIRES_IN),
-        user: {
-          id: user.id,
-          email: user.email,
-          role: user.role && user.role._id ? user.role._id.toString() : user.role?.toString ? user.role.toString() : user.role,
-          roleName: user.role && user.role.name ? user.role.name : user.roleName
-        }
+        ...tokens,
+        user: this.sanitizeUser(user)
       };
     } catch (error) {
       logger.error(this.translation('services.authService.logs.refreshError'), { error: error.message, stack: error.stack });
@@ -667,129 +636,294 @@ class AuthService {
     }
   }
 
+  // Private helpers
+  getRefreshToken(data) {
+    if (!data) return null;
+    return data.cookies?.refreshToken || data.body?.refreshToken || null;
+  }
+
+  verifyRefreshToken(token) {
+    logger.info('Trying to verify refresh token', { token: token.substring(0, 20) + '...' });
+    
+    try {
+      const decoded = this.jwtService.verifyRefreshToken(token);
+      logger.info(this.translation('services.authService.logs.refreshSuccess'), { decoded });
+      return decoded;
+    } catch (verifyErr) {
+      logger.warn(this.translation('services.authService.logs.refreshError'), { error: verifyErr.message, token });
+      throw new Error(this.translation('services.authService.logs.refreshError'));
+    }
+  }
+
+  async getUser(userId) {
+    logger.info(this.translation('services.authService.logs.refreshRequest'), { userId });
+    const user = await this.queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_ID, { id: userId });
+    logger.info(this.translation('services.authService.logs.refreshSuccess'), { user });
+    return user;
+  }
+
+  async rotateSession(user) {
+    logger.info(this.translation('services.authService.logs.refreshRequest'), { userId: user.id });
+    await this.jwtService.removeActiveSession(user.id);
+
+    logger.info('Generating new access and refresh tokens', { userId: user.id });
+    const payload = this.jwtService.buildJWTPayload(user);
+    const accessToken = this.jwtService.generateAccessToken(payload, JWT_EXPIRES_IN);
+    const refreshToken = this.jwtService.generateRefreshToken(payload);
+    
+    logger.info(this.translation('services.authService.logs.refreshSuccess'), { accessToken, refreshToken });
+
+    return {
+      accessToken,
+      refreshToken,
+      accessTokenExpiresAt: this.jwtService.getTokenExpireDate(JWT_EXPIRES_IN)
+    };
+  }
+
+  sanitizeUser(user) {
+    return {
+      id: user.id,
+      email: user.email,
+      role: user.role && user.role._id ? user.role._id.toString() : 
+            (user.role && typeof user.role === 'string') ? user.role :
+            (user.role && user.role.toString && user.role.toString !== Object.prototype.toString) ? user.role.toString() : 
+            undefined,
+      roleName: user.role && user.role.name ? user.role.name : user.roleName
+    };
+  }
+
   async forgotPassword(email, locale = 'tr') {
     try {
-      if (!email) {
-        logger.error(this.translation('services.authService.logs.forgotPasswordError'));
-        throw new Error(this.translation('services.authService.logs.forgotPasswordError'));
-      }
+      this.validateEmail(email);
 
-      // Kullanıcıyı CQRS ile bul
       const user = await this.queryHandler.dispatch(QUERY_TYPES.FIND_ANY_USER_BY_EMAIL, { email });
+
       if (!user) {
-        logger.warn(this.translation('services.authService.logs.forgotPasswordError'), { email });
-        // Güvenlik için her zaman aynı mesajı döndür
-        return { success: true, message: this.translation('services.authService.logs.forgotPasswordSuccess') };
+        // Security measure: Always same response
+        const message = locale === 'en' 
+          ? 'Password reset email sent successfully'
+          : 'Şifre sıfırlama e-postası başarıyla gönderildi';
+        return { success: true, message };
       }
 
-      // Şifre sıfırlama token'ı üret
+      // Günlük şifre sıfırlama limitini kontrol et
+      await this.checkDailyPasswordResetLimit(user.id, locale);
+
       const resetToken = this.jwtService.generatePasswordResetToken(user);
+      const resetLink = this.buildResetLink(email, resetToken);
 
-      // Frontend linki
-      const frontendUrl = process.env.WEBSITE_URL;
-      const resetLink = `${frontendUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
-
-      // Kafka ile event gönder - Accept-Language header'ından gelen dil bilgisini kullan
       await this.kafkaProducer.sendPasswordResetEvent({ email, resetLink, locale });
 
-      logger.info(this.translation('services.authService.logs.forgotPasswordSuccess'), { 
-        email, 
-        resetLink,
-        locale: locale 
-      });
-      return { success: true, message: this.translation('services.authService.logs.forgotPasswordSuccess') };
-    } catch (error) {
-      logger.error(this.translation('services.authService.logs.forgotPasswordError'), { error: error.message, email });
-      throw error;
+      logger.info('Password reset initiated', { email, locale });
+
+      const message = locale === 'en' 
+        ? 'Password reset email sent successfully'
+        : 'Şifre sıfırlama e-postası başarıyla gönderildi';
+      return { success: true, message };
+    } catch (err) {
+      logger.error('Forgot password failed', { error: err.message, email });
+      throw err;
     }
   }
 
-  async resetPassword(resetData) {
+  // Helper methods
+  validateEmail(email) {
+    if (!email) throw new ValidationError('Email is required');
+  }
+
+  buildResetLink(email, token) {
+    const frontendUrl = process.env.WEBSITE_URL;
+    return `${frontendUrl}/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
+  }
+
+  async resetPassword({ token, password, confirmPassword }, locale = 'tr') {
     try {
-      const { token, password, confirmPassword } = resetData;
-      if (!token || !password || !confirmPassword) {
-        logger.error(this.translation('services.authService.logs.resetPasswordError'));
-        throw new Error(this.translation('services.authService.logs.resetPasswordError'));
-      }
-      if (password !== confirmPassword) {
-        logger.error(this.translation('services.authService.logs.resetPasswordError'));
-        throw new Error(this.translation('services.authService.logs.resetPasswordError'));
-      }
-      if (password.length < 8) {
-        logger.error(this.translation('services.authService.logs.resetPasswordError'));
-        throw new Error(this.translation('services.authService.logs.resetPasswordError'));
+      // Debug log ekle
+      logger.info('resetPassword: Locale received', { locale, type: typeof locale });
+      
+      this.validateResetData(password, confirmPassword, locale);
+
+      const decoded = this.verifyResetToken(token, locale);
+      if (!decoded?.id) {
+        const message = locale === 'en' 
+          ? 'Invalid reset token'
+          : 'Geçersiz sıfırlama token\'ı';
+        throw new UnauthorizedError(message);
       }
 
-      // Token'ı doğrula
-      let decoded;
-      try {
-        decoded = this.jwtService.verifyPasswordResetToken(token);
-        if (decoded && decoded.id) {
-          logger.info(this.translation('services.authService.logs.resetPasswordSuccess'), { userId: decoded.id });
-        } else {
-          logger.warn(this.translation('services.authService.logs.resetPasswordError'), { error: 'Decoded token does not contain user id' });
-          throw new Error(this.translation('services.authService.logs.resetPasswordError'));
-        }
-      } catch (verifyErr) {
-        logger.warn(this.translation('services.authService.logs.resetPasswordError'), { error: verifyErr.message });
-        throw new Error(this.translation('services.authService.logs.resetPasswordError'));
-      }
-      
-      // Şifreyi hashle
+      // Günlük şifre sıfırlama limitini kontrol et
+      await this.checkDailyPasswordResetLimit(decoded.id, locale);
+
+      // Token'ın daha önce kullanılıp kullanılmadığını kontrol et
+      await this.checkTokenUsage(token, locale);
+
       const hashedPassword = await this.passwordHelper.hashPassword(password);
 
-      // CQRS ile kullanıcıyı güncelle
-      const updateUserCommand = {
-        id: decoded.id,
-        updateData: { password: hashedPassword }
-      };
-      const updatedUser = await this.commandHandler.dispatch(COMMAND_TYPES.UPDATE_USER, updateUserCommand);
+      await this.updateUserPassword(decoded.id, hashedPassword);
 
-      if (!updatedUser) {
-        logger.warn(this.translation('services.authService.logs.resetPasswordError'), { userId: decoded.id });
-        throw new Error(this.translation('repositories.userRepository.logs.notFound'));
-      }
+      // Token'ı kullanıldı olarak işaretle
+      await this.markTokenAsUsed(token);
 
-      logger.info(this.translation('services.authService.logs.resetPasswordSuccess'), { userId: updatedUser.id, email: updatedUser.email });
-      return { success: true, message: this.translation('services.authService.logs.resetPasswordSuccess') };
-    } catch (error) {
-      logger.error(this.translation('services.authService.logs.resetPasswordError'), { error: error.message });
-      throw error;
+      // Günlük şifre sıfırlama sayısını artır
+      await this.incrementDailyPasswordResetCount(decoded.id);
+
+      logger.info('Password reset successful', { userId: decoded.id });
+      
+      const message = locale === 'en' 
+        ? 'Password has been reset successfully'
+        : 'Şifreniz başarıyla sıfırlandı';
+      
+      // Debug log ekle
+      logger.info('resetPassword: Final message', { message, locale, isEnglish: locale === 'en' });
+      
+      return { success: true, message };
+    } catch (err) {
+      logger.error('Reset password failed', { error: err.message });
+      throw err;
     }
   }
 
-  async changePassword(userId, changePasswordData) {
+  // Helper Methods
+  validateResetData(password, confirmPassword, locale = 'tr') {
+    if (!password || !confirmPassword) {
+      const message = locale === 'en' 
+        ? 'Password fields are required'
+        : 'Şifre alanları gereklidir';
+      throw new ValidationError(message);
+    }
+    if (password !== confirmPassword) {
+      const message = locale === 'en' 
+        ? 'Passwords do not match'
+        : 'Şifreler eşleşmiyor';
+      throw new ValidationError(message);
+    }
+    if (password.length < 8) {
+      const message = locale === 'en' 
+        ? 'Password must be at least 8 characters'
+        : 'Şifre en az 8 karakter olmalıdır';
+      throw new ValidationError(message);
+    }
+  }
+
+  verifyResetToken(token, locale = 'tr') {
     try {
-      const { newPassword, confirmPassword } = changePasswordData;
-  
-      if (!newPassword || !confirmPassword) {
-        throw new Error(this.translation('services.authService.logs.resetPasswordError'));
-      }
-      if (newPassword !== confirmPassword) {
-        throw new Error(this.translation('services.authService.logs.resetPasswordError'));
-      }
-      if (newPassword.length < 8) {
-        throw new Error(this.translation('services.authService.logs.resetPasswordError'));
-      }
-  
-            // CQRS ile kullanıcıyı bul
+      return this.jwtService.verifyPasswordResetToken(token);
+    } catch (err) {
+      const message = locale === 'en' 
+        ? 'Invalid or expired reset token'
+        : 'Geçersiz veya süresi dolmuş sıfırlama token\'ı';
+      throw new UnauthorizedError(message);
+    }
+  }
+
+  async updateUserPassword(userId, hashedPassword) {
+    const updatedUser = await this.commandHandler.dispatch(COMMAND_TYPES.UPDATE_USER, {
+      id: userId,
+      updateData: { password: hashedPassword }
+    });
+    if (!updatedUser) throw new NotFoundError('User not found');
+    return updatedUser;
+  }
+
+  // Redis Helper Methods for Password Reset Security
+  async checkDailyPasswordResetLimit(userId, locale = 'tr') {
+    const key = `daily_password_reset:${userId}`;
+    const currentCount = await this.cacheService.client.get(key);
+    const count = currentCount ? parseInt(currentCount) : 0;
+    
+    if (count >= 2) {
+      const message = locale === 'en' 
+        ? 'Daily password reset limit exceeded. You can only reset your password 2 times per day.'
+        : 'Günlük şifre sıfırlama limiti aşıldı. Günde sadece 2 kez şifrenizi sıfırlayabilirsiniz.';
+      throw new UnauthorizedError(message);
+    }
+    
+    logger.info('Daily password reset limit check passed', { userId, currentCount: count });
+  }
+
+  async incrementDailyPasswordResetCount(userId) {
+    const key = `daily_password_reset:${userId}`;
+    const currentCount = await this.cacheService.client.incr(key);
+    
+    // İlk kez artırılıyorsa 24 saat TTL ayarla
+    if (currentCount === 1) {
+      await this.cacheService.client.expire(key, 24 * 60 * 60); // 24 saat
+    }
+    
+    logger.info('Daily password reset count incremented', { userId, newCount: currentCount });
+  }
+
+  async checkTokenUsage(token, locale = 'tr') {
+    const key = `used_reset_token:${token}`;
+    const isUsed = await this.cacheService.client.get(key);
+    
+    if (isUsed) {
+      const message = locale === 'en' 
+        ? 'This reset token has already been used. Please request a new password reset.'
+        : 'Bu sıfırlama token\'ı zaten kullanılmış. Lütfen yeni bir şifre sıfırlama talebinde bulunun.';
+      throw new UnauthorizedError(message);
+    }
+    
+    logger.info('Token usage check passed', { token: token.substring(0, 20) + '...' });
+  }
+
+  async markTokenAsUsed(token) {
+    const key = `used_reset_token:${token}`;
+    // Token'ı 24 saat boyunca kullanıldı olarak işaretle (güvenlik için)
+    await this.cacheService.client.set(key, '1', 'EX', 24 * 60 * 60);
+    
+    logger.info('Token marked as used', { token: token.substring(0, 20) + '...' });
+  }
+
+  async changePassword(userId, { newPassword, confirmPassword }, locale = 'tr') {
+    try {
+      this.validateChangePasswordData(newPassword, confirmPassword, locale);
+
       const user = await this.queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_ID, { id: userId });
-      if (!user) {
-        throw new Error(this.translation('repositories.userRepository.logs.notFound'));
-      }
+      if (!user) throw new NotFoundError('User not found');
 
       const hashedPassword = await this.passwordHelper.hashPassword(newPassword);
-      // CQRS ile kullanıcıyı güncelle
-      const updateUserCommand = {
-        id: userId,
-        updateData: { password: hashedPassword }
-      };
-      await this.commandHandler.dispatch(COMMAND_TYPES.UPDATE_USER, updateUserCommand);
+      await this.updatePassword(userId, hashedPassword);
 
-      return { success: true, message: this.translation('services.authService.logs.resetPasswordSuccess') };
-    } catch (error) {
-      throw error;
+      logger.info('Password changed successfully', { userId });
+      
+      const message = locale === 'en' 
+        ? 'Password changed successfully'
+        : 'Şifreniz başarıyla değiştirildi';
+      return { success: true, message };
+    } catch (err) {
+      logger.error('Change password failed', { error: err.message });
+      throw err;
     }
+  }
+
+  // Helpers
+  validateChangePasswordData(newPassword, confirmPassword, locale = 'tr') {
+    if (!newPassword || !confirmPassword) {
+      const message = locale === 'en' 
+        ? 'Passwords are required'
+        : 'Şifre alanları gereklidir';
+      throw new ValidationError(message);
+    }
+    if (newPassword !== confirmPassword) {
+      const message = locale === 'en' 
+        ? 'Passwords do not match'
+        : 'Şifreler eşleşmiyor';
+      throw new ValidationError(message);
+    }
+    if (newPassword.length < 8) {
+      const message = locale === 'en' 
+        ? 'Password must be at least 8 characters'
+        : 'Şifre en az 8 karakter olmalıdır';
+      throw new ValidationError(message);
+    }
+  }
+
+  async updatePassword(userId, hashedPassword) {
+    await this.commandHandler.dispatch(COMMAND_TYPES.UPDATE_USER, {
+      id: userId,
+      updateData: { password: hashedPassword }
+    });
   }
 
   async googleLogin(googleLoginData) {

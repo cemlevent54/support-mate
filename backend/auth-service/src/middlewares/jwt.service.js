@@ -105,7 +105,6 @@ class JWTService {
     return decoded;
   }
   static verifyRefreshToken(token) {
-    logger.debug(translation('middlewares.jwtService.logs.refreshTokenVerified'), { userId: decoded.id });
     const decoded = jwt.verify(token, JWT_REFRESH_SECRET);
     if (this.isBlacklisted(decoded.id)) {
       logger.warn(translation('middlewares.jwtService.logs.blacklisted'), { userId: decoded.id });
@@ -122,7 +121,6 @@ class JWTService {
     return token;
   }
   static verifyJWT(token) {
-    logger.debug(translation('middlewares.jwtService.logs.jwtTokenVerified'), { userId: decoded.id });
     const decoded = jwt.verify(token, JWT_SECRET);
     if (this.isBlacklisted(decoded.id)) {
       logger.warn(translation('middlewares.jwtService.logs.blacklisted'), { userId: decoded.id });

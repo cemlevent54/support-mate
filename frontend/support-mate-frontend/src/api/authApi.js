@@ -131,3 +131,15 @@ export async function verifyEmail({ code, token }) {
   });
   return response.data;
 }
+
+export async function changePassword({ newPassword, confirmPassword }) {
+  const response = await axiosInstance.patch(`${API_BASE_URL}/change-password`, {
+    newPassword,
+    confirmPassword
+  }, {
+    headers: {
+      'Accept-Language': getLanguage()
+    }
+  });
+  return response.data;
+}
