@@ -209,7 +209,8 @@
       "actions": "Actions"
     },
     "permissionModalTitle": "Permissions - {{roleName}}",
-    "category": "Category"
+    "category": "Category",
+    "noRoles": "No roles found"
   },
   "adminRolePermissions": {
     "title": "All Permissions",

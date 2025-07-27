@@ -1,7 +1,4 @@
 import userRepository from '../repositories/user.repository.js';
-import { notFoundError } from '../responseHandlers/clientErrors/notfound.error.js';
-import { apiSuccess } from '../responseHandlers/api.success.js';
-import { internalServerError } from '../responseHandlers/serverErrors/internalserver.error.js';
 import logger from '../config/logger.js';
 import {
   queryHandler,
@@ -25,7 +22,7 @@ class UserService {
     // Handler kayıtları constructor'dan çıkarıldı.
   }
 
-  async getUserById(req, res) {
+  async getUserById(req) {
     try {
       // Hem /users/:id hem de /users/me için id'yi belirle
       let userId = req.params.id;
@@ -34,9 +31,8 @@ class UserService {
         if (req.user && req.user.id) {
           userId = req.user.id;
         } else {
-          logger.error(translation('services.userService.logs.getByIdError'), { error: err, userId: req.params.id });
-          notFoundError(res, translation('services.userService.logs.getByIdNotFound'));
-          return;
+          logger.error(translation('services.userService.logs.getByIdError'), { userId: req.params.id });
+          throw new Error(translation('services.userService.logs.getByIdNotFound'));
         }
       }
       logger.info(translation('services.userService.logs.getByIdRequest'), { userId });
@@ -44,18 +40,17 @@ class UserService {
       const user = await queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_ID, getUserQuery);
       if (!user) {
         logger.warn(translation('services.userService.logs.getByIdNotFound'), { userId });
-        notFoundError(res, translation('services.userService.logs.getByIdNotFound'));
-        return;
+        throw new Error(translation('services.userService.logs.getByIdNotFound'));
       }
       logger.info(translation('services.userService.logs.getByIdSuccess'), { userId });
-      apiSuccess(res, user, translation('services.userService.logs.getByIdSuccess'), 200);
+      return user;
     } catch (err) {
       logger.error(translation('services.userService.logs.getByIdError'), { error: err, userId: req.params.id });
-      internalServerError(res);
+      throw err;
     }
   }
 
-  async getAllUsers(req, res) {
+  async getAllUsers(req) {
     try {
       const { page, limit, role } = req.query;
       logger.info(translation('services.userService.logs.getAllRequest'), { page, limit, role });
@@ -66,29 +61,28 @@ class UserService {
       };
       const result = await queryHandler.dispatch(QUERY_TYPES.GET_ALL_USERS, getAllUsersQuery);
       logger.info(translation('services.userService.logs.getAllSuccess'), { total: result.total });
-      apiSuccess(res, result, translation('services.userService.logs.getAllSuccess'), 200);
+      return result;
     } catch (err) {
       logger.error(translation('services.userService.logs.getAllError'), { error: err, query: req.query });
-      internalServerError(res);
+      throw err;
     }
   }
 
-  async getUsersByRole(req, res) {
+  async getUsersByRole(req) {
     try {
       const role = req.query.roleName;
       if (!role) {
-        logger.warn('Role name is required');
-        notFoundError(res, 'Role name is required');
-        return;
+        logger.warn(translation('services.userService.logs.roleNameRequired'));
+        throw new Error(translation('services.userService.logs.roleNameRequired'));
       }
       logger.info(translation('services.userService.logs.getByRoleRequest'), { role });
       const getUsersByRoleQuery = { role };
       const result = await queryHandler.dispatch(QUERY_TYPES.GET_USERS_BY_ROLE, getUsersByRoleQuery);
       logger.info(translation('services.userService.logs.getByRoleSuccess'), { role, total: result.length });
-      apiSuccess(res, result, translation('services.userService.logs.getByRoleSuccess'), 200);
+      return result;
     } catch (err) {
       logger.error(translation('services.userService.logs.getByRoleError'), { error: err, role: req.query.roleName });
-      internalServerError(res);
+      throw err;
     }
   }
 
@@ -97,7 +91,7 @@ class UserService {
     return await queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_ID, { id });
   }
 
-  async updateUser(req, res) {
+  async updateUser(req) {
     try {
       const { id } = req.params;
       const updateData = req.body;
@@ -106,18 +100,17 @@ class UserService {
       const user = await commandHandler.dispatch(COMMAND_TYPES.UPDATE_USER, command);
       if (!user) {
         logger.warn(translation('services.userService.logs.updateNotFound'), { userId: id });
-        notFoundError(res, translation('services.userService.logs.updateNotFound'));
-        return;
+        throw new Error(translation('services.userService.logs.updateNotFound'));
       }
       logger.info(translation('services.userService.logs.updateSuccess'), { userId: id });
-      apiSuccess(res, user, translation('services.userService.logs.updateSuccess'), 200);
+      return user;
     } catch (err) {
       logger.error(translation('services.userService.logs.updateError'), { error: err, userId: req.params.id });
-      internalServerError(res);
+      throw err;
     }
   }
 
-  async deleteUser(req, res) {
+  async deleteUser(req) {
     try {
       const { id } = req.params;
       logger.info(translation('services.userService.logs.deleteRequest'), { userId: id });
@@ -125,24 +118,22 @@ class UserService {
       const user = await commandHandler.dispatch(COMMAND_TYPES.DELETE_USER, command);
       if (!user) {
         logger.warn(translation('services.userService.logs.deleteNotFound'), { userId: id });
-        notFoundError(res, translation('services.userService.logs.deleteNotFound'));
-        return;
+        throw new Error(translation('services.userService.logs.deleteNotFound'));
       }
       logger.info(translation('services.userService.logs.deleteSuccess'), { userId: id });
-      apiSuccess(res, user, translation('services.userService.logs.deleteSuccess'), 200);
+      return user;
     } catch (err) {
       logger.error(translation('services.userService.logs.deleteError'), { error: err, userId: req.params.id });
-      internalServerError(res);
+      throw err;
     }
   }
 
-  async getAuthenticatedUser(req, res) {
+  async getAuthenticatedUser(req) {
     try {
       // JWT'den gelen kullanıcı bilgisini kontrol et
       if (!req.user || !req.user.email) {
-        logger.error(translation('services.userService.logs.getAuthenticatedError'), { error: err, userEmail: req.user?.email });
-        notFoundError(res, translation('services.userService.logs.getAuthenticatedNotFound'));
-        return;
+        logger.error(translation('services.userService.logs.getAuthenticatedError'), { userEmail: req.user?.email });
+        throw new Error(translation('services.userService.logs.getAuthenticatedNotFound'));
       }
 
       const userEmail = req.user.email;
@@ -154,15 +145,14 @@ class UserService {
       
       if (!user) {
         logger.warn(translation('services.userService.logs.getAuthenticatedNotFound'), { userEmail });
-        notFoundError(res, translation('services.userService.logs.getAuthenticatedNotFound'));
-        return;
+        throw new Error(translation('services.userService.logs.getAuthenticatedNotFound'));
       }
       
       logger.info(translation('services.userService.logs.getAuthenticatedSuccess'), { userEmail });
-      apiSuccess(res, user, translation('services.userService.logs.getAuthenticatedSuccess'), 200);
+      return user;
     } catch (err) {
       logger.error(translation('services.userService.logs.getAuthenticatedError'), { error: err, userEmail: req.user?.email });
-      internalServerError(res);
+      throw err;
     }
   }
 }

@@ -430,7 +430,8 @@
         "getAuthenticatedRequest": "Get authenticated user request received",
         "getAuthenticatedSuccess": "Authenticated user fetched successfully",
         "getAuthenticatedNotFound": "Authenticated user not found",
-        "getAuthenticatedError": "Error occurred while fetching authenticated user"
+        "getAuthenticatedError": "Error occurred while fetching authenticated user",
+        "roleNameRequired": "Role name is required"
       }
     },
     "taskService": {

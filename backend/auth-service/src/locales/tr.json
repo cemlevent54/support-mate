@@ -430,7 +430,8 @@
         "getAuthenticatedRequest": "Kimliği doğrulanmış kullanıcı isteği alındı",
         "getAuthenticatedSuccess": "Kimliği doğrulanmış kullanıcı başarıyla getirildi",
         "getAuthenticatedNotFound": "Kimliği doğrulanmış kullanıcı bulunamadı",
-        "getAuthenticatedError": "Kimliği doğrulanmış kullanıcı getirilirken hata oluştu"
+        "getAuthenticatedError": "Kimliği doğrulanmış kullanıcı getirilirken hata oluştu",
+        "roleNameRequired": "Rol adı gereklidir"
       }
     },
     "taskService": {

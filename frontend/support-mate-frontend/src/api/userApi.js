@@ -2,10 +2,19 @@ import axiosInstance from './axiosInstance';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL + '/api/auth/users';
 
+const getLanguage = () => {
+  const language = localStorage.getItem('language');
+  return language;
+};
+
 // 1. Authenticated User (Profil)
 export const getAuthenticatedUser = async () => {
   try {
-    const res = await axiosInstance.get(`${API_BASE_URL}/profile`);
+    const res = await axiosInstance.get(`${API_BASE_URL}/profile`, {
+      headers: {
+        'Accept-Language': getLanguage()
+      }
+    });
     return res.data;
   } catch (err) {
     throw err.response?.data || err;
@@ -15,7 +24,11 @@ export const getAuthenticatedUser = async () => {
 // 2. Kullanıcıyı ID ile getir
 export const getUserById = async (id) => {
   try {
-    const res = await axiosInstance.get(`${API_BASE_URL}/${id}`);
+    const res = await axiosInstance.get(`${API_BASE_URL}/${id}`, {
+      headers: {
+        'Accept-Language': getLanguage()
+      }
+    });
     return res.data;
   } catch (err) {
     throw err.response?.data || err;
@@ -25,7 +38,9 @@ export const getUserById = async (id) => {
 // 3. Tüm kullanıcıları getir (opsiyonel: page, limit, role)
 export const getAllUsers = async (params = {}) => {
   try {
-    const res = await axiosInstance.get(`${API_BASE_URL}`, { params });
+    const res = await axiosInstance.get(`${API_BASE_URL}`, { params, headers: {
+      'Accept-Language': getLanguage()
+    } });
     return res.data;
   } catch (err) {
     throw err.response?.data || err;
@@ -35,7 +50,9 @@ export const getAllUsers = async (params = {}) => {
 // 4. Role göre kullanıcıları getir
 export const getUsersByRole = async (role, params = {}) => {
   try {
-    const res = await axiosInstance.get(`${API_BASE_URL}/role/${role}`, { params });
+    const res = await axiosInstance.get(`${API_BASE_URL}/role/${role}`, { params, headers: {
+      'Accept-Language': getLanguage()
+    } });
     return res.data;
   } catch (err) {
     throw err.response?.data || err;
@@ -45,7 +62,11 @@ export const getUsersByRole = async (role, params = {}) => {
 // 5. Kullanıcı güncelle (PATCH)
 export const updateUser = async (id, updateData) => {
   try {
-    const res = await axiosInstance.patch(`${API_BASE_URL}/${id}`, updateData);
+    const res = await axiosInstance.patch(`${API_BASE_URL}/${id}`, updateData, {
+      headers: {
+        'Accept-Language': getLanguage()
+      }
+    });
     return res.data;
   } catch (err) {
     throw err.response?.data || err;
@@ -55,7 +76,11 @@ export const updateUser = async (id, updateData) => {
 // 6. Kullanıcıyı sil (soft delete)
 export const deleteUser = async (id) => {
   try {
-    const res = await axiosInstance.delete(`${API_BASE_URL}/${id}`);
+    const res = await axiosInstance.delete(`${API_BASE_URL}/${id}`, {
+      headers: {
+        'Accept-Language': getLanguage()
+      }
+    });
     return res.data;
   } catch (err) {
     throw err.response?.data || err;

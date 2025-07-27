@@ -18,14 +18,31 @@ export default function AdminRolePermissions() {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const { isAdmin } = usePermissions();
   const { t } = useTranslation();
+  
+  const showSnackbar = (message, severity) => {
+    setSnackbar({ open: true, message, severity });
+  };
+  
+  const getLanguage = () => {
+    const language = localStorage.getItem('language');
+    return language;
+  };
 
   // Yetkileri API'den çek
   const fetchPermissions = async () => {
     try {
-      const data = await roleApi.getAllPermissions();
-      setPermissions(Array.isArray(data) ? data : []);
+      const response = await roleApi.getAllPermissions();
+      console.log('Permissions API response:', response);
+      setPermissions(Array.isArray(response.permissions) ? response.permissions : []);
+      
+      // API response'daki message'ı snackbar'da göster
+      if (response.message) {
+        showSnackbar(response.message, 'success');
+      }
     } catch (err) {
+      console.error('Permissions fetch error:', err);
       setPermissions([]);
+      showSnackbar(err.message || 'Yetkiler yüklenirken hata oluştu', 'error');
     }
   };
 
@@ -50,38 +67,53 @@ export default function AdminRolePermissions() {
   // Yetki ekle/güncelle
   const handleSave = async () => {
     try {
+      let response;
       if (modalType === 'add') {
-        await axiosInstance.post('/api/auth/permissions', {
+        response = await axiosInstance.post('/api/auth/permissions', {
           name_tr: modalPerm.name_tr,
           name_en: modalPerm.name_en,
           code: modalPerm.code,
           category: modalPerm.category
+        },{
+          headers: {
+            'Accept-Language': getLanguage()
+          }
         });
-        setSnackbar({ open: true, message: 'added', severity: 'success' });
+        showSnackbar(response.data.message, 'success');
       } else {
-        await axiosInstance.patch(`/api/auth/permissions/${modalPerm.id}`, {
+        response = await axiosInstance.patch(`/api/auth/permissions/${modalPerm.id}`, {
           name_tr: modalPerm.name_tr,
           name_en: modalPerm.name_en,
           code: modalPerm.code,
           category: modalPerm.category
+        }, {
+          headers: {
+            'Accept-Language': getLanguage()
+          }
         });
-        setSnackbar({ open: true, message: 'updated', severity: 'success' });
+        showSnackbar(response.data.message, 'success');
       }
       setOpenModal(false);
       fetchPermissions();
     } catch (error) {
-      setSnackbar({ open: true, message: 'saveError', severity: 'error' });
+      console.error('Permission save error:', error);
+      showSnackbar(error.response?.data?.message || 'Yetki kaydedilirken hata oluştu', 'error');
     }
   };
 
   // Yetki sil
   const handleDelete = async (id) => {
     try {
-      await axiosInstance.delete(`/api/auth/permissions/${id}`);
-      setSnackbar({ open: true, message: 'deleted', severity: 'success' });
+      const response = await axiosInstance.delete(`/api/auth/permissions/${id}`,{
+        headers: {
+          'Accept-Language': getLanguage()
+        }
+      });
+      showSnackbar(response.data.message, 'success');
       fetchPermissions();
     } catch (error) {
-      setSnackbar({ open: true, message: 'deleteError', severity: 'error' });
+      console.error('Permission delete error:', error);
+      showSnackbar(error.response?.data?.message || 'Yetki silinirken hata oluştu', 'error');
     }
   };
 
@@ -89,7 +121,7 @@ export default function AdminRolePermissions() {
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4" fontWeight={600}>{t('adminRolePermissions.title')}</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpenModal('add')}>{t('adminRolePermissions.addPermission')}</Button>
+        {/* <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpenModal('add')}>{t('adminRolePermissions.addPermission')}</Button> */}
       </Box>
       <Box mb={2}>
         <TextField
@@ -185,7 +217,7 @@ export default function AdminRolePermissions() {
           severity={snackbar.severity}
           sx={{ width: '100%' }}
         >
-          {t('adminRolePermissions.snackbar.' + snackbar.message) || snackbar.message}
+          {snackbar.message}
         </Alert>
       </Snackbar>
     </Box>

@@ -7,13 +7,6 @@ import {
   GetPermissionByCodeQueryHandler
 } from '../cqrs/index.js';
 
-import { notFoundError } from '../responseHandlers/clientErrors/notfound.error.js';
-import { badRequestError } from '../responseHandlers/clientErrors/badrequest.error.js';
-import { conflictError } from '../responseHandlers/clientErrors/conflict.error.js';
-import { internalServerError } from '../responseHandlers/serverErrors/internalserver.error.js';
-import { createdResponse } from '../responseHandlers/successfulResponses/created.response.js';
-import { okResponse } from '../responseHandlers/successfulResponses/ok.response.js';
-import { noContentResponse } from '../responseHandlers/successfulResponses/nocontent.response.js';
 import logger from '../config/logger.js';
 import translation from '../config/translation.js';
 
@@ -23,7 +16,7 @@ export const PERMISSION_PERMISSIONS = [
 ];
 
 class PermissionService {
-  async getAllPermissions(req, res) {
+  async getAllPermissions(req) {
     logger.info(translation('services.permissionService.logs.getAllRequest'), { query: req.query, user: req.user });
     try {
       const query = {
@@ -37,19 +30,22 @@ class PermissionService {
       const handler = new GetAllPermissionsQueryHandler();
       const result = await handler.execute(query);
       logger.debug('[PermissionService][getAllPermissions] Handler result', { result });
+      
+      // Hiç permission yoksa boş array döndür, hata fırlatma
       if (!result.permissions || result.permissions.length === 0) {
-        logger.warn(translation('services.permissionService.logs.getAllNotFound'), { query });
-        return notFoundError(res, translation('services.permissionService.logs.getAllNotFound'));
+        logger.info(translation('services.permissionService.logs.getAllNotFound'), { query });
+        return { permissions: [], total: 0, page: query.page, limit: query.limit, totalPages: 0 };
       }
+      
       logger.info(translation('services.permissionService.logs.getAllSuccess'), { count: result.permissions.length });
-      return okResponse(res, translation('services.permissionService.logs.getAllSuccess'), result);
+      return result;
     } catch (error) {
       logger.error(translation('services.permissionService.logs.getAllError'), { error, query: req.query });
-      return internalServerError(res, translation('services.permissionService.logs.getAllError'));
+      throw error;
     }
   }
 
-  async getPermissionById(req, res) {
+  async getPermissionById(req) {
     logger.info(translation('services.permissionService.logs.getByIdRequest'), { id: req.params.id, user: req.user });
     try {
       const query = { id: req.params.id };
@@ -58,24 +54,24 @@ class PermissionService {
       const result = await handler.execute(query);
       logger.debug('[PermissionService][getPermissionById] Handler result', { result });
       logger.info(translation('services.permissionService.logs.getByIdSuccess'), { id: req.params.id });
-      return okResponse(res, translation('services.permissionService.logs.getByIdSuccess'), result);
+      return result;
     } catch (error) {
       logger.error(translation('services.permissionService.logs.getByIdError'), { error, id: req.params.id });
       if (error.message === 'Permission not found') {
         logger.warn(translation('services.permissionService.logs.getByIdNotFound'), { id: req.params.id });
-        return notFoundError(res, translation('services.permissionService.logs.getByIdNotFound'));
+        throw new Error(translation('services.permissionService.logs.getByIdNotFound'));
       }
-      return internalServerError(res, translation('services.permissionService.logs.getByIdError'));
+      throw error;
     }
   }
 
-  async createPermission(req, res) {
+  async createPermission(req) {
     logger.info(translation('services.permissionService.logs.createRequest'), { body: req.body, user: req.user });
     try {
       const { name_tr, name_en, code, category } = req.body;
       if (!name_tr || !name_en || !code) {
         logger.warn(translation('services.permissionService.logs.createRequest'), { body: req.body });
-        return badRequestError(res, translation('services.permissionService.logs.createRequest'));
+        throw new Error(translation('services.permissionService.logs.createRequest'));
       }
       const command = {
         name_tr,
@@ -87,18 +83,18 @@ class PermissionService {
       const handler = new CreatePermissionCommandHandler();
       const result = await handler.execute(command);
       logger.info(translation('services.permissionService.logs.createSuccess'), { permission: result });
-      return createdResponse(res, translation('services.permissionService.logs.createSuccess'), result);
+      return result;
     } catch (error) {
       logger.error(translation('services.permissionService.logs.createError'), { error, body: req.body });
       if (error.code === 11000) {
         logger.warn(translation('services.permissionService.logs.createConflict'), { body: req.body });
-        return conflictError(res, translation('services.permissionService.logs.createConflict'));
+        throw new Error(translation('services.permissionService.logs.createConflict'));
       }
-      return internalServerError(res, translation('services.permissionService.logs.createError'));
+      throw error;
     }
   }
 
-  async updatePermission(req, res) {
+  async updatePermission(req) {
     logger.info(translation('services.permissionService.logs.updateRequest'), { id: req.params.id, body: req.body, user: req.user });
     try {
       const { name_tr, name_en, code, category, isActive } = req.body;
@@ -114,22 +110,22 @@ class PermissionService {
       const handler = new UpdatePermissionCommandHandler();
       const result = await handler.execute(command);
       logger.info(translation('services.permissionService.logs.updateSuccess'), { id: req.params.id, result });
-      return okResponse(res, translation('services.permissionService.logs.updateSuccess'), result);
+      return result;
     } catch (error) {
       logger.error(translation('services.permissionService.logs.updateError'), { error, id: req.params.id, body: req.body });
       if (error.message === 'Permission not found') {
         logger.warn(translation('services.permissionService.logs.updateNotFound'), { id: req.params.id });
-        return notFoundError(res, translation('services.permissionService.logs.updateNotFound'));
+        throw new Error(translation('services.permissionService.logs.updateNotFound'));
       }
       if (error.code === 11000) {
         logger.warn(translation('services.permissionService.logs.updateConflict'), { id: req.params.id, body: req.body });
-        return conflictError(res, translation('services.permissionService.logs.updateConflict'));
+        throw new Error(translation('services.permissionService.logs.updateConflict'));
       }
-      return internalServerError(res, translation('services.permissionService.logs.updateError'));
+      throw error;
     }
   }
 
-  async deletePermission(req, res) {
+  async deletePermission(req) {
     logger.info(translation('services.permissionService.logs.deleteRequest'), { id: req.params.id, user: req.user });
     try {
       const command = { id: req.params.id };
@@ -137,27 +133,27 @@ class PermissionService {
       const handler = new DeletePermissionCommandHandler();
       const result = await handler.execute(command);
       logger.info(translation('services.permissionService.logs.deleteSuccess'), { id: req.params.id, result });
-      return noContentResponse(res, translation('services.permissionService.logs.deleteSuccess'));
+      return result;
     } catch (error) {
       logger.error(translation('services.permissionService.logs.deleteError'), { error, id: req.params.id });
       if (error.message === 'Permission not found') {
         logger.warn(translation('services.permissionService.logs.deleteNotFound'), { id: req.params.id });
-        return notFoundError(res, translation('services.permissionService.logs.deleteNotFound'));
+        throw new Error(translation('services.permissionService.logs.deleteNotFound'));
       }
-      return internalServerError(res, translation('services.permissionService.logs.deleteError'));
+      throw error;
     }
   }
 
-  async getActivePermissions(req, res) {
+  async getActivePermissions(req) {
     logger.info(translation('services.permissionService.logs.getActiveRequest'), { user: req.user });
     try {
       const handler = new GetAllPermissionsQueryHandler();
       const result = await handler.execute({ isActive: true });
       logger.info(translation('services.permissionService.logs.getActiveSuccess'), { count: result.permissions?.length || 0 });
-      return okResponse(res, translation('services.permissionService.logs.getActiveSuccess'), result);
+      return result;
     } catch (error) {
       logger.error(translation('services.permissionService.logs.getActiveError'), { error });
-      return internalServerError(res, translation('services.permissionService.logs.getActiveError'));
+      throw error;
     }
   }
 

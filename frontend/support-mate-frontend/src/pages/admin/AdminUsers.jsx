@@ -60,18 +60,26 @@ export default function AdminUsers() {
     isActive: true
   });
 
+  const showSnackbar = (message, severity) => {
+    setSnackbar({ open: true, message, severity });
+  };
+
   const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       const response = await getAllUsers();
       if (response.data && response.data.users) {
         setUsers(response.data.users);
+        // API response'daki message'ı snackbar'da göster
+        if (response.message) {
+          showSnackbar(response.message, 'success');
+        }
       } else {
         setUsers([]);
       }
     } catch (error) {
       console.error('Kullanıcılar yüklenirken hata:', error);
-      showSnackbar('Kullanıcılar yüklenirken hata oluştu', 'error');
+      showSnackbar(error.message || 'Kullanıcılar yüklenirken hata oluştu', 'error');
       setUsers([]);
     } finally {
       setLoading(false);
@@ -130,13 +138,13 @@ export default function AdminUsers() {
     }
     try {
       console.log('deleteUser çağrılıyor:', userId);
-      await deleteUser(userId);
+      const response = await deleteUser(userId);
       console.log('deleteUser başarılı');
-      showSnackbar('Kullanıcı başarıyla silindi', 'success');
+      showSnackbar(response.message, 'success');
       fetchUsers();
     } catch (error) {
       console.error('Kullanıcı silinirken hata:', error);
-      showSnackbar('Kullanıcı silinirken hata oluştu', 'error');
+      showSnackbar(error.message || 'Kullanıcı silinirken hata oluştu', 'error');
     } finally {
       setConfirmDelete({ open: false, userId: null });
     }
@@ -167,18 +175,16 @@ export default function AdminUsers() {
       console.log('updateUser çağrılıyor:', { userId, formData });
       const selectedRole = roles.find(r => r.name === formData.role);
       const roleName = selectedRole ? selectedRole.name : formData.role;
-      await updateUser(userId, { ...formData, roleName });
-      showSnackbar('Kullanıcı başarıyla güncellendi', 'success');
+      const response = await updateUser(userId, { ...formData, roleName });
+      showSnackbar(response.message, 'success');
       handleCloseDialog();
       fetchUsers();
     } catch (error) {
       console.error('Kullanıcı kaydedilirken hata:', error);
-      showSnackbar('Kullanıcı kaydedilirken hata oluştu', 'error');
+      console.log('Error response data:', error.response?.data);
+      console.log('Error message:', error.message);
+      showSnackbar(error.message || 'Kullanıcı kaydedilirken hata oluştu', 'error');
     }
-  };
-
-  const showSnackbar = (message, severity) => {
-    setSnackbar({ open: true, message, severity });
   };
 
   const filteredUsers = users.filter(user => {

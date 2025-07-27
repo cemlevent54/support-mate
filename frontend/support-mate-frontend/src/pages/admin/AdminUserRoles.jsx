@@ -30,13 +30,17 @@ export default function AdminUserRoles() {
   const fetchData = async () => {
     setLoading(true);
     try {
+      console.log('Fetching roles and permissions...');
       const [rolesData, permissionsData] = await Promise.all([
         roleApi.getRoles(),
         roleApi.getAllPermissions()
       ]);
+      console.log('Roles data:', rolesData);
+      console.log('Permissions data:', permissionsData);
       setRoles(Array.isArray(rolesData) ? rolesData : []);
       setPermissions(Array.isArray(permissionsData) ? permissionsData : []);
     } catch (err) {
+      console.error('Error fetching data:', err);
       setRoles([]);
       setPermissions([]);
     }
@@ -73,18 +77,19 @@ export default function AdminUserRoles() {
   // Role ekle/güncelle
   const handleSaveRole = async () => {
     try {
+      let response;
       if (modalType === 'add') {
-        await roleApi.createRole({ name: modalRole.name, permissions: [] });
-        showSnackbar('roleAdded', 'success');
+        response = await roleApi.createRole({ name: modalRole.name, permissions: [] });
+        showSnackbar(response.message, 'success');
       } else if (modalType === 'edit') {
-        await roleApi.updateRole(modalRole.id, { name: modalRole.name, permissions: modalRole.permissions });
-        showSnackbar('roleUpdated', 'success');
+        response = await roleApi.updateRole(modalRole.id, { name: modalRole.name, permissions: modalRole.permissions });
+        showSnackbar(response.message, 'success');
       }
       setOpenModal(false);
       fetchData();
     } catch (error) {
       console.error('Rol kaydedilirken hata:', error);
-      showSnackbar('roleSaveError', 'error');
+      showSnackbar(error.response?.data?.message || t('adminUserRoles.snackbar.roleSaveError'), 'error');
     }
   };
 
@@ -96,13 +101,13 @@ export default function AdminUserRoles() {
   const handleConfirmDelete = async () => {
     if (!confirmDelete.roleId) return;
     try {
-      await roleApi.deleteRole(confirmDelete.roleId);
-      showSnackbar('roleDeleted', 'success');
+      const response = await roleApi.deleteRole(confirmDelete.roleId);
+      showSnackbar(response.message, 'success');
       setConfirmDelete({ open: false, roleId: null });
       fetchData();
     } catch (error) {
       console.error('Rol silinirken hata:', error);
-      showSnackbar('roleDeleteError', 'error');
+      showSnackbar(error.response?.data?.message || t('adminUserRoles.snackbar.roleDeleteError'), 'error');
     }
   };
 
@@ -113,13 +118,13 @@ export default function AdminUserRoles() {
   // Permissionları kaydet
   const handleSavePermissions = async () => {
     try {
-      await roleApi.updateRolePermissions(permRole.id, permChecked);
-      showSnackbar('permUpdate', 'success');
+      const response = await roleApi.updateRolePermissions(permRole.id, permChecked);
+      showSnackbar(response.message, 'success');
       setOpenPermModal(false);
       fetchData();
     } catch (error) {
       console.error('İzinler kaydedilirken hata:', error);
-      showSnackbar('permUpdateError', 'error');
+      showSnackbar(error.response?.data?.message || t('adminUserRoles.snackbar.permUpdateError'), 'error');
     }
   };
 
@@ -162,7 +167,7 @@ export default function AdminUserRoles() {
             {loading ? (
               <TableRow><TableCell colSpan={4}>{t('adminUsers.loading')}</TableCell></TableRow>
             ) : roles.length === 0 ? (
-              <TableRow><TableCell colSpan={4}>{t('adminUsers.noUsers')}</TableCell></TableRow>
+              <TableRow><TableCell colSpan={4}>{t('adminUserRoles.noRoles')}</TableCell></TableRow>
             ) : (
               roles.map(role => (
                 <TableRow key={role.id || role._id}>
@@ -251,7 +256,7 @@ export default function AdminUserRoles() {
           severity={snackbar.severity}
           sx={{ width: '100%' }}
         >
-          {t('adminUserRoles.snackbar.' + snackbar.message) || snackbar.message}
+          {snackbar.message}
         </Alert>
       </Snackbar>
     </Box>

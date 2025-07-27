@@ -208,7 +208,8 @@
       "actions": "İşlemler"
     },
     "permissionModalTitle": "İzinler - {{roleName}}",
-    "category": "Kategori"
+    "category": "Kategori",
+    "noRoles": "Hiç rol bulunamadı"
   },
   "adminRolePermissions": {
     "title": "Tüm İzinler",
