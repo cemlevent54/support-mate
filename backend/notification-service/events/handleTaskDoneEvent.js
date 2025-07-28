@@ -6,7 +6,7 @@ import logger from '../config/logger.js';
  * @param {Object} event - Kafka'dan gelen event objesi
  * @param {string} event.email - Alıcı e-posta adresi
  * @param {string} event.firstName - Alıcı adı
- * @param {string} event.locale - Accept-Language header'ından gelen dil bilgisi ('tr' veya 'en')
+ * @param {string} event.language - Dil bilgisi ('tr' veya 'en')
  * @param {string} event.taskId - Görev ID
  * @param {string} event.taskTitle - Görev başlığı
  * @param {string} event.html - Hazır e-posta HTML içeriği
@@ -14,18 +14,18 @@ import logger from '../config/logger.js';
 async function handleTaskDoneEvent(event) {
   try {
     if (!event.email) throw new Error('E-posta adresi eksik!');
-    // Accept-Language header'ından gelen dil bilgisini kullan
-    const locale = event.locale;
+    // Event'ten gelen dil bilgisini kullan
+    const language = event.language || 'tr';
     
-    const subject = locale === 'tr'
-      ? 'Bir Görev Tamamlandı'
-      : 'A Task Has Been Completed';
+    const subject = language === 'tr'
+      ? 'Destek Talebiniz Çözülmüştür'
+      : 'Your Support Request Has Been Resolved';
     await emailService.send({
       to: event.email,
       subject,
       html: event.html || '',
     });
-    logger.info(`[TaskDone] E-posta gönderildi: ${event.email} (${event.taskId})`);
+    logger.info(`[TaskDone] E-posta gönderildi: ${event.email} (${event.taskId}) - Dil: ${language}`);
   } catch (err) {
     logger.error('[TaskDone] E-posta gönderilemedi:', err);
   }

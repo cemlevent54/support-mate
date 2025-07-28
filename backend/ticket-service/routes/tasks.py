@@ -4,6 +4,7 @@ import os
 from controllers.TaskController import TaskController
 from config.language import set_language, _
 from models.task import Task
+from dto.task_dto import TaskCreateDto
 from middlewares.auth import get_current_user
 from dto.task_update_dto import TaskUpdateDto
 
@@ -23,7 +24,7 @@ def get_task_controller(lang: str = 'tr'):
 
 # full path: /api/tickets/tasks
 @router.post("/tasks")
-def create_task(task: Task, request: Request, user=Depends(get_current_user)):
+def create_task(task: TaskCreateDto, request: Request, user=Depends(get_current_user)):
     lang = get_lang(request)
     set_language(lang)
     task_controller = get_task_controller(lang)
@@ -51,7 +52,7 @@ def get_tasks_employee(request: Request, user=Depends(get_current_user)):
     task_controller = get_task_controller(lang)
     if user.get("roleName") != "Employee":
         raise HTTPException(status_code=403, detail="Forbidden")
-    return task_controller.get_tasks_employee(user)
+    return task_controller.get_tasks_employee(user, lang)
 
 # full path: /api/tickets/tasks/{task_id}
 @router.get("/tasks/{task_id}")
@@ -74,7 +75,7 @@ def update_task(task_id: str, task: TaskUpdateDto, request: Request, user=Depend
     task_controller = get_task_controller(lang)
     if user.get("roleName") not in ["Customer Supporter", "Employee"]:
         raise HTTPException(status_code=403, detail="Forbidden")
-    return task_controller.update_task(task_id, task, user)
+    return task_controller.update_task(task_id, task, user, lang)
 
 # soft delete
 # full path: /api/tickets/tasks/{task_id}
@@ -85,22 +86,11 @@ def delete_task(task_id: str, request: Request, user=Depends(get_current_user)):
     task_controller = get_task_controller(lang)
     if user.get("roleName") not in ["Customer Supporter", "Employee"]:
         raise HTTPException(status_code=403, detail="Forbidden")
-    return task_controller.delete_task(task_id, user)
+    return task_controller.delete_task(task_id, user, lang)
 
-# user approve or reject task when ticket status is WAITING_FOR_CUSTOMER_APPROVE and task status is DONE
-# full path: /api/tickets/tasks/user/{task_id}
-# body: { "status": "APPROVED" } or { "status": "REJECTED" }
-# when APPROVED, task status will stay DONE and ticket status will be COMPLETED
-# when REJECTED, task status will be PENDING and ticket status will be OPEN
-@router.patch("/tasks/user/{task_id}")
-async def user_approve_or_reject_task(task_id: str, request: Request, user=Depends(get_current_user)):
-    body = await request.json()
-    status = body.get("status")
-    token = request.headers.get("authorization", "").replace("Bearer ", "")
-    lang = get_lang(request)
-    set_language(lang)
-    task_controller = get_task_controller(lang)
-    if user.get("roleName") not in ["User"]:
-        raise HTTPException(status_code=403, detail="Forbidden")
-    return task_controller.user_approve_or_reject_task(task_id, status, user, token, lang)
+# Bu endpoint artık kullanılmıyor - Task DONE olduğunda ticket otomatik CLOSED oluyor
+# @router.patch("/tasks/user/{task_id}")
+# async def user_approve_or_reject_task(task_id: str, request: Request, user=Depends(get_current_user)):
+#     # Bu endpoint kaldırıldı
+#     pass
 

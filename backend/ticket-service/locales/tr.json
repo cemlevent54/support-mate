@@ -237,14 +237,42 @@
                 "task_delete_error": "Görev silinirken hata oluştu.",
                 "get_tasks": "Görevler başarıyla listelendi.",
                 "get_task": "Görev başarıyla getirildi.",
-                "task_not_found": "Görev bulunamadı."
+                "task_not_found": "Görev bulunamadı.",
+                "employee_tasks_listed": "Çalışan görevleri başarıyla listelendi.",
+                "get_tasks_employee": "Çalışan görevleri getiriliyor.",
+                "get_tasks_employee_error": "Çalışan görevleri getirilirken hata oluştu.",
+                "create_task": "Görev oluşturuluyor.",
+                "create_task_error": "Görev oluşturulurken hata oluştu.",
+                "task_already_exists": "Bu ticket için zaten bir görev mevcut.",
+                "past_deadline_not_allowed": "Görev bitiş tarihi geçmiş bir tarih olamaz. Lütfen bugünden sonraki bir tarih seçin.",
+                "invalid_deadline_format": "Görev bitiş tarihi formatı geçersiz. Lütfen doğru tarih formatını kullanın.",
+                "deadline_required": "Görev bitiş tarihi zorunludur.",
+                "deadline_too_far": "Görev bitiş tarihi çok uzak bir tarih olamaz. Maksimum 1 yıl sonrası seçilebilir."
             },
             "responses": {
-                "task_already_exists_for_ticket": "Bu ticket'a zaten bir görev atanmış. "
+                "task_created": "Görev başarıyla oluşturuldu.",
+                "task_updated": "Görev başarıyla güncellendi.",
+                "task_deleted": "Görev başarıyla silindi.",
+                "task_already_exists": "Bu ticket için zaten bir görev mevcut.",
+                "past_deadline_not_allowed": "Görev bitiş tarihi geçmiş bir tarih olamaz. Lütfen bugünden sonraki bir tarih seçin.",
+                "invalid_deadline_format": "Görev bitiş tarihi formatı geçersiz. Lütfen doğru tarih formatını kullanın.",
+                "deadline_required": "Görev bitiş tarihi zorunludur.",
+                "deadline_too_far": "Görev bitiş tarihi çok uzak bir tarih olamaz. Maksimum 1 yıl sonrası seçilebilir.",
+                "title_required": "Görev başlığı zorunludur.",
+                "title_too_long": "Görev başlığı en fazla 50 karakter olabilir.",
+                "description_required": "Görev açıklaması zorunludur.",
+                "description_too_long": "Görev açıklaması en fazla 500 karakter olabilir."
             }
         }
     },
 
+    "middleware": {
+        "loremFilter": {
+            "lorem_words_detected": "Tekrarlı kelimeler tespit edildi. Lütfen gerçek içerik kullanın.",
+            "field_contains_lorem": "{field} alanında tekrarlı kelimeler bulundu: {words}",
+            "multiple_violations": "{count} farklı alanda tekrarlı kelimeler tespit edildi."
+        }
+    },
     "controllers": {
         "categoryController": {
             "logs": {

@@ -14,6 +14,40 @@
       "logoutSuccess": "Başarıyla çıkış yapıldı.",
       "logoutError": "Çıkış yapılamadı."
     },
+    "customDateTimePicker": {
+      "validation": {
+        "required": "Bu alan zorunludur.",
+        "invalidFormat": "Geçersiz tarih formatı. Lütfen doğru formatı kullanın.",
+        "pastDate": "Geçmiş tarih seçilemez.",
+        "futureDate": "Gelecek tarih seçilmelidir.",
+        "minDate": "Minimum tarih: {minDate}",
+        "maxDate": "Maksimum tarih: {maxDate}",
+        "invalidDate": "Geçersiz tarih."
+      },
+      "placeholder": {
+        "selectDateTime": "Tarih ve saat seçin",
+        "selectDate": "Tarih seçin",
+        "selectTime": "Saat seçin"
+      },
+      "helperText": {
+        "format": "Format: YYYY-MM-DD HH:MM",
+        "required": "Bu alan zorunludur",
+        "optional": "Bu alan isteğe bağlıdır"
+      }
+    },
+    "customTextInput": {
+      "validation": {
+        "required": "Bu alan zorunludur.",
+        "minLength": "En az {minLength} karakter girilmelidir.",
+        "maxLength": "En fazla {maxLength} karakter girilebilir.",
+        "lengthRange": "Bu alan {minLength} ile {maxLength} karakter arasında olmalıdır."
+      },
+      "charCounter": {
+        "current": "Mevcut karakter sayısı: {current}",
+        "remaining": "Kalan karakter sayısı: {remaining}",
+        "overLimit": "Karakter sınırını aştınız!"
+      }
+    },
     "chatWidget": {
       "title": "Canlı Destek",
       "placeholder": "Mesajınızı yazın...",
@@ -548,6 +582,14 @@
     "taskValidation": "Lütfen başlık ve açıklama alanlarını doldurun.",
     "taskCreated": "Task başarıyla oluşturuldu!",
     "noTasks": "Bu ticket için henüz task oluşturulmamış.",
+    "dueDateValidation": {
+      "required": "Görev bitiş tarihi zorunludur.",
+      "pastDate": "Görev bitiş tarihi geçmiş bir tarih olamaz. Lütfen bugünden sonraki bir tarih seçin.",
+      "invalidFormat": "Görev bitiş tarihi formatı geçersiz. Lütfen doğru tarih formatını kullanın.",
+      "tooFar": "Görev bitiş tarihi çok uzak bir tarih olamaz. Maksimum 1 yıl sonrası seçilebilir.",
+      "placeholder": "Bitiş tarihi seçin",
+      "helpText": "Görev için bitiş tarihi belirleyin"
+    },
     "taskPriority": {
       "low": "Düşük",
       "medium": "Orta",

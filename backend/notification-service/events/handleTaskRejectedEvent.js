@@ -2,32 +2,16 @@ import emailService from '../services/emailService.js';
 import logger from '../config/logger.js';
 
 /**
- * task-rejected event handler
- * @param {Object} event - Kafka'dan gelen event objesi
- * @param {string} event.email - Alıcı e-posta adresi
- * @param {string} event.firstName - Alıcı adı
- * @param {string} event.locale - Accept-Language header'ından gelen dil bilgisi ('tr' veya 'en')
- * @param {string} event.taskId - Görev ID
- * @param {string} event.taskTitle - Görev başlığı
- * @param {string} event.html - Hazır e-posta HTML içeriği
+ * task-rejected event handler - ARTIK KULLANILMIYOR
+ * Bu event handler artık kullanılmıyor çünkü approve/reject süreci kaldırıldı
+ * Task DONE olduğunda ticket otomatik CLOSED oluyor
  */
 async function handleTaskRejectedEvent(event) {
   try {
-    if (!event.email) throw new Error('E-posta adresi eksik!');
-    // Accept-Language header'ından gelen dil bilgisini kullan
-    const locale = event.locale;
-    
-    const subject = locale === 'tr'
-      ? 'Görev Reddedildi'
-      : 'Task Rejected';
-    await emailService.send({
-      to: event.email,
-      subject,
-      html: event.html || '',
-    });
-    logger.info(`[TaskRejected] E-posta gönderildi: ${event.email} (${event.taskId})`);
+    logger.info(`[TaskRejected] Bu event artık kullanılmıyor: ${event.taskId}`);
+    // Bu event handler artık kullanılmıyor
   } catch (err) {
-    logger.error('[TaskRejected] E-posta gönderilemedi:', err);
+    logger.error('[TaskRejected] Event handler hatası:', err);
   }
 }
 

@@ -18,11 +18,20 @@ class MessageController:
         logger.info(_("services.messageService.logs.plain_message_before_encryption"))
         try:
             result = self.message_service.send_message(message, user)
+            if result is None:
+                return JSONResponse(
+                    status_code=400,
+                    content={
+                        "success": False,
+                        "message": _("services.messageService.responses.chat_could_not_be_created"),
+                        "data": None
+                    }
+                )
             return JSONResponse(
                 status_code=200,
                 content={
                     "success": True,
-                    "message": result.get("message"),
+                    "message": _("services.messageService.responses.message_sent"),
                     "data": result.get("data")
                 }
             )
@@ -33,7 +42,8 @@ class MessageController:
                 content={
                     "success": False,
                     "message": _("services.messageService.logs.message_send_failed"),
-                    "error": str(e)
+                    "error": str(e),
+                    "data": None
                 }
             )
 
@@ -46,8 +56,8 @@ class MessageController:
                 status_code=200,
                 content={
                     "success": True,
-                    "message": result.get("message"),
-                    "data": result.get("data")
+                    "message": _("services.messageService.responses.messages_retrieved"),
+                    "data": result
                 }
             )
         except Exception as e:
@@ -57,7 +67,8 @@ class MessageController:
                 content={
                     "success": False,
                     "message": _("services.messageService.logs.message_list_failed"),
-                    "error": str(e)
+                    "error": str(e),
+                    "data": None
                 }
             )
 
@@ -81,7 +92,8 @@ class MessageController:
                 content={
                     "success": False,
                     "message": _("services.messageService.logs.message_list_failed"),
-                    "error": str(e)
+                    "error": str(e),
+                    "data": None
                 }
             )
 
@@ -90,12 +102,21 @@ class MessageController:
         logger.info(_("services.messageService.logs.message_listed"))
         try:
             result = self.message_service.list_messages_by_ticket_id(ticket_id, user)
+            if result is None:
+                return JSONResponse(
+                    status_code=404,
+                    content={
+                        "success": False,
+                        "message": _("services.messageService.responses.chat_not_found_simple"),
+                        "data": None
+                    }
+                )
             return JSONResponse(
                 status_code=200,
                 content={
                     "success": True,
-                    "message": result.get("message"),
-                    "data": result.get("data")
+                    "message": _("services.messageService.responses.messages_retrieved"),
+                    "data": result
                 }
             )
         except Exception as e:
@@ -105,7 +126,8 @@ class MessageController:
                 content={
                     "success": False,
                     "message": _("services.messageService.logs.message_list_failed"),
-                    "error": str(e)
+                    "error": str(e),
+                    "data": None
                 }
             )
 
@@ -118,8 +140,8 @@ class MessageController:
                 status_code=200,
                 content={
                     "success": True,
-                    "message": result.get("message"),
-                    "data": result.get("data")
+                    "message": _("services.messageService.responses.messages_retrieved"),
+                    "data": result
                 }
             )
         except Exception as e:
@@ -129,7 +151,8 @@ class MessageController:
                 content={
                     "success": False,
                     "message": _("services.messageService.logs.message_list_failed"),
-                    "error": str(e)
+                    "error": str(e),
+                    "data": None
                 }
             )
 
@@ -138,12 +161,21 @@ class MessageController:
         logger.info(_("services.messageService.logs.message_listed"))
         try:
             result = self.message_service.get_messages_by_id(id, user)
+            if result is None:
+                return JSONResponse(
+                    status_code=404,
+                    content={
+                        "success": False,
+                        "message": _("services.messageService.responses.chat_not_found_simple"),
+                        "data": None
+                    }
+                )
             return JSONResponse(
                 status_code=200,
                 content={
                     "success": True,
-                    "message": result.get("message"),
-                    "data": result.get("data")
+                    "message": _("services.messageService.responses.messages_retrieved"),
+                    "data": result
                 }
             )
         except Exception as e:
@@ -153,7 +185,8 @@ class MessageController:
                 content={
                     "success": False,
                     "message": _("services.messageService.logs.message_list_failed"),
-                    "error": str(e)
+                    "error": str(e),
+                    "data": None
                 }
             )
 
@@ -166,8 +199,8 @@ class MessageController:
                 status_code=200,
                 content={
                     "success": True,
-                    "message": result.get("message"),
-                    "data": result.get("data")
+                    "message": _("services.messageService.responses.non_ticket_chats_retrieved"),
+                    "data": result
                 }
             )
         except Exception as e:
@@ -177,7 +210,8 @@ class MessageController:
                 content={
                     "success": False,
                     "message": _("services.messageService.logs.message_list_failed"),
-                    "error": str(e)
+                    "error": str(e),
+                    "data": None
                 }
             )
 
@@ -190,8 +224,8 @@ class MessageController:
                 status_code=200,
                 content={
                     "success": True,
-                    "message": result.get("message"),
-                    "data": result.get("data")
+                    "message": _("services.messageService.responses.messages_retrieved"),
+                    "data": result
                 }
             )
         except Exception as e:
@@ -201,7 +235,8 @@ class MessageController:
                 content={
                     "success": False,
                     "message": _("services.messageService.logs.message_list_failed"),
-                    "error": str(e)
+                    "error": str(e),
+                    "data": None
                 }
             )
 
@@ -213,8 +248,8 @@ class MessageController:
                 status_code=200,
                 content={
                     "success": True,
-                    "message": result.get("message"),
-                    "data": result.get("data")
+                    "message": _("services.messageService.responses.chats_retrieved"),
+                    "data": result
                 }
             )
         except Exception as e:
@@ -224,7 +259,8 @@ class MessageController:
                 content={
                     "success": False,
                     "message": _("services.messageService.logs.message_list_failed"),
-                    "error": str(e)
+                    "error": str(e),
+                    "data": None
                 }
             )
 
@@ -232,14 +268,20 @@ class MessageController:
         set_language(lang or self.lang)
         try:
             result = self.message_service.list_agent_chats_with_messages(user, page, page_size)
-            if not result.get("success", True):
-                from responseHandlers.clientErrors.notfound_error import not_found_error
-                return not_found_error(result.get("message", "No chats found"))
+            if result is None:
+                return JSONResponse(
+                    status_code=404,
+                    content={
+                        "success": False,
+                        "message": _("services.messageService.responses.no_chats_found"),
+                        "data": None
+                    }
+                )
             return JSONResponse(
                 status_code=200,
                 content={
                     "success": True,
-                    "message": result.get("message"),
+                    "message": _("services.messageService.responses.chats_retrieved"),
                     "data": result.get("data"),
                     "total": result.get("total", 0)
                 }
@@ -251,7 +293,8 @@ class MessageController:
                 content={
                     "success": False,
                     "message": _("services.messageService.logs.message_list_failed"),
-                    "error": str(e)
+                    "error": str(e),
+                    "data": None
                 }
             )
 
@@ -259,14 +302,20 @@ class MessageController:
         set_language(lang or self.lang)
         try:
             result = self.message_service.list_user_chats_with_messages(user, page, page_size)
-            if not result.get("success", True):
-                from responseHandlers.clientErrors.notfound_error import not_found_error
-                return not_found_error(result.get("message", "No chats found"))
+            if result is None:
+                return JSONResponse(
+                    status_code=404,
+                    content={
+                        "success": False,
+                        "message": _("services.messageService.responses.no_chats_found"),
+                        "data": None
+                    }
+                )
             return JSONResponse(
                 status_code=200,
                 content={
                     "success": True,
-                    "message": result.get("message"),
+                    "message": _("services.messageService.responses.chats_retrieved"),
                     "data": result.get("data"),
                     "total": result.get("total", 0)
                 }
@@ -278,7 +327,8 @@ class MessageController:
                 content={
                     "success": False,
                     "message": _("services.messageService.logs.message_list_failed"),
-                    "error": str(e)
+                    "error": str(e),
+                    "data": None
                 }
             )
 
@@ -290,7 +340,8 @@ class MessageController:
                 status_code=200,
                 content={
                     "success": True,
-                    "message": _(f"services.messageService.responses.messages_marked_as_read")
+                    "message": _("services.messageService.responses.messages_marked_as_read"),
+                    "data": None
                 }
             )
         except Exception as e:
@@ -300,7 +351,8 @@ class MessageController:
                 content={
                     "success": False,
                     "message": _("services.messageService.logs.message_list_failed"),
-                    "error": str(e)
+                    "error": str(e),
+                    "data": None
                 }
             )
 

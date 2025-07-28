@@ -144,7 +144,28 @@ const CustomTicketTable = ({
                                   : {}
                             }
                           >
-                            {col.render ? col.render(row) : row[col.key]}
+                            {col.render ? col.render(row) : 
+                              (() => {
+                                const value = row[col.key];
+                                console.log(`CustomTicketTable - rendering ${col.key}:`, value, 'type:', typeof value);
+                                
+                                // Kategori verisi obje ise string'e çevir
+                                if (col.key === 'category' && typeof value === 'object') {
+                                  const categoryString = value?.category_name_tr || value?.category_name_en || value?.categoryNameTr || value?.categoryNameEn || value?.name_tr || value?.name_en || '-';
+                                  console.log('CustomTicketTable - category object converted to:', categoryString);
+                                  return categoryString;
+                                }
+                                // Herhangi bir obje ise JSON string'e çevir
+                                else if (typeof value === 'object') {
+                                  console.log('CustomTicketTable - object converted to JSON string');
+                                  return JSON.stringify(value);
+                                }
+                                // Normal değer
+                                else {
+                                  return value;
+                                }
+                              })()
+                            }
                           </td>
                         )
                       )}

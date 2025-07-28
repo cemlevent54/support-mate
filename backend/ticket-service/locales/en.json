@@ -237,14 +237,42 @@
                 "task_delete_error": "An error occurred while deleting the task.",
                 "get_tasks": "Tasks listed successfully.",
                 "get_task": "Task retrieved successfully.",
-                "task_not_found": "Task not found."
+                "task_not_found": "Task not found.",
+                "employee_tasks_listed": "Employee tasks listed successfully.",
+                "get_tasks_employee": "Getting employee tasks.",
+                "get_tasks_employee_error": "An error occurred while getting employee tasks.",
+                "create_task": "Creating task.",
+                "create_task_error": "An error occurred while creating the task.",
+                "task_already_exists": "A task already exists for this ticket.",
+                "past_deadline_not_allowed": "Task deadline cannot be a past date. Please select a date after today.",
+                "invalid_deadline_format": "Task deadline format is invalid. Please use the correct date format.",
+                "deadline_required": "Task deadline is required.",
+                "deadline_too_far": "Task deadline cannot be too far in the future. Maximum 1 year from now is allowed."
             },
             "responses": {
-                "task_already_exists_for_ticket": "A task has already been assigned to this ticket. "
+                "task_created": "Task created successfully.",
+                "task_updated": "Task updated successfully.",
+                "task_deleted": "Task deleted successfully.",
+                "task_already_exists": "A task already exists for this ticket.",
+                "past_deadline_not_allowed": "Task deadline cannot be a past date. Please select a date after today.",
+                "invalid_deadline_format": "Task deadline format is invalid. Please use the correct date format.",
+                "deadline_required": "Task deadline is required.",
+                "deadline_too_far": "Task deadline cannot be too far in the future. Maximum 1 year from now is allowed.",
+                "title_required": "Task title is required.",
+                "title_too_long": "Task title cannot exceed 50 characters.",
+                "description_required": "Task description is required.",
+                "description_too_long": "Task description cannot exceed 500 characters."
             }
         }
     },
 
+    "middleware": {
+        "loremFilter": {
+            "lorem_words_detected": "Repeated words detected. Please use real content.",
+            "field_contains_lorem": "Repeated words found in {field} field: {words}",
+            "multiple_violations": "Repeated words detected in {count} different fields."
+        }
+    },
     "controllers": {
         "categoryController": {
             "logs": {

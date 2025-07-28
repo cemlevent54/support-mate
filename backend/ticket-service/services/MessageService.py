@@ -75,7 +75,7 @@ class MessageService:
             chat_id = getattr(chat, "id", None) or getattr(chat, "_id", None)
             if not chat_id:
                 self.logger.error("send_message: Chat oluşturulamadı.")
-                return {"success": False, "message": _(f"services.messageService.responses.chat_could_not_be_created")}
+                return None
             message_data["chatId"] = chat_id
             self.logger.info(f"send_message: Yeni chat oluşturuldu, chatId={chat_id}")
         
@@ -116,7 +116,6 @@ class MessageService:
         return result
     
 
-
     def list_messages(self, chat_id, user):
         logging.info(f"[SERVICE] list_messages called with chat_id: {chat_id}, user: {user.get('id')}")
         result = self.list_handler.execute(chat_id, user)
@@ -141,7 +140,7 @@ class MessageService:
             ticket_dict = to_dict(ticket)
         if ticket_dict:
             ticket_dict = convert_dict_timestamps_to_tr(ticket_dict)
-        return {"success": result["success"], "data": {"messages": result["data"], "chatId": chat_id, "ticket": ticket_dict}, "message": result.get("message")}
+        return {"messages": result["data"], "chatId": chat_id, "ticket": ticket_dict}
 
     def list_messages_between_users(self, user1_id, user2_id, user):
         logging.info(f"[SERVICE] list_messages_between_users called with user1_id: {user1_id}, user2_id: {user2_id}, user: {user.get('id')}")
@@ -159,7 +158,7 @@ class MessageService:
         messages_handler = ListMessagesByChatIdQueryHandler()
         chat = chat_handler.execute(ticket_id)
         if not chat:
-            return {"success": False, "data": [], "message": _(f"services.messageService.responses.chat_not_found_simple")}
+            return None
         # Ticket bilgilerini al (CQRS ile)
         ticket_handler = GetTicketQueryHandler()
         ticket = ticket_handler.execute(ticket_id, user)
@@ -174,7 +173,7 @@ class MessageService:
             ticket_dict = to_dict(ticket)
         if ticket_dict:
             ticket_dict = convert_dict_timestamps_to_tr(ticket_dict)
-        return {"success": True, "data": {"messages": message_dtos, "chatId": chat.id, "ticket": ticket_dict}, "message": _(f"services.messageService.responses.messages_retrieved")}
+        return {"messages": message_dtos, "chatId": chat.id, "ticket": ticket_dict}
 
     def get_messages_by_id(self, id, user):
         logging.info(f"[SERVICE] get_messages_by_id called with id: {id}, user: {user.get('id')}")
@@ -205,10 +204,10 @@ class MessageService:
             else:
                 ticket_dict = None
             self.logger.info(_(f"services.messageService.logs.message_listed"))
-            return {"success": True, "data": {"messages": message_dtos, "chatId": chat_id, "ticket": ticket_dict}, "message": _(f"services.messageService.responses.messages_retrieved")}
+            return {"messages": message_dtos, "chatId": chat_id, "ticket": ticket_dict}
         else:
             self.logger.error(_(f"services.messageService.logs.message_list_failed").format(error="Chat not found"))
-            return {"success": False, "data": [], "message": _(f"services.messageService.responses.chat_not_found_simple")}
+            return None
 
     def list_non_ticket_chats(self, user):
         logging.info(f"[SERVICE] list_non_ticket_chats called with user: {user.get('id')}")
@@ -221,7 +220,7 @@ class MessageService:
                 "messages": [MessageDTO.from_model(msg).model_dump() for msg in chat["chatMessages"]],
                 "chatId": chat["id"]
             })
-        return {"success": True, "data": formatted, "message": _(f"services.messageService.responses.non_ticket_chats_retrieved")}
+        return formatted
 
     def list_messages_by_chat_id(self, chat_id, user):
         logging.info(f"[SERVICE] list_messages_by_chat_id called with chat_id: {chat_id}, user: {user.get('id')}")
@@ -242,14 +241,14 @@ class MessageService:
         if chat_dict:
             chat_dict = to_dict(chat_dict)
             chat_dict = convert_dict_timestamps_to_tr(chat_dict)
-        return {"success": True, "data": {"messages": message_dtos, "chatId": chat_id, "chat": chat_dict, "ticket": ticket_dict}, "message": _(f"services.messageService.responses.messages_retrieved")}
+        return {"messages": message_dtos, "chatId": chat_id, "chat": chat_dict, "ticket": ticket_dict}
 
     def list_user_chats(self, user):
         # CQRS handler ile kullanıcıya ait tüm chatleri getir
         handler = ListUserChatsQueryHandler()
         user_id = user.get("id")
         result = handler.execute(user_id)
-        return {"success": True, "data": result["data"], "message": _(f"services.messageService.responses.chats_retrieved")}
+        return result["data"]
 
     def list_agent_chats_with_messages(self, user, page=None, page_size=None):
         handler = ListAgentChatsWithMessagesQueryHandler()
@@ -257,7 +256,7 @@ class MessageService:
         result = handler.execute(user_id)
         
         if not result.get("success", True):
-            return result
+            return None
         
         all_data = result["data"]
         total = len(all_data)
@@ -270,7 +269,6 @@ class MessageService:
         # Her bir chat ve içindeki ticket/chat objeleri için datetime stringe çevir
         data = [convert_dict_timestamps_to_tr(item) for item in data]
         return {
-            "success": True,
             "data": data,
             "total": total,
         }
@@ -281,7 +279,7 @@ class MessageService:
         result = handler.execute(user_id)
         
         if not result.get("success", True):
-            return result
+            return None
         
         all_data = result["data"]
         total = len(all_data)
@@ -293,7 +291,6 @@ class MessageService:
             data = all_data
         data = [convert_dict_timestamps_to_tr(item) for item in data]
         return {
-            "success": True,
             "data": data,
             "total": total,
         }

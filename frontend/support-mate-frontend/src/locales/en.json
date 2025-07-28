@@ -22,6 +22,40 @@
       "welcomeMessage": "Hello! How can I help you?",
       "autoReply": "Your message has been received. We will get back to you as soon as possible.",
       "keyboardHint": "Press Enter to send, Shift+Enter for new line"
+    },
+    "customDateTimePicker": {
+      "validation": {
+        "required": "This field is required.",
+        "invalidFormat": "Invalid date format. Please use the correct format.",
+        "pastDate": "Past dates cannot be selected.",
+        "futureDate": "Future date must be selected.",
+        "minDate": "Minimum date: {minDate}",
+        "maxDate": "Maximum date: {maxDate}",
+        "invalidDate": "Invalid date."
+      },
+      "placeholder": {
+        "selectDateTime": "Select date and time",
+        "selectDate": "Select date",
+        "selectTime": "Select time"
+      },
+      "helperText": {
+        "format": "Format: YYYY-MM-DD HH:MM",
+        "required": "This field is required",
+        "optional": "This field is optional"
+      }
+    },
+    "customTextInput": {
+      "validation": {
+        "required": "This field is required.",
+        "minLength": "Minimum {minLength} characters required.",
+        "maxLength": "Maximum {maxLength} characters allowed.",
+        "lengthRange": "This field must be between {minLength} and {maxLength} characters."
+      },
+      "charCounter": {
+        "current": "Current character count: {current}",
+        "remaining": "Remaining characters: {remaining}",
+        "overLimit": "Character limit exceeded!"
+      }
     }
   },
   "pages": {
@@ -547,6 +581,14 @@
     "taskValidation": "Please fill in the title and description fields.",
     "taskCreated": "Task created successfully!",
     "noTasks": "No tasks have been created for this ticket yet.",
+    "dueDateValidation": {
+      "required": "Task deadline is required.",
+      "pastDate": "Task deadline cannot be a past date. Please select a date after today.",
+      "invalidFormat": "Task deadline format is invalid. Please use the correct date format.",
+      "tooFar": "Task deadline cannot be too far in the future. Maximum 1 year from now is allowed.",
+      "placeholder": "Select due date",
+      "helpText": "Set a deadline for the task"
+    },
     "taskPriority": {
       "low": "Low",
       "medium": "Medium",

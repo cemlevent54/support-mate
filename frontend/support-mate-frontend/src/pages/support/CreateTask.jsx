@@ -21,7 +21,7 @@ const PRIORITIES = [
 // USERS sabitini kaldırıyoruz, onun yerine state olacak
 // const USERS = [ ... ];
 
-export default function CreateTask({ open, onClose, ticketId = '123456' }) {
+export default function CreateTask({ open, onClose, ticketId = '123456', onSuccess }) {
   const { t } = useTranslation();
   const [form, setForm] = useState({
     title: '',
@@ -64,6 +64,81 @@ export default function CreateTask({ open, onClose, ticketId = '123456' }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Başlık validasyonu (1-50 karakter)
+    if (!form.title || form.title.length < 1) {
+      setSnackbar({ 
+        open: true, 
+        message: t('components.customTextInput.validation.required'), 
+        severity: 'error' 
+      });
+      return;
+    }
+    
+    if (form.title.length > 50) {
+      setSnackbar({ 
+        open: true, 
+        message: t('components.customTextInput.validation.maxLength', { maxLength: 50 }), 
+        severity: 'error' 
+      });
+      return;
+    }
+    
+    // Açıklama validasyonu (1-500 karakter)
+    if (!form.description || form.description.length < 1) {
+      setSnackbar({ 
+        open: true, 
+        message: t('components.customTextInput.validation.required'), 
+        severity: 'error' 
+      });
+      return;
+    }
+    
+    if (form.description.length > 500) {
+      setSnackbar({ 
+        open: true, 
+        message: t('components.customTextInput.validation.maxLength', { maxLength: 500 }), 
+        severity: 'error' 
+      });
+      return;
+    }
+    
+    // Due date validasyonu
+    if (!form.dueDate) {
+      setSnackbar({ 
+        open: true, 
+        message: t('leaderTickets.dueDateValidation.required'), 
+        severity: 'error' 
+      });
+      return;
+    }
+    
+    const selectedDate = new Date(form.dueDate);
+    const currentDate = new Date();
+    
+    // Geçmiş tarih kontrolü
+    if (selectedDate < currentDate) {
+      setSnackbar({ 
+        open: true, 
+        message: t('leaderTickets.dueDateValidation.pastDate'), 
+        severity: 'error' 
+      });
+      return;
+    }
+    
+    // Çok uzak tarih kontrolü (1 yıl)
+    const maxDate = new Date();
+    maxDate.setFullYear(maxDate.getFullYear() + 1);
+    if (selectedDate > maxDate) {
+      setSnackbar({ 
+        open: true, 
+        message: t('leaderTickets.dueDateValidation.tooFar'), 
+        severity: 'error' 
+      });
+      return;
+    }
+    
+    setLoadingUsers(true);
     try {
       const token = localStorage.getItem('jwt');
       const decoded = jwtDecode(token);
@@ -78,7 +153,7 @@ export default function CreateTask({ open, onClose, ticketId = '123456' }) {
         createdByCustomerSupporterId: decoded.id,
       };
       const response = await createTask(payload, token);
-      setSnackbar({ open: true, message: response.data?.message || 'Görev oluşturuldu!', severity: 'success' });
+      setSnackbar({ open: true, message: response.data?.message || t('leaderTickets.taskCreated'), severity: 'success' });
       setForm({
         title: '',
         description: '',
@@ -88,8 +163,19 @@ export default function CreateTask({ open, onClose, ticketId = '123456' }) {
         ticketId: ticketId || '',
       });
       onClose();
+      // Task başarıyla oluşturulduğunda onSuccess callback'ini çağır
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (err) {
-      setSnackbar({ open: true, message: 'Görev oluşturulamadı!', severity: 'error' });
+      // Backend'den gelen hata mesajını kontrol et
+      let errorMessage = t('leaderTickets.taskValidation');
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      }
+      setSnackbar({ open: true, message: errorMessage, severity: 'error' });
+    } finally {
+      setLoadingUsers(false);
     }
   };
 
@@ -105,6 +191,9 @@ export default function CreateTask({ open, onClose, ticketId = '123456' }) {
             onChange={handleChange}
             required
             placeholder={t('createTask.form.titlePlaceholder')}
+            minLength={1}
+            maxLength={50}
+            showCharCounter={true}
           />
           <CustomMultilineTextArea
             label={t('createTask.form.description')}
@@ -114,6 +203,9 @@ export default function CreateTask({ open, onClose, ticketId = '123456' }) {
             required
             placeholder={t('createTask.form.descriptionPlaceholder')}
             rows={3}
+            minLength={1}
+            maxLength={500}
+            showCharCounter={true}
           />
           <div style={{ display: 'flex', gap: 12, flexDirection: window.innerWidth < 600 ? 'column' : 'row' }}>
             <CustomDropdown
@@ -143,6 +235,9 @@ export default function CreateTask({ open, onClose, ticketId = '123456' }) {
               value={form.dueDate}
               onChange={handleChange}
               required
+              min={new Date().toISOString().slice(0, 16)} // Geçmiş tarihleri engelle
+              placeholder={t('leaderTickets.dueDateValidation.placeholder')}
+              helperText={t('leaderTickets.dueDateValidation.helpText')}
             />
             <CustomSingleLineTextArea
               label={t('createTask.form.ticketId')}

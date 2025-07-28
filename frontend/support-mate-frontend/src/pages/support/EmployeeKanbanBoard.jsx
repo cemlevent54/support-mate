@@ -6,6 +6,8 @@ import CustomSearchBar from '../../components/common/CustomSearchBar';
 import CustomCategoryFilter from '../../components/common/CustomCategoryFilter';
 import { getTasksEmployee, getTask, updateTask } from '../../api/taskApi';
 import { useTranslation } from 'react-i18next';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
 
 const emptyKanban = {
   columns: {
@@ -24,6 +26,9 @@ export default function EmployeeKanbanBoard() {
   const [modalTask, setModalTask] = useState(null);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
+
+  const handleSnackbarClose = () => setSnackbar({ ...snackbar, open: false });
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -51,8 +56,24 @@ export default function EmployeeKanbanBoard() {
           });
         });
         setData({ columns });
+        
+        // Başarı mesajı göster
+        if (res.data.message) {
+          setSnackbar({ 
+            open: true, 
+            message: res.data.message, 
+            severity: 'success' 
+          });
+        }
       } catch (err) {
         setData(emptyKanban);
+        // Hata mesajı göster
+        const errorMessage = err.response?.data?.message || err.message || 'Görevler yüklenirken hata oluştu';
+        setSnackbar({ 
+          open: true, 
+          message: errorMessage, 
+          severity: 'error' 
+        });
       }
     };
     fetchTasks();
@@ -102,11 +123,24 @@ export default function EmployeeKanbanBoard() {
     // Backend'e güncelleme isteği gönder
     if (source.droppableId !== destination.droppableId) {
       try {
-        await updateTaskStatus(removed.id, destination.droppableId);
-        // Başarılı ise ekstra bir şey yapmaya gerek yok
+        const response = await updateTaskStatus(removed.id, destination.droppableId);
+        
+        // Başarı mesajı göster
+        if (response?.data?.message) {
+          setSnackbar({ 
+            open: true, 
+            message: response.data.message, 
+            severity: 'success' 
+          });
+        }
       } catch (err) {
         // Hata olursa eski state'e geri al
-        alert('Durum güncellenemedi! Geri alınıyor.');
+        const errorMessage = err.response?.data?.message || err.message || 'Durum güncellenemedi! Geri alınıyor.';
+        setSnackbar({ 
+          open: true, 
+          message: errorMessage, 
+          severity: 'error' 
+        });
         setData(prevData);
       }
     }
@@ -118,9 +152,26 @@ export default function EmployeeKanbanBoard() {
       const res = await getTask(item.id, token);
       setModalTask(res.data.data);
       setModalOpen(true);
+      
+      // Başarı mesajı göster
+      if (res.data.message) {
+        setSnackbar({ 
+          open: true, 
+          message: res.data.message, 
+          severity: 'success' 
+        });
+      }
     } catch (err) {
       setModalTask(item.raw || item);
       setModalOpen(true);
+      
+      // Hata mesajı göster
+      const errorMessage = err.response?.data?.message || err.message || 'Görev detayları yüklenirken hata oluştu';
+      setSnackbar({ 
+        open: true, 
+        message: errorMessage, 
+        severity: 'error' 
+      });
     }
   };
 
@@ -151,6 +202,7 @@ export default function EmployeeKanbanBoard() {
   const updateTaskStatus = async (taskId, status) => {
     const token = localStorage.getItem('token');
     const res = await updateTask(taskId, { status }, token);
+    return res;
   };
 
   return (
@@ -227,6 +279,22 @@ export default function EmployeeKanbanBoard() {
         onClose={handleModalClose}
         task={modalTask}
       />
+      
+      {/* Snackbar for API responses */}
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={4000} 
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={handleSnackbarClose} 
+          severity={snackbar.severity} 
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </div>
   );
 } 

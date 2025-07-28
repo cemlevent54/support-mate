@@ -146,7 +146,28 @@ const CustomAssignLeaderModal = ({
                 {t('assignLeaderModal.category', 'Kategori')}:
               </span>
               <span className="text-blue-900 font-semibold">
-                {ticket?.category || '-'}
+                {(() => {
+                  let categoryName = "-";
+                  if (ticket?.category) {
+                    if (typeof ticket.category === 'object') {
+                      if (ticket.category.category_name_tr || ticket.category.category_name_en) {
+                        categoryName = ticket.category.category_name_tr || ticket.category.category_name_en || '-';
+                      } else if (ticket.category.categoryNameTr || ticket.category.categoryNameEn) {
+                        categoryName = ticket.category.categoryNameTr || ticket.category.categoryNameEn || '-';
+                      } else if (ticket.category.name_tr || ticket.category.name_en) {
+                        categoryName = ticket.category.name_tr || ticket.category.name_en || '-';
+                      } else {
+                        const categoryValues = Object.values(ticket.category).filter(val => typeof val === 'string' && val.trim() !== '');
+                        if (categoryValues.length > 0) {
+                          categoryName = categoryValues[0];
+                        }
+                      }
+                    } else if (typeof ticket.category === 'string') {
+                      categoryName = ticket.category;
+                    }
+                  }
+                  return categoryName;
+                })()}
               </span>
             </div>
             {ticket?.status && (

@@ -1,6 +1,32 @@
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
 from datetime import datetime
+from models.task import TaskPriority, TaskStatus
+from models.task import Task
+
+class TaskCreateDto(BaseModel):
+    title: str
+    description: Optional[str] = None
+    priority: TaskPriority = TaskPriority.LOW
+    status: TaskStatus = TaskStatus.PENDING
+    assignedEmployeeId: str
+    relatedTicketId: Optional[str] = None
+    createdByCustomerSupporterId: str  # API'den gelen alan
+    deadline: Optional[datetime] = None
+
+    def to_task_model(self) -> Task:
+        """TaskCreateDto'yu Task modeline dönüştür"""
+        from models.task import Task
+        return Task(
+            title=self.title,
+            description=self.description,
+            priority=self.priority,
+            status=self.status,
+            assignedEmployeeId=self.assignedEmployeeId,
+            relatedTicketId=self.relatedTicketId,
+            createdBy=self.createdByCustomerSupporterId,  # Dönüştürme
+            deadline=self.deadline
+        )
 
 class TaskResponseDto(BaseModel):
     id: str

@@ -83,24 +83,54 @@ const modalStyle = {
         const sorted = response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         const mappedRows = sorted.map((ticket, idx) => {
           console.log('MyRequests - fetchTickets - processing ticket:', ticket);
-          let categoryName = "";
+          let categoryName = "-";
+          
+          // Kategori ismini çıkarma mantığını düzelt
           if (ticket.category) {
-            if (ticket.category.data) {
-              if (i18n.language === "tr") {
-                categoryName = ticket.category.data.category_name_tr || ticket.category.data.category_name_en || "-";
-              } else {
-                categoryName = ticket.category.data.category_name_en || ticket.category.data.category_name_tr || "-";
+            // Kategori bir obje ise
+            if (typeof ticket.category === 'object') {
+              // category_name_tr ve category_name_en alanları varsa
+              if (ticket.category.category_name_tr || ticket.category.category_name_en) {
+                if (i18n.language === "tr") {
+                  categoryName = ticket.category.category_name_tr || ticket.category.category_name_en || "-";
+                } else {
+                  categoryName = ticket.category.category_name_en || ticket.category.category_name_tr || "-";
+                }
               }
-            } else {
-              if (i18n.language === "tr") {
-                categoryName = ticket.category.categoryNameTr || ticket.category.categoryNameEn || "-";
-              } else {
-                categoryName = ticket.category.categoryNameEn || ticket.category.categoryNameTr || "-";
+              // categoryNameTr ve categoryNameEn alanları varsa
+              else if (ticket.category.categoryNameTr || ticket.category.categoryNameEn) {
+                if (i18n.language === "tr") {
+                  categoryName = ticket.category.categoryNameTr || ticket.category.categoryNameEn || "-";
+                } else {
+                  categoryName = ticket.category.categoryNameEn || ticket.category.categoryNameTr || "-";
+                }
+              }
+              // Diğer olası alan adları
+              else if (ticket.category.name_tr || ticket.category.name_en) {
+                if (i18n.language === "tr") {
+                  categoryName = ticket.category.name_tr || ticket.category.name_en || "-";
+                } else {
+                  categoryName = ticket.category.name_en || ticket.category.name_tr || "-";
+                }
+              }
+              // Kategori objesinin kendisi string ise
+              else if (typeof ticket.category === 'string') {
+                categoryName = ticket.category;
+              }
+              // Kategori objesinin herhangi bir string alanı varsa
+              else {
+                const categoryValues = Object.values(ticket.category).filter(val => typeof val === 'string' && val.trim() !== '');
+                if (categoryValues.length > 0) {
+                  categoryName = categoryValues[0];
+                }
               }
             }
-          } else {
-            categoryName = "-";
+            // Kategori direkt string ise
+            else if (typeof ticket.category === 'string') {
+              categoryName = ticket.category;
+            }
           }
+          
           return {
             id: ticket._id || ticket.id || idx + 1,
             title: ticket.title,
@@ -317,13 +347,40 @@ const modalStyle = {
                 <Typography><b>{t('myRequests.modal.titleLabel')}</b> {selectedTicket.title}</Typography>
                 <Typography><b>{t('myRequests.modal.descriptionLabel')}</b> {selectedTicket.description}</Typography>
                 <Typography><b>{t('myRequests.modal.categoryLabel')}</b> {
-                  typeof selectedTicket.category === 'string'
-                    ? selectedTicket.category
-                    : selectedTicket.category
-                      ? (i18n.language === 'tr'
-                          ? selectedTicket.category.categoryNameTr || selectedTicket.category.categoryNameEn || '-'
-                          : selectedTicket.category.categoryNameEn || selectedTicket.category.categoryNameTr || '-')
-                      : '-'
+                  (() => {
+                    let categoryName = "-";
+                    if (selectedTicket.category) {
+                      if (typeof selectedTicket.category === 'object') {
+                        if (selectedTicket.category.category_name_tr || selectedTicket.category.category_name_en) {
+                          if (i18n.language === 'tr') {
+                            categoryName = selectedTicket.category.category_name_tr || selectedTicket.category.category_name_en || '-';
+                          } else {
+                            categoryName = selectedTicket.category.category_name_en || selectedTicket.category.category_name_tr || '-';
+                          }
+                        } else if (selectedTicket.category.categoryNameTr || selectedTicket.category.categoryNameEn) {
+                          if (i18n.language === 'tr') {
+                            categoryName = selectedTicket.category.categoryNameTr || selectedTicket.category.categoryNameEn || '-';
+                          } else {
+                            categoryName = selectedTicket.category.categoryNameEn || selectedTicket.category.categoryNameTr || '-';
+                          }
+                        } else if (selectedTicket.category.name_tr || selectedTicket.category.name_en) {
+                          if (i18n.language === 'tr') {
+                            categoryName = selectedTicket.category.name_tr || selectedTicket.category.name_en || '-';
+                          } else {
+                            categoryName = selectedTicket.category.name_en || selectedTicket.category.name_tr || '-';
+                          }
+                        } else {
+                          const categoryValues = Object.values(selectedTicket.category).filter(val => typeof val === 'string' && val.trim() !== '');
+                          if (categoryValues.length > 0) {
+                            categoryName = categoryValues[0];
+                          }
+                        }
+                      } else if (typeof selectedTicket.category === 'string') {
+                        categoryName = selectedTicket.category;
+                      }
+                    }
+                    return categoryName;
+                  })()
                 }</Typography>
                 <Typography><b>{t('myRequests.modal.statusLabel')}</b> {selectedTicket.status}</Typography>
                 <Typography><b>{t('myRequests.modal.createdAtLabel')}</b> {selectedTicket.createdAt ? new Date(selectedTicket.createdAt).toLocaleString('tr-TR') : '-'}</Typography>

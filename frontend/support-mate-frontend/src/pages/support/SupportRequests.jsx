@@ -41,24 +41,57 @@ const SupportRequests = ({ onStartChat }) => {
         if (response.success && Array.isArray(response.data)) {
           const sorted = response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
           setRows(sorted.map((ticket, idx) => {
-            let categoryName = "";
+            console.log('SupportRequests - processing ticket category:', ticket.category);
+            let categoryName = "-";
+            
+            // Kategori ismini çıkarma mantığını düzelt
             if (ticket.category) {
-              if (ticket.category.data) {
-                if (i18n.language === "tr") {
-                  categoryName = ticket.category.data.category_name_tr || "-";
-                } else {
-                  categoryName = ticket.category.data.category_name_en || "-";
+              // Kategori bir obje ise
+              if (typeof ticket.category === 'object') {
+                // category_name_tr ve category_name_en alanları varsa
+                if (ticket.category.category_name_tr || ticket.category.category_name_en) {
+                  if (i18n.language === "tr") {
+                    categoryName = ticket.category.category_name_tr || ticket.category.category_name_en || "-";
+                  } else {
+                    categoryName = ticket.category.category_name_en || ticket.category.category_name_tr || "-";
+                  }
                 }
-              } else {
-                if (i18n.language === "tr") {
-                  categoryName = ticket.category.category_name_tr || ticket.category.categoryNameTr || "-";
-                } else {
-                  categoryName = ticket.category.category_name_en || ticket.category.categoryNameEn || "-";
+                // categoryNameTr ve categoryNameEn alanları varsa
+                else if (ticket.category.categoryNameTr || ticket.category.categoryNameEn) {
+                  if (i18n.language === "tr") {
+                    categoryName = ticket.category.categoryNameTr || ticket.category.categoryNameEn || "-";
+                  } else {
+                    categoryName = ticket.category.categoryNameEn || ticket.category.categoryNameTr || "-";
+                  }
+                }
+                // Diğer olası alan adları
+                else if (ticket.category.name_tr || ticket.category.name_en) {
+                  if (i18n.language === "tr") {
+                    categoryName = ticket.category.name_tr || ticket.category.name_en || "-";
+                  } else {
+                    categoryName = ticket.category.name_en || ticket.category.name_tr || "-";
+                  }
+                }
+                // Kategori objesinin kendisi string ise
+                else if (typeof ticket.category === 'string') {
+                  categoryName = ticket.category;
+                }
+                // Kategori objesinin herhangi bir string alanı varsa
+                else {
+                  const categoryValues = Object.values(ticket.category).filter(val => typeof val === 'string' && val.trim() !== '');
+                  if (categoryValues.length > 0) {
+                    categoryName = categoryValues[0];
+                  }
                 }
               }
-            } else {
-              categoryName = "-";
+              // Kategori direkt string ise
+              else if (typeof ticket.category === 'string') {
+                categoryName = ticket.category;
+              }
             }
+            
+            console.log('SupportRequests - extracted categoryName:', categoryName);
+            
             return {
               id: ticket._id || idx + 1,
               title: ticket.title,
@@ -127,24 +160,57 @@ const SupportRequests = ({ onStartChat }) => {
         if (response.success && Array.isArray(response.data)) {
           const sorted = response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
           setRows(sorted.map((ticket, idx) => {
-            let categoryName = "";
+            console.log('SupportRequests - processing ticket category:', ticket.category);
+            let categoryName = "-";
+            
+            // Kategori ismini çıkarma mantığını düzelt
             if (ticket.category) {
-              if (ticket.category.data) {
-                if (i18n.language === "tr") {
-                  categoryName = ticket.category.data.category_name_tr || "-";
-                } else {
-                  categoryName = ticket.category.data.category_name_en || "-";
+              // Kategori bir obje ise
+              if (typeof ticket.category === 'object') {
+                // category_name_tr ve category_name_en alanları varsa
+                if (ticket.category.category_name_tr || ticket.category.category_name_en) {
+                  if (i18n.language === "tr") {
+                    categoryName = ticket.category.category_name_tr || ticket.category.category_name_en || "-";
+                  } else {
+                    categoryName = ticket.category.category_name_en || ticket.category.category_name_tr || "-";
+                  }
                 }
-              } else {
-                if (i18n.language === "tr") {
-                  categoryName = ticket.category.category_name_tr || ticket.category.categoryNameTr || "-";
-                } else {
-                  categoryName = ticket.category.category_name_en || ticket.category.categoryNameEn || "-";
+                // categoryNameTr ve categoryNameEn alanları varsa
+                else if (ticket.category.categoryNameTr || ticket.category.categoryNameEn) {
+                  if (i18n.language === "tr") {
+                    categoryName = ticket.category.categoryNameTr || ticket.category.categoryNameEn || "-";
+                  } else {
+                    categoryName = ticket.category.categoryNameEn || ticket.category.categoryNameTr || "-";
+                  }
+                }
+                // Diğer olası alan adları
+                else if (ticket.category.name_tr || ticket.category.name_en) {
+                  if (i18n.language === "tr") {
+                    categoryName = ticket.category.name_tr || ticket.category.name_en || "-";
+                  } else {
+                    categoryName = ticket.category.name_en || ticket.category.name_tr || "-";
+                  }
+                }
+                // Kategori objesinin kendisi string ise
+                else if (typeof ticket.category === 'string') {
+                  categoryName = ticket.category;
+                }
+                // Kategori objesinin herhangi bir string alanı varsa
+                else {
+                  const categoryValues = Object.values(ticket.category).filter(val => typeof val === 'string' && val.trim() !== '');
+                  if (categoryValues.length > 0) {
+                    categoryName = categoryValues[0];
+                  }
                 }
               }
-            } else {
-              categoryName = "-";
+              // Kategori direkt string ise
+              else if (typeof ticket.category === 'string') {
+                categoryName = ticket.category;
+              }
             }
+            
+            console.log('SupportRequests - extracted categoryName:', categoryName);
+            
             return {
               id: ticket._id || idx + 1,
               title: ticket.title,

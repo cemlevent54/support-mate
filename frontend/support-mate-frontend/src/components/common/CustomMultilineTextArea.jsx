@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const customInputStyle = `
   .custom-input-group {
@@ -41,6 +41,19 @@ const customInputStyle = `
     color: #aaa;
     border-color: #eee;
   }
+  .custom-input.error {
+    border-color: #d32f2f;
+    background: #fff5f5;
+  }
+  .custom-char-counter {
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: #666;
+    text-align: right;
+  }
+  .custom-char-counter.error {
+    color: #d32f2f;
+  }
   @media (max-width: 600px) {
     .custom-input-group {
       margin-bottom: 0.7rem;
@@ -52,24 +65,67 @@ const customInputStyle = `
   }
 `;
 
-export default function CustomMultilineTextArea({ value, onChange, name, placeholder, label, required, disabled, rows = 3 }) {
+export default function CustomMultilineTextArea({ 
+  value, 
+  onChange, 
+  name, 
+  placeholder, 
+  label, 
+  required, 
+  disabled, 
+  rows = 3,
+  minLength,
+  maxLength,
+  showCharCounter = false
+}) {
+  const [hasInteracted, setHasInteracted] = useState(false);
+  
+  const currentLength = value ? value.length : 0;
+  const isOverLimit = maxLength && currentLength > maxLength;
+  const isUnderLimit = minLength && currentLength < minLength;
+  const hasError = hasInteracted && (isOverLimit || isUnderLimit);
+
+  const handleChange = (e) => {
+    if (!hasInteracted) {
+      setHasInteracted(true);
+    }
+    onChange(e);
+  };
+
+  const handleFocus = () => {
+    if (!hasInteracted) {
+      setHasInteracted(true);
+    }
+  };
+
   return (
     <>
       <style>{customInputStyle}</style>
       <div className="custom-input-group">
         {label && <label className="custom-label" htmlFor={name}>{label}{required && ' *'}</label>}
         <textarea
-          className="custom-input"
+          className={`custom-input ${hasError ? 'error' : ''}`}
           id={name}
           name={name}
           value={value}
-          onChange={onChange}
+          onChange={handleChange}
+          onFocus={handleFocus}
           placeholder={placeholder}
           required={required}
           disabled={disabled}
           rows={rows}
           style={{ resize: 'vertical' }}
+          minLength={minLength}
+          maxLength={maxLength}
         />
+        {showCharCounter && (minLength || maxLength) && (
+          <div className={`custom-char-counter ${hasError ? 'error' : ''}`}>
+            {currentLength}
+            {minLength && maxLength && ` / ${minLength}-${maxLength}`}
+            {!minLength && maxLength && ` / ${maxLength}`}
+            {minLength && !maxLength && ` / min ${minLength}`}
+          </div>
+        )}
       </div>
     </>
   );

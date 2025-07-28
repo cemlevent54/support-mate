@@ -14,11 +14,20 @@ class UpdateTaskCommandHandler:
         # _id alanını stringe çevir
         if "_id" in existing_task and not isinstance(existing_task["_id"], str):
             existing_task["_id"] = str(existing_task["_id"])
+        
+        # DONE task kontrolü - DONE olmuş task'ın PENDING veya IN_PROGRESS yapılmasını engelle
+        current_status = existing_task.get("status")
+        new_status = task_data.get("status")
+        
+        if current_status == "DONE" and new_status in ["PENDING", "IN_PROGRESS"]:
+            raise ValueError("DONE olmuş bir task PENDING veya IN_PROGRESS durumuna geri alınamaz.")
+        
         # Zorunlu alanlar için kontrol
         required_fields = ["title", "priority", "createdBy"]
         for field in required_fields:
             if existing_task.get(field) is None:
                 raise ValueError(f"'{field}' alanı güncelleme için zorunludur ve None olamaz.")
+        
         # Sadece requestte gelen ve None olmayan alanları güncelle
         for key, value in task_data.items():
             if value is not None:

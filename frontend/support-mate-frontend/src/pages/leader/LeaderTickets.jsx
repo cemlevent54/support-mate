@@ -42,7 +42,13 @@ const LeaderTickets = () => {
     listTicketsForLeader()
       .then((res) => {
         if (res.success) {
-          setTickets(res.data || []);
+          // Ticket'ları createdAt'e göre sırala (en yeni en üstte)
+          const sortedTickets = (res.data || []).sort((a, b) => {
+            const dateA = new Date(a.createdAt);
+            const dateB = new Date(b.createdAt);
+            return dateB - dateA; // Azalan sıralama (en yeni en üstte)
+          });
+          setTickets(sortedTickets);
         } else {
           setError(res.message || t('leaderTickets.error', 'Bir hata oluştu.'));
         }
@@ -104,6 +110,32 @@ const LeaderTickets = () => {
     { key: 'actions', label: t('leaderTickets.table.actions', 'Aksiyonlar') },
   ];
 
+  // Task oluşturulduktan sonra tabloyu yenile
+  const handleTaskCreated = () => {
+    console.log('LeaderTickets - Task created, refreshing tickets list');
+    // Tabloyu yenile
+    setLoading(true);
+    setError(null);
+    listTicketsForLeader()
+      .then((res) => {
+        if (res.success) {
+          // Ticket'ları createdAt'e göre sırala (en yeni en üstte)
+          const sortedTickets = (res.data || []).sort((a, b) => {
+            const dateA = new Date(a.createdAt);
+            const dateB = new Date(b.createdAt);
+            return dateB - dateA; // Azalan sıralama (en yeni en üstte)
+          });
+          setTickets(sortedTickets);
+        } else {
+          setError(res.message || t('leaderTickets.error', 'Bir hata oluştu.'));
+        }
+      })
+      .catch((err) => {
+        setError(err?.message || t('leaderTickets.error', 'Bir hata oluştu.'));
+      })
+      .finally(() => setLoading(false));
+  };
+
   // Custom actions for the table
   const renderActions = (row) => {
     const ticketId = row.id || row._id;
@@ -161,7 +193,9 @@ const LeaderTickets = () => {
   // CustomTicketTable'a columns prop'u ile özel render fonksiyonları ilet
   return (
     <div style={{ padding: 24 }}>
-      <h2>{t('leaderTickets.title', 'Atandığım Ticketlar')}</h2>
+      <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '2rem', color: '#333' }}>
+        {t('leaderTickets.title')}
+      </h1>
       <CustomTicketTable
         rows={tickets}
         columns={columns}
@@ -186,6 +220,7 @@ const LeaderTickets = () => {
         open={createTaskOpen} 
         onClose={() => setCreateTaskOpen(false)}
         ticketId={selectedTicket?.id || selectedTicket?._id || ''}
+        onSuccess={handleTaskCreated}
       />
 
       {/* Custom Task Details Modal */}

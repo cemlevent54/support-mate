@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const customInputStyle = `
   .custom-input-group {
@@ -41,6 +42,21 @@ const customInputStyle = `
     color: #aaa;
     border-color: #eee;
   }
+  .custom-input.error {
+    border-color: #d32f2f;
+    background: #fff5f5;
+  }
+  .custom-helper-text {
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: #666;
+    font-style: italic;
+  }
+  .custom-error-text {
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: #d32f2f;
+  }
   @media (max-width: 600px) {
     .custom-input-group {
       margin-bottom: 0.7rem;
@@ -52,24 +68,127 @@ const customInputStyle = `
   }
 `;
 
-export default function CustomDateTimePicker({ value, onChange, name, label, required, disabled, min, max }) {
+export default function CustomDateTimePicker({ 
+  value, 
+  onChange, 
+  name, 
+  label, 
+  required, 
+  disabled, 
+  min, 
+  max, 
+  placeholder, 
+  helperText,
+  showValidation = true 
+}) {
+  const { t } = useTranslation();
+  const [error, setError] = useState('');
+  const [isValid, setIsValid] = useState(true);
+  const [hasInteracted, setHasInteracted] = useState(false);
+
+  // Varsayılan placeholder ve helper text
+  const defaultPlaceholder = placeholder || t('components.customDateTimePicker.placeholder.selectDateTime');
+  const defaultHelperText = helperText || (required ? t('components.customDateTimePicker.helperText.required') : t('components.customDateTimePicker.helperText.optional'));
+
+  // Validasyon fonksiyonu
+  const validateDateTime = (dateTimeValue) => {
+    if (!dateTimeValue) {
+      if (required && hasInteracted) {
+        setError(t('components.customDateTimePicker.validation.required'));
+        setIsValid(false);
+        return false;
+      }
+      setError('');
+      setIsValid(true);
+      return true;
+    }
+
+    const selectedDate = new Date(dateTimeValue);
+    const currentDate = new Date();
+
+    // Geçersiz tarih kontrolü
+    if (isNaN(selectedDate.getTime())) {
+      setError(t('components.customDateTimePicker.validation.invalidDate'));
+      setIsValid(false);
+      return false;
+    }
+
+    // Geçmiş tarih kontrolü (min prop varsa)
+    if (min) {
+      const minDate = new Date(min);
+      if (selectedDate < minDate) {
+        setError(t('components.customDateTimePicker.validation.pastDate'));
+        setIsValid(false);
+        return false;
+      }
+    }
+
+    // Gelecek tarih kontrolü (max prop varsa)
+    if (max) {
+      const maxDate = new Date(max);
+      if (selectedDate > maxDate) {
+        setError(t('components.customDateTimePicker.validation.maxDate', { maxDate: maxDate.toLocaleDateString() }));
+        setIsValid(false);
+        return false;
+      }
+    }
+
+    setError('');
+    setIsValid(true);
+    return true;
+  };
+
+  // Değer değiştiğinde validasyon yap (sadece etkileşim sonrası)
+  useEffect(() => {
+    if (showValidation && hasInteracted) {
+      validateDateTime(value);
+    }
+  }, [value, min, max, required, showValidation, hasInteracted]);
+
+  // Input değişiklik handler'ı
+  const handleChange = (e) => {
+    const newValue = e.target.value;
+    
+    // İlk etkileşimi işaretle
+    if (!hasInteracted) {
+      setHasInteracted(true);
+    }
+    
+    if (showValidation) {
+      validateDateTime(newValue);
+    }
+    
+    onChange(e);
+  };
+
+  // Input'a focus olduğunda da etkileşimi işaretle
+  const handleFocus = () => {
+    if (!hasInteracted) {
+      setHasInteracted(true);
+    }
+  };
+
   return (
     <>
       <style>{customInputStyle}</style>
       <div className="custom-input-group">
         {label && <label className="custom-label" htmlFor={name}>{label}{required && ' *'}</label>}
         <input
-          className="custom-input"
+          className={`custom-input ${!isValid && hasInteracted ? 'error' : ''}`}
           type="datetime-local"
           id={name}
           name={name}
           value={value}
-          onChange={onChange}
+          onChange={handleChange}
+          onFocus={handleFocus}
           required={required}
           disabled={disabled}
           min={min}
           max={max}
+          placeholder={defaultPlaceholder}
         />
+        {error && showValidation && hasInteracted && <div className="custom-error-text">{error}</div>}
+        {!error && defaultHelperText && <div className="custom-helper-text">{defaultHelperText}</div>}
       </div>
     </>
   );

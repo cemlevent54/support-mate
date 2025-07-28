@@ -9,6 +9,7 @@ from routes import api_router
 from config.language import _
 from config.database import get_mongo_client_and_db
 from services.MessageService import MessageService
+from middlewares.lorem_filter import LoremFilterMiddleware
 
 logger = logging.getLogger("socketio")
 
@@ -26,6 +27,10 @@ sio = socketio.AsyncServer(
 
 fastapi_app = FastAPI()
 fastapi_app.include_router(api_router)
+
+# Lorem Filter Middleware'ini ekle
+lorem_filter_middleware = LoremFilterMiddleware()
+fastapi_app.middleware("http")(lorem_filter_middleware)
 
 # Static files serving
 try:

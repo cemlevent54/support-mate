@@ -6,7 +6,7 @@ import logger from '../config/logger.js';
  * @param {Object} event - Kafka'dan gelen event objesi
  * @param {string} event.email - Alıcı e-posta adresi
  * @param {string} event.firstName - Alıcı adı
- * @param {string} event.locale - Accept-Language header'ından gelen dil bilgisi ('tr' veya 'en')
+ * @param {string} event.language - Dil bilgisi ('tr' veya 'en')
  * @param {string} event.taskId - Görev ID
  * @param {string} event.taskTitle - Görev başlığı
  * @param {string} event.html - Hazır e-posta HTML içeriği
@@ -14,10 +14,10 @@ import logger from '../config/logger.js';
 async function handleTaskAssignedEvent(event) {
   try {
     if (!event.email) throw new Error('E-posta adresi eksik!');
-    // Accept-Language header'ından gelen dil bilgisini kullan
-    const locale = event.locale;
+    // Event'ten gelen dil bilgisini kullan
+    const language = event.language || 'tr';
     
-    const subject = locale === 'tr'
+    const subject = language === 'tr'
       ? 'Yeni Bir Görev Size Atandı'
       : 'A New Task Has Been Assigned to You';
     await emailService.send({
@@ -25,7 +25,7 @@ async function handleTaskAssignedEvent(event) {
       subject,
       html: event.html || '',
     });
-    logger.info(`[TaskAssigned] E-posta gönderildi: ${event.email} (${event.taskId})`);
+    logger.info(`[TaskAssigned] E-posta gönderildi: ${event.email} (${event.taskId}) - Dil: ${language}`);
   } catch (err) {
     logger.error('[TaskAssigned] E-posta gönderilemedi:', err);
   }
