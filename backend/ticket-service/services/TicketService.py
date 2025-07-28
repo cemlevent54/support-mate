@@ -23,6 +23,7 @@ from cqrs.commands.chat.AssignAgentToChatCommandHandler import AssignAgentToChat
 from cqrs.queries.agent.SelectAndRotateAgentQueryHandler import SelectAndRotateAgentQueryHandler
 from cqrs.commands.ticket.AssignAgentToPendingTicketCommandHandler import AssignAgentToPendingTicketCommandHandler
 from cqrs.commands.ticket.AssignTicketToLeaderCommandHandler import AssignTicketToLeaderCommandHandler
+from cqrs.queries.ticket.ListUserTicketsQueryHandler import ListUserTicketsQueryHandler
 from config.language import _
 from dto.ticket_dto import TicketDTO, TicketListDTO
 from config.language import set_language, _
@@ -38,6 +39,7 @@ class TicketService:
         self.create_handler = CreateTicketCommandHandler()
         self.get_handler = GetTicketQueryHandler()
         self.list_handler = ListTicketsQueryHandler()
+        self.list_user_handler = ListUserTicketsQueryHandler()
         self.list_agent_handler = ListTicketsForAgentQueryHandler()
         self.list_leader_handler = ListTicketsForLeaderQueryHandler()
         self.update_handler = UpdateTicketCommandHandler()
@@ -58,17 +60,13 @@ class TicketService:
         # Customer Supporter ise özel mantık: chat ve mesaj işlemlerini atla
         if user.get('roleName') == 'Customer Supporter':
             ticket['assignedAgentId'] = user['id']
+            ticket['assignedLeaderId'] = None  # Leader atanmamış durumda null olmalı
             if ticket.get('customerId') == user['id']:
                 logger.warning(_(f"services.ticketService.logs.agent_customer_same").format(agent_id=user['id'], customer_id=ticket.get('customerId')))
                 raise HTTPException(status_code=400, detail=_(f"services.ticketService.responses.customer_supporter_cannot_create_own_ticket"))
-            # Eğer assignedLeaderId varsa status'ü IN_REVIEW yap
-            if ticket.get('assignedLeaderId'):
-                ticket['status'] = 'IN_REVIEW'
-                logger.info(_(f"services.ticketService.logs.leader_assigned_status_in_review").format(leader_id=ticket.get('assignedLeaderId')))
-            else:
-                # assignedLeaderId yoksa mevcut status'ü koru (OPEN)
-                ticket['status'] = 'OPEN'
-                logger.info(_(f"services.ticketService.logs.no_leader_assigned_status_open"))
+            # Customer Supporter ticket oluşturduğunda status IN_REVIEW olmalı (çünkü agent atanmış)
+            ticket['status'] = 'IN_REVIEW'
+            logger.info(_(f"services.ticketService.logs.customer_supporter_ticket_created_in_review").format(agent_id=user['id']))
             result = self.create_handler.execute(ticket, user)
             data = result.get('data')
             ticket_id = data.get('id') if isinstance(data, dict) else getattr(data, 'id', None)
@@ -106,14 +104,21 @@ class TicketService:
         # assignedAgentId'yi ayarla - unknown gitmemeli
         if agent_id and agent_id != "unknown":
             ticket["assignedAgentId"] = agent_id
+            # Agent atandığında status IN_REVIEW olmalı
+            ticket["status"] = "IN_REVIEW"
             logger.info(_(f"services.ticketService.logs.agent_assigned").format(agent_id=agent_id))
         else:
             # Online agent bulunamadıysa, customer ile aynıysa veya unknown ise assignedAgentId null geç
             ticket["assignedAgentId"] = None
+            # Agent atanmadığında status OPEN olmalı
+            ticket["status"] = "OPEN"
             if agent_id == "unknown":
                 logger.warning(_(f"services.ticketService.logs.agent_id_unknown"))
             else:
                 logger.info(_(f"services.ticketService.logs.no_agent_found"))
+        
+        # assignedLeaderId'yi null olarak ayarla (henüz leader atanmamış)
+        ticket["assignedLeaderId"] = None
         
         # productId alanı ticket dict'inde olmalı ve CQRS ile kaydedilmeli
         result = self.create_handler.execute(ticket, user)
@@ -207,6 +212,48 @@ class TicketService:
                 dto_dict["category"] = category_info
             else:
                 dto_dict["category"] = None
+            
+            # CHAT ID EKLEME
+            chat_repo = ChatRepository()
+            chat = chat_repo.find_by_ticket_id(str(ticket.id))
+            dto_dict["chatId"] = str(chat.id) if chat else None
+            
+            ticket_dtos.append(dto_dict)
+        message = _(f"services.ticketService.responses.tickets_listed")
+        return {"success": True, "data": ticket_dtos, "message": message}
+
+    def list_tickets_for_user(self, user, lang='tr'):
+        if not user:
+            logger.warning(_(f"services.ticketService.logs.unauthorized"))
+            return unauthorized_error(_(f"services.ticketService.responses.unauthorized"))
+        logger.info(_(f"services.ticketService.logs.listing_tickets_for_user").format(user_id=user.get('id', 'unknown')))
+        tickets = self.list_user_handler.execute(user, lang=lang)
+        
+        if tickets is None:
+            message = _(f"services.ticketService.responses.tickets_list_failed")
+            return {"success": False, "data": [], "message": message}
+        # DTO'ya çevir
+        category_service = None
+        ticket_dtos = []
+        for ticket in tickets:
+            dto = TicketDTO.from_model(ticket)
+            dto_dict = dto.model_dump()
+            # Kategori bilgisi ekle
+            category_id = getattr(ticket, "categoryId", None)
+            if category_id:
+                if not category_service:
+                    from services.CategoryService import CategoryService
+                    category_service = CategoryService()
+                category_info = category_service.get_category_by_id(category_id)
+                dto_dict["category"] = category_info
+            else:
+                dto_dict["category"] = None
+            
+            # CHAT ID EKLEME
+            chat_repo = ChatRepository()
+            chat = chat_repo.find_by_ticket_id(str(ticket.id))
+            dto_dict["chatId"] = str(chat.id) if chat else None
+            
             ticket_dtos.append(dto_dict)
         message = _(f"services.ticketService.responses.tickets_listed")
         return {"success": True, "data": ticket_dtos, "message": message}
@@ -390,6 +437,11 @@ class TicketService:
             else:
                 ticket_dict["taskId"] = None
             
+            # --- CHAT ID EKLEME ---
+            chat_repo = ChatRepository()
+            chat = chat_repo.find_by_ticket_id(str(ticket_id))
+            ticket_dict["chatId"] = str(chat.id) if chat else None
+            
             # --- CUSTOMER & AGENT DETAYLARI ---
             token = None
             customer_info = get_user_by_id(ticket_dict.get('customerId'), token) if ticket_dict.get('customerId') else None
@@ -418,7 +470,14 @@ class TicketService:
         # DTO'ya çevir
         ticket = result["data"]
         ticket_dto = TicketDTO.from_model(ticket)
-        result["data"] = ticket_dto.model_dump()
+        ticket_dict = ticket_dto.model_dump()
+        
+        # CHAT ID EKLEME
+        chat_repo = ChatRepository()
+        chat = chat_repo.find_by_ticket_id(str(ticket.id))
+        ticket_dict["chatId"] = str(chat.id) if chat else None
+        
+        result["data"] = ticket_dict
         message = _(f"services.ticketService.responses.ticket_found") 
         return {"success": True, "data": result["data"], "message": message}
 
@@ -485,10 +544,38 @@ class TicketService:
         return result
 
     async def assign_agent_to_pending_ticket(self, agent_id):
-        handler = AssignAgentToPendingTicketCommandHandler()
-        result = await handler.execute(agent_id)
+        logger.info(f"[TICKET_SERVICE][ASSIGN_AGENT] Starting assign_agent_to_pending_ticket for agentId={agent_id}")
+        try:
+            handler = AssignAgentToPendingTicketCommandHandler()
+            logger.info(f"[TICKET_SERVICE][ASSIGN_AGENT] Handler created, calling execute...")
+            result = await handler.execute(agent_id)
+            logger.info(f"[TICKET_SERVICE][ASSIGN_AGENT] Handler execute completed, result: {result}")
+        except Exception as e:
+            logger.error(f"[TICKET_SERVICE][ASSIGN_AGENT] Error in assign_agent_to_pending_ticket: {e}", exc_info=True)
+            return {"success": False, "message": str(e)}
         if result.get("success"):
             logger.info(_(f"services.ticketService.logs.auto_assign").format(agent_id=agent_id, ticket_id=result.get("ticketId")))
+            # --- CHAT PARTICIPANT EKLE ---
+            try:
+                ticket_id = result.get("ticketId")
+                from repositories.ChatRepository import ChatRepository
+                chat_repo = ChatRepository()
+                chat = chat_repo.find_by_ticket_id(ticket_id)
+                logger.info(f"[DEBUG][ASSIGN_AGENT] ticket_id: {ticket_id}, chat: {chat}")
+                if chat:
+                    # Pydantic model listesini dict listesine çevir
+                    participants = [p.dict() if hasattr(p, 'dict') else p for p in getattr(chat, "participants", [])]
+                    logger.info(f"[DEBUG][ASSIGN_AGENT] Mevcut participants: {participants}")
+                    if not any(p.get("userId") == agent_id for p in participants):
+                        participants.append({"userId": agent_id, "role": "Customer Supporter"})
+                        chat_repo.update(chat.id, {"participants": participants})
+                        logger.info(f"[ASSIGN_AGENT] Chat participants güncellendi: chatId={chat.id}, yeni participants: {participants}")
+                    else:
+                        logger.info(f"[ASSIGN_AGENT] Agent zaten participants'ta: {agent_id}")
+                else:
+                    logger.warning(f"[ASSIGN_AGENT] Chat bulunamadı: ticket_id={ticket_id}")
+            except Exception as e:
+                logger.error(f"[ASSIGN_AGENT] Chat participant eklenemedi: {e}", exc_info=True)
             # --- MAIL BİLDİRİMİ ---
             try:
                 ticket_id = result.get("ticketId")
@@ -496,41 +583,79 @@ class TicketService:
                 # Ticket ve user detaylarını çek
                 ticket_repo = TicketRepository()
                 ticket = ticket_repo.get_by_id(str(ticket_id))
-                user_id = getattr(ticket, "customerId", None)
+                # Ticket'ın model_dump metodunu kullan
+                ticket_dict = ticket.model_dump() if hasattr(ticket, 'model_dump') else ticket.__dict__ if ticket else {}
+                user_id = ticket_dict.get("customerId") if ticket_dict else None
                 user_detail = get_user_by_id(user_id, None) if user_id else None
                 agent_detail = get_user_by_id(agent_id, None)
-                logger.info(f"[AGENT-ASSIGNED][DEBUG] user_detail: {user_detail}")
-                logger.info(f"[AGENT-ASSIGNED][DEBUG] agent_detail: {agent_detail}")
-                logger.info(f"[AGENT-ASSIGNED][DEBUG] ticket: {ticket.__dict__ if ticket else None}")
+                
+                # JSON serializable hale getir
+                if user_detail:
+                    import json
+                    logger.info(f"[AGENT-ASSIGNED][DEBUG] user_detail type: {type(user_detail)}")
+                    logger.info(f"[AGENT-ASSIGNED][DEBUG] user_detail content: {user_detail}")
+                    try:
+                        # user_detail zaten dict olduğu için sadece JSON serialization yap
+                        user_detail = json.loads(json.dumps(user_detail, default=str))
+                        logger.info(f"[AGENT-ASSIGNED][DEBUG] user_detail serialized successfully")
+                    except Exception as e:
+                        logger.error(f"[AGENT-ASSIGNED][ERROR] user_detail serialization failed: {e}")
+                        user_detail = None
+                if agent_detail:
+                    import json
+                    logger.info(f"[AGENT-ASSIGNED][DEBUG] agent_detail type: {type(agent_detail)}")
+                    logger.info(f"[AGENT-ASSIGNED][DEBUG] agent_detail content: {agent_detail}")
+                    try:
+                        # agent_detail zaten dict olduğu için sadece JSON serialization yap
+                        agent_detail = json.loads(json.dumps(agent_detail, default=str))
+                        logger.info(f"[AGENT-ASSIGNED][DEBUG] agent_detail serialized successfully")
+                    except Exception as e:
+                        logger.error(f"[AGENT-ASSIGNED][ERROR] agent_detail serialization failed: {e}")
+                        agent_detail = None
+                logger.info(f"[AGENT-ASSIGNED][DEBUG] user_detail final: {user_detail}")
+                logger.info(f"[AGENT-ASSIGNED][DEBUG] agent_detail final: {agent_detail}")
+                logger.info(f"[AGENT-ASSIGNED][DEBUG] ticket: {ticket.model_dump() if ticket and hasattr(ticket, 'model_dump') else ticket.__dict__ if ticket else None}")
                 # Customer Supporter'a atama varsa, hem kullanıcıya hem agent'a event gönder
                 if agent_detail and agent_detail.get("roleName") == "Customer Supporter":
                     user_lang = (user_detail.get("language") or "tr") if user_detail else "tr"
                     agent_lang = (agent_detail.get("language") or "tr")
                     user_template = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates", f"agent_assigned_user_{user_lang}.html")
                     agent_template = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates", f"agent_assigned_agent_{agent_lang}.html")
+                    logger.info(f"[AGENT-ASSIGNED][DEBUG] Creating event_data...")
+                    logger.info(f"[AGENT-ASSIGNED][DEBUG] user_detail keys: {user_detail.keys() if user_detail else 'None'}")
+                    logger.info(f"[AGENT-ASSIGNED][DEBUG] agent_detail keys: {agent_detail.keys() if agent_detail else 'None'}")
+                    
                     event_data = {
                         "user": {
-                            "email": user_detail.get("email"),
-                            "firstName": user_detail.get("firstName"),
-                            "lastName": user_detail.get("lastName"),
+                            "email": user_detail.get("email") if user_detail else None,
+                            "firstName": user_detail.get("firstName") if user_detail else None,
+                            "lastName": user_detail.get("lastName") if user_detail else None,
                             "language": user_lang
                         },
                         "agent": {
-                            "email": agent_detail.get("email"),
-                            "firstName": agent_detail.get("firstName"),
-                            "lastName": agent_detail.get("lastName"),
+                            "email": agent_detail.get("email") if agent_detail else None,
+                            "firstName": agent_detail.get("firstName") if agent_detail else None,
+                            "lastName": agent_detail.get("lastName") if agent_detail else None,
                             "language": agent_lang
                         },
                         "ticket": {
-                            "title": getattr(ticket, "title", ""),
-                            "id": getattr(ticket, "id", "")
+                            "title": ticket_dict.get("title", ""),
+                            "id": ticket_dict.get("id", "")
                         },
                         "user_template": user_template,
                         "agent_template": agent_template,
-                        "customerName": f"{user_detail.get('firstName', '')} {user_detail.get('lastName', '')}",
-                        "customerEmail": user_detail.get("email")
+                        "customerName": f"{user_detail.get('firstName', '')} {user_detail.get('lastName', '')}" if user_detail else "",
+                        "customerEmail": user_detail.get("email") if user_detail else None
                     }
-                    send_agent_assigned_event(event_data)
+                    
+                    logger.info(f"[AGENT-ASSIGNED][DEBUG] event_data created: {event_data}")
+                    logger.info(f"[AGENT-ASSIGNED][DEBUG] event_data type: {type(event_data)}")
+                    
+                    try:
+                        send_agent_assigned_event(event_data)
+                        logger.info(f"[AGENT-ASSIGNED][DEBUG] send_agent_assigned_event called successfully")
+                    except Exception as e:
+                        logger.error(f"[AGENT-ASSIGNED][ERROR] send_agent_assigned_event failed: {e}", exc_info=True)
             except Exception as e:
                 logger.error(f"[AGENT-ASSIGNED][ERROR] Agent assignment mail notification failed: {e}", exc_info=True)
         else:

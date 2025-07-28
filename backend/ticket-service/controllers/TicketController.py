@@ -60,7 +60,7 @@ class TicketController:
 
     def list_tickets_endpoint_for_user(self, user, lang='tr'):
         logger.info(_(f"services.ticketController.logs.list_tickets_user_called").format(user_id=user.get('id')))
-        result = self.ticket_service.list_tickets(user, lang=lang)
+        result = self.ticket_service.list_tickets_for_user(user, lang=lang)
         logger.info(_(f"services.ticketController.logs.list_tickets_user_result").format(result=len(result.get('data', [])) if result.get('success') else 'error'))
         return APIResponse(**result)
 

@@ -25,12 +25,31 @@ class TicketRepository:
         return str(result.inserted_id)
 
     def update(self, ticket_id, updated):
-        updated_dict = updated.dict(by_alias=True, exclude={"id", "createdAt"})
-        result = self.collection.update_one(
-            {"_id": ObjectId(ticket_id)},
-            {"$set": updated_dict}
-        )
-        return result.modified_count > 0
+        logger.info(f"[TICKET_REPO][UPDATE] Starting update for ticket_id={ticket_id}")
+        logger.info(f"[TICKET_REPO][UPDATE] Updated data type: {type(updated)}")
+        logger.info(f"[TICKET_REPO][UPDATE] Updated data: {updated}")
+        
+        try:
+            if isinstance(updated, dict):
+                updated_dict = updated
+            elif hasattr(updated, 'dict') and not isinstance(updated, dict):
+                updated_dict = updated.dict(by_alias=True, exclude={"id", "createdAt"})
+            elif hasattr(updated, 'model_dump'):
+                updated_dict = updated.model_dump(exclude={"id", "createdAt"})
+            else:
+                logger.error(f"[TICKET_REPO][UPDATE] Unknown update data type: {type(updated)}")
+                return False
+                
+            logger.info(f"[TICKET_REPO][UPDATE] Updated dict: {updated_dict}")
+            result = self.collection.update_one(
+                {"_id": ObjectId(ticket_id)},
+                {"$set": updated_dict}
+            )
+            logger.info(f"[TICKET_REPO][UPDATE] Update completed, modified_count: {result.modified_count}")
+            return result.modified_count > 0
+        except Exception as e:
+            logger.error(f"[TICKET_REPO][UPDATE] Error in update: {e}", exc_info=True)
+            return False
 
     def update_status(self, ticket_id: str, new_status: str) -> bool:
         result = self.collection.update_one(

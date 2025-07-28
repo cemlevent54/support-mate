@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { listMessagesByTicketId, sendMessage } from '../api/messagesApi';
+import { listMessagesByTicketId, listMessagesByChatId, sendMessage } from '../api/messagesApi';
 import socket from '../socket/socket';
 
 // JWT çözümleyici yardımcı fonksiyon
@@ -38,14 +38,14 @@ export const useChatSocket = (chatTicket, chatOpen) => {
       setChatId(null);
       try {
         let res;
-        if (chatTicket.ticketId) {
+        if (chatTicket.chatId) {
+          console.log('[useChatSocket] Fetching by chatId:', chatTicket.chatId);
+          res = await listMessagesByChatId(chatTicket.chatId);
+        } else if (chatTicket.ticketId) {
           console.log('[useChatSocket] Fetching by ticketId:', chatTicket.ticketId);
           res = await listMessagesByTicketId(chatTicket.ticketId);
-        } else if (chatTicket.chatId) {
-          console.log('[useChatSocket] Fetching by chatId:', chatTicket.chatId);
-          res = await listMessagesByTicketId(chatTicket.chatId); // fallback
         } else {
-          console.log('[useChatSocket] No ticketId or chatId found');
+          console.log('[useChatSocket] No chatId or ticketId found');
           setMessages([]);
           setChatId(null);
           return;
@@ -56,7 +56,7 @@ export const useChatSocket = (chatTicket, chatOpen) => {
         if (res.success && res.data && Array.isArray(res.data.messages)) {
           console.log('[useChatSocket] Setting messages from data.messages:', res.data.messages);
           setMessages(res.data.messages);
-          setChatId(res.data.chatId || null);
+          setChatId(res.data.chatId || chatTicket.chatId || null);
         } else if (res.success && Array.isArray(res.data)) {
           console.log('[useChatSocket] Setting messages from data:', res.data);
           setMessages(res.data);

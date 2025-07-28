@@ -116,7 +116,8 @@
                 "ticket_created_mail_sent": "Ticket oluşturuldu maili gönderildi: {user_id}",
                 "ticket_created_mail_failed": "Ticket oluşturuldu maili gönderilemedi: {error}",
                 "leader_assigned_status_in_review": "Leader atandı, status IN_REVIEW olarak ayarlandı: {leader_id}",
-                "no_leader_assigned_status_open": "Leader atanmadı, status OPEN olarak kaldı"
+                "no_leader_assigned_status_open": "Leader atanmadı, status OPEN olarak kaldı",
+                "customer_supporter_ticket_created_in_review": "Customer Supporter ticket oluşturdu, status IN_REVIEW: {agent_id}"
             },
             "responses": {
                 "unauthorized": "Kullanıcı doğrulanamadı.",

@@ -12,7 +12,6 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
-import ChatDialog from '../chat/chatDialog/ChatDialog';
 import { createTicket } from '../../api/ticketApi';
 import { getCategories } from '../../api/categoryApi';
 import { getProductsUser } from "../../api/productApi";
@@ -36,7 +35,6 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
   const [previews, setPreviews] = useState([]); // [{url, name, type, size, file}]
   const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedPreview, setSelectedPreview] = useState(null); // {url, name, type, size}
-  const [chatOpen, setChatOpen] = useState(false);
   const [ticketData, setTicketData] = useState(null);
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -97,12 +95,9 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
   useEffect(() => {
     if (form.categoryId) {
       const filtered = products.filter(
-        (prod) => String(prod.product_category_id) === String(form.categoryId)
+        (prod) => String(prod.product_category?.product_category_id) === String(form.categoryId)
       );
       setFilteredProducts(filtered);
-      console.log("Tüm ürünler:", products);
-      console.log("Seçili kategori:", form.categoryId);
-      console.log("Filtrelenen ürünler:", filtered);
     } else {
       setFilteredProducts([]);
     }
@@ -224,13 +219,11 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
             // Parent component'e ticket bilgisini gönder
             onTicketCreated(response.data);
           }
-          // Modal'ı hemen kapat, chat paneli MyRequests sayfasında açılacak
+          // Modal'ı hemen kapat, tablo MyRequests sayfasında açılacak
           onClose();
         } else {
-          // Standalone modda ChatDialog'a yönlendir
-          setTimeout(() => {
-            setChatOpen(true);
-          }, 2000); // 2 saniye sonra chat ekranını aç
+          // Standalone modda sadece başarı mesajı göster, chat açma
+          // Chat açılmasını kaldırdık
         }
       } else {
         setError(response.message || t('pages.createTicket.error'));
@@ -261,29 +254,19 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
     }
   };
 
-  const handleBackFromChat = () => {
-    setChatOpen(false);
-    setTicketData(null);
-    // Modal modunda ise modal'ı kapat
-    if (isModal && onClose) {
-      onClose();
-    }
-  };
+
 
   return (
-    chatOpen ? (
-      <ChatDialog ticket={ticketData} onBack={handleBackFromChat} />
-    ) : (
-      <Box 
-        flex={1} 
-        minWidth={isModal ? 500 : 400} 
-        maxWidth={isModal ? 500 : 600} 
-        display="flex" 
-        flexDirection="column" 
-        minHeight={0}
-        height="auto"
-        maxHeight={isModal ? '85vh' : 'auto'}
-      >
+    <Box 
+      flex={1} 
+      minWidth={isModal ? 500 : 400} 
+      maxWidth={isModal ? 500 : 600} 
+      display="flex" 
+      flexDirection="column" 
+      minHeight={0}
+      height="auto"
+      maxHeight={isModal ? '85vh' : 'auto'}
+    >
         <Box 
           bgcolor="#f9f9f9" 
           borderRadius={2} 
@@ -426,7 +409,7 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
             </div>
           </div>
           {/* Ürün Dropdown */}
-          {filteredProducts.length > 0 && (
+          {form.categoryId && filteredProducts.length > 0 && (
             <div style={{ margin: '16px 0', width: '100%' }}>
               <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
                 {t('pages.createTicket.form.product')}
@@ -446,7 +429,6 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
                     cursor: 'pointer',
                     appearance: 'none',
                   }}
-                  required
                 >
                   <option value="">{t('pages.createTicket.form.selectProduct')}</option>
                   {filteredProducts.map((prod) => (
@@ -557,7 +539,6 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
           </DialogContent>
         </Dialog>
       </Box>
-    )
   );
 };
 

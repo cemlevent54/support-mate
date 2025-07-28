@@ -27,7 +27,7 @@ class TaskResponseDto(BaseModel):
         # dict veya modelden DTO oluştur
         if hasattr(task_model, 'model_dump'):
             task_dict = task_model.model_dump()
-        elif hasattr(task_model, 'dict'):
+        elif hasattr(task_model, 'dict') and not isinstance(task_model, dict):
             task_dict = task_model.dict()
         else:
             task_dict = dict(task_model)

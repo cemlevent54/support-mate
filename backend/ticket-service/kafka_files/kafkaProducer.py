@@ -64,16 +64,33 @@ def send_ticket_created_event(ticket, user, html_path=None, language='tr'):
 
 def send_agent_assigned_event(event_data):
     try:
-        logger.info(f"Sending agent_assigned event to Kafka: {event_data}")
+        logger.info(f"[KAFKA][AGENT-ASSIGNED] Starting event processing...")
+        logger.info(f"[KAFKA][AGENT-ASSIGNED] event_data type: {type(event_data)}")
+        logger.info(f"[KAFKA][AGENT-ASSIGNED] event_data content: {event_data}")
+        
+        # event_data'yı JSON serializable hale getir
+        import json
+        logger.info(f"[KAFKA][AGENT-ASSIGNED] Attempting JSON serialization...")
+        try:
+            json_str = json.dumps(event_data, default=str)
+            logger.info(f"[KAFKA][AGENT-ASSIGNED] JSON serialization successful: {json_str}")
+            serializable_event = json.loads(json_str)
+            logger.info(f"[KAFKA][AGENT-ASSIGNED] JSON deserialization successful")
+        except Exception as json_error:
+            logger.error(f"[KAFKA][AGENT-ASSIGNED] JSON serialization failed: {json_error}")
+            raise json_error
+            
+        logger.info(f"[KAFKA][AGENT-ASSIGNED] Sending to Kafka: {serializable_event}")
         producer = get_producer()
         if producer:
-            producer.send(AGENT_ASSIGNED_TOPIC, event_data)
+            logger.info(f"[KAFKA][AGENT-ASSIGNED] Producer found, sending event...")
+            producer.send(AGENT_ASSIGNED_TOPIC, serializable_event)
             producer.flush()
-            logger.info(f"agent_assigned event Kafka'ya gönderildi: {event_data.get('ticket', {}).get('id')}")
+            logger.info(f"[KAFKA][AGENT-ASSIGNED] Event sent successfully: {serializable_event.get('ticket', {}).get('id')}")
         else:
-            logger.error("KafkaProducer mevcut değil, agent_assigned event gönderilemedi.")
+            logger.error("[KAFKA][AGENT-ASSIGNED] KafkaProducer mevcut değil, agent_assigned event gönderilemedi.")
     except Exception as e:
-        logger.error(f"Kafka agent_assigned event could not be sent: {e}")
+        logger.error(f"[KAFKA][AGENT-ASSIGNED] Event processing failed: {e}", exc_info=True)
 
 def send_task_assigned_event(task, user, html_path=None, language='tr'):
     try:

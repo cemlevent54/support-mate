@@ -314,7 +314,7 @@ function ChatListItems({ sortedChatList, loading, activeChatTicketId, handleChat
   );
 }
 
-export default function ChatList({ activeChatTicketId, onSelectChat, loading: loadingProp, onUserJoinedChat, refreshTrigger }) {
+export default function ChatList({ activeChatTicketId, onSelectChat, loading: loadingProp, onUserJoinedChat, onChatFound, refreshTrigger }) {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [newMessageChats, setNewMessageChats] = useState(new Set());
@@ -481,12 +481,17 @@ export default function ChatList({ activeChatTicketId, onSelectChat, loading: lo
         return String(chatId) === String(activeChatTicketId);
       });
       
-      if (targetChat && onSelectChat) {
-        console.log('[ChatList] activeChatTicketId ile chat bulundu, seçiliyor:', targetChat);
-        onSelectChat(targetChat);
+      if (targetChat) {
+        console.log('[ChatList] activeChatTicketId ile chat bulundu:', targetChat);
+        if (onSelectChat) {
+          onSelectChat(targetChat);
+        }
+        if (onChatFound) {
+          onChatFound(targetChat);
+        }
       }
     }
-  }, [activeChatTicketId, agentChatsPaginated, onSelectChat]);
+  }, [activeChatTicketId, agentChatsPaginated, onSelectChat, onChatFound]);
 
   // Search fonksiyonu (filtrelenmiş chat listesi)
   const filteredChatList = (agentChatsPaginated || []).filter(chat => {

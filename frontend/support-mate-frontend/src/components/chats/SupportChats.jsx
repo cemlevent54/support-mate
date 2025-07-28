@@ -136,8 +136,12 @@ export default function SupportChats({ chat, myUserId, onChatCreated }) {
   };
 
   useEffect(() => {
-    setMessages(chat?.messages || []);
+    // Chat objesinden mesajları al (hem messages hem chatMessages alanlarını kontrol et)
+    const chatMessages = chat?.messages || chat?.chatMessages || [];
+    setMessages(chatMessages);
     setChatId(chat?._id || chat?.chatId || chat?.id || null);
+    console.log('[SupportChats] Chat objesi güncellendi:', chat);
+    console.log('[SupportChats] Mesajlar:', chatMessages);
   }, [chat]);
 
   useEffect(() => {

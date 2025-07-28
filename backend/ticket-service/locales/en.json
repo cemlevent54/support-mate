@@ -115,7 +115,8 @@
                 "ticket_created_mail_sent": "Ticket created mail sent: {user_id}",
                 "ticket_created_mail_failed": "Ticket created mail failed: {error}",
                 "leader_assigned_status_in_review": "Leader assigned, status set to IN_REVIEW: {leader_id}",
-                "no_leader_assigned_status_open": "No leader assigned, status remains OPEN"
+                "no_leader_assigned_status_open": "No leader assigned, status remains OPEN",
+                "customer_supporter_ticket_created_in_review": "Customer Supporter created ticket, status IN_REVIEW: {agent_id}"
             },
             "responses": {
                 "unauthorized": "User is not authenticated.",

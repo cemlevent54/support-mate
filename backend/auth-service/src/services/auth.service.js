@@ -526,16 +526,25 @@ class AuthService {
     if (user.roleName === 'Customer Supporter') {
       try {
         logger.info(`[ONLINE] ${this.translation('services.authService.logs.customerSupportLoginDetected')}. userId=${user.id}, email=${user.email}`);
+        
+        // Redis bağlantı durumunu kontrol et
+        if (!this.cacheService.client?.isReady) {
+          logger.error('[ONLINE] Redis client bağlantısı hazır değil!');
+          throw new Error('Redis connection not ready');
+        }
+        
         // Önce queue'da var mı kontrol et
         const currentOnline = await this.cacheService.client.lRange('online_users_queue', 0, -1);
-        const isAlreadyOnline = currentOnline.includes(user.id);
+        const userIdString = String(user.id); // Object'i string'e çevir
+        const isAlreadyOnline = currentOnline.includes(userIdString);
         
         logger.info(`[ONLINE] Redis queue durumu - Mevcut online kullanıcılar: ${JSON.stringify(currentOnline)}`);
         logger.info(`[ONLINE] Kullanıcı zaten online mi: ${isAlreadyOnline}`);
         
         if (!isAlreadyOnline) {
           // Yoksa ekle
-          await this.cacheService.client.rPush('online_users_queue', user.id);
+          const userIdString = String(user.id); // Object'i string'e çevir
+          await this.cacheService.client.rPush('online_users_queue', userIdString);
           logger.info(this.translation('services.authService.logs.redisPushSuccess'), { userId: user.id });
           const updatedOnline = await this.cacheService.client.lRange('online_users_queue', 0, -1);
           logger.info(this.translation('services.authService.logs.currentOnlineUsers'), updatedOnline);
@@ -548,7 +557,13 @@ class AuthService {
           logger.info(`[ONLINE] Kullanıcı zaten queue'da mevcut, ekleme yapılmadı`);
         }
       } catch (err) {
-        logger.error(this.translation('services.authService.logs.customerSupporterOnlineError'), { userId: user.id, email: user.email, error: err });
+        logger.error(this.translation('services.authService.logs.customerSupporterOnlineError'), { 
+          userId: user.id, 
+          email: user.email, 
+          error: err.message || err,
+          stack: err.stack,
+          redisConnected: this.cacheService.client?.isReady || false
+        });
       }
     } else {
       logger.info(`[ONLINE] Kullanıcı Customer Supporter değil (${user.roleName}), queue'ya eklenmedi`);
@@ -579,7 +594,8 @@ class AuthService {
           const beforeLogout = await this.cacheService.client.lRange('online_users_queue', 0, -1);
           logger.info(`[ONLINE] (Logout) Logout öncesi Redis queue: ${JSON.stringify(beforeLogout)}`);
           
-          await this.cacheService.client.lRem('online_users_queue', 0, user.id);
+          const userIdString = String(user.id); // Object'i string'e çevir
+          await this.cacheService.client.lRem('online_users_queue', 0, userIdString);
           logger.info(`[ONLINE] (Logout) Redis lRem('online_users_queue', 0, ${user.id}) sonucu:`);
           
           // Logout sonrası queue durumu

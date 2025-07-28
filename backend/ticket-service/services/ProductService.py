@@ -155,7 +155,7 @@ class ProductService:
                 deletedAt=prod.deletedAt
             ).dict()
             dto.pop("product_category_id", None)
-            dto["productCategory"] = product_category
+            dto["product_category"] = product_category
             dto_list.append(self.dto_to_serializable(dto))
         return {
             "data": dto_list,

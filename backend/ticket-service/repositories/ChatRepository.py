@@ -56,16 +56,78 @@ class ChatRepository:
         return None
 
     def list(self, filter: dict = None) -> List[Chat]:
-        # Chat listesini getir
-        pass
+        try:
+            if filter is None:
+                filter = {}
+            
+            # isDeleted kontrolü ekle
+            if "isDeleted" not in filter:
+                filter["isDeleted"] = False
+            
+            docs = self.collection.find(filter)
+            result = []
+            for doc in docs:
+                doc["_id"] = str(doc["_id"])
+                result.append(Chat.model_validate(doc))
+            
+            logger.info(f"[REPO] ChatRepository.list: {len(result)} chat bulundu")
+            return result
+        except Exception as e:
+            logger.error(f"[REPO] ChatRepository.list error: {str(e)}")
+            return []
 
     def update(self, chat_id: str, updated: dict) -> Optional[Chat]:
-        # Chat güncelle
-        pass
+        try:
+            from bson import ObjectId
+            # Önce ObjectId ile dene
+            try:
+                result = self.collection.update_one(
+                    {"_id": ObjectId(chat_id)},
+                    {"$set": updated}
+                )
+            except Exception:
+                # ObjectId çalışmazsa string id ile dene
+                result = self.collection.update_one(
+                    {"_id": chat_id},
+                    {"$set": updated}
+                )
+            
+            if result.modified_count == 1:
+                logger.info(f"[REPO] ChatRepository.update: chat_id={chat_id}, updated={updated}")
+                # Güncellenmiş chat'i döndür
+                return self.get_by_id(chat_id)
+            else:
+                logger.warning(f"[REPO] ChatRepository.update: chat_id={chat_id} güncellenemedi, modified_count={result.modified_count}")
+                return None
+        except Exception as e:
+            logger.error(f"[REPO] ChatRepository.update error: {str(e)}")
+            return None
 
     def soft_delete(self, chat_id: str) -> bool:
-        # Chat'i soft delete yap
-        pass
+        try:
+            from bson import ObjectId
+            # Önce ObjectId ile dene
+            try:
+                result = self.collection.update_one(
+                    {"_id": ObjectId(chat_id)},
+                    {"$set": {"isDeleted": True, "deletedAt": datetime.utcnow()}}
+                )
+            except Exception:
+                # ObjectId çalışmazsa string id ile dene
+                result = self.collection.update_one(
+                    {"_id": chat_id},
+                    {"$set": {"isDeleted": True, "deletedAt": datetime.utcnow()}}
+                )
+            
+            if result.modified_count == 1:
+                logger.info(f"[REPO] ChatRepository.soft_delete: chat_id={chat_id}")
+                return True
+            else:
+                logger.warning(f"[REPO] ChatRepository.soft_delete: chat_id={chat_id} silinemedi, modified_count={result.modified_count}")
+                return False
+        except Exception as e:
+            logger.error(f"[REPO] ChatRepository.soft_delete error: {str(e)}")
+            return False
 
     def find_by_ticket_id(self, ticket_id: str) -> Optional[Chat]:
         doc = self.collection.find_one({"ticketId": ticket_id, "isDeleted": False})

@@ -26,7 +26,7 @@ class AssignTicketToLeaderCommandHandler:
                 return {"success": False, "data": None, "message": "Ticket must be assigned to an agent first"}
             
             # Ticket'ın zaten leader'a assign olup olmadığını kontrol et
-            if hasattr(ticket, 'assignedLeaderId') and ticket.assignedLeaderId:
+            if hasattr(ticket, 'assignedLeaderId') and ticket.assignedLeaderId and ticket.assignedLeaderId != 'None' and ticket.assignedLeaderId != '':
                 self.logger.warning(f"[ASSIGN_LEADER] Ticket zaten leader'a assign edilmiş: ticketId={ticket_id}, currentLeaderId={ticket.assignedLeaderId}")
                 return {"success": False, "data": None, "message": "Ticket is already assigned to a leader"}
             
@@ -39,7 +39,7 @@ class AssignTicketToLeaderCommandHandler:
             # Ticket'ı leader'a assign et
             update_fields = {
                 "assignedLeaderId": leader_id,
-                "status": "IN_REVIEW"  # Leader'a assign edildiğinde status IN_REVIEW olur
+                "status": "IN_PROGRESS"  # Customer Supporter leader atadığında status IN_PROGRESS olur
             }
             
             updated_ticket = self.ticket_repository.update_fields(ticket_id, update_fields)

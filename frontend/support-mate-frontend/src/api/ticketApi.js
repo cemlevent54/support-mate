@@ -3,6 +3,8 @@ import axiosInstance from './axiosInstance';
 const getLang = () => localStorage.getItem("language") || "tr";
 
 const BASE_URL = 'http://localhost:9000' + '/api/tickets';
+const AUTH_BASE_URL = 'http://localhost:9000' + '/api/auth';
+
 
 // Ticket oluştur (FormData ile dosya yükleme desteği)
 export const createTicket = async (ticketData) => {
@@ -115,7 +117,7 @@ export const getTicketForUser = async (ticketId) => {
 
 // Online customer supporter var mı?
 export const checkOnlineSupporters = async () => {
-  const response = await axiosInstance.get('http://localhost:9000/api/auth/online-users', {
+  const response = await axiosInstance.get(AUTH_BASE_URL + '/online-users', {
     headers: {
       'accept-language': getLang(),
     },
@@ -126,7 +128,7 @@ export const checkOnlineSupporters = async () => {
 
 // Online customer supporter'ların ilk id'sini döndür
 export const getFirstOnlineSupporterId = async () => {
-  const response = await axiosInstance.get('http://localhost:9000/api/auth/online-users', {
+  const response = await axiosInstance.get(AUTH_BASE_URL + '/online-users', {
     headers: {
       'accept-language': getLang(),
     },

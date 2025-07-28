@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 def to_dict(obj):
     if hasattr(obj, 'model_dump'):
         return obj.model_dump()
-    elif hasattr(obj, 'dict'):
+    elif hasattr(obj, 'dict') and not isinstance(obj, dict):
         return obj.dict()
     elif isinstance(obj, dict):
         return {k: to_dict(v) for k, v in obj.items()}

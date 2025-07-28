@@ -8,6 +8,9 @@ import Button from '@mui/material/Button';
 import Alert from '@mui/material/Alert';
 import IconButton from '@mui/material/IconButton';
 import DeleteIcon from '@mui/icons-material/Delete';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
 import { useTranslation } from 'react-i18next';
 import { getCategories } from '../../api/categoryApi';
 import { getProductsUser } from '../../api/productApi';
@@ -34,6 +37,8 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
   const [leaders, setLeaders] = useState([]);
   const [loadingLeaders, setLoadingLeaders] = useState(false);
   const [leaderError, setLeaderError] = useState('');
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [selectedPreview, setSelectedPreview] = useState(null);
 
   useEffect(() => {
     // Kategorileri API'den çek
@@ -55,15 +60,9 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
 
   useEffect(() => {
     if (form.categoryId) {
-      // Kategoriye göre ürünleri filtrele (iç içe productCategory desteği eklendi)
-      const filtered = products.filter((prod) => {
-        const categoryFromProduct =
-          (prod.productCategory && (prod.productCategory.product_category_id || prod.productCategory.categoryId || prod.productCategory.category_id)) ||
-          prod.product_category_id ||
-          prod.categoryId ||
-          prod.category_id;
-        return String(categoryFromProduct) === String(form.categoryId);
-      });
+      const filtered = products.filter(
+        (prod) => String(prod.product_category?.product_category_id) === String(form.categoryId)
+      );
       setFilteredProducts(filtered);
       // DEBUG: Konsola yazdır
       console.log('Tüm ürünler:', products);
@@ -145,7 +144,6 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
       }
     }
   };
-  
 
   const handleRemoveFile = (index) => {
     setForm((prev) => {
@@ -153,6 +151,26 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
       newFiles.splice(index, 1);
       return { ...prev, files: newFiles };
     });
+  };
+
+  const handlePreview = (fileObj) => {
+    if (fileObj.type.startsWith('image/') || fileObj.type === 'application/pdf') {
+      setSelectedPreview(fileObj);
+      setPreviewOpen(true);
+    } else {
+      // Diğer dosyalar için blob url ile indirme
+      const link = document.createElement('a');
+      link.href = fileObj.url;
+      link.download = fileObj.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  const handleClosePreview = () => {
+    setPreviewOpen(false);
+    setSelectedPreview(null);
   };
 
   // CustomerId bulma fonksiyonu (chat ve agentId ile)
@@ -220,141 +238,322 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
 
   return (
     <Modal open={open} onClose={onClose}>
-      <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', bgcolor: 'background.paper', p: 4, borderRadius: 2, minWidth: 400, maxWidth: 500 }}>
-        <Typography variant="h6" mb={2}>Create Ticket</Typography>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
-        <form onSubmit={handleSubmit}>
-          <TextField
-            fullWidth
-            label={t('pages.createTicket.form.title') || "Başlık"}
-            name="title"
-            value={form.title}
-            onChange={handleChange}
-            margin="normal"
-            required
-          />
-          <TextField
-            fullWidth
-            label={t('pages.createTicket.form.description') || "Açıklama"}
-            name="description"
-            value={form.description}
-            onChange={handleChange}
-            margin="normal"
-            multiline
-            rows={3}
-            required
-          />
-          <TextField
-            select
-            fullWidth
-            label={t('pages.createTicket.form.category') || "Kategori"}
-            name="categoryId"
-            value={form.categoryId}
-            onChange={handleChange}
-            margin="normal"
-            required
+      <Box sx={{ 
+        position: 'absolute', 
+        top: '50%', 
+        left: '50%', 
+        transform: 'translate(-50%, -50%)', 
+        bgcolor: 'background.paper', 
+        borderRadius: 2, 
+        boxShadow: 3,
+        minWidth: 500, 
+        maxWidth: 600,
+        maxHeight: '85vh',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
+        <Box 
+          bgcolor="#f9f9f9" 
+          borderRadius={2} 
+          p={2} 
+          display="flex" 
+          flexDirection="column" 
+          flex={1} 
+          minHeight={0}
+          height="100%"
+        >
+          <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+            <Typography variant="h6">Create Ticket</Typography>
+          </Box>
+          
+          <Box 
+            flex={1} 
+            my={2} 
+            p={1} 
+            minHeight={0}
+            sx={{
+              overflowY: 'auto',
+              maxHeight: '60vh',
+              '&::-webkit-scrollbar': {
+                width: '6px',
+              },
+              '&::-webkit-scrollbar-track': {
+                background: '#f1f1f1',
+                borderRadius: '3px',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                background: '#c1c1c1',
+                borderRadius: '3px',
+              },
+              '&::-webkit-scrollbar-thumb:hover': {
+                background: '#a8a8a8',
+              },
+            }}
           >
-            <MenuItem value="">{t('pages.createTicket.form.select') || "Seçiniz"}</MenuItem>
-            {categories.map((cat) => (
-              <MenuItem key={cat.id || cat._id} value={cat.id || cat._id}>{cat.category_name_tr || cat.category_name_en || cat.name || cat.label}</MenuItem>
-            ))}
-          </TextField>
-          {form.categoryId && (
-            <TextField
-              select
-              fullWidth
-              label={t('pages.createTicket.form.product') || "Ürün"}
-              name="productId"
-              value={form.productId}
-              onChange={handleChange}
-              margin="normal"
-              required={filteredProducts.length > 0}
-            >
-              <MenuItem value="">{t('pages.createTicket.form.selectProduct') || "Ürün Seçiniz"}</MenuItem>
-              {filteredProducts.length > 0 ? (
-                filteredProducts.map((prod) => (
-                  <MenuItem key={prod.id || prod._id} value={prod.id || prod._id}>{prod.product_name_tr || prod.product_name_en || prod.name}</MenuItem>
-                ))
-              ) : (
-                <MenuItem value="" disabled>{t('pages.createTicket.form.noProduct') || "Bu kategoriye ait ürün yok"}</MenuItem>
+            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+            {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+            
+            <form onSubmit={handleSubmit}>
+              {/* Custom Title Input */}
+              <div style={{ margin: '16px 0', width: '100%' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
+                  {t('pages.createTicket.form.title') || "Başlık"}
+                </label>
+                <input
+                  type="text"
+                  name="title"
+                  value={form.title}
+                  onChange={handleChange}
+                  placeholder={t('pages.createTicket.form.title') || "Başlık"}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid #ccc',
+                    fontSize: '14px',
+                    backgroundColor: '#fff',
+                    outline: 'none',
+                    transition: '0.2s ease-in-out',
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = '#1976d2')}
+                  onBlur={(e) => (e.target.style.borderColor = '#ccc')}
+                />
+              </div>
+
+              {/* Custom Description Textarea */}
+              <div style={{ margin: '16px 0', width: '100%' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
+                  {t('pages.createTicket.form.description') || "Açıklama"}
+                </label>
+                <textarea
+                  name="description"
+                  value={form.description}
+                  onChange={handleChange}
+                  placeholder={t('pages.createTicket.form.description') || "Açıklama"}
+                  required
+                  rows="4"
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid #ccc',
+                    fontSize: '14px',
+                    backgroundColor: '#fff',
+                    outline: 'none',
+                    resize: 'vertical',
+                    minHeight: '100px',
+                    transition: '0.2s ease-in-out',
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = '#1976d2')}
+                  onBlur={(e) => (e.target.style.borderColor = '#ccc')}
+                ></textarea>
+              </div>
+
+              {/* Custom Category Dropdown */}
+              <div style={{ margin: '16px 0', width: '100%' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
+                  {t('pages.createTicket.form.category') || "Kategori"}
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <select
+                    name="categoryId"
+                    value={form.categoryId}
+                    onChange={handleChange}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      border: '1px solid #ccc',
+                      fontSize: '14px',
+                      backgroundColor: '#fff',
+                      cursor: 'pointer',
+                      appearance: 'none',
+                    }}
+                    required
+                  >
+                    <option value="" disabled>{t('pages.createTicket.form.select') || "Seçiniz"}</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id || cat._id} value={cat.id || cat._id}>
+                        {cat.category_name_tr || cat.category_name_en || cat.name || cat.label}
+                      </option>
+                    ))}
+                  </select>
+                  <span style={{
+                    position: 'absolute',
+                    top: '50%',
+                    right: '12px',
+                    transform: 'translateY(-50%)',
+                    pointerEvents: 'none',
+                    fontSize: '14px',
+                    color: '#555',
+                  }}>
+                    ▼
+                  </span>
+                </div>
+              </div>
+
+              {/* Product Dropdown */}
+              {form.categoryId && (
+                <div style={{ margin: '16px 0', width: '100%' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
+                    {t('pages.createTicket.form.product') || "Ürün"}
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <select
+                      name="productId"
+                      value={form.productId}
+                      onChange={handleChange}
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        borderRadius: '8px',
+                        border: '1px solid #ccc',
+                        fontSize: '14px',
+                        backgroundColor: '#fff',
+                        cursor: 'pointer',
+                        appearance: 'none',
+                      }}
+                      required={filteredProducts.length > 0}
+                    >
+                      <option value="" disabled>{t('pages.createTicket.form.selectProduct') || "Ürün Seçiniz"}</option>
+                      {filteredProducts.length > 0 ? (
+                        filteredProducts.map((prod) => (
+                          <option key={prod.id || prod._id} value={prod.id || prod._id}>
+                            {prod.product_name_tr || prod.product_name_en || prod.name}
+                          </option>
+                        ))
+                      ) : (
+                        <option value="" disabled>{t('pages.createTicket.form.noProduct') || "Bu kategoriye ait ürün yok"}</option>
+                      )}
+                    </select>
+                    <span style={{
+                      position: 'absolute',
+                      top: '50%',
+                      right: '12px',
+                      transform: 'translateY(-50%)',
+                      pointerEvents: 'none',
+                      fontSize: '14px',
+                      color: '#555',
+                    }}>
+                      ▼
+                    </span>
+                  </div>
+                </div>
               )}
-            </TextField>
-          )}
-          <TextField
-            select
-            fullWidth
-            label={t('pages.createTicket.form.leader') || 'Leader Seçin'}
-            name="assignedLeaderId"
-            value={form.assignedLeaderId || ''}
-            onChange={handleChange}
-            margin="normal"
-            helperText={t('pages.createTicket.form.leaderRequired')}
-            disabled={loadingLeaders}
-            required
-          >
-            {leaders.map((leader) => (
-              <MenuItem key={leader.value} value={leader.value}>
-                {leader.label}
-              </MenuItem>
-            ))}
-          </TextField>
-          {loadingLeaders && <Typography variant="caption" color="text.secondary">Liderler yükleniyor...</Typography>}
-          {leaderError && <Alert severity="error">{leaderError}</Alert>}
-          <Button
-            variant="contained"
-            component="label"
-            fullWidth
-            sx={{ mb: 1, borderRadius: 2 }}
-          >
-            Dosya Yükle (Max 10MB)
-            <input
-              type="file"
-              name="files"
-              hidden
-              multiple
-              onChange={handleChange}
-            />
-          </Button>
-          {previews.length > 0 && (
-            <Box display="flex" flexDirection="column" gap={1}>
-              {previews.map((file, idx) => (
-                <Box key={idx} display="flex" alignItems="center" gap={2} p={1} border={1} borderColor="#eee" borderRadius={1}>
-                  <Box>
-                    {file.url && file.type.startsWith('image/') ? (
-                      <img src={file.url} alt={file.name} style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 4 }} />
-                    ) : file.type === 'application/pdf' ? (
-                      <Box width={48} height={48} display="flex" alignItems="center" justifyContent="center" bgcolor="#f5f5f5" borderRadius={1}>
-                        <Typography variant="caption" color="text.secondary">PDF</Typography>
+
+              {/* Leader Dropdown */}
+              <div style={{ margin: '16px 0', width: '100%' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
+                  {t('pages.createTicket.form.leader') || 'Leader Seçin'}
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <select
+                    name="assignedLeaderId"
+                    value={form.assignedLeaderId || ''}
+                    onChange={handleChange}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      border: '1px solid #ccc',
+                      fontSize: '14px',
+                      backgroundColor: '#fff',
+                      cursor: 'pointer',
+                      appearance: 'none',
+                    }}
+                    disabled={loadingLeaders}
+                    required
+                  >
+                                         <option value="" disabled>{t('pages.createTicket.form.select') || "Seçiniz"}</option>
+                    {leaders.map((leader) => (
+                      <option key={leader.value} value={leader.value}>
+                        {leader.label}
+                      </option>
+                    ))}
+                  </select>
+                  <span style={{
+                    position: 'absolute',
+                    top: '50%',
+                    right: '12px',
+                    transform: 'translateY(-50%)',
+                    pointerEvents: 'none',
+                    fontSize: '14px',
+                    color: '#555',
+                  }}>
+                    ▼
+                  </span>
+                </div>
+                {loadingLeaders && <Typography variant="caption" color="text.secondary">Liderler yükleniyor...</Typography>}
+                {leaderError && <Alert severity="error">{leaderError}</Alert>}
+              </div>
+
+              {/* File Upload */}
+              <Box mt={2} mb={2}>
+                <Button
+                  variant="contained"
+                  component="label"
+                  fullWidth
+                  sx={{ mb: 1, borderRadius: 2 }}
+                >
+                  Dosya Yükle (Max 10MB)
+                  <input
+                    type="file"
+                    name="files"
+                    hidden
+                    multiple
+                    onChange={handleChange}
+                  />
+                </Button>
+                {previews.length > 0 && (
+                  <Box display="flex" flexDirection="column" gap={1}>
+                    {previews.map((file, idx) => (
+                      <Box key={idx} display="flex" alignItems="center" gap={2} p={1} border={1} borderColor="#eee" borderRadius={1}>
+                        <Box
+                          sx={{ cursor: 'pointer' }}
+                          onClick={() => handlePreview(file)}
+                        >
+                          {file.url && file.type.startsWith('image/') ? (
+                            <img src={file.url} alt={file.name} style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 4 }} />
+                          ) : file.type === 'application/pdf' ? (
+                            <Box width={48} height={48} display="flex" alignItems="center" justifyContent="center" bgcolor="#f5f5f5" borderRadius={1}>
+                              <Typography variant="caption" color="text.secondary">PDF</Typography>
+                            </Box>
+                          ) : (
+                            <Box width={48} height={48} display="flex" alignItems="center" justifyContent="center" bgcolor="#f5f5f5" borderRadius={1}>
+                              <Typography variant="caption" color="text.secondary">{file.name.split('.').pop()?.toUpperCase()}</Typography>
+                            </Box>
+                          )}
+                        </Box>
+                        <Box flex={1}>
+                          <Typography variant="body2">{file.name}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {file.size > 1024 * 1024 
+                              ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` 
+                              : `${(file.size / 1024).toFixed(1)} KB`
+                            }
+                          </Typography>
+                        </Box>
+                        <IconButton size="small" color="error" onClick={() => handleRemoveFile(idx)}>
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
                       </Box>
-                    ) : (
-                      <Box width={48} height={48} display="flex" alignItems="center" justifyContent="center" bgcolor="#f5f5f5" borderRadius={1}>
-                        <Typography variant="caption" color="text.secondary">{file.name.split('.').pop()?.toUpperCase()}</Typography>
-                      </Box>
-                    )}
+                    ))}
                   </Box>
-                  <Box flex={1}>
-                    <Typography variant="body2">{file.name}</Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {file.size > 1024 * 1024 
-                        ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` 
-                        : `${(file.size / 1024).toFixed(1)} KB`
-                      }
-                    </Typography>
-                  </Box>
-                  <IconButton size="small" color="error" onClick={() => handleRemoveFile(idx)}>
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </Box>
-              ))}
-            </Box>
-          )}
-          <Box mt={2} mb={2} display="flex" gap={1}>
+                )}
+              </Box>
+            </form>
+          </Box>
+
+          {/* Action Buttons */}
+          <Box display="flex" gap={1} mt={2} flexShrink={0}>
             <Button
               type="submit"
               variant="contained"
               color="primary"
               fullWidth
+              onClick={handleSubmit}
               disabled={loading}
               sx={{ borderRadius: 2, minWidth: 80, py: 1.2, fontWeight: 600 }}
             >
@@ -370,7 +569,26 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
               İptal
             </Button>
           </Box>
-        </form>
+        </Box>
+
+        {/* Resim ve PDF önizleme Dialog */}
+        <Dialog open={previewOpen} onClose={handleClosePreview} maxWidth="md" fullWidth>
+          <DialogTitle>{selectedPreview?.name}</DialogTitle>
+          <DialogContent>
+            {selectedPreview && selectedPreview.type.startsWith('image/') && (
+              <img src={selectedPreview.url} alt={selectedPreview.name} style={{ maxWidth: '100%', maxHeight: '70vh', display: 'block', margin: '0 auto' }} />
+            )}
+            {selectedPreview && selectedPreview.type === 'application/pdf' && (
+              <iframe
+                src={selectedPreview.url}
+                title={selectedPreview.name}
+                width="100%"
+                height="600px"
+                style={{ border: 'none', display: 'block', margin: '0 auto' }}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </Box>
     </Modal>
   );

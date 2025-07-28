@@ -49,6 +49,12 @@ export default function SupportChatsLayout() {
     }
   }, [chatId, selectedChat]);
 
+  // ChatList'ten chat objesi almak için callback
+  const handleChatFound = (chatObj) => {
+    console.log('[SupportChatsLayout] handleChatFound called with:', chatObj);
+    setSelectedChat(chatObj);
+  };
+
   // ChatPanel veya SupportChats gibi bir componentten yeni chat oluşturulunca tetiklenecek fonksiyon
   const handleChatCreated = () => {
     setRefreshTrigger(prev => prev + 1);
@@ -60,6 +66,7 @@ export default function SupportChatsLayout() {
         activeChatTicketId={chatId} 
         onSelectChat={handleSelectChat}
         onUserJoinedChat={handleUserJoinedChat}
+        onChatFound={handleChatFound}
         refreshTrigger={refreshTrigger}
       />
       <Box flex={1} height="100vh" bgcolor="#f5f5f5">
