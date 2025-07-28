@@ -31,6 +31,7 @@ import isLeader from './auth/isLeader';
 import FeedbackPage from "./pages/feedback/FeedbackPage";
 import LeaderPanel from './pages/leader/LeaderPanel';
 import LeaderTickets from './pages/leader/LeaderTickets';
+import RoleProfile from './pages/support/RoleProfile';
 
 // Global modal handlers - bu fonksiyonlar App.jsx'ten geçirilecek
 let globalOpenCreateTicketModal = () => {};
@@ -114,6 +115,7 @@ export const appRoutes = [
       { path: 'chats/:chatId', element: <SupportChatsRoleGuard><SupportChatsLayout /></SupportChatsRoleGuard> },
       { path: 'kanban', element: <LeaderKanbanRoleGuard><LeaderKanban /></LeaderKanbanRoleGuard> },
       { path: 'tickets', element: <LeaderTicketsRoleGuard><LeaderTickets /></LeaderTicketsRoleGuard> },
+      { path: 'profile', element: <RoleProfile /> },
       { index: true, element: <SupportIndexRoute /> }
     ]
   },

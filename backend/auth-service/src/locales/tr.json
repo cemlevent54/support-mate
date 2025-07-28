@@ -74,6 +74,14 @@
             "fail": "Kullanıcı güncellenirken hata oluştu",
             "notFound": "Kullanıcı bulunamadı"
           }
+        },
+        "updateLeader": {
+          "logs": {
+            "executing": "Leader güncelleme işlemi başlatıldı",
+            "success": "Leader başarıyla güncellendi",
+            "fail": "Leader güncellenirken hata oluştu",
+            "notFound": "Leader bulunamadı"
+          }
         }
       }
     },
@@ -174,6 +182,13 @@
             "success": "Kullanıcılar başarıyla getirildi",
             "fail": "Kullanıcılar getirilirken hata oluştu"
           }
+        },
+        "getLeaderProfile": {
+          "logs": {
+            "executing": "Leader profili sorgusu başlatıldı",
+            "success": "Leader profili başarıyla getirildi",
+            "fail": "Leader profili getirilirken hata oluştu"
+          }
         }
       }
     }
@@ -254,6 +269,7 @@
         "finding": "Kullanıcı aranıyor",
         "found": "Kullanıcı bulundu",
         "notFound": "Kullanıcı bulunamadı",
+        "errorFinding": "Kullanıcı aranırken hata oluştu",
         "updating": "Kullanıcı güncelleniyor",
         "updated": "Kullanıcı başarıyla güncellendi",
         "errorUpdating": "Kullanıcı güncellenirken hata oluştu",

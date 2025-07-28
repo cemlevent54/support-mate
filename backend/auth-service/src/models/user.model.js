@@ -13,6 +13,8 @@ const UserSchema = new mongoose.Schema(
       password: { type: String, required: true },
       role: { type: mongoose.Schema.Types.ObjectId, ref: 'Role', required: true },
       roleName: { type: String, default: null },
+      // Leader rolü için kategori desteği
+      categoryIds: [{ type: String, default: [] }],
       isActive: { type: Boolean, default: true },
       isDeleted: { type: Boolean, default: false },
       deletedAt: { type: Date, default: null },

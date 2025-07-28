@@ -74,6 +74,14 @@
             "fail": "An error occurred while updating user",
             "notFound": "User not found"
           }
+        },
+        "updateLeader": {
+          "logs": {
+            "executing": "Update leader command started",
+            "success": "Leader updated successfully",
+            "fail": "An error occurred while updating leader",
+            "notFound": "Leader not found"
+          }
         }
       }
     },
@@ -174,6 +182,13 @@
             "success": "Users fetched successfully",
             "fail": "Error occurred while fetching users by role"
           }
+        },
+        "getLeaderProfile": {
+          "logs": {
+            "executing": "Get leader profile query started",
+            "success": "Leader profile fetched successfully",
+            "fail": "Error occurred while fetching leader profile"
+          }
         }
       }
     }
@@ -254,6 +269,7 @@
         "finding": "Finding user",
         "found": "User found",
         "notFound": "User not found",
+        "errorFinding": "Error occurred while finding user",
         "updating": "Updating user",
         "updated": "User updated successfully",
         "errorUpdating": "Error updating user",

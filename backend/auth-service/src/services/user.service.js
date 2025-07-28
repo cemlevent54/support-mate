@@ -4,10 +4,11 @@ import {
   queryHandler,
   QUERY_TYPES,
   GetUserByIdQueryHandler,
+  GetLeaderProfileQueryHandler,
   GetAllUsersQueryHandler,
   GetUsersByRoleQueryHandler
 } from '../cqrs/index.js';
-import { commandHandler, COMMAND_TYPES, UpdateUserCommandHandler, DeleteUserCommandHandler } from '../cqrs/index.js';
+import { commandHandler, COMMAND_TYPES, UpdateUserCommandHandler, UpdateLeaderCommandHandler, DeleteUserCommandHandler } from '../cqrs/index.js';
 import translation from '../config/translation.js';
 
 // User servisinde kullanılacak izinler
@@ -95,14 +96,30 @@ class UserService {
     try {
       const { id } = req.params;
       const updateData = req.body;
-      logger.info(translation('services.userService.logs.updateRequest'), { userId: id, updateData });
+      const userRole = req.user?.roleName;
+      
+      logger.info(translation('services.userService.logs.updateRequest'), { userId: id, updateData, role: userRole });
+      
+      // Leader rolü için özel command kullan
+      if (userRole === 'Leader') {
+        const command = { id, updateData };
+        const user = await commandHandler.dispatch(COMMAND_TYPES.UPDATE_LEADER, command);
+        if (!user) {
+          logger.warn(translation('services.userService.logs.updateNotFound'), { userId: id });
+          throw new Error(translation('services.userService.logs.updateNotFound'));
+        }
+        logger.info(translation('services.userService.logs.updateSuccess'), { userId: id, role: 'Leader' });
+        return user;
+      }
+      
+      // Diğer roller için normal command kullan
       const command = { id, updateData };
       const user = await commandHandler.dispatch(COMMAND_TYPES.UPDATE_USER, command);
       if (!user) {
         logger.warn(translation('services.userService.logs.updateNotFound'), { userId: id });
         throw new Error(translation('services.userService.logs.updateNotFound'));
       }
-      logger.info(translation('services.userService.logs.updateSuccess'), { userId: id });
+      logger.info(translation('services.userService.logs.updateSuccess'), { userId: id, role: userRole });
       return user;
     } catch (err) {
       logger.error(translation('services.userService.logs.updateError'), { error: err, userId: req.params.id });
@@ -137,9 +154,28 @@ class UserService {
       }
 
       const userEmail = req.user.email;
-      logger.info(translation('services.userService.logs.getAuthenticatedRequest'), { userEmail });
+      const userRole = req.user?.roleName;
+      logger.info(translation('services.userService.logs.getAuthenticatedRequest'), { userEmail, role: userRole });
       
-      // CQRS pattern'ine uygun olarak email ile query dispatch et
+      // Leader rolü için özel query kullan
+      if (userRole === 'Leader') {
+        const getUserQuery = { email: userEmail };
+        const user = await queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_EMAIL, getUserQuery);
+        
+        if (!user) {
+          logger.warn(translation('services.userService.logs.getAuthenticatedNotFound'), { userEmail });
+          throw new Error(translation('services.userService.logs.getAuthenticatedNotFound'));
+        }
+        
+        // Leader için kategori bilgileriyle birlikte getir
+        const leaderQuery = { id: user.id };
+        const leaderUser = await queryHandler.dispatch(QUERY_TYPES.GET_LEADER_PROFILE, leaderQuery);
+        
+        logger.info(translation('services.userService.logs.getAuthenticatedSuccess'), { userEmail, role: 'Leader' });
+        return leaderUser;
+      }
+      
+      // Diğer roller için normal query kullan
       const getUserQuery = { email: userEmail };
       const user = await queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_EMAIL, getUserQuery);
       
@@ -148,7 +184,7 @@ class UserService {
         throw new Error(translation('services.userService.logs.getAuthenticatedNotFound'));
       }
       
-      logger.info(translation('services.userService.logs.getAuthenticatedSuccess'), { userEmail });
+      logger.info(translation('services.userService.logs.getAuthenticatedSuccess'), { userEmail, role: userRole });
       return user;
     } catch (err) {
       logger.error(translation('services.userService.logs.getAuthenticatedError'), { error: err, userEmail: req.user?.email });
@@ -161,9 +197,11 @@ const userService = new UserService();
 
 export function registerUserHandlers() {
   queryHandler.register(QUERY_TYPES.GET_USER_BY_ID, new GetUserByIdQueryHandler());
+  queryHandler.register(QUERY_TYPES.GET_LEADER_PROFILE, new GetLeaderProfileQueryHandler());
   queryHandler.register(QUERY_TYPES.GET_ALL_USERS, new GetAllUsersQueryHandler());
   queryHandler.register(QUERY_TYPES.GET_USERS_BY_ROLE, new GetUsersByRoleQueryHandler());
   commandHandler.register(COMMAND_TYPES.UPDATE_USER, new UpdateUserCommandHandler());
+  commandHandler.register(COMMAND_TYPES.UPDATE_LEADER, new UpdateLeaderCommandHandler());
   commandHandler.register(COMMAND_TYPES.DELETE_USER, new DeleteUserCommandHandler());
 }
 
