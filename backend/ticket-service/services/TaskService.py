@@ -288,9 +288,42 @@ class TaskService:
 
     def get_tasks(self, user: dict, token: str = None, language: str = 'tr'):
         set_language(language)
-        tasks = self.list_handler.handle(token)
-        if not tasks:
+        
+        # Role-based query handling
+        user_role = user.get('roleName', '').lower()
+        user_id = user.get('id')
+        
+        logger.info(f"Getting tasks for role: {user_role}, user_id: {user_id}")
+        
+        if not user_id:
+            logger.warning("User ID not found")
             return None
+        
+        # Role'a göre farklı query parametreleri
+        if user_role == 'leader':
+            # Leader hem kendi oluşturduğu hem de kendi atadığı task'ları görebilir
+            logger.info("Leader tasks requested - using query handler with leader role")
+            tasks = self.list_handler.handle(token=token, user_role=user_role, user_id=user_id)
+        elif user_role == 'admin':
+            # Admin tüm task'ları görebilir
+            logger.info("Admin tasks requested - returning all tasks")
+            tasks = self.list_handler.handle()
+        elif user_role == 'employee':
+            # Employee sadece kendine atanan task'ları görebilir
+            logger.info("Employee tasks requested - filtering by assigned_employee_id")
+            tasks = self.list_handler.handle(assigned_employee_id=user_id)
+        elif user_role == 'customer_supporter':
+            # Customer Supporter sadece kendi oluşturduğu task'ları görebilir
+            logger.info("Customer Supporter tasks requested - filtering by created_by")
+            tasks = self.list_handler.handle(created_by=user_id)
+        else:
+            # Default behavior for unknown roles
+            logger.info(f"Unknown role '{user_role}' - using default behavior")
+            tasks = self.list_handler.handle()
+        
+        if not tasks:
+            return []
+            
         dto_list = [task.model_dump() if hasattr(task, 'model_dump') else task.dict() for task in tasks]
         return [self.dto_to_serializable(dto) for dto in dto_list]
 

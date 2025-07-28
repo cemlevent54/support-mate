@@ -24,6 +24,7 @@ import { languageMiddleware } from './middlewares/language.middleware.js';
 import { errorHandler } from './middlewares/error.handler.js';
 import { seedPermissions } from './migrations/seedPermissions.js';
 import { swearCheckMiddleware } from './middlewares/swear.middleware.js';
+import { startGrpcServer } from './grpc_server.js';
 
 
 
@@ -66,6 +67,10 @@ const PORT = process.env.PORT;
 initializeApp()
   .then(async () => {
     await seedPermissions(DEFAULT_LOCALE);
+    
+    // gRPC server'ı başlat
+    startGrpcServer();
+    
     app.listen(PORT, () => {
       logger.info(`🚀 Server is listening on port ${PORT}`);
     });

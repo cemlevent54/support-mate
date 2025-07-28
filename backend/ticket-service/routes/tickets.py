@@ -109,7 +109,8 @@ def list_tickets_admin(request: Request, user=Depends(get_current_user)):
     set_language(lang)
     if user.get("roleName") != "Admin":
         raise HTTPException(status_code=403, detail="Forbidden")
-    return ticket_controller.list_tickets_endpoint_for_admin(user, lang=lang)
+    token = request.headers.get("authorization", "").replace("Bearer ", "")
+    return ticket_controller.list_tickets_endpoint_for_admin(user, lang=lang, token=token)
 
 @router.get("/admin/tickets/{ticket_id}", response_model=APIResponse)
 def get_ticket_admin(ticket_id: str, request: Request, user=Depends(get_current_user)):
@@ -118,7 +119,8 @@ def get_ticket_admin(ticket_id: str, request: Request, user=Depends(get_current_
     logger.info("lang", lang)
     if user.get("roleName") != "Admin":
         raise HTTPException(status_code=403, detail="Forbidden")
-    return ticket_controller.get_ticket_endpoint_for_admin(ticket_id, user, lang=lang)
+    token = request.headers.get("authorization", "").replace("Bearer ", "")
+    return ticket_controller.get_ticket_endpoint_for_admin(ticket_id, user, lang=lang, token=token)
 
 @router.delete("/admin/tickets/{ticket_id}", status_code=status.HTTP_204_NO_CONTENT)
 def soft_delete_ticket_admin(ticket_id: str, request: Request, user=Depends(get_current_user)):
@@ -126,7 +128,8 @@ def soft_delete_ticket_admin(ticket_id: str, request: Request, user=Depends(get_
     set_language(lang)
     if user.get("roleName") != "Admin":
         raise HTTPException(status_code=403, detail="Forbidden")
-    return ticket_controller.soft_delete_ticket_endpoint_for_admin(ticket_id, user, lang=lang)
+    token = request.headers.get("authorization", "").replace("Bearer ", "")
+    return ticket_controller.soft_delete_ticket_endpoint_for_admin(ticket_id, user, lang=lang, token=token)
 
 # --- User routes ---
 @router.get("/user/tickets", response_model=APIResponse)
@@ -160,7 +163,8 @@ def list_tickets_agent(request: Request, user=Depends(get_current_user), page: i
     set_language(lang)
     if user.get("roleName") != "Customer Supporter":
         raise HTTPException(status_code=403, detail="Forbidden")
-    return ticket_controller.list_tickets_endpoint_for_agent(user, lang=lang, page=page, page_size=page_size)
+    token = request.headers.get("authorization", "").replace("Bearer ", "")
+    return ticket_controller.list_tickets_endpoint_for_agent(user, lang=lang, page=page, page_size=page_size, token=token)
 
 # --- Genel routes ---
 @router.post("", response_model=APIResponse)
@@ -235,7 +239,8 @@ def list_tickets_leader(request: Request, user=Depends(get_current_user)):
     set_language(lang)
     if user.get("roleName") != "Leader":
         raise HTTPException(status_code=403, detail="Forbidden")
-    return ticket_controller.list_tickets_endpoint_for_leader(user, lang=lang)
+    token = request.headers.get("authorization", "").replace("Bearer ", "")
+    return ticket_controller.list_tickets_endpoint_for_leader(user, lang=lang, token=token)
 
 # --- Customer Supporter routes ---
 # patch

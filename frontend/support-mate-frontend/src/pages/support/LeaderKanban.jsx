@@ -1,0 +1,250 @@
+import React, { useState, useMemo, useEffect } from 'react';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import CustomKanbanCard from '../../components/common/CustomKanbanCard';
+import CustomKanbanDetailsModal from '../../components/common/CustomKanbanDetailsModal';
+import CustomSearchBar from '../../components/common/CustomSearchBar';
+import CustomCategoryFilter from '../../components/common/CustomCategoryFilter';
+import { getTasks, getTask } from '../../api/taskApi';
+import { useTranslation } from 'react-i18next';
+
+const emptyKanban = {
+  columns: {
+    PENDING: { name: 'Bekliyor', items: [] },
+    IN_PROGRESS: { name: 'Devam Ediyor', items: [] },
+    DONE: { name: 'Tamamlandı', items: [] },
+  },
+};
+
+const columnOrder = ['PENDING', 'IN_PROGRESS', 'DONE'];
+
+export default function LeaderKanban() {
+  const { t } = useTranslation();
+  const [data, setData] = useState(emptyKanban);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalTask, setModalTask] = useState(null);
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem('jwt');
+        const res = await getTasks(token);
+        const tasks = res.data?.data || [];
+        
+        // Kanban board formatına dönüştür
+        const columns = {
+          PENDING: { name: t('kanban.columns.pending', 'Bekliyor'), items: [] },
+          IN_PROGRESS: { name: t('kanban.columns.inProgress', 'Devam Ediyor'), items: [] },
+          DONE: { name: t('kanban.columns.done', 'Tamamlandı'), items: [] },
+        };
+        
+        tasks.forEach(task => {
+          let status = task.status;
+          if (!['PENDING', 'IN_PROGRESS', 'DONE'].includes(status)) status = 'PENDING';
+          
+          columns[status]?.items.push({
+            id: task.id,
+            title: task.title,
+            category: task.category?.category_name_tr || task.category?.category_name_en || '',
+            deadline: task.deadline,
+            description: task.description,
+            assignee: task.assignedEmployee?.firstName ? 
+              `${task.assignedEmployee.firstName} ${task.assignedEmployee.lastName}` : 
+              task.assignedEmployee?.firstName || '',
+            priority: task.priority,
+            raw: task, // modal için tüm taskı sakla
+          });
+        });
+        
+        setData({ columns });
+      } catch (err) {
+        console.error('Görevler yüklenirken hata:', err);
+        setData(emptyKanban);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchTasks();
+  }, [t]);
+
+  // Tüm kategorileri tasklardan topla (tekrarsız)
+  const allCategories = useMemo(() => {
+    const cats = [];
+    Object.values(data.columns).forEach(col => {
+      col.items.forEach(item => {
+        if (item.category && !cats.includes(item.category)) cats.push(item.category);
+      });
+    });
+    return cats;
+  }, [data]);
+
+  const onDragEnd = (result) => {
+    const { source, destination } = result;
+    if (!destination) return;
+    if (source.droppableId === destination.droppableId && source.index === destination.index) return;
+
+    const sourceCol = data.columns[source.droppableId];
+    const destCol = data.columns[destination.droppableId];
+    const sourceItems = Array.from(sourceCol.items);
+    const [removed] = sourceItems.splice(source.index, 1);
+
+    if (source.droppableId === destination.droppableId) {
+      sourceItems.splice(destination.index, 0, removed);
+      setData(prev => ({
+        ...prev,
+        columns: {
+          ...prev.columns,
+          [source.droppableId]: { ...sourceCol, items: sourceItems },
+        },
+      }));
+    } else {
+      const destItems = Array.from(destCol.items);
+      destItems.splice(destination.index, 0, removed);
+      setData(prev => ({
+        ...prev,
+        columns: {
+          ...prev.columns,
+          [source.droppableId]: { ...sourceCol, items: sourceItems },
+          [destination.droppableId]: { ...destCol, items: destItems },
+        },
+      }));
+    }
+  };
+
+  const handleCardClick = async (item) => {
+    try {
+      const token = localStorage.getItem('jwt');
+      const res = await getTask(item.id, token);
+      setModalTask(res.data?.data);
+      setModalOpen(true);
+    } catch (err) {
+      console.error('Görev detayları yüklenirken hata:', err);
+      setModalTask(item.raw || item);
+      setModalOpen(true);
+    }
+  };
+
+  const handleModalClose = () => {
+    setModalOpen(false);
+    setModalTask(null);
+  };
+
+  // Filtreli kolonlar
+  const getFilteredItems = (items) => {
+    let filtered = items;
+    if (category) {
+      filtered = filtered.filter(item => item.category === category);
+    }
+    if (search.trim()) {
+      const s = search.trim().toLowerCase();
+      filtered = filtered.filter(item =>
+        item.title.toLowerCase().includes(s) ||
+        (item.category && item.category.toLowerCase().includes(s)) ||
+        (item.assignee && item.assignee.toLowerCase().includes(s))
+      );
+    }
+    return filtered;
+  };
+
+  if (loading) {
+    return (
+      <div className="w-full min-h-screen bg-gray-100 flex flex-col items-center justify-center py-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">{t('kanban.loading', 'Görevler yükleniyor...')}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full min-h-screen bg-gray-100 flex flex-col items-center py-8">
+      <h2 className="text-2xl font-bold mb-6 text-gray-800">
+        {t('kanban.title', 'Leader Kanban Board')}
+      </h2>
+      
+      <div className="mb-8 w-full max-w-5xl flex flex-col sm:flex-row sm:items-center gap-3 justify-start">
+        <div className="flex-1 min-w-[200px]">
+          <CustomSearchBar
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder={t('kanban.search.placeholder', 'Görev, kategori veya atanan kişi ara...')}
+            className="w-full max-w-xs"
+          />
+        </div>
+        <div className="flex-shrink-0">
+          <CustomCategoryFilter
+            categories={allCategories}
+            selected={category}
+            onSelect={setCategory}
+            placeholder={t('kanban.filter.placeholder', 'Kategori Seç')}
+          />
+        </div>
+      </div>
+      
+      <DragDropContext onDragEnd={onDragEnd}>
+        <div className="flex gap-6 w-full max-w-5xl justify-center">
+          {columnOrder.map((colKey) => {
+            const column = data.columns[colKey];
+            const filteredItems = getFilteredItems(column.items);
+            return (
+              <Droppable droppableId={colKey} key={colKey}>
+                {(provided, snapshot) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className={`bg-white rounded-lg shadow-md flex-1 min-w-[260px] max-w-xs p-4 transition-colors duration-200 ${
+                      snapshot.isDraggingOver ? 'bg-blue-50' : ''
+                    }`}
+                  >
+                    <h3 className="text-lg font-semibold mb-4 text-center text-blue-700 tracking-wide">
+                      {column.name} ({filteredItems.length})
+                    </h3>
+                    <div className="flex flex-col gap-3 min-h-[60px]">
+                      {filteredItems.map((item, idx) => (
+                        <Draggable draggableId={item.id} index={idx} key={item.id}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                            >
+                              <CustomKanbanCard
+                                title={item.title}
+                                category={item.category}
+                                deadline={item.deadline}
+                                status={colKey}
+                                assignee={item.assignee}
+                                priority={item.priority}
+                                className={snapshot.isDragging ? 'ring-2 ring-blue-400' : ''}
+                                onClick={() => handleCardClick(item)}
+                              >
+                                {/* Detaylar buraya gelecek */}
+                              </CustomKanbanCard>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  </div>
+                )}
+              </Droppable>
+            );
+          })}
+        </div>
+      </DragDropContext>
+      
+      {/* Modalı sadece bir kez aç ve children ile detayları göster */}
+      <CustomKanbanDetailsModal
+        open={modalOpen && !!modalTask}
+        onClose={handleModalClose}
+        task={modalTask}
+      />
+    </div>
+  );
+} 

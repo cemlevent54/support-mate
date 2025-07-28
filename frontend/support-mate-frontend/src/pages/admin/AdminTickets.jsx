@@ -34,11 +34,11 @@ const AdminTickets = () => {
             const agent = ticketData.agent || {};
             
             let categoryName = "";
-            if (ticketData.category && ticketData.category.data) {
+            if (ticketData.category) {
               if (i18n.language === "tr") {
-                categoryName = ticketData.category.data.category_name_tr || ticketData.category.data.category_name_en || "-";
+                categoryName = ticketData.category.category_name_tr || ticketData.category.category_name_en || "-";
               } else {
-                categoryName = ticketData.category.data.category_name_en || ticketData.category.data.category_name_tr || "-";
+                categoryName = ticketData.category.category_name_en || ticketData.category.category_name_tr || "-";
               }
             } else {
               categoryName = "-";

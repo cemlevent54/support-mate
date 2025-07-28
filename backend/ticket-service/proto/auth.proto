@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package auth;
+
+service AuthService {
+  rpc GetUserById(GetUserRequest) returns (UserResponse);
+  rpc GetUserByEmail(GetUserByEmailRequest) returns (UserResponse);
+  rpc GetOnlineCustomerSupporters(Empty) returns (OnlineUsersResponse);
+  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+}
+
+message GetUserRequest {
+  string id = 1;
+  string token = 2;
+}
+
+message GetUserByEmailRequest {
+  string email = 1;
+  string token = 2;
+}
+
+message UserResponse {
+  User user = 1;
+  bool success = 2;
+  string message = 3;
+}
+
+message OnlineUsersResponse {
+  repeated User users = 1;
+  bool success = 2;
+  string message = 3;
+}
+
+message ValidateTokenRequest {
+  string token = 1;
+}
+
+message ValidateTokenResponse {
+  bool valid = 1;
+  string userId = 2;
+  string message = 3;
+}
+
+message User {
+  string id = 1;
+  string email = 2;
+  string name = 3;
+  string firstName = 4;
+  string lastName = 5;
+  string phone = 6;
+  Role role = 7;
+  bool isOnline = 8;
+  string lastSeen = 9;
+}
+
+message Role {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+}
+
+message Empty {} 

@@ -622,5 +622,20 @@
       "download": "Download",
       "noAttachments": "No attachments available"
     }
+  },
+  "kanban": {
+    "title": "Leader Kanban Board",
+    "loading": "Loading tasks...",
+    "search": {
+      "placeholder": "Search tasks, categories or assigned person..."
+    },
+    "filter": {
+      "placeholder": "Select Category"
+    },
+    "columns": {
+      "pending": "Pending",
+      "inProgress": "In Progress",
+      "done": "Done"
+    }
   }
 } 

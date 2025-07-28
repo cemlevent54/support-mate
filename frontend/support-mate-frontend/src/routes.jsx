@@ -23,6 +23,7 @@ import AdminCategories from './pages/admin/AdminCategories';
 import SupportLayout from './components/layout/SupportLayout';
 import AdminProducts from './pages/admin/AdminProducts';
 import SupportKanbanBoard from './pages/support/SupportKanbanBoard';
+import LeaderKanban from './pages/support/LeaderKanban';
 import AdminKanbanBoard from './pages/admin/AdminKanbanBoard';
 import { jwtDecode } from 'jwt-decode';
 import isEmployee from './auth/isEmployee';
@@ -111,7 +112,7 @@ export const appRoutes = [
       { path: 'requests/:chatId', element: <SupportRequests /> },
       { path: 'chats', element: <SupportChatsRoleGuard><SupportChatsLayout /></SupportChatsRoleGuard> },
       { path: 'chats/:chatId', element: <SupportChatsRoleGuard><SupportChatsLayout /></SupportChatsRoleGuard> },
-      { path: 'kanban', element: <SupportKanbanBoard /> },
+      { path: 'kanban', element: <LeaderKanbanRoleGuard><LeaderKanban /></LeaderKanbanRoleGuard> },
       { path: 'tickets', element: <LeaderTicketsRoleGuard><LeaderTickets /></LeaderTicketsRoleGuard> },
       { index: true, element: <SupportIndexRoute /> }
     ]
@@ -198,6 +199,20 @@ function SupportIndexRoute() {
 
 // LeaderTicketsRoleGuard bileşeni eklendi:
 function LeaderTicketsRoleGuard({ children }) {
+  const token = localStorage.getItem('jwt');
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      if (isLeader(decoded) || (decoded.roleName && decoded.roleName.toLowerCase() === 'admin')) {
+        return children;
+      }
+    } catch (e) {}
+  }
+  return <Navigate to="/support" replace />;
+}
+
+// LeaderKanbanRoleGuard bileşeni eklendi:
+function LeaderKanbanRoleGuard({ children }) {
   const token = localStorage.getItem('jwt');
   if (token) {
     try {

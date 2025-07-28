@@ -3,8 +3,15 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
 from dotenv import load_dotenv
-import requests
 import logging
+
+# gRPC client import
+try:
+    from grpc_client.grpc_client import auth_grpc_client
+except ImportError:
+    # Fallback for when grpc module is not available
+    auth_grpc_client = None
+    logging.warning("gRPC client not available - falling back to REST API")
 
 load_dotenv()
 
@@ -14,8 +21,6 @@ logger = logging.getLogger(__name__)
 security = HTTPBearer()
 JWT_SECRET = os.getenv("JWT_SECRET")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
-
-GATEWAY_URL = os.getenv("GATEWAY_URL", "http://localhost:9000")
 
 if not JWT_SECRET:
     raise RuntimeError("JWT_SECRET environment variable is not set!")
@@ -32,50 +37,52 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         )
 
 def get_user_by_id(user_id, token):
-    """Get user information by user ID using the gateway API"""
-    url = f"{GATEWAY_URL}/api/auth/users/{user_id}"
-    headers = {"Authorization": f"Bearer {token}"}
+    """Get user information by user ID using gRPC"""
+    if auth_grpc_client is None:
+        logger.error("gRPC client not available")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Auth service unavailable"
+        )
     
     try:
-        response = requests.get(url, headers=headers, timeout=10)
-        logger.info(f"Response: {response.json()}")
-        if response.status_code == 200:
-            user_data = response.json().get("data")
+        user_data = auth_grpc_client.get_user_by_id(user_id, token)
+        if user_data:
             logger.info(f"Successfully fetched user data for user_id: {user_id}")
             return user_data
         else:
-            logger.error(f"Failed to fetch user data. Status: {response.status_code}, Response: {response.text}")
+            logger.error(f"Failed to fetch user data for user_id: {user_id}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Could not fetch user info"
             )
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Request error while fetching user data: {str(e)}")
+    except Exception as e:
+        logger.error(f"Error while fetching user data via gRPC: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Auth service unavailable"
         )
 
 def get_user_by_email(email, token):
-    """Get user information by email using the gateway API"""
-    url = f"{GATEWAY_URL}/api/auth/users/email/{email}"
-    headers = {"Authorization": f"Bearer {token}"}
+    """Get user information by email using gRPC"""
+    if auth_grpc_client is None:
+        logger.error("gRPC client not available")
+        return None
     
     try:
-        response = requests.get(url, headers=headers, timeout=10)
-        if response.status_code == 200:
-            user_data = response.json().get("data")
+        user_data = auth_grpc_client.get_user_by_email(email, token)
+        if user_data:
             logger.info(f"Successfully fetched user data for email: {email}")
             return user_data
         else:
-            logger.error(f"Failed to fetch user data by email. Status: {response.status_code}, Response: {response.text}")
+            logger.error(f"Failed to fetch user data by email: {email}")
             return None
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Request error while fetching user data by email: {str(e)}")
+    except Exception as e:
+        logger.error(f"Error while fetching user data by email via gRPC: {str(e)}")
         return None
 
 def get_current_user_with_details(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Get current user with full details from auth service"""
+    """Get current user with full details from auth service via gRPC"""
     token = credentials.credentials
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
@@ -87,7 +94,7 @@ def get_current_user_with_details(credentials: HTTPAuthorizationCredentials = De
                 detail="Invalid token: missing userId"
             )
         
-        # Get full user details from auth service
+        # Get full user details from auth service via gRPC
         user_details = get_user_by_id(user_id, token)
         return {
             "token_payload": payload,
@@ -100,7 +107,7 @@ def get_current_user_with_details(credentials: HTTPAuthorizationCredentials = De
         )
 
 def get_customer_info_for_agent(customer_id, agent_token):
-    """Get customer information for agent assignment (email notifications)"""
+    """Get customer information for agent assignment (email notifications) via gRPC"""
     try:
         customer_data = get_user_by_id(customer_id, agent_token)
         if customer_data:
@@ -130,20 +137,27 @@ def verify_agent_permission(current_user_with_details):
     
     return user_details
 
-
-# online users
-
 def get_online_customer_supporters():
-    """Gateway üzerinden online customer supporter detaylarını getirir."""
-    url = f"{GATEWAY_URL}/api/auth/online-users"
-    try:
-        response = requests.get(url, timeout=10)
-        if response.status_code == 200:
-            data = response.json().get("data", [])
-            return data
-        else:
-            logger.error(f"Failed to fetch online customer supporters. Status: {response.status_code}, Response: {response.text}")
-            return []
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Request error while fetching online customer supporters: {str(e)}")
+    """Gateway üzerinden online customer supporter detaylarını getirir via gRPC"""
+    if auth_grpc_client is None:
+        logger.error("gRPC client not available")
         return []
+    
+    try:
+        data = auth_grpc_client.get_online_customer_supporters()
+        return data
+    except Exception as e:
+        logger.error(f"Request error while fetching online customer supporters via gRPC: {str(e)}")
+        return []
+
+def test_grpc_connection():
+    """gRPC bağlantısını test eder"""
+    if auth_grpc_client is None:
+        logger.error("gRPC client not available")
+        return False
+    
+    try:
+        return auth_grpc_client.test_connection()
+    except Exception as e:
+        logger.error(f"gRPC connection test failed: {e}")
+        return False

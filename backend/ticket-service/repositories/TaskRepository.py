@@ -139,6 +139,10 @@ class TaskRepository:
         tasks = self.collection.find({"assignedEmployeeId": employee_id, "isDeleted": False})
         return [self._to_dto(task, token) for task in tasks]
 
+    def get_tasks_by_created_by(self, created_by: str, token: str = None) -> List[TaskResponseDto]:
+        tasks = self.collection.find({"createdBy": created_by, "isDeleted": False})
+        return [self._to_dto(task, token) for task in tasks]
+
     def get_task_by_ticket_id(self, ticket_id: str, token: str = None) -> Optional[TaskResponseDto]:
         """Find a task by related ticket ID"""
         task = self.collection.find_one({"relatedTicketId": ticket_id, "isDeleted": False})

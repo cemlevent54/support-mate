@@ -18,6 +18,28 @@ if __name__ == "__main__":
     from config.language import _
     logging.info(_(f"config.language.default_language").format(lang=get_default_language()))
     
+    # gRPC setup'ını otomatik çalıştır
+    try:
+        from config.grpcConfig import get_grpc_config, setup_grpc, test_grpc_connection
+        grpc_config = get_grpc_config()
+        
+        # Protobuf dosyalarını generate et
+        if setup_grpc():
+            logging.info("✅ gRPC setup completed successfully")
+            
+            # Bağlantı testi
+            if test_grpc_connection():
+                logging.info("✅ gRPC connection established")
+            else:
+                logging.warning("⚠️  gRPC connection failed - auth service might not be running")
+        else:
+            logging.warning("⚠️  gRPC setup failed - continuing without gRPC")
+            
+    except ImportError as e:
+        logging.warning(f"⚠️  gRPC config not available: {e}")
+    except Exception as e:
+        logging.error(f"❌ gRPC setup error: {e}")
+    
     start_agent_online_consumer()
 
     # Statik dosya servisi (uploads klasörü)

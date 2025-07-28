@@ -51,7 +51,7 @@ class TicketService:
         import json
         return json.loads(json.dumps(obj, default=str))
 
-    def _convert_ticket_to_dto(self, ticket, include_chat=True, include_user_details=False):
+    def _convert_ticket_to_dto(self, ticket, include_chat=True, include_user_details=False, token=None):
         """
         Ticket'ı DTO'ya çevir ve gerekli bilgileri ekle
         """
@@ -85,29 +85,37 @@ class TicketService:
         
         # USER DETAYLARI EKLEME
         if include_user_details:
-            token = None
-            try:
-                customer_info = get_user_by_id(dto_dict.get('customerId'), token) if dto_dict.get('customerId') else None
-                agent_info = get_user_by_id(dto_dict.get('assignedAgentId'), token) if dto_dict.get('assignedAgentId') else None
-                
-                # JSON serializable hale getir
-                if customer_info:
-                    import json
-                    customer_info = json.loads(json.dumps(customer_info, default=str))
-                if agent_info:
-                    import json
-                    agent_info = json.loads(json.dumps(agent_info, default=str))
-                
-                dto_dict["customer"] = customer_info if customer_info else {"id": dto_dict.get('customerId')}
-                dto_dict["agent"] = agent_info if agent_info else ({"id": dto_dict.get('assignedAgentId')} if dto_dict.get('assignedAgentId') else None)
-            except Exception as e:
-                logger.warning(f"Could not fetch user details: {str(e)}")
-                dto_dict["customer"] = {"id": dto_dict.get('customerId')}
-                dto_dict["agent"] = {"id": dto_dict.get('assignedAgentId')} if dto_dict.get('assignedAgentId') else None
+            customer_info = None
+            agent_info = None
+            
+            # Customer bilgilerini al
+            if dto_dict.get('customerId') and token:
+                try:
+                    customer_info = get_user_by_id(dto_dict.get('customerId'), token)
+                except Exception:
+                    customer_info = None
+            
+            # Agent bilgilerini al
+            if dto_dict.get('assignedAgentId') and token:
+                try:
+                    agent_info = get_user_by_id(dto_dict.get('assignedAgentId'), token)
+                except Exception:
+                    agent_info = None
+            
+            # JSON serializable hale getir
+            if customer_info:
+                import json
+                customer_info = json.loads(json.dumps(customer_info, default=str))
+            if agent_info:
+                import json
+                agent_info = json.loads(json.dumps(agent_info, default=str))
+            
+            dto_dict["customer"] = customer_info if customer_info else {"id": dto_dict.get('customerId')}
+            dto_dict["agent"] = agent_info if agent_info else ({"id": dto_dict.get('assignedAgentId')} if dto_dict.get('assignedAgentId') else None)
         
         return dto_dict
 
-    def _convert_ticket_dict_to_dto(self, ticket_dict, include_chat=True, include_user_details=False):
+    def _convert_ticket_dict_to_dto(self, ticket_dict, include_chat=True, include_user_details=False, token=None):
         """
         Ticket dict'ini DTO'ya çevir ve gerekli bilgileri ekle
         """
@@ -140,29 +148,35 @@ class TicketService:
         
         # USER DETAYLARI EKLEME
         if include_user_details:
-            token = None
-            try:
-                customer_info = get_user_by_id(ticket_dict.get('customerId'), token) if ticket_dict.get('customerId') else None
-                agent_info = get_user_by_id(ticket_dict.get('assignedAgentId'), token) if ticket_dict.get('assignedAgentId') else None
-                
-                # JSON serializable hale getir
-                if customer_info:
-                    import json
-                    customer_info = json.loads(json.dumps(customer_info, default=str))
-                if agent_info:
-                    import json
-                    agent_info = json.loads(json.dumps(agent_info, default=str))
-                
-                ticket_dict["customer"] = customer_info if customer_info else {"id": ticket_dict.get('customerId')}
-                ticket_dict.pop("customerId", None)
-                ticket_dict["agent"] = agent_info if agent_info else ( {"id": ticket_dict.get('assignedAgentId')} if ticket_dict.get('assignedAgentId') else None )
-                ticket_dict.pop("assignedAgentId", None)
-            except Exception as e:
-                logger.warning(f"Could not fetch user details: {str(e)}")
-                ticket_dict["customer"] = {"id": ticket_dict.get('customerId')}
-                ticket_dict.pop("customerId", None)
-                ticket_dict["agent"] = {"id": ticket_dict.get('assignedAgentId')} if ticket_dict.get('assignedAgentId') else None
-                ticket_dict.pop("assignedAgentId", None)
+            customer_info = None
+            agent_info = None
+            
+            # Customer bilgilerini al
+            if ticket_dict.get('customerId') and token:
+                try:
+                    customer_info = get_user_by_id(ticket_dict.get('customerId'), token)
+                except Exception:
+                    customer_info = None
+            
+            # Agent bilgilerini al
+            if ticket_dict.get('assignedAgentId') and token:
+                try:
+                    agent_info = get_user_by_id(ticket_dict.get('assignedAgentId'), token)
+                except Exception:
+                    agent_info = None
+            
+            # JSON serializable hale getir
+            if customer_info:
+                import json
+                customer_info = json.loads(json.dumps(customer_info, default=str))
+            if agent_info:
+                import json
+                agent_info = json.loads(json.dumps(agent_info, default=str))
+            
+            ticket_dict["customer"] = customer_info if customer_info else {"id": ticket_dict.get('customerId')}
+            ticket_dict.pop("customerId", None)
+            ticket_dict["agent"] = agent_info if agent_info else ( {"id": ticket_dict.get('assignedAgentId')} if ticket_dict.get('assignedAgentId') else None )
+            ticket_dict.pop("assignedAgentId", None)
         
         return ticket_dict
 
@@ -470,7 +484,7 @@ class TicketService:
         message = _(f"services.ticketService.responses.tickets_listed")
         return {"success": True, "data": self._make_json_serializable(ticket_dtos), "message": message}
 
-    def list_tickets_for_agent(self, user, lang='tr', page=None, page_size=None):
+    def list_tickets_for_agent(self, user, lang='tr', page=None, page_size=None, token=None):
         tickets = self.list_agent_handler.execute(user, page=page, page_size=page_size)
         
         if tickets is None:
@@ -485,13 +499,13 @@ class TicketService:
         # DTO'ya çevir ve kategori + chatId + detaylı bilgiler ekle
         ticket_dtos = []
         for ticket in tickets:
-            ticket_dict = self._convert_ticket_to_dto(ticket, include_chat=True, include_user_details=True)
+            ticket_dict = self._convert_ticket_to_dto(ticket, include_chat=True, include_user_details=True, token=token)
             ticket_dtos.append(ticket_dict)
         
         message = _(f"services.ticketService.responses.tickets_listed")
         return {"success": True, "data": self._make_json_serializable(ticket_dtos), "message": message}
 
-    def list_tickets_for_leader(self, user, lang='tr'):
+    def list_tickets_for_leader(self, user, lang='tr', token=None):
         tickets = self.list_leader_handler.execute(user)
         
         if not tickets:
@@ -517,13 +531,13 @@ class TicketService:
                 ticket_dict["taskId"] = None
             
             # DTO'ya çevir
-            ticket_dict = self._convert_ticket_dict_to_dto(ticket_dict, include_chat=True, include_user_details=True)
+            ticket_dict = self._convert_ticket_dict_to_dto(ticket_dict, include_chat=True, include_user_details=True, token=token)
             ticket_dtos.append(ticket_dict)
         
         message = _(f"services.ticketService.responses.tickets_listed")
         return {"success": True, "data": self._make_json_serializable(ticket_dtos), "message": message}
 
-    def list_tickets_for_admin(self, user, lang='tr'):
+    def list_tickets_for_admin(self, user, lang='tr', token=None):
         tickets = self.list_handler.execute(user, lang=lang)
         
         if tickets is None:
@@ -538,7 +552,30 @@ class TicketService:
         # DTO'ya çevir ve detaylı bilgiler ekle
         ticket_dtos = []
         for ticket in tickets:
-            ticket_dict = self._convert_ticket_to_dto(ticket, include_chat=True, include_user_details=False)
+            # Ticket'ı dict'e çevir
+            if hasattr(ticket, 'model_dump'):
+                ticket_dict = ticket.model_dump()
+            else:
+                ticket_dict = ticket.__dict__
+            
+            # Chat ve mesaj bilgilerini ekle
+            from repositories.ChatRepository import ChatRepository
+            from repositories.MessageRepository import MessageRepository
+            
+            chat_repo = ChatRepository()
+            message_repo = MessageRepository()
+            
+            # ChatId ve messages ekle
+            chat = chat_repo.find_by_ticket_id(str(ticket.id))
+            ticket_dict["chatId"] = str(chat.id) if chat else None
+            if chat:
+                messages = message_repo.list_by_chat_id(str(chat.id))
+                ticket_dict["messages"] = [m.model_dump() for m in messages]
+            else:
+                ticket_dict["messages"] = []
+            
+            # DTO'ya çevir
+            ticket_dict = self._convert_ticket_dict_to_dto(ticket_dict, include_chat=True, include_user_details=True, token=token)
             ticket_dtos.append(ticket_dict)
         
         message = _(f"services.ticketService.responses.tickets_listed")

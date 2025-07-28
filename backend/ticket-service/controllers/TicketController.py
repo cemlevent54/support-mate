@@ -115,11 +115,11 @@ class TicketController:
                 "message": _("Internal server error")
             })
 
-    def list_tickets_endpoint_for_admin(self, user, lang='tr'):
+    def list_tickets_endpoint_for_admin(self, user, lang='tr', token=None):
         try:
             set_language(lang)
             logger.info(_(f"services.ticketController.logs.list_tickets_admin_called").format(user_id=user.get('id')))
-            result = self.ticket_service.list_tickets_for_admin(user, lang=lang)
+            result = self.ticket_service.list_tickets_for_admin(user, lang=lang, token=token)
             logger.info(_(f"services.ticketController.logs.list_tickets_admin_result").format(result=len(result.get('data', [])) if result.get('success') else 'error'))
             if result and 'message' in result:
                 result['message'] = _(result['message'])
@@ -217,11 +217,11 @@ class TicketController:
                 "message": _("Internal server error")
             })
 
-    def list_tickets_endpoint_for_agent(self, user, lang='tr', page=None, page_size=None):
+    def list_tickets_endpoint_for_agent(self, user, lang='tr', page=None, page_size=None, token=None):
         try:
             set_language(lang)
             logger.info(_(f"services.ticketController.logs.list_tickets_agent_called").format(user_id=user.get('id')))
-            result = self.ticket_service.list_tickets_for_agent(user, lang=lang, page=page, page_size=page_size)
+            result = self.ticket_service.list_tickets_for_agent(user, lang=lang, page=page, page_size=page_size, token=token)
             logger.info(_(f"services.ticketController.logs.list_tickets_agent_result").format(result=len(result.get('data', [])) if result.get('success') else 'error'))
             if result and 'message' in result:
                 result['message'] = _(result['message'])
@@ -234,11 +234,11 @@ class TicketController:
                 "message": _("Internal server error")
             })
 
-    def list_tickets_endpoint_for_leader(self, user, lang='tr'):
+    def list_tickets_endpoint_for_leader(self, user, lang='tr', token=None):
         try:
             set_language(lang)
             logger.info(_(f"services.ticketController.logs.list_tickets_leader_called").format(user_id=user.get('id')))
-            result = self.ticket_service.list_tickets_for_leader(user, lang=lang)
+            result = self.ticket_service.list_tickets_for_leader(user, lang=lang, token=token)
             logger.info(_(f"services.ticketController.logs.list_tickets_leader_result").format(result=len(result.get('data', [])) if result.get('success') else 'error'))
             if result and 'message' in result:
                 result['message'] = _(result['message'])

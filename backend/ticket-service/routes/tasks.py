@@ -39,7 +39,7 @@ def get_tasks(request: Request, user=Depends(get_current_user)):
     lang = get_lang(request)
     set_language(lang)
     task_controller = get_task_controller(lang)
-    if user.get("roleName") not in ["Customer Supporter", "Employee", "Admin"]:
+    if user.get("roleName") not in ["Customer Supporter", "Employee", "Admin", "Leader"]:
         raise HTTPException(status_code=403, detail="Forbidden")
     token = request.headers.get("authorization", "").replace("Bearer ", "")
     return task_controller.get_tasks_endpoint_for_roles(user, lang, token)
@@ -88,9 +88,5 @@ def delete_task(task_id: str, request: Request, user=Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Forbidden")
     return task_controller.delete_task(task_id, user, lang)
 
-# Bu endpoint artık kullanılmıyor - Task DONE olduğunda ticket otomatik CLOSED oluyor
-# @router.patch("/tasks/user/{task_id}")
-# async def user_approve_or_reject_task(task_id: str, request: Request, user=Depends(get_current_user)):
-#     # Bu endpoint kaldırıldı
-#     pass
+
 

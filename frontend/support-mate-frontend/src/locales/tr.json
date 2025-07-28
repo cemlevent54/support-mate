@@ -623,5 +623,20 @@
       "download": "İndir",
       "noAttachments": "Ek dosya bulunmuyor"
     }
+  },
+  "kanban": {
+    "title": "Leader Kanban Board",
+    "loading": "Görevler yükleniyor...",
+    "search": {
+      "placeholder": "Görev, kategori veya atanan kişi ara..."
+    },
+    "filter": {
+      "placeholder": "Kategori Seç"
+    },
+    "columns": {
+      "pending": "Bekliyor",
+      "inProgress": "Devam Ediyor",
+      "done": "Tamamlandı"
+    }
   }
 } 

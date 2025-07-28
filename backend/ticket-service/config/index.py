@@ -55,12 +55,38 @@ def test_kafka():
     except Exception as e:
         logger.error(_(f"config.kafka.kafka_test_error").format(error=e))
 
+def test_grpc():
+    """gRPC bağlantısını test eder"""
+    try:
+        # gRPC config'i al
+        from .grpcConfig import get_grpc_config, test_grpc_connection, get_grpc_client
+        grpc_config = get_grpc_config()
+        
+        # Bağlantı testi
+        if test_grpc_connection():
+            logger.info(_(f"config.grpc.grpc_test_success"))
+        else:
+            logger.warning(_(f"config.grpc.grpc_test_warning"))
+            
+        # Client testi
+        client = get_grpc_client()
+        if client:
+            logger.info(_(f"config.grpc.grpc_client_success"))
+        else:
+            logger.warning(_(f"config.grpc.grpc_client_warning"))
+            
+    except ImportError as e:
+        logger.warning(f"gRPC config not available: {e}")
+    except Exception as e:
+        logger.error(_(f"config.grpc.grpc_test_error").format(error=e))
+
 # API başlatıldığında testleri otomatik çalıştır
 
 def test_all_connections():
     test_mongo()
     test_redis()
     test_kafka()
+    test_grpc()
 
 test_all_connections()
 
