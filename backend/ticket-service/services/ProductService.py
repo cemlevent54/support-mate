@@ -161,3 +161,39 @@ class ProductService:
             "data": dto_list,
             "message": _(f"services.productService.responses.products_listed")
         }
+
+    def get_product_by_id(self, product_id: str):
+        """
+        ID'ye göre ürün getir
+        """
+        try:
+            product = self.list_handler.find_by_id(product_id)
+            if not product:
+                return None
+            
+            # Kategori bilgisi ekle
+            category = self.get_category_handler.handle(product.product_category_id)
+            product_category = None
+            if category:
+                product_category = {
+                    "product_category_id": category.id,
+                    "product_category_name_en": category.category_name_en,
+                    "product_category_name_tr": category.category_name_tr
+                }
+            
+            dto = ProductResponseDTO(
+                id=product.id,
+                product_name_tr=product.product_name_tr,
+                product_name_en=product.product_name_en,
+                product_category_id=product.product_category_id,
+                createdAt=product.createdAt,
+                isDeleted=product.isDeleted,
+                deletedAt=product.deletedAt
+            ).dict()
+            dto.pop("product_category_id", None)
+            dto["product_category"] = product_category
+            
+            return self.dto_to_serializable(dto)
+        except Exception as e:
+            logger.error(f"Error getting product by id {product_id}: {str(e)}")
+            return None

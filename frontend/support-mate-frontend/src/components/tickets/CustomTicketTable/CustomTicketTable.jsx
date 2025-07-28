@@ -127,7 +127,7 @@ const CustomTicketTable = ({
                                   <button className="custom-btn chat" onClick={() => onChat && onChat(row)}>{t(`${i18nNamespace}.buttons.chat`, 'CHAT')}</button>
                                 )}
                                 <button className="custom-btn detail" onClick={() => onDetail && onDetail(row)}>{t(`${i18nNamespace}.buttons.detail`, 'DETAY')}</button>
-                                {isCustomerSupporterRole && onAssign && !['IN_REVIEW', 'IN_PROGRESS', 'COMPLETED', 'DONE'].includes(row.status) && (
+                                {isCustomerSupporterRole && onAssign && ['OPEN', 'IN_REVIEW'].includes(row.status) && (
                                   <button className="custom-btn assign" onClick={() => onAssign(row)}>{t(`${i18nNamespace}.buttons.assign`, 'ASSIGN')}</button>
                                 )}
                               </>

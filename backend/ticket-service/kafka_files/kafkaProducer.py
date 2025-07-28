@@ -38,8 +38,8 @@ def send_ticket_created_event(ticket, user, html_path=None, language='tr'):
                     html_template = Template(f.read())
                 html_content = html_template.safe_substitute(
                     firstName=user.get("firstName", ""),
-                    ticketTitle=ticket.title,
-                    ticketId=ticket.id
+                    ticketTitle=ticket.get("title", ""),
+                    ticketId=ticket.get("id", "")
                 )
             except Exception as e:
                 logger.error(f"HTML şablonu okunamadı: {e}")
@@ -48,8 +48,8 @@ def send_ticket_created_event(ticket, user, html_path=None, language='tr'):
             "email": user.get("email"),
             "firstName": user.get("firstName", ""),
             "language": language,
-            "ticketId": ticket.id,
-            "ticketTitle": ticket.title,
+            "ticketId": ticket.get("id", ""),
+            "ticketTitle": ticket.get("title", ""),
             "html": html_content
         }
         logger.info(f"Sending ticket_created event to Kafka: {event}")

@@ -11,8 +11,6 @@ from config.language import set_language, _
 logger = logging.getLogger(__name__)
 
 
-
-
 def get_lang(request: Request):
     lang = request.headers.get("X-language")
     if not lang:
@@ -20,6 +18,79 @@ def get_lang(request: Request):
     if not lang:
         lang = "tr"
     return lang
+
+
+def _extract_auth_token(request: Request) -> str:
+    """Auth token'ı request header'dan çıkarır"""
+    if not request:
+        return None
+    
+    auth_header = request.headers.get("authorization")
+    if auth_header and auth_header.lower().startswith("bearer "):
+        return auth_header[7:]
+    return None
+
+
+async def _validate_and_process_files(files: List[UploadFile]) -> List[dict]:
+    """Dosyaları validate eder ve işler"""
+    ensure_upload_directories()
+    attachments = []
+    
+    for file in files:
+        # File size validation
+        if not validate_file_size(file.size, 10):
+            file_size_mb = get_file_size_mb(file.size)
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Dosya boyutu çok büyük: {file_size_mb}MB. Maksimum 10MB olmalıdır."
+            )
+        
+        # File saving
+        file_location = get_upload_path(file.filename)
+        try:
+            with open(file_location, "wb") as f:
+                content = await file.read()
+                f.write(content)
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Dosya kaydedilemedi: {str(e)}"
+            )
+        
+        # Attachment data preparation
+        timestamped_filename = os.path.basename(file_location)
+        attachments.append({
+            "name": timestamped_filename,
+            "url": file_location,
+            "type": file.content_type
+        })
+    
+    return attachments
+
+
+def _prepare_ticket_data(
+    title: str,
+    description: str,
+    categoryId: str,
+    productId: str,
+    customerId: str,
+    chatId: str,
+    assignedLeaderId: str,
+    attachments: List[dict],
+    user: dict
+) -> dict:
+    """Ticket data'sını hazırlar"""
+    return {
+        "title": title,
+        "description": description,
+        "categoryId": categoryId,
+        "productId": productId,
+        "attachments": attachments,
+        "customerId": customerId if customerId else user["id"],
+        "chatId": chatId,
+        "assignedLeaderId": assignedLeaderId
+    }
+
 
 router = APIRouter()
 ticket_controller = TicketController()
@@ -105,48 +176,29 @@ async def create_ticket_route(
     user=Depends(get_current_user),
     request: Request = None
 ):
+    # Language setup
     lang = get_lang(request)
     set_language(lang)
-    ensure_upload_directories()
-    attachments = []
-    for file in files:
-        if not validate_file_size(file.size, 10):
-            file_size_mb = get_file_size_mb(file.size)
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Dosya boyutu çok büyük: {file_size_mb}MB. Maksimum 10MB olmalıdır."
-            )
-        file_location = get_upload_path(file.filename)
-        try:
-            with open(file_location, "wb") as f:
-                content = await file.read()
-                f.write(content)
-        except Exception as e:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Dosya kaydedilemedi: {str(e)}"
-            )
-        timestamped_filename = os.path.basename(file_location)
-        attachments.append({
-            "name": timestamped_filename,
-            "url": file_location,
-            "type": file.content_type
-        })
-    ticket_data = {
-        "title": title,
-        "description": description,
-        "categoryId": categoryId,
-        "productId": productId,
-        "attachments": attachments,
-        "customerId": customerId if customerId else user["id"],
-        "chatId": chatId,
-        "assignedLeaderId": assignedLeaderId
-    }
-    token = None
-    if request:
-        auth_header = request.headers.get("authorization")
-        if auth_header and auth_header.lower().startswith("bearer "):
-            token = auth_header[7:]
+    
+    # File processing
+    attachments = await _validate_and_process_files(files)
+    
+    # Ticket data preparation
+    ticket_data = _prepare_ticket_data(
+        title=title,
+        description=description,
+        categoryId=categoryId,
+        productId=productId,
+        customerId=customerId,
+        chatId=chatId,
+        assignedLeaderId=assignedLeaderId,
+        attachments=attachments,
+        user=user
+    )
+    
+    # Token extraction
+    token = _extract_auth_token(request)
+    
     return ticket_controller.create_ticket_endpoint(ticket_data, user, token, lang=lang)
 
 @router.get("/", response_model=APIResponse)

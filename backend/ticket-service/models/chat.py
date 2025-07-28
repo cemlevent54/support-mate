@@ -8,7 +8,7 @@ class Participant(BaseModel):
 
 class Chat(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
-    ticketId: Optional[str] = None
+    ticketId: Optional[str] = Field(default=None)
     participants: List[Participant]
     createdAt: Optional[datetime] = None
     endedAt: Optional[datetime] = None

@@ -68,7 +68,7 @@ const SupportRequests = ({ onStartChat }) => {
               createdAt: ticket.createdAt ? new Date(ticket.createdAt).toLocaleString('tr-TR') : "-",
               files: ticket.attachments || [],
               chatId: ticket.chatId,
-              raw: { ...ticket, category: categoryName }
+              raw: { ...ticket } // Orijinal kategori objesini koru
             };
           }));
         } else {
@@ -154,7 +154,7 @@ const SupportRequests = ({ onStartChat }) => {
               createdAt: ticket.createdAt ? new Date(ticket.createdAt).toLocaleString('tr-TR') : "-",
               files: ticket.attachments || [],
               chatId: ticket.chatId,
-              raw: { ...ticket, category: categoryName }
+              raw: { ...ticket } // Orijinal kategori objesini koru
             };
           }));
         } else {
@@ -230,7 +230,7 @@ const SupportRequests = ({ onStartChat }) => {
           >
             Detay
           </Button>
-          {isCustomerSupporterRole && !['IN_REVIEW', 'IN_PROGRESS', 'COMPLETED', 'DONE'].includes(params.row.status) && (
+          {isCustomerSupporterRole && ['OPEN', 'IN_REVIEW', 'WAITING_FOR_CUSTOMER_APPROVE'].includes(params.row.status) && (
             <Button
               variant="outlined"
               color="secondary"
@@ -241,6 +241,24 @@ const SupportRequests = ({ onStartChat }) => {
               Assign
             </Button>
           )}
+          {/* Debug: Status kontrolü */}
+          {console.log('=== DEBUG INFO ===', {
+            ticketId: params.row.id,
+            status: params.row.status,
+            statusType: typeof params.row.status,
+            statusLength: params.row.status ? params.row.status.length : 0,
+            statusTrimmed: params.row.status ? params.row.status.trim() : null,
+            isCustomerSupporterRole,
+            userRole,
+            allowedStatuses: ['OPEN', 'IN_REVIEW', 'WAITING_FOR_CUSTOMER_APPROVE'],
+            shouldShowAssign: ['OPEN', 'IN_REVIEW', 'WAITING_FOR_CUSTOMER_APPROVE'].includes(params.row.status),
+            statusIncluded: ['OPEN', 'IN_REVIEW', 'WAITING_FOR_CUSTOMER_APPROVE'].includes(params.row.status),
+            statusComparison: {
+              'OPEN': params.row.status === 'OPEN',
+              'IN_REVIEW': params.row.status === 'IN_REVIEW',
+              'WAITING_FOR_CUSTOMER_APPROVE': params.row.status === 'WAITING_FOR_CUSTOMER_APPROVE'
+            }
+          })}
         </Box>
       ),
     },

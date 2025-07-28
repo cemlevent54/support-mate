@@ -17,6 +17,9 @@ class ChatService:
         try:
             chat_id = str(uuid.uuid4())
             participants = chat_data.get("participants", [])
+            ticket_id = chat_data.get("ticketId")
+            logger.info(f"[DEBUG] ChatService.create_chat: ticketId={ticket_id}, participants={participants}")
+            
             # Kullanıcı detayını auth-service'den çek
             if user and token:
                 # Eğer user sadece id içeriyorsa detayları çek
@@ -31,11 +34,12 @@ class ChatService:
                     logger.info(_(f"services.chatService.logs.participant_added").format(user_id=user_detail["id"], role=role))
             chat = Chat(
                 id=chat_id,
-                ticketId=chat_data.get("ticketId"),
+                ticketId=ticket_id,
                 participants=participants,
                 createdAt=datetime.utcnow(),
                 isDeleted=False
             )
+            logger.info(f"[DEBUG] ChatService.create_chat: Created chat object with ticketId={chat.ticketId}")
             # CQRS ile chat oluştur
             chat_handler = CreateChatCommandHandler()
             saved_chat = chat_handler.execute(chat.model_dump(by_alias=True))

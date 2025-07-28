@@ -11,6 +11,9 @@ class CreateTicketCommandHandler:
         self._repository = TicketRepository()
 
     def execute(self, ticket_data, user):
+        # assignedLeaderId 'undefined' veya '' ise None yap
+        if 'assignedLeaderId' in ticket_data and (ticket_data['assignedLeaderId'] == 'undefined' or ticket_data['assignedLeaderId'] == ''):
+            ticket_data['assignedLeaderId'] = None
         ticket = Ticket(**ticket_data)
         ticket_id = self._repository.create(ticket)
         ticket.id = ticket_id

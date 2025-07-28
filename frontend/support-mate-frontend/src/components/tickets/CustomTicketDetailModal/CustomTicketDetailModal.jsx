@@ -79,7 +79,9 @@ const CustomTicketDetailModal = ({
     chat: t(`${i18nNamespace}.chat`, i18n.language === 'tr' ? 'Chat' : 'Chat'),
     close: t(`${i18nNamespace}.close`, i18n.language === 'tr' ? 'Kapat' : 'Close'),
     categoryNotSpecified: t(`${i18nNamespace}.categoryNotSpecified`, i18n.language === 'tr' ? 'Kategori belirtilmemiş' : 'Category not specified'),
-    unknown: t(`${i18nNamespace}.unknown`, i18n.language === 'tr' ? 'Bilinmeyen' : 'Unknown')
+    unknown: t(`${i18nNamespace}.unknown`, i18n.language === 'tr' ? 'Bilinmeyen' : 'Unknown'),
+    productNotSpecified: t(`${i18nNamespace}.productNotSpecified`, i18n.language === 'tr' ? 'Ürün belirtilmemiş' : 'Product not specified'),
+    product: t(`${i18nNamespace}.product`, i18n.language === 'tr' ? 'Ürün' : 'Product')
   }), [t, i18n.language, i18nNamespace]);
 
   const modalKey = `modal-${i18n.language}-${forceUpdate}-${open ? 'open' : 'closed'}-${Date.now()}`;
@@ -99,6 +101,20 @@ const CustomTicketDetailModal = ({
     return i18n.language === 'tr'
       ? category.category_name_tr || category.category_name_en || category.name || translations.unknown
       : category.category_name_en || category.category_name_tr || category.name || translations.unknown;
+  };
+
+  const getProductName = (product) => {
+    if (!product) return translations.productNotSpecified || 'Ürün belirtilmemiş';
+    
+    if (product.data) {
+      return i18n.language === 'tr'
+        ? product.data.product_name_tr || product.data.product_name_en || product.data.name || translations.unknown
+        : product.data.product_name_en || product.data.product_name_tr || product.data.name || translations.unknown;
+    }
+    
+    return i18n.language === 'tr'
+      ? product.product_name_tr || product.product_name_en || product.name || translations.unknown
+      : product.product_name_en || product.product_name_tr || product.name || translations.unknown;
   };
 
   const getStatusText = (status) => {
@@ -257,6 +273,19 @@ const CustomTicketDetailModal = ({
                   {getCategoryName(ticket.category)}
                 </p>
               </div>
+
+              {/* Product */}
+              {ticket.product && (
+                <div className="bg-gradient-to-br from-purple-50 to-violet-50 p-4 rounded-lg border border-purple-100">
+                  <h3 className="text-sm font-semibold text-purple-800 mb-2 flex items-center gap-2">
+                    <FaTag className="text-purple-600" />
+                    {translations.product || 'Ürün'}
+                  </h3>
+                  <p className="text-purple-900 font-medium">
+                    {getProductName(ticket.product)}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Additional Information */}

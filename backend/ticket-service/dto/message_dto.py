@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from typing import Optional, List, Any
 from datetime import datetime
 from utils.date_utils import convert_dict_timestamps_to_tr
+from utils.crypto import decrypt_message
 
 class MessageDTO(BaseModel):
     id: str
@@ -20,6 +21,15 @@ class MessageDTO(BaseModel):
     def from_model(cls, message_model: Any) -> 'MessageDTO':
         """Model'den DTO oluşturur ve timestamp'leri TR saatine çevirir"""
         message_dict = message_model.model_dump() if hasattr(message_model, 'model_dump') else dict(message_model)
+        
+        # Mesajı decrypt et
+        if 'text' in message_dict and message_dict['text']:
+            try:
+                message_dict['text'] = decrypt_message(message_dict['text'])
+            except Exception as e:
+                # Decrypt başarısız olursa orijinal metni kullan
+                print(f"Message decrypt failed: {e}")
+        
         # Timestamp'leri TR saatine çevir
         message_dict = convert_dict_timestamps_to_tr(message_dict)
         return cls(**message_dict)
