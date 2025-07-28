@@ -31,24 +31,15 @@ class ProductService:
     
     def create_product(self, product: Product):
         if not product.product_category_id:
-            return {
-                "data": None,
-                "message": _(f"services.productService.logs.category_not_found")
-            }
+            return None
         product_id = self.create_handler.handle(product.dict())
         if not product_id:
-            return {
-                "data": None,
-                "message": _(f"services.productService.logs.product_creation_error")
-            }
+            return None
         logger.info(_("services.productService.logs.product_created"))
 
         created_product = self.list_handler.find_by_id(product_id)
         if not created_product:
-            return {
-                "data": None,
-                "message": _(f"services.productService.logs.product_not_found")
-            }
+            return None
         # Kategori bilgisi ekle (CQRS handler ile)
         category = self.get_category_handler.handle(created_product.product_category_id)
         product_category = None
@@ -69,10 +60,7 @@ class ProductService:
         ).dict()
         dto.pop("product_category_id", None)
         dto["product_category"] = product_category
-        return {
-            "data": self.dto_to_serializable(dto),
-            "message": _(f"services.productService.responses.product_created")
-        }
+        return self.dto_to_serializable(dto)
     
     def update_product(self, product_id: str, product: Product):
         if not product.product_name_tr or not product.product_name_en:
@@ -83,10 +71,7 @@ class ProductService:
         logger.info(_("services.productService.logs.product_updated"))
         updated_product = self.list_handler.find_by_id(product_id)
         if not updated_product:
-            return {
-                "data": None,
-                "message": _(f"services.productService.logs.product_not_found")
-            }
+            return None
         # Kategori bilgisi ekle (CQRS handler ile)
         category = self.get_category_handler.handle(updated_product.product_category_id)
         product_category = None
@@ -107,30 +92,14 @@ class ProductService:
         ).dict()
         dto.pop("product_category_id", None)
         dto["product_category"] = product_category
-        return {
-            "data": self.dto_to_serializable(dto),
-            "message": _(f"services.productService.responses.product_updated")
-        }
+        return self.dto_to_serializable(dto)
     
     def soft_delete_product(self, product_id: str):
         deleted = self.delete_handler.handle(product_id)
         if not deleted:
-            return None
+            return False
         logger.info(_("services.productService.logs.product_deleted"))
-        deleted_product = self.list_handler.find_by_id(product_id)
-        dto = ProductResponseDTO(
-            id=deleted_product.id,
-            product_name_tr=deleted_product.product_name_tr,
-            product_name_en=deleted_product.product_name_en,
-            product_category_id=deleted_product.product_category_id,
-            createdAt=deleted_product.createdAt,
-            isDeleted=deleted_product.isDeleted,
-            deletedAt=deleted_product.deletedAt
-        ).dict()
-        return {
-            "data": self.dto_to_serializable(dto),
-            "message": _(f"services.productService.responses.product_deleted")
-        }
+        return True
     
     def list_products(self):
         products = self.list_handler.handle()
@@ -157,10 +126,7 @@ class ProductService:
             dto.pop("product_category_id", None)
             dto["product_category"] = product_category
             dto_list.append(self.dto_to_serializable(dto))
-        return {
-            "data": dto_list,
-            "message": _(f"services.productService.responses.products_listed")
-        }
+        return dto_list
 
     def get_product_by_id(self, product_id: str):
         """

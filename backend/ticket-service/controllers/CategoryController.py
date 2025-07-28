@@ -20,8 +20,8 @@ class CategoryController:
         set_language(lang)
         logger.info(_("services.categoryService.logs.listing_categories"))
         try:
-            result = self.service.list_categories()
-            return api_success(data=result["data"], message=result["message"])
+            data = self.service.list_categories()
+            return api_success(data=data, message=_("services.categoryService.responses.categories_listed"))
         except Exception as e:
             logger.error(str(e))
             return api_error(error=str(e), message=_("controllers.categoryController.logs.category_list_error"))
@@ -33,7 +33,7 @@ class CategoryController:
             result = self.service.create_category(category)
             if result is None:
                 return conflict_error(message=_("services.categoryService.logs.category_name_exists"))
-            return api_success(data=result["data"], message=result["message"])
+            return api_success(data=result, message=_("services.categoryService.responses.category_created"))
         except Exception as e:
             logger.error(str(e))
             return api_error(error=str(e), message=_("controllers.categoryController.logs.category_creation_error"))
@@ -47,7 +47,7 @@ class CategoryController:
                 logger.error(_("services.categoryService.logs.update_error"))
                 return conflict_error(message=_("services.categoryService.logs.category_name_exists"))
             logger.info(_("services.categoryService.logs.category_updated"))
-            return api_success(data=updated["data"], message=updated["message"])
+            return api_success(data=updated, message=_("services.categoryService.responses.category_updated"))
         except Exception as e:
             logger.error(str(e))
             return api_error(error=str(e), message=_("controllers.categoryController.logs.category_update_error"))
@@ -57,9 +57,9 @@ class CategoryController:
         logger.info(_("services.categoryService.logs.deleting_category"))
         try:
             result = self.service.delete_category(category_id)
-            if result is None:
+            if not result:
                 return api_error(error=None, message=_("services.categoryService.responses.category_not_found"))
-            return api_success(data=result["data"], message=result["message"])
+            return api_success(data=None, message=_("services.categoryService.responses.category_deleted"))
         except Exception as e:
             logger.error(str(e))
             return api_error(error=str(e), message=_("controllers.categoryController.logs.category_deletion_error"))
@@ -68,8 +68,8 @@ class CategoryController:
         set_language(lang)
         logger.info(_("services.categoryService.logs.listing_categories"))
         try:
-            result = self.service.list_categories()
-            return api_success(data=result["data"], message=result["message"])
+            data = self.service.list_categories()
+            return api_success(data=data, message=_("services.categoryService.responses.categories_listed"))
         except Exception as e:
             logger.error(str(e))
             return api_error(error=str(e), message=_("controllers.categoryController.logs.category_list_error")) 

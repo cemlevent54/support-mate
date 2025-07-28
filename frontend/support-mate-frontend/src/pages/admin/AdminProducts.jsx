@@ -82,7 +82,7 @@ const AdminProducts = () => {
             product_name_tr: product.product_name_tr,
             product_name_en: product.product_name_en,
             product_category_id:
-              product.productCategory?.product_category_id ||
+              product.product_category?.product_category_id ||
               product.product_category_id ||
               "",
           }
@@ -146,6 +146,17 @@ const AdminProducts = () => {
     setDeleteId(null);
   };
 
+  // Kategori adını getiren fonksiyon
+  const getCategoryName = (product) => {
+    if (product.product_category) {
+      const lang = localStorage.getItem("language") || "tr";
+      return lang === "tr" 
+        ? product.product_category.product_category_name_tr 
+        : product.product_category.product_category_name_en;
+    }
+    return "";
+  };
+
   // Dil seçimini al
   const lang = localStorage.getItem("language") || "tr";
 
@@ -173,12 +184,7 @@ const AdminProducts = () => {
                 <TableCell>{product.product_name_tr}</TableCell>
                 <TableCell>{product.product_name_en}</TableCell>
                 <TableCell>
-                  {/* Kategori adı dil seçimine göre */}
-                  {product.productCategory
-                    ? (lang === "tr"
-                        ? product.productCategory.product_category_name_tr
-                        : product.productCategory.product_category_name_en)
-                    : ""}
+                  {getCategoryName(product)}
                 </TableCell>
                 <TableCell>
                   <IconButton color="primary" onClick={() => handleOpen(product)}>

@@ -20,8 +20,8 @@ class ProductController:
         set_language(lang)
         logger.info(_("services.productService.logs.listing_products"))
         try:
-            result = self.service.list_products()
-            return api_success(data=result["data"], message=result["message"])
+            data = self.service.list_products()
+            return api_success(data=data, message=_("services.productService.responses.products_listed"))
         except Exception as e:
             logger.error(_("services.productService.logs.listing_products_error"))
             return api_error(error=str(e), message=_("services.productService.logs.listing_products_error"))
@@ -30,8 +30,8 @@ class ProductController:
         set_language(lang)
         logger.info(_("services.productService.logs.listing_products"))
         try:
-            result = self.service.list_products()
-            return api_success(data=result["data"], message=result["message"])
+            data = self.service.list_products()
+            return api_success(data=data, message=_("services.productService.responses.products_listed"))
         except Exception as e:
             logger.error(_("services.productService.logs.listing_products_error"))
             return api_error(error=str(e), message=_("services.productService.logs.listing_products_error"))
@@ -43,7 +43,7 @@ class ProductController:
             result = self.service.create_product(product)
             if result is None:
                 return conflict_error(message=_("services.productService.logs.product_name_exists"))
-            return api_success(data=result["data"], message=result["message"])
+            return api_success(data=result, message=_("services.productService.responses.product_created"))
         except Exception as e:
             logger.error(str(e))
             return api_error(error=str(e), message=_("services.productService.logs.product_creation_error"))
@@ -57,7 +57,7 @@ class ProductController:
                 logger.error(_("services.productService.logs.update_error"))
                 return conflict_error(message=_("services.productService.logs.product_name_exists"))
             logger.info(_("services.productService.logs.product_updated"))
-            return api_success(data=updated["data"], message=updated["message"])
+            return api_success(data=updated, message=_("services.productService.responses.product_updated"))
         except Exception as e:
             logger.error(str(e))
             return api_error(error=str(e), message=_("services.productService.logs.product_update_error"))
@@ -66,10 +66,10 @@ class ProductController:
         set_language(lang)
         logger.info(_("services.productService.logs.soft_deleting_product"))
         try:
-            deleted = self.service.soft_delete_product(product_id)
-            if deleted is None:
+            result = self.service.soft_delete_product(product_id)
+            if not result:
                 return api_error(error=None, message=_("services.productService.responses.product_not_found"))
-            return api_success(data=deleted["data"], message=deleted["message"])
+            return api_success(data=None, message=_("services.productService.responses.product_deleted"))
         except Exception as e:
             logger.error(str(e))
             return api_error(error=str(e), message=_("services.productService.logs.product_deletion_error"))

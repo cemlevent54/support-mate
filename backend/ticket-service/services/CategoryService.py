@@ -45,10 +45,7 @@ class CategoryService:
             isDeleted=created_category.isDeleted,
             deletedAt=created_category.deletedAt
         ).dict()
-        return {
-            "data": self.dto_to_serializable(dto),
-            "message": _(f"services.categoryService.responses.category_created")
-        }
+        return self.dto_to_serializable(dto)
 
     def update_category(self, category_id: str, category: Category):
         if not category.category_name_tr or not category.category_name_en:
@@ -66,10 +63,7 @@ class CategoryService:
                 isDeleted=updated_category.isDeleted,
                 deletedAt=updated_category.deletedAt
             ).dict()
-            return {
-                "data": self.dto_to_serializable(dto),
-                "message": _("services.categoryService.responses.category_updated")
-            }
+            return self.dto_to_serializable(dto)
         else:
             logger.error(_("services.categoryService.logs.update_error"))
             return None
@@ -79,19 +73,15 @@ class CategoryService:
         deleted = self.delete_handler.handle(category_id)
         if deleted:
             logger.info(_("services.categoryService.logs.category_deleted"))
-            return {
-                "data": None,
-                "message": _("services.categoryService.responses.category_deleted")
-            }
+            return True
         else:
             logger.error(_("services.categoryService.logs.delete_error"))
-            return None
+            return False
 
     def get_category(self, category_id: str) -> Optional[Category]:
         return None
 
     def list_categories(self):
-        set_language(self.lang)
         categories = self.list_handler.handle()
         data = [self.dto_to_serializable(CategoryResponseDTO(
             id=cat.id,
@@ -101,10 +91,7 @@ class CategoryService:
             isDeleted=cat.isDeleted,
             deletedAt=cat.deletedAt
         ).dict()) for cat in categories]
-        return {
-            "data": data,
-            "message": _("services.categoryService.responses.categories_listed")
-        }
+        return data
 
     def get_category_by_id(self, category_id: str):
         category = self.list_handler.repository.find_by_id(category_id)
@@ -118,7 +105,4 @@ class CategoryService:
             isDeleted=getattr(category, "isDeleted", None),
             deletedAt=getattr(category, "deletedAt", None)
         ).dict()
-        return {
-            "data": self.dto_to_serializable(dto),
-            "message": _("services.categoryService.responses.category_found") if hasattr(_, "services.categoryService.responses.category_found") else "Category found."
-        } 
+        return self.dto_to_serializable(dto) 
