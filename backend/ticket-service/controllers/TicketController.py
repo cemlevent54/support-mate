@@ -166,11 +166,11 @@ class TicketController:
                 "message": _("Internal server error")
             })
 
-    def list_tickets_endpoint_for_user(self, user, lang='tr'):
+    def list_tickets_endpoint_for_user(self, user, lang='tr', token=None):
         try:
             set_language(lang)
             logger.info(_(f"services.ticketController.logs.list_tickets_user_called").format(user_id=user.get('id')))
-            result = self.ticket_service.list_tickets_for_user(user, lang=lang)
+            result = self.ticket_service.list_tickets_for_user(user, lang=lang, token=token)
             logger.info(_(f"services.ticketController.logs.list_tickets_user_result").format(result=len(result.get('data', [])) if result.get('success') else 'error'))
             if result and 'message' in result:
                 result['message'] = _(result['message'])
@@ -183,11 +183,11 @@ class TicketController:
                 "message": _("Internal server error")
             })
 
-    def get_ticket_endpoint_for_user(self, ticket_id, user, lang='tr'):
+    def get_ticket_endpoint_for_user(self, ticket_id, user, lang='tr', token=None):
         try:
             set_language(lang)
             logger.info(_(f"services.ticketController.logs.get_ticket_user_called").format(user_id=user.get('id'), ticket_id=ticket_id))
-            result = self.ticket_service.get_ticket(ticket_id, user, lang=lang)
+            result = self.ticket_service.get_ticket(ticket_id, user, lang=lang, token=token)
             logger.info(_(f"services.ticketController.logs.get_ticket_user_result").format(result=result.get('success')))
             if result and 'message' in result:
                 result['message'] = _(result['message'])

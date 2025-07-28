@@ -3,10 +3,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
-import { DataGrid } from '@mui/x-data-grid';
-import ChatIcon from '@mui/icons-material/Chat';
-import InfoIcon from '@mui/icons-material/Info';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import Modal from '@mui/material/Modal';
@@ -16,6 +12,8 @@ import ChatPanel from '../../components/chats/ChatPanel';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
+import CustomTicketTable from '../../components/tickets/CustomTicketTable/CustomTicketTable';
+import CustomTicketDetailModal from '../../components/tickets/CustomTicketDetailModal/CustomTicketDetailModal';
 
 
 const MyRequests = ({ openCreateTicketModal, onTicketCreated }) => {
@@ -28,18 +26,7 @@ const categoryLabels = {
     other: t('myRequests.categories.other')
 };
 
-const modalStyle = {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  width: 500,
-  bgcolor: 'background.paper',
-  border: '2px solid #1976d2',
-  boxShadow: 24,
-  borderRadius: 2,
-  p: 4,
-};
+
 
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -236,7 +223,29 @@ const modalStyle = {
   };
 
   const handleOpenDetail = (ticket) => {
-    setSelectedTicket(ticket.raw || ticket);
+    // CustomTicketDetailModal için veriyi uygun formata çevir
+    const ticketData = ticket.raw || ticket;
+    
+    // Eğer ticket.raw varsa onu kullan, yoksa ticket'ı kullan
+    const modalTicket = {
+      ...ticketData,
+      id: ticketData._id || ticketData.id,
+      title: ticketData.title,
+      description: ticketData.description,
+      status: ticketData.status,
+      createdAt: ticketData.createdAt,
+      category: ticketData.category,
+      product: ticketData.product,
+      attachments: ticketData.attachments || ticketData.files || [],
+      customer: ticketData.customer,
+      agent: ticketData.agent,
+      customerId: ticketData.customerId,
+      assignedAgentId: ticketData.assignedAgentId,
+      closedAt: ticketData.closedAt,
+      deletedAt: ticketData.deletedAt
+    };
+    
+    setSelectedTicket(modalTicket);
     setModalOpen(true);
   };
   const handleCloseDetail = () => {
@@ -253,44 +262,17 @@ const modalStyle = {
     setPreviewFile(null);
   };
 
-  const columns = [
-    { field: 'id', headerName: t('myRequests.table.id'), width: 70, hide: true },
-    { field: 'title', headerName: t('myRequests.table.title'), width: 250, flex: 1 },
-    { field: 'category', headerName: t('myRequests.table.category'), width: 120, flex: 0.5 },
-    { field: 'status', headerName: t('myRequests.table.status'), width: 120, flex: 0.5 },
-    { field: 'createdAt', headerName: t('myRequests.table.createdAt'), width: 180, flex: 0.8 },
-    {
-      field: 'actions',
-      headerName: t('myRequests.table.actions'),
-      width: 200,
-      flex: 1,
-      sortable: false,
-      renderCell: (params) => (
-        <Box display="flex" gap={1}>
-          <Button
-            variant="contained"
-            color="primary"
-            size="small"
-            startIcon={<ChatIcon />}
-            onClick={() => handleOpenChat(params.row)}
-            sx={{ fontSize: '0.75rem', px: 1 }}
-          >
-            {t('myRequests.buttons.chat')}
-          </Button>
-          <Button
-            variant="outlined"
-            color="info"
-            size="small"
-            startIcon={<InfoIcon />}
-            onClick={() => handleOpenDetail(params.row)}
-            sx={{ fontSize: '0.75rem', px: 1 }}
-          >
-            {t('myRequests.buttons.detail')}
-          </Button>
-        </Box>
-      ),
-    },
-  ];
+  // CustomTicketTable için renderActions fonksiyonu
+  const renderActions = (row) => (
+    <>
+      <button className="custom-btn chat" onClick={() => handleOpenChat(row)}>
+        {t('myRequests.buttons.chat')}
+      </button>
+      <button className="custom-btn detail" onClick={() => handleOpenDetail(row)}>
+        {t('myRequests.buttons.detail')}
+      </button>
+    </>
+  );
 
   return (
     <>
@@ -304,131 +286,25 @@ const modalStyle = {
           <Alert severity="error">{error}</Alert>
         ) : (
           <Box flex={1} display="flex" flexDirection="column" minHeight={0}>
-            <DataGrid
+            <CustomTicketTable
               rows={rows}
-              columns={columns}
-              pageSize={5}
-              rowsPerPageOptions={[5, 10]}
-              disableSelectionOnClick
-              sx={{
-                flex: 1,
-                minHeight: 0,
-                '& .MuiDataGrid-root': {
-                  border: 'none',
-                },
-                '& .MuiDataGrid-cell': {
-                  borderBottom: '1px solid #e0e0e0',
-                  fontSize: '0.875rem',
-                },
-                '& .MuiDataGrid-columnHeaders': {
-                  backgroundColor: '#f5f5f5',
-                  borderBottom: '2px solid #e0e0e0',
-                  fontSize: '0.875rem',
-                },
-                '& .MuiDataGrid-virtualScroller': {
-                  backgroundColor: '#fff',
-                },
-                '& .MuiDataGrid-footerContainer': {
-                  borderTop: '1px solid #e0e0e0',
-                  backgroundColor: '#f9f9f9',
-                },
-              }}
-              columnVisibilityModel={{
-                id: false
-              }}
+              loading={loading}
+              error={error}
+              i18nNamespace="myRequests"
+              onChat={handleOpenChat}
+              onDetail={handleOpenDetail}
+              renderActions={renderActions}
             />
           </Box>
         )}
-        <Modal open={modalOpen} onClose={handleCloseDetail}>
-          <Box sx={modalStyle}>
-            <Typography variant="h6" mb={2}>{t('myRequests.modal.title')}</Typography>
-            {selectedTicket && (
-              <Box>
-                <Typography><b>{t('myRequests.modal.titleLabel')}</b> {selectedTicket.title}</Typography>
-                <Typography><b>{t('myRequests.modal.descriptionLabel')}</b> {selectedTicket.description}</Typography>
-                <Typography><b>{t('myRequests.modal.categoryLabel')}</b> {
-                  (() => {
-                    let categoryName = "-";
-                    if (selectedTicket.category) {
-                      if (typeof selectedTicket.category === 'object') {
-                        if (selectedTicket.category.category_name_tr || selectedTicket.category.category_name_en) {
-                          if (i18n.language === 'tr') {
-                            categoryName = selectedTicket.category.category_name_tr || selectedTicket.category.category_name_en || '-';
-                          } else {
-                            categoryName = selectedTicket.category.category_name_en || selectedTicket.category.category_name_tr || '-';
-                          }
-                        } else if (selectedTicket.category.categoryNameTr || selectedTicket.category.categoryNameEn) {
-                          if (i18n.language === 'tr') {
-                            categoryName = selectedTicket.category.categoryNameTr || selectedTicket.category.categoryNameEn || '-';
-                          } else {
-                            categoryName = selectedTicket.category.categoryNameEn || selectedTicket.category.categoryNameTr || '-';
-                          }
-                        } else if (selectedTicket.category.name_tr || selectedTicket.category.name_en) {
-                          if (i18n.language === 'tr') {
-                            categoryName = selectedTicket.category.name_tr || selectedTicket.category.name_en || '-';
-                          } else {
-                            categoryName = selectedTicket.category.name_en || selectedTicket.category.name_tr || '-';
-                          }
-                        } else {
-                          const categoryValues = Object.values(selectedTicket.category).filter(val => typeof val === 'string' && val.trim() !== '');
-                          if (categoryValues.length > 0) {
-                            categoryName = categoryValues[0];
-                          }
-                        }
-                      } else if (typeof selectedTicket.category === 'string') {
-                        categoryName = selectedTicket.category;
-                      }
-                    }
-                    return categoryName;
-                  })()
-                }</Typography>
-                <Typography><b>{t('myRequests.modal.statusLabel')}</b> {selectedTicket.status}</Typography>
-                <Typography><b>{t('myRequests.modal.createdAtLabel')}</b> {selectedTicket.createdAt ? new Date(selectedTicket.createdAt).toLocaleString('tr-TR') : '-'}</Typography>
-                <Typography><b>{t('myRequests.modal.customerIdLabel')}</b> {selectedTicket.customerId}</Typography>
-                <Typography><b>{t('myRequests.modal.agentIdLabel')}</b> {selectedTicket.assignedAgentId}</Typography>
-                <Typography><b>{t('myRequests.modal.attachmentsLabel')}</b></Typography>
-                <ul>
-                  {selectedTicket.attachments && selectedTicket.attachments.length > 0 ? (
-                    selectedTicket.attachments.map((file, i) => (
-                      <li key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, marginBottom: 12 }}>
-                        <a
-                          href={`${process.env.REACT_APP_API_BASE_URL}/uploads/${file.url.split('uploads/')[1]}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ fontWeight: 500, wordBreak: 'break-all' }}
-                        >
-                          {file.name}
-                        </a>
-                        {(file.type && (file.type.startsWith('image/') || file.type === 'application/pdf')) && (
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            sx={{ mt: 1, textTransform: 'none' }}
-                            onClick={() => handlePreviewFile(file)}
-                          >
-                            {t('myRequests.modal.preview')}
-                          </Button>
-                        )}
-                        {file.type && !(file.type.startsWith('image/') || file.type === 'application/pdf') && (
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            sx={{ mt: 1, textTransform: 'none' }}
-                            component="a"
-                            href={`${process.env.REACT_APP_API_BASE_URL}/uploads/${file.url.split('uploads/')[1]}`}
-                            download
-                          >
-                            {t('myRequests.modal.download')}
-                          </Button>
-                        )}
-                      </li>
-                    ))
-                  ) : <li>{t('myRequests.modal.noAttachments')}</li>}
-                </ul>
-              </Box>
-            )}
-          </Box>
-        </Modal>
+        <CustomTicketDetailModal
+          open={modalOpen}
+          onClose={handleCloseDetail}
+          ticket={selectedTicket}
+          i18nNamespace="myRequests"
+          showChatButton={true}
+          onChatClick={handleOpenChat}
+        />
       </Box>
 
       {/* Chat Modal */}

@@ -15,6 +15,15 @@
       "logoutSuccess": "Logged out successfully.",
       "logoutError": "Logout failed."
     },
+    
+    "sidebar": {
+      "requests": "My Requests",
+      "chats": "Chats",
+      "profile": "Profile",
+      "kanban": "Kanban",
+      "leaderTickets": "Leader Tickets",
+      "language": "Language"
+    },
     "chatWidget": {
       "title": "Live Support",
       "placeholder": "Type your message...",
@@ -282,7 +291,8 @@
       "chats": "Chats",
       "profile": "Profile",
       "kanban": "Kanban",
-      "leaderTickets": "Leader Tickets"
+      "leaderTickets": "Leader Tickets",
+      "language": "Language"
     },
     "chatsTitle": "Chats",
     "searchChat": "Search chat...",

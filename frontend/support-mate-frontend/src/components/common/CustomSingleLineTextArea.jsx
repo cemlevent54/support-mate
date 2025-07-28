@@ -4,7 +4,7 @@ const customInputStyle = `
   .custom-input-group {
     display: flex;
     flex-direction: column;
-    margin-bottom: 1.1rem;
+    margin-bottom: 0.6rem;
     width: 100%;
     max-width: 100%;
   }
@@ -54,9 +54,44 @@ const customInputStyle = `
   .custom-char-counter.error {
     color: #d32f2f;
   }
+  
+  /* Size variants */
+  .custom-input-group.small .custom-label {
+    font-size: 0.85rem;
+  }
+  .custom-input-group.small .custom-input {
+    font-size: 0.9rem;
+    padding: 0.5em 0.8em;
+  }
+  .custom-input-group.small .custom-char-counter {
+    font-size: 0.7rem;
+  }
+  
+  .custom-input-group.medium .custom-label {
+    font-size: 0.98rem;
+  }
+  .custom-input-group.medium .custom-input {
+    font-size: 1.07rem;
+    padding: 0.7em 1em;
+  }
+  .custom-input-group.medium .custom-char-counter {
+    font-size: 0.75rem;
+  }
+  
+  .custom-input-group.large .custom-label {
+    font-size: 1.1rem;
+  }
+  .custom-input-group.large .custom-input {
+    font-size: 1.2rem;
+    padding: 0.8em 1.2em;
+  }
+  .custom-input-group.large .custom-char-counter {
+    font-size: 0.8rem;
+  }
+  
   @media (max-width: 600px) {
     .custom-input-group {
-      margin-bottom: 0.7rem;
+      margin-bottom: 0.5rem;
     }
     .custom-input {
       font-size: 0.98rem;
@@ -75,7 +110,8 @@ export default function CustomSingleLineTextArea({
   disabled,
   minLength,
   maxLength,
-  showCharCounter = false
+  showCharCounter = false,
+  size = 'medium'
 }) {
   const [hasInteracted, setHasInteracted] = useState(false);
   
@@ -100,7 +136,7 @@ export default function CustomSingleLineTextArea({
   return (
     <>
       <style>{customInputStyle}</style>
-      <div className="custom-input-group">
+      <div className={`custom-input-group ${size}`}>
         {label && <label className="custom-label" htmlFor={name}>{label}{required && ' *'}</label>}
         <input
           className={`custom-input ${hasError ? 'error' : ''}`}

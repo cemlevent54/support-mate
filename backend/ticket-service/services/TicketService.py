@@ -427,16 +427,16 @@ class TicketService:
             message = _(f"services.ticketService.responses.ticket_delete_failed")
             return {"success": False, "data": None, "message": message}
 
-    def get_ticket(self, ticket_id, user, lang='tr'):
+    def get_ticket(self, ticket_id, user, lang='tr', token=None):
         result = self.get_handler.execute(ticket_id, user)
         
         if result is None or not result.get("success") or not result.get("data"):
             message = _(f"services.ticketService.responses.ticket_not_found") 
             return {"success": False, "data": None, "message": message}
         
-        # DTO'ya çevir
+        # DTO'ya çevir ve user detaylarını ekle
         ticket = result["data"]
-        ticket_dict = self._convert_ticket_to_dto(ticket, include_chat=True, include_user_details=False)
+        ticket_dict = self._convert_ticket_to_dto(ticket, include_chat=True, include_user_details=True, token=token)
         
         result["data"] = ticket_dict
         message = _(f"services.ticketService.responses.ticket_found") 
@@ -463,7 +463,7 @@ class TicketService:
         message = _(f"services.ticketService.responses.tickets_listed")
         return {"success": True, "data": self._make_json_serializable(ticket_dtos), "message": message}
 
-    def list_tickets_for_user(self, user, lang='tr'):
+    def list_tickets_for_user(self, user, lang='tr', token=None):
         tickets = self.list_user_handler.execute(user, lang=lang)
         
         if tickets is None:
@@ -475,10 +475,10 @@ class TicketService:
             message = _(f"services.ticketService.responses.tickets_listed")
             return {"success": True, "data": [], "message": message}
         
-        # DTO'ya çevir
+        # DTO'ya çevir ve user detaylarını ekle
         ticket_dtos = []
         for ticket in tickets:
-            ticket_dict = self._convert_ticket_to_dto(ticket, include_chat=True, include_user_details=False)
+            ticket_dict = self._convert_ticket_to_dto(ticket, include_chat=True, include_user_details=True, token=token)
             ticket_dtos.append(ticket_dict)
         
         message = _(f"services.ticketService.responses.tickets_listed")

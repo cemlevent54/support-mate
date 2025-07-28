@@ -55,6 +55,14 @@
       "welcomeMessage": "Merhaba! Size nasıl yardımcı olabilirim?",
       "autoReply": "Mesajınız alındı. En kısa sürede size dönüş yapacağız.",
       "keyboardHint": "Enter tuşu ile gönder, Shift+Enter ile yeni satır"
+    },
+    "sidebar": {
+      "requests": "Destek Talepleri",
+      "chats": "Sohbetler",
+      "profile": "Profil",
+      "kanban": "Kanban",
+      "leaderTickets": "Leader Talepleri",
+      "language": "Dil"
     }
   },
   "pages": {
@@ -282,7 +290,8 @@
       "chats": "Sohbetler",
       "profile": "Profil",
       "kanban": "Kanban",
-      "leaderTickets": "Leader Talepleri"
+      "leaderTickets": "Leader Talepleri",
+      "language": "Dil"
     },
     "chatsTitle": "Sohbetler",
     "searchChat": "Sohbet ara...",

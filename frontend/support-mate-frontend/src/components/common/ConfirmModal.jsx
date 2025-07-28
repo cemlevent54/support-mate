@@ -1,19 +1,14 @@
 import React from 'react';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
 import { useTranslation } from 'react-i18next';
+import CustomButton from './CustomButton';
 
 export default function ConfirmModal({
   open,
   translationKey,
   onConfirm,
   onCancel,
-  confirmColor = 'error',
-  cancelColor = 'inherit',
+  confirmColor = 'danger',
+  cancelColor = 'secondary',
   title,
   description,
   confirmText,
@@ -25,30 +20,84 @@ export default function ConfirmModal({
   const dialogDesc = translationKey ? t(`confirm.${translationKey}Desc`) : description;
   const dialogNo = translationKey ? t(`confirm.${translationKey}No`) : (cancelText || 'Hayır');
   const dialogYes = translationKey ? t(`confirm.${translationKey}Yes`) : (confirmText || 'Evet');
+
+  if (!open) return null;
+
   return (
-    <Dialog
-      open={open}
-      onClose={onCancel}
-      aria-labelledby="confirm-dialog-title"
-      aria-describedby="confirm-dialog-description"
-      maxWidth="xs"
-      fullWidth
-      {...props}
-    >
-      <DialogTitle id="confirm-dialog-title">{dialogTitle}</DialogTitle>
-      <DialogContent>
-        <DialogContentText id="confirm-dialog-description">
-          {dialogDesc}
-        </DialogContentText>
-      </DialogContent>
-      <DialogActions sx={{ justifyContent: 'center', pb: 2 }}>
-        <Button onClick={onCancel} color={cancelColor} variant="outlined">
-          {dialogNo}
-        </Button>
-        <Button onClick={onConfirm} color={confirmColor} variant="contained" autoFocus>
-          {dialogYes}
-        </Button>
-      </DialogActions>
-    </Dialog>
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1300,
+      padding: '16px'
+    }}>
+      <div style={{
+        background: '#fff',
+        borderRadius: '12px',
+        padding: '24px',
+        maxWidth: '400px',
+        width: '100%',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+        position: 'relative'
+      }}>
+        {/* Header */}
+        <div style={{
+          marginBottom: '16px',
+          textAlign: 'center'
+        }}>
+          <h2 style={{
+            fontSize: '20px',
+            fontWeight: 600,
+            color: '#1f2937',
+            margin: 0,
+            marginBottom: '8px'
+          }}>
+            {dialogTitle}
+          </h2>
+          <p style={{
+            fontSize: '14px',
+            color: '#6b7280',
+            margin: 0,
+            lineHeight: '1.5'
+          }}>
+            {dialogDesc}
+          </p>
+        </div>
+
+        {/* Actions */}
+        <div style={{
+          display: 'flex',
+          gap: '12px',
+          justifyContent: 'center',
+          marginTop: '24px'
+        }}>
+          <CustomButton
+            variant={cancelColor}
+            onClick={onCancel}
+            style={{
+              minWidth: '100px'
+            }}
+          >
+            {dialogNo}
+          </CustomButton>
+          
+          <CustomButton
+            variant={confirmColor}
+            onClick={onConfirm}
+            style={{
+              minWidth: '100px'
+            }}
+          >
+            {dialogYes}
+          </CustomButton>
+        </div>
+      </div>
+    </div>
   );
 } 

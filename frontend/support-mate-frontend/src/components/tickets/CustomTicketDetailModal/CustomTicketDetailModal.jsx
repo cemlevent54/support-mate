@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { jwtDecode } from 'jwt-decode';
 import { 
   FaUser, 
   FaCalendarAlt, 
@@ -26,6 +27,23 @@ const CustomTicketDetailModal = ({
 }) => {
   const { t, i18n } = useTranslation();
   const [forceUpdate, setForceUpdate] = useState(0);
+
+  // Kullanıcı rolünü JWT'den al
+  const getUserRole = () => {
+    const token = localStorage.getItem('jwt');
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        return decoded.roleName;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  };
+
+  const userRole = getUserRole();
+  const isUserRole = userRole === 'User';
 
 
 
@@ -161,11 +179,11 @@ const CustomTicketDetailModal = ({
   const statusConfig = getStatusConfig(ticket?.status);
   
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 min-w-[400px] max-w-4xl w-full relative max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl p-8 min-w-[600px] max-w-6xl w-full relative max-h-[75vh] overflow-y-auto">
         {/* Close Button */}
         <button
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-2xl font-bold transition-colors duration-200"
+          className="absolute top-6 right-6 text-gray-400 hover:text-gray-700 text-3xl font-bold transition-colors duration-200 z-10"
           onClick={onClose}
           aria-label="Kapat"
         >
@@ -175,8 +193,8 @@ const CustomTicketDetailModal = ({
         {ticket ? (
           <>
             {/* Header */}
-            <div className="mb-6">
-              <div className="text-3xl font-bold text-gray-800 mb-2">{ticket.title}</div>
+            <div className="mb-8 pt-4">
+              <div className="text-3xl font-bold text-gray-800 mb-3 pr-12">{ticket.title}</div>
               <div className="flex items-center gap-3">
                 <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${statusConfig.bg} ${statusConfig.color} ${statusConfig.border}`}>
                   <FaTag className="w-4 h-4" />
@@ -187,17 +205,17 @@ const CustomTicketDetailModal = ({
 
             {/* Description */}
             {ticket.description && (
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center gap-2">
+              <div className="mb-8 p-6 bg-gray-50 rounded-lg">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
                   <FaInfoCircle className="text-blue-500" />
                   {translations.description}
                 </h3>
-                <p className="text-gray-700 leading-relaxed">{ticket.description}</p>
+                <p className="text-gray-700 leading-relaxed text-base">{ticket.description}</p>
               </div>
             )}
 
             {/* Ticket Details Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
               {/* Customer Info */}
               <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-100">
                 <h3 className="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-2">
@@ -289,7 +307,7 @@ const CustomTicketDetailModal = ({
             </div>
 
             {/* Additional Information */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm mb-6">
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <span className="font-medium text-gray-700">{translations.ticketId}:</span>
                 <span className="font-mono text-gray-900">{ticket.id}</span>
@@ -351,7 +369,7 @@ const CustomTicketDetailModal = ({
 
         {/* Action Buttons */}
         <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-          {showChatButton && onChatClick && (
+          {showChatButton && onChatClick && !isUserRole && (
             <button
               onClick={(e) => {
                 e.preventDefault();

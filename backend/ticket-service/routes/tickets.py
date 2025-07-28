@@ -138,7 +138,8 @@ def list_tickets_user(request: Request, user=Depends(get_current_user)):
     set_language(lang)
     if user.get("roleName") != "User":
         raise HTTPException(status_code=403, detail="Forbidden")
-    return ticket_controller.list_tickets_endpoint_for_user(user, lang=lang)
+    token = request.headers.get("authorization", "").replace("Bearer ", "")
+    return ticket_controller.list_tickets_endpoint_for_user(user, lang=lang, token=token)
 
 @router.get("/user/tickets/{ticket_id}", response_model=APIResponse)
 def get_ticket_user(ticket_id: str, request: Request, user=Depends(get_current_user)):
@@ -146,7 +147,8 @@ def get_ticket_user(ticket_id: str, request: Request, user=Depends(get_current_u
     set_language(lang)
     if user.get("roleName") != "User":
         raise HTTPException(status_code=403, detail="Forbidden")
-    return ticket_controller.get_ticket_endpoint_for_user(ticket_id, user, lang=lang)
+    token = request.headers.get("authorization", "").replace("Bearer ", "")
+    return ticket_controller.get_ticket_endpoint_for_user(ticket_id, user, lang=lang, token=token)
 
 @router.delete("/user/tickets/{ticket_id}", status_code=status.HTTP_204_NO_CONTENT)
 def soft_delete_ticket_user(ticket_id: str, request: Request, user=Depends(get_current_user)):

@@ -16,7 +16,7 @@
   border-radius: 14px;
   box-shadow: 0 2px 16px 0 rgba(60,72,88,0.08);
   overflow: hidden;
-  font-family: Inter, Arial, sans-serif !important;
+  font-family: 'Roboto', Inter, Arial, sans-serif !important;
 }
 .custom-ticket-table th, .custom-ticket-table td {
   border: none;
@@ -24,7 +24,7 @@
   text-align: left;
   font-size: 1rem;
   transition: background 0.2s;
-  font-family: Inter, Arial, sans-serif !important;
+  font-family: 'Roboto', Inter, Arial, sans-serif !important;
 }
 .custom-ticket-table th {
   background: #f7fafd;
@@ -32,7 +32,7 @@
   color: #222;
   letter-spacing: 0.02em;
   border-bottom: 2px solid #e3e8ee;
-  font-family: Inter, Arial, sans-serif !important;
+  font-family: 'Roboto', Inter, Arial, sans-serif !important;
 }
 .custom-ticket-table tr {
   transition: background 0.2s;
@@ -48,7 +48,7 @@
   text-align: center;
   font-size: 1.1rem;
   color: #1976d2;
-  font-family: Inter, Arial, sans-serif !important;
+  font-family: 'Roboto', Inter, Arial, sans-serif !important;
 }
 .custom-btn {
   border: none;
@@ -62,7 +62,7 @@
   transition: background 0.18s, color 0.18s, box-shadow 0.18s;
   box-shadow: 0 1px 4px 0 rgba(25, 118, 210, 0.08);
   display: inline-block;
-  font-family: Inter, Arial, sans-serif !important;
+  font-family: 'Roboto', Inter, Arial, sans-serif !important;
 }
 .custom-btn.chat {
   background: linear-gradient(90deg, #1976d2 60%, #2196f3 100%);

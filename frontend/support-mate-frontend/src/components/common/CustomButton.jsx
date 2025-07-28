@@ -15,6 +15,25 @@ const customButtonStyle = `
     margin: 0;
     min-width: 90px;
   }
+  
+  /* Size variants */
+  .custom-btn.small {
+    font-size: 0.9rem;
+    padding: 0.4em 1em;
+    min-width: 70px;
+  }
+  
+  .custom-btn.medium {
+    font-size: 1.05rem;
+    padding: 0.62em 1.5em;
+    min-width: 90px;
+  }
+  
+  .custom-btn.large {
+    font-size: 1.2rem;
+    padding: 0.8em 2em;
+    min-width: 110px;
+  }
   .custom-btn.primary {
     background: #1976d2;
     color: #fff;
@@ -82,6 +101,7 @@ export default function CustomButton({
   disabled = false,
   style = {},
   className = '',
+  size = 'medium',
   ...rest
 }) {
   return (
@@ -89,7 +109,7 @@ export default function CustomButton({
       <style>{customButtonStyle}</style>
       <button
         type={type}
-        className={`custom-btn ${variant} ${className}`}
+        className={`custom-btn ${variant} ${size} ${className}`}
         onClick={onClick}
         disabled={disabled}
         style={style}
