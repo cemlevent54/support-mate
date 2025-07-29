@@ -253,7 +253,8 @@ class AuthService {
         role: roleId,
         roleName: roleName,
         isDeleted: false,
-        deletedAt: null
+        deletedAt: null,
+        languagePreference: registerData.languagePreference || 'tr'
       }
     };
 
@@ -280,7 +281,8 @@ class AuthService {
         firstName: registerData.firstName,
         lastName: registerData.lastName,
         role: roleId,
-        roleName: roleName
+        roleName: roleName,
+        languagePreference: registerData.languagePreference || 'tr'
       };
 
       const user = await this.commandHandler.dispatch(COMMAND_TYPES.CREATE_USER, createUserCommand);
@@ -1062,8 +1064,9 @@ class AuthService {
         role: userRole ? userRole._id : null,
         roleName: userRole ? userRole.name : null,
         googleId: payload.sub,
-        isEmailVerified: payload.email_verified || false
-              };
+        isEmailVerified: payload.email_verified || false,
+        languagePreference: googleRegisterData.languagePreference || 'tr'
+      };
       
         user = await this.commandHandler.dispatch(COMMAND_TYPES.CREATE_USER, createUserCommand);
       

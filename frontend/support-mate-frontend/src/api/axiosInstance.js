@@ -6,15 +6,37 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
+  headers: {
+    'Accept-Language': localStorage.getItem('language')
+  }
 });
 
-// Request interceptor: Her isteğe access token ekle
+// Accept-Language header'ını güncellemek için fonksiyon
+export const updateAcceptLanguageHeader = (language) => {
+  // localStorage'ı güncelle
+  localStorage.setItem('language', language);
+  // Axios defaults'ı güncelle
+  axiosInstance.defaults.headers.common['Accept-Language'] = language;
+};
+
+// Sadece Accept-Language header'ını güncellemek için fonksiyon (localStorage'ı etkilemez)
+export const updateAcceptLanguageHeaderOnly = (language) => {
+  // Sadece Axios defaults'ı güncelle
+  axiosInstance.defaults.headers.common['Accept-Language'] = language;
+};
+
+// Request interceptor: Her isteğe access token ve Accept-Language ekle
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('jwt');
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
+    
+    // Accept-Language header'ını her istekte güncelle
+    const currentLanguage = localStorage.getItem('language') || 'tr';
+    config.headers['Accept-Language'] = currentLanguage;
+    
     console.log('[Axios][Request]', config.method?.toUpperCase(), config.url, 'Headers:', config.headers);
     return config;
   },

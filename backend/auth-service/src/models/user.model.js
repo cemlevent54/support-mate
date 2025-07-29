@@ -18,6 +18,7 @@ const UserSchema = new mongoose.Schema(
       isActive: { type: Boolean, default: true },
       isDeleted: { type: Boolean, default: false },
       deletedAt: { type: Date, default: null },
+      languagePreference: { type: String, default: 'tr', enum: ['tr', 'en'] },
     },
     {
       timestamps: true, // createdAt & updatedAt otomatik

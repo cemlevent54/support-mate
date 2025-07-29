@@ -43,6 +43,23 @@ const authService = {
         try {
             const { id, token } = call.request;
             
+            // ID validasyonu
+            if (!id || id === 'unknown' || id === 'undefined' || id === 'null') {
+                return callback({
+                    code: grpc.status.INVALID_ARGUMENT,
+                    message: 'Invalid user ID provided'
+                });
+            }
+
+            // ObjectId format kontrolü
+            const mongoose = await import('mongoose');
+            if (!mongoose.Types.ObjectId.isValid(id)) {
+                return callback({
+                    code: grpc.status.INVALID_ARGUMENT,
+                    message: 'Invalid ObjectId format'
+                });
+            }
+            
             // Token doğrulama
             const decoded = verifyToken(token);
             if (!decoded) {
@@ -75,6 +92,7 @@ const authService = {
                         name: user.role.name,
                         description: user.role.description
                     },
+                    languagePreference: user.languagePreference,
                     isOnline: user.isOnline || false,
                     lastSeen: user.lastSeen ? user.lastSeen.toISOString() : null
                 },
@@ -96,6 +114,23 @@ const authService = {
     GetUserByEmail: async (call, callback) => {
         try {
             const { email, token } = call.request;
+            
+            // Email validasyonu
+            if (!email || email === 'unknown' || email === 'undefined' || email === 'null') {
+                return callback({
+                    code: grpc.status.INVALID_ARGUMENT,
+                    message: 'Invalid email provided'
+                });
+            }
+
+            // Email format kontrolü
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                return callback({
+                    code: grpc.status.INVALID_ARGUMENT,
+                    message: 'Invalid email format'
+                });
+            }
             
             // Token doğrulama
             const decoded = verifyToken(token);
@@ -129,6 +164,7 @@ const authService = {
                         name: user.role.name,
                         description: user.role.description
                     },
+                    languagePreference: user.languagePreference,
                     isOnline: user.isOnline || false,
                     lastSeen: user.lastSeen ? user.lastSeen.toISOString() : null
                 },

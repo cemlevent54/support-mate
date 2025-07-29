@@ -26,7 +26,8 @@ export class CreateUserCommandHandler {
         firstName: command.firstName,
         lastName: command.lastName,
         role: roleId,
-        roleName: command.roleName
+        roleName: command.roleName,
+        languagePreference: command.languagePreference || 'tr'
       });
       await userRepository.createUser(user);
       
@@ -37,6 +38,8 @@ export class CreateUserCommandHandler {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        roleName: user.roleName,
+        languagePreference: user.languagePreference,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt
       };

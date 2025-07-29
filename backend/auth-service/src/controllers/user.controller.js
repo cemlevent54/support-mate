@@ -88,6 +88,15 @@ class UserController {
         });
       }
       
+      // Dil tercihini ekle
+      const updateData = {
+        ...req.body,
+        languagePreference: req.body.languagePreference || req.body.language || 'tr'
+      };
+      
+      // req.body'yi güncelle
+      req.body = updateData;
+      
       const user = await userService.updateUser(req);
       const message = res.__('services.userService.logs.updateSuccess');
       const locale = res.getLocale();

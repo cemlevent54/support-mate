@@ -2,16 +2,18 @@ import React, { useState, useEffect } from 'react';
 import Modal from '@mui/material/Modal';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import TextField from '@mui/material/TextField';
-import MenuItem from '@mui/material/MenuItem';
-import Button from '@mui/material/Button';
 import Alert from '@mui/material/Alert';
 import IconButton from '@mui/material/IconButton';
 import DeleteIcon from '@mui/icons-material/Delete';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
+import Snackbar from '@mui/material/Snackbar';
 import { useTranslation } from 'react-i18next';
+import CustomSingleLineTextArea from '../../components/common/CustomSingleLineTextArea';
+import CustomMultilineTextArea from '../../components/common/CustomMultilineTextArea';
+import CustomDropdown from '../../components/common/CustomDropdown';
+import CustomButton from '../../components/common/CustomButton';
 import { getCategories } from '../../api/categoryApi';
 import { getProductsUser } from '../../api/productApi';
 import { createTicket } from '../../api/ticketApi';
@@ -30,24 +32,22 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [previews, setPreviews] = useState([]);
   const [leaders, setLeaders] = useState([]);
   const [loadingLeaders, setLoadingLeaders] = useState(false);
   const [leaderError, setLeaderError] = useState('');
+  const [previews, setPreviews] = useState([]);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedPreview, setSelectedPreview] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   useEffect(() => {
-    // Kategorileri API'den çek
     getCategories().then(res => {
       if (res.success && Array.isArray(res.data)) {
         setCategories(res.data);
       }
     }).catch(() => setCategories([]));
-    // Ürünleri API'den çek (mount'ta bir kez)
+    
     const token = localStorage.getItem('jwt');
     if (token) {
       getProductsUser(token).then(res => {
@@ -64,7 +64,6 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
         (prod) => String(prod.product_category?.product_category_id) === String(form.categoryId)
       );
       setFilteredProducts(filtered);
-      // DEBUG: Konsola yazdır
       console.log('Tüm ürünler:', products);
       console.log('Seçili kategori:', form.categoryId);
       console.log('Filtrelenen ürünler:', filtered);
@@ -111,7 +110,7 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
     const { name, value, files } = e.target;
   
     if (name === 'files') {
-      const maxSize = 10 * 1024 * 1024; // 10MB
+      const maxSize = 10 * 1024 * 1024;
       const validFiles = [];
       const invalidFiles = [];
   
@@ -126,18 +125,21 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
       }
   
       if (invalidFiles.length > 0) {
-        setError(`${invalidFiles.join(', ')} dosyaları 10MB'dan büyük olduğu için yüklenemedi.`);
+        setSnackbar({
+          open: true,
+          message: `${invalidFiles.join(', ')} dosyaları 10MB'dan büyük olduğu için yüklenemedi.`,
+          severity: 'error'
+        });
         return;
       }
   
       setForm((prev) => ({ ...prev, files: validFiles }));
     } else {
-      // Kategori seçimi yapılırsa productId sıfırla
       if (name === 'categoryId') {
         setForm((prev) => ({
           ...prev,
           categoryId: value,
-          productId: '', // kategori değişince ürün seçimi sıfırlanıyor
+          productId: '',
         }));
       } else {
         setForm((prev) => ({ ...prev, [name]: value }));
@@ -158,7 +160,6 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
       setSelectedPreview(fileObj);
       setPreviewOpen(true);
     } else {
-      // Diğer dosyalar için blob url ile indirme
       const link = document.createElement('a');
       link.href = fileObj.url;
       link.download = fileObj.name;
@@ -173,7 +174,6 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
     setSelectedPreview(null);
   };
 
-  // CustomerId bulma fonksiyonu (chat ve agentId ile)
   function getCustomerIdFromParticipants(participants, agentId) {
     if (!Array.isArray(participants)) return null;
     const agentIdStr = String(agentId);
@@ -183,27 +183,81 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
     setLoading(true);
-    if (!form.assignedLeaderId) {
-      setError(t('pages.createTicket.form.leaderRequired') || 'Lider seçimi zorunludur.');
+    
+    // Validasyonlar
+    if (!form.title || form.title.length < 1) {
+      setSnackbar({ 
+        open: true, 
+        message: t('components.customTextInput.validation.required'), 
+        severity: 'error' 
+      });
       setLoading(false);
       return;
     }
+    
+    if (form.title.length > 100) {
+      setSnackbar({ 
+        open: true, 
+        message: t('components.customTextInput.validation.maxLength', { maxLength: 100 }), 
+        severity: 'error' 
+      });
+      setLoading(false);
+      return;
+    }
+    
+    if (!form.description || form.description.length < 1) {
+      setSnackbar({ 
+        open: true, 
+        message: t('components.customTextInput.validation.required'), 
+        severity: 'error' 
+      });
+      setLoading(false);
+      return;
+    }
+    
+    if (form.description.length > 1000) {
+      setSnackbar({ 
+        open: true, 
+        message: t('components.customTextInput.validation.maxLength', { maxLength: 1000 }), 
+        severity: 'error' 
+      });
+      setLoading(false);
+      return;
+    }
+    
+    if (!form.categoryId) {
+      setSnackbar({ 
+        open: true, 
+        message: 'Kategori seçimi zorunludur.', 
+        severity: 'error' 
+      });
+      setLoading(false);
+      return;
+    }
+    
+    if (!form.assignedLeaderId) {
+      setSnackbar({ 
+        open: true, 
+        message: t('pages.createTicket.form.leaderRequired') || 'Lider seçimi zorunludur.', 
+        severity: 'error' 
+      });
+      setLoading(false);
+      return;
+    }
+    
     try {
-      // Eğer chat prop'u varsa customerId'yi otomatik bul
       let customerId = form.customerId;
       let chatId = null;
       if (chat) {
         const agentId = getUserIdFromJWT();
-        // Debug loglar
         console.log('chat.participants:', chat.participants);
         console.log('agentId:', agentId);
         customerId = getCustomerIdFromParticipants(chat.participants, agentId);
         console.log('Bulunan customerId:', customerId);
         chatId = chat._id || chat.chatId || chat.id;
       }
+      
       const ticketPayload = {
         title: form.title,
         description: form.description,
@@ -214,22 +268,42 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
         ...(customerId ? { customerId } : {}),
         ...(chatId ? { chatId } : {})
       };
+      
       const response = await createTicket(ticketPayload);
       if (response.success) {
-        setSuccess('Talep başarıyla oluşturuldu!');
+        setSnackbar({
+          open: true,
+          message: 'Talep başarıyla oluşturuldu!',
+          severity: 'success'
+        });
         setForm({ title: '', description: '', categoryId: '', productId: '', files: [] });
         if (onClose) onClose();
       } else {
-        setError(response.message || 'Bir hata oluştu.');
+        setSnackbar({
+          open: true,
+          message: response.message || 'Bir hata oluştu.',
+          severity: 'error'
+        });
       }
     } catch (err) {
-      // Backend'den HTTPException ile gelen hata
       if (err?.response?.data?.detail) {
-        setError(err.response.data.detail);
+        setSnackbar({
+          open: true,
+          message: err.response.data.detail,
+          severity: 'error'
+        });
       } else if (err?.response?.data?.message) {
-        setError(err.response.data.message);
+        setSnackbar({
+          open: true,
+          message: err.response.data.message,
+          severity: 'error'
+        });
       } else {
-        setError('Bir hata oluştu.');
+        setSnackbar({
+          open: true,
+          message: 'Bir hata oluştu.',
+          severity: 'error'
+        });
       }
     } finally {
       setLoading(false);
@@ -291,208 +365,81 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
               },
             }}
           >
-            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-            {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
-            
             <form onSubmit={handleSubmit}>
-              {/* Custom Title Input */}
-              <div style={{ margin: '16px 0', width: '100%' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
-                  {t('pages.createTicket.form.title') || "Başlık"}
-                </label>
-                <input
-                  type="text"
-                  name="title"
-                  value={form.title}
-                  onChange={handleChange}
-                  placeholder={t('pages.createTicket.form.title') || "Başlık"}
-                  required
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    borderRadius: '8px',
-                    border: '1px solid #ccc',
-                    fontSize: '14px',
-                    backgroundColor: '#fff',
-                    outline: 'none',
-                    transition: '0.2s ease-in-out',
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = '#1976d2')}
-                  onBlur={(e) => (e.target.style.borderColor = '#ccc')}
-                />
-              </div>
+              <CustomSingleLineTextArea
+                label={t('pages.createTicket.form.title') || "Başlık"}
+                name="title"
+                value={form.title}
+                onChange={handleChange}
+                required
+                placeholder={t('pages.createTicket.form.title') || "Başlık"}
+                minLength={1}
+                maxLength={100}
+                showCharCounter={true}
+              />
 
-              {/* Custom Description Textarea */}
-              <div style={{ margin: '16px 0', width: '100%' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
-                  {t('pages.createTicket.form.description') || "Açıklama"}
-                </label>
-                <textarea
-                  name="description"
-                  value={form.description}
-                  onChange={handleChange}
-                  placeholder={t('pages.createTicket.form.description') || "Açıklama"}
-                  required
-                  rows="4"
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    borderRadius: '8px',
-                    border: '1px solid #ccc',
-                    fontSize: '14px',
-                    backgroundColor: '#fff',
-                    outline: 'none',
-                    resize: 'vertical',
-                    minHeight: '100px',
-                    transition: '0.2s ease-in-out',
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = '#1976d2')}
-                  onBlur={(e) => (e.target.style.borderColor = '#ccc')}
-                ></textarea>
-              </div>
+              <CustomMultilineTextArea
+                label={t('pages.createTicket.form.description') || "Açıklama"}
+                name="description"
+                value={form.description}
+                onChange={handleChange}
+                required
+                placeholder={t('pages.createTicket.form.description') || "Açıklama"}
+                rows={4}
+                minLength={1}
+                maxLength={1000}
+                showCharCounter={true}
+              />
 
-              {/* Custom Category Dropdown */}
-              <div style={{ margin: '16px 0', width: '100%' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
-                  {t('pages.createTicket.form.category') || "Kategori"}
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <select
-                    name="categoryId"
-                    value={form.categoryId}
-                    onChange={handleChange}
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      borderRadius: '8px',
-                      border: '1px solid #ccc',
-                      fontSize: '14px',
-                      backgroundColor: '#fff',
-                      cursor: 'pointer',
-                      appearance: 'none',
-                    }}
-                    required
-                  >
-                    <option value="" disabled>{t('pages.createTicket.form.select') || "Seçiniz"}</option>
-                    {categories.map((cat) => (
-                      <option key={cat.id || cat._id} value={cat.id || cat._id}>
-                        {cat.category_name_tr || cat.category_name_en || cat.name || cat.label}
-                      </option>
-                    ))}
-                  </select>
-                  <span style={{
-                    position: 'absolute',
-                    top: '50%',
-                    right: '12px',
-                    transform: 'translateY(-50%)',
-                    pointerEvents: 'none',
-                    fontSize: '14px',
-                    color: '#555',
-                  }}>
-                    ▼
-                  </span>
-                </div>
-              </div>
+              <CustomDropdown
+                label={t('pages.createTicket.form.category') || "Kategori"}
+                name="categoryId"
+                value={form.categoryId}
+                onChange={handleChange}
+                required
+                options={categories.map((cat) => ({
+                  value: cat.id || cat._id,
+                  label: cat.category_name_tr || cat.category_name_en || cat.name || cat.label
+                }))}
+                placeholder={t('pages.createTicket.form.select') || "Seçiniz"}
+              />
 
-              {/* Product Dropdown */}
               {form.categoryId && (
-                <div style={{ margin: '16px 0', width: '100%' }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
-                    {t('pages.createTicket.form.product') || "Ürün"}
-                  </label>
-                  <div style={{ position: 'relative' }}>
-                    <select
-                      name="productId"
-                      value={form.productId}
-                      onChange={handleChange}
-                      style={{
-                        width: '100%',
-                        padding: '12px 16px',
-                        borderRadius: '8px',
-                        border: '1px solid #ccc',
-                        fontSize: '14px',
-                        backgroundColor: '#fff',
-                        cursor: 'pointer',
-                        appearance: 'none',
-                      }}
-                      required={filteredProducts.length > 0}
-                    >
-                      <option value="" disabled>{t('pages.createTicket.form.selectProduct') || "Ürün Seçiniz"}</option>
-                      {filteredProducts.length > 0 ? (
-                        filteredProducts.map((prod) => (
-                          <option key={prod.id || prod._id} value={prod.id || prod._id}>
-                            {prod.product_name_tr || prod.product_name_en || prod.name}
-                          </option>
-                        ))
-                      ) : (
-                        <option value="" disabled>{t('pages.createTicket.form.noProduct') || "Bu kategoriye ait ürün yok"}</option>
-                      )}
-                    </select>
-                    <span style={{
-                      position: 'absolute',
-                      top: '50%',
-                      right: '12px',
-                      transform: 'translateY(-50%)',
-                      pointerEvents: 'none',
-                      fontSize: '14px',
-                      color: '#555',
-                    }}>
-                      ▼
-                    </span>
-                  </div>
-                </div>
+                <CustomDropdown
+                  label={t('pages.createTicket.form.product') || "Ürün"}
+                  name="productId"
+                  value={form.productId}
+                  onChange={handleChange}
+                  required={filteredProducts.length > 0}
+                  options={filteredProducts.length > 0 ? 
+                    filteredProducts.map((prod) => ({
+                      value: prod.id || prod._id,
+                      label: prod.product_name_tr || prod.product_name_en || prod.name
+                    })) : 
+                    [{ value: '', label: t('pages.createTicket.form.noProduct') || "Bu kategoriye ait ürün yok" }]
+                  }
+                  placeholder={t('pages.createTicket.form.selectProduct') || "Ürün Seçiniz"}
+                />
               )}
 
-              {/* Leader Dropdown */}
-              <div style={{ margin: '16px 0', width: '100%' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
-                  {t('pages.createTicket.form.leader') || 'Leader Seçin'}
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <select
-                    name="assignedLeaderId"
-                    value={form.assignedLeaderId || ''}
-                    onChange={handleChange}
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      borderRadius: '8px',
-                      border: '1px solid #ccc',
-                      fontSize: '14px',
-                      backgroundColor: '#fff',
-                      cursor: 'pointer',
-                      appearance: 'none',
-                    }}
-                    disabled={loadingLeaders}
-                    required
-                  >
-                                         <option value="" disabled>{t('pages.createTicket.form.select') || "Seçiniz"}</option>
-                    {leaders.map((leader) => (
-                      <option key={leader.value} value={leader.value}>
-                        {leader.label}
-                      </option>
-                    ))}
-                  </select>
-                  <span style={{
-                    position: 'absolute',
-                    top: '50%',
-                    right: '12px',
-                    transform: 'translateY(-50%)',
-                    pointerEvents: 'none',
-                    fontSize: '14px',
-                    color: '#555',
-                  }}>
-                    ▼
-                  </span>
-                </div>
-                {loadingLeaders && <Typography variant="caption" color="text.secondary">Liderler yükleniyor...</Typography>}
-                {leaderError && <Alert severity="error">{leaderError}</Alert>}
-              </div>
+              <CustomDropdown
+                label={t('pages.createTicket.form.leader') || 'Leader Seçin'}
+                name="assignedLeaderId"
+                value={form.assignedLeaderId || ''}
+                onChange={handleChange}
+                required
+                disabled={loadingLeaders}
+                options={leaders}
+                placeholder={t('pages.createTicket.form.select') || "Seçiniz"}
+              />
+              
+              {loadingLeaders && <Typography variant="caption" color="text.secondary">Liderler yükleniyor...</Typography>}
+              {leaderError && <Alert severity="error">{leaderError}</Alert>}
 
               {/* File Upload */}
               <Box mt={2} mb={2}>
-                <Button
-                  variant="contained"
+                <CustomButton
+                  variant="secondary"
                   component="label"
                   fullWidth
                   sx={{ mb: 1, borderRadius: 2 }}
@@ -505,7 +452,8 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
                     multiple
                     onChange={handleChange}
                   />
-                </Button>
+                </CustomButton>
+                
                 {previews.length > 0 && (
                   <Box display="flex" flexDirection="column" gap={1}>
                     {previews.map((file, idx) => (
@@ -548,26 +496,24 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
 
           {/* Action Buttons */}
           <Box display="flex" gap={1} mt={2} flexShrink={0}>
-            <Button
+            <CustomButton
               type="submit"
-              variant="contained"
-              color="primary"
+              variant="primary"
               fullWidth
               onClick={handleSubmit}
               disabled={loading}
               sx={{ borderRadius: 2, minWidth: 80, py: 1.2, fontWeight: 600 }}
             >
               {loading ? 'Gönderiliyor...' : 'Talep Oluştur'}
-            </Button>
-            <Button
-              variant="outlined"
-              color="secondary"
+            </CustomButton>
+            <CustomButton
+              variant="secondary"
               fullWidth
               onClick={onClose}
               sx={{ borderRadius: 2, minWidth: 80, py: 1.2, fontWeight: 600 }}
             >
               İptal
-            </Button>
+            </CustomButton>
           </Box>
         </Box>
 
@@ -589,6 +535,18 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Snackbar */}
+        <Snackbar 
+          open={snackbar.open} 
+          autoHideDuration={3000} 
+          onClose={() => setSnackbar({ ...snackbar, open: false })} 
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        >
+          <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </Box>
     </Modal>
   );

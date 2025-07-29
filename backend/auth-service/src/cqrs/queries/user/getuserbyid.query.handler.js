@@ -27,6 +27,7 @@ export class GetUserByIdQueryHandler {
         lastName: user.lastName,
         role: user.role?._id ? user.role._id : user.role,
         roleName: user.roleName,
+        languagePreference: user.languagePreference,
         isActive: user.isActive,
         isDeleted: user.isDeleted,
         createdAt: user.createdAt,

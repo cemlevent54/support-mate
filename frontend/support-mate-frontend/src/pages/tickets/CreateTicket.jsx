@@ -3,20 +3,20 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import TextField from '@mui/material/TextField';
-import MenuItem from '@mui/material/MenuItem';
-import Button from '@mui/material/Button';
 import Alert from '@mui/material/Alert';
 import IconButton from '@mui/material/IconButton';
 import DeleteIcon from '@mui/icons-material/Delete';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
+import Snackbar from '@mui/material/Snackbar';
+import CustomSingleLineTextArea from '../../components/common/CustomSingleLineTextArea';
+import CustomMultilineTextArea from '../../components/common/CustomMultilineTextArea';
+import CustomDropdown from '../../components/common/CustomDropdown';
+import CustomButton from '../../components/common/CustomButton';
 import { createTicket } from '../../api/ticketApi';
 import { getCategories } from '../../api/categoryApi';
 import { getProductsUser } from "../../api/productApi";
-
-// Kategoriler API'den gelecek
 
 const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
   const { t } = useTranslation();
@@ -28,16 +28,15 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
     files: [],
   });
   const [categories, setCategories] = useState([]);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [userRole, setUserRole] = useState("guest");
-  const [previews, setPreviews] = useState([]); // [{url, name, type, size, file}]
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [selectedPreview, setSelectedPreview] = useState(null); // {url, name, type, size}
-  const [ticketData, setTicketData] = useState(null);
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
+  const [userRole, setUserRole] = useState("guest");
+  const [previews, setPreviews] = useState([]);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [selectedPreview, setSelectedPreview] = useState(null);
+  const [ticketData, setTicketData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -55,13 +54,11 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
   }, []);
 
   useEffect(() => {
-    // Dosya önizlemeleri oluştur
     if (form.files && form.files.length > 0) {
       const newPreviews = form.files.map(file => {
         return { url: URL.createObjectURL(file), name: file.name, type: file.type, size: file.size, file };
       });
       setPreviews(newPreviews);
-      // Temizlik: component unmount olunca blob url'leri serbest bırak
       return () => {
         newPreviews.forEach(p => { if (p.url) URL.revokeObjectURL(p.url); });
       };
@@ -71,7 +68,6 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
   }, [form.files]);
 
   useEffect(() => {
-    // Kategorileri API'den çek
     getCategories().then(res => {
       if (res.success && Array.isArray(res.data)) {
         setCategories(res.data);
@@ -103,7 +99,6 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
     }
   }, [form.categoryId, products]);
 
-  // Sadece girişli ve User rolünde ise göster
   if (userRole !== "user") {
     return <Box mt={10}><Alert severity="error">{t('pages.createTicket.noPermission')}</Alert></Box>;
   }
@@ -111,8 +106,7 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     if (name === 'files') {
-      // Dosya boyutu kontrolü (10MB limit)
-      const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+      const maxSize = 10 * 1024 * 1024;
       const validFiles = [];
       const invalidFiles = [];
       
@@ -127,7 +121,11 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
       }
       
       if (invalidFiles.length > 0) {
-        setError(`${invalidFiles.join(', ')} dosyaları 10MB'dan büyük olduğu için yüklenemedi.`);
+        setSnackbar({
+          open: true,
+          message: `${invalidFiles.join(', ')} dosyaları 10MB'dan büyük olduğu için yüklenemedi.`,
+          severity: 'error'
+        });
         return;
       }
       
@@ -143,7 +141,7 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
       if (name === "categoryId") {
         setForm((prev) => ({
           ...prev,
-          productId: "", // Kategori değişince ürün seçimini sıfırla
+          productId: "",
         }));
       }
     }
@@ -162,7 +160,6 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
       setSelectedPreview(fileObj);
       setPreviewOpen(true);
     } else {
-      // Diğer dosyalar için blob url ile indirme
       const link = document.createElement('a');
       link.href = fileObj.url;
       link.download = fileObj.name;
@@ -179,18 +176,60 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
     setLoading(true);
     
-    if (!form.title || !form.description || !form.categoryId) {
-      setError(t('pages.createTicket.validationError'));
+    // Validasyonlar
+    if (!form.title || form.title.length < 1) {
+      setSnackbar({ 
+        open: true, 
+        message: t('components.customTextInput.validation.required'), 
+        severity: 'error' 
+      });
+      setLoading(false);
+      return;
+    }
+    
+    if (form.title.length > 100) {
+      setSnackbar({ 
+        open: true, 
+        message: t('components.customTextInput.validation.maxLength', { maxLength: 100 }), 
+        severity: 'error' 
+      });
+      setLoading(false);
+      return;
+    }
+    
+    if (!form.description || form.description.length < 1) {
+      setSnackbar({ 
+        open: true, 
+        message: t('components.customTextInput.validation.required'), 
+        severity: 'error' 
+      });
+      setLoading(false);
+      return;
+    }
+    
+    if (form.description.length > 1000) {
+      setSnackbar({ 
+        open: true, 
+        message: t('components.customTextInput.validation.maxLength', { maxLength: 1000 }), 
+        severity: 'error' 
+      });
+      setLoading(false);
+      return;
+    }
+    
+    if (!form.categoryId) {
+      setSnackbar({ 
+        open: true, 
+        message: 'Kategori seçimi zorunludur.', 
+        severity: 'error' 
+      });
       setLoading(false);
       return;
     }
     
     try {
-      // Dosya yükleme desteği için files alanı
       const ticketPayload = {
         title: form.title,
         description: form.description,
@@ -203,58 +242,64 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
       if (response.success) {
         setTicketData(response.data);
         
-        // assignedAgentId kontrolü
         if (response.data.assignedAgentId) {
-        setSuccess(t('pages.createTicket.success'));
+          setSnackbar({
+            open: true,
+            message: t('pages.createTicket.success'),
+            severity: 'success'
+          });
         } else {
-          setSuccess(t('pages.createTicket.successNoAgent'));
+          setSnackbar({
+            open: true,
+            message: t('pages.createTicket.successNoAgent'),
+            severity: 'success'
+          });
         }
         
         setForm({ title: "", description: "", categoryId: "", files: [] });
         
-        // Modal modunda ise parent'a bilgi ver ve modal'ı hemen kapat
         if (isModal && onClose) {
           console.log('CreateTicket - Modal mode, calling onTicketCreated with:', response.data);
           if (onTicketCreated) {
-            // Parent component'e ticket bilgisini gönder
             onTicketCreated(response.data);
           }
-          // Modal'ı hemen kapat, tablo MyRequests sayfasında açılacak
           onClose();
-        } else {
-          // Standalone modda sadece başarı mesajı göster, chat açma
-          // Chat açılmasını kaldırdık
         }
       } else {
-        setError(response.message || t('pages.createTicket.error'));
+        setSnackbar({
+          open: true,
+          message: response.message || t('pages.createTicket.error'),
+          severity: 'error'
+        });
       }
     } catch (err) {
       console.error('CreateTicket Error:', err);
       
-      // 401 hatası durumunda özel mesaj göster (login'e yönlendirme yok)
       if (err?.response?.status === 401) {
-        setSuccess(t('pages.createTicket.successWithRelogin'));
+        setSnackbar({
+          open: true,
+          message: t('pages.createTicket.successWithRelogin'),
+          severity: 'success'
+        });
         setForm({ title: "", description: "", categoryId: "", files: [] });
         
-        // Modal modunda ise modal'ı kapat
         if (isModal && onClose) {
           setTimeout(() => {
             onClose();
-          }, 3000); // 3 saniye sonra kapat
+          }, 3000);
         }
-        
-        // Login'e yönlendirme kaldırıldı - kullanıcı manuel olarak login olabilir
         return;
       }
       
-      // Diğer hatalar için normal error mesajı
-      setError(err?.response?.data?.message || t('pages.createTicket.error'));
+      setSnackbar({
+        open: true,
+        message: err?.response?.data?.message || t('pages.createTicket.error'),
+        severity: 'error'
+      });
     } finally {
       setLoading(false);
     }
   };
-
-
 
   return (
     <Box 
@@ -267,278 +312,202 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
       height="auto"
       maxHeight={isModal ? '85vh' : 'auto'}
     >
-        <Box 
-          bgcolor="#f9f9f9" 
-          borderRadius={2} 
-          boxShadow={3} 
-          p={2} 
-          display="flex" 
-          flexDirection="column" 
-          flex={1} 
-          minHeight={0} 
-          mt={isModal ? 0 : 6}
-          height="100%"
-        >
-          <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-            <Typography variant="h6">{t('pages.createTicket.title')}</Typography>
-          </Box>
-          <Box 
-            flex={1} 
-            my={2} 
-            p={1} 
-            minHeight={0}
-            sx={{
-              overflowY: 'auto',
-              maxHeight: isModal ? '60vh' : 'auto',
-              '&::-webkit-scrollbar': {
-                width: '6px',
-              },
-              '&::-webkit-scrollbar-track': {
-                background: '#f1f1f1',
-                borderRadius: '3px',
-              },
-              '&::-webkit-scrollbar-thumb': {
-                background: '#c1c1c1',
-                borderRadius: '3px',
-              },
-              '&::-webkit-scrollbar-thumb:hover': {
-                background: '#a8a8a8',
-              },
-            }}
-          >
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
-        <form onSubmit={handleSubmit}>
-        {/* Custom Title Input */}
-        <div style={{ margin: '16px 0', width: '100%' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
-            {t('pages.createTicket.form.title')}
-          </label>
-          <input
-            type="text"
-            name="title"
-            value={form.title}
-            onChange={handleChange}
-            placeholder={t('pages.createTicket.form.title')}
-            required
-            style={{
-              width: '100%',
-              padding: '12px 16px',
-              borderRadius: '8px',
-              border: '1px solid #ccc',
-              fontSize: '14px',
-              backgroundColor: '#fff',
-              outline: 'none',
-              transition: '0.2s ease-in-out',
-            }}
-            onFocus={(e) => (e.target.style.borderColor = '#1976d2')}
-            onBlur={(e) => (e.target.style.borderColor = '#ccc')}
-          />
-        </div>
-
-        {/* Custom Description Textarea */}
-        <div style={{ margin: '16px 0', width: '100%' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
-            {t('pages.createTicket.form.description')}
-          </label>
-          <textarea
-            name="description"
-            value={form.description}
-            onChange={handleChange}
-            placeholder={t('pages.createTicket.form.description')}
-            required
-            rows="4"
-            style={{
-              width: '100%',
-              padding: '12px 16px',
-              borderRadius: '8px',
-              border: '1px solid #ccc',
-              fontSize: '14px',
-              backgroundColor: '#fff',
-              outline: 'none',
-              resize: 'vertical',
-              minHeight: '100px',
-              transition: '0.2s ease-in-out',
-            }}
-            onFocus={(e) => (e.target.style.borderColor = '#1976d2')}
-            onBlur={(e) => (e.target.style.borderColor = '#ccc')}
-          ></textarea>
-        </div>
-
-          
-          {/* Custom Dropdown */}
-          <div style={{ margin: '16px 0', width: '100%' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
-              {t('pages.createTicket.form.category')}
-            </label>
-            <div style={{ position: 'relative' }}>
-              <select
-                name="categoryId"
-                value={form.categoryId}
-                onChange={handleChange}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  borderRadius: '8px',
-                  border: '1px solid #ccc',
-                  fontSize: '14px',
-                  backgroundColor: '#fff',
-                  cursor: 'pointer',
-                  appearance: 'none',
-                }}
-                required
-              >
-                <option value="">{t('pages.createTicket.form.select')}</option>
-                {categories.map((cat) => (
-                  <option key={cat.id || cat._id} value={cat.id || cat._id}>
-                    {cat.category_name_tr || cat.category_name_en || cat.name || cat.label}
-                  </option>
-                ))}
-              </select>
-              <span style={{
-                position: 'absolute',
-                top: '50%',
-                right: '12px',
-                transform: 'translateY(-50%)',
-                pointerEvents: 'none',
-                fontSize: '14px',
-                color: '#555',
-              }}>
-                ▼
-              </span>
-            </div>
-          </div>
-          {/* Ürün Dropdown */}
-          {form.categoryId && filteredProducts.length > 0 && (
-            <div style={{ margin: '16px 0', width: '100%' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
-                {t('pages.createTicket.form.product')}
-              </label>
-              <div style={{ position: 'relative' }}>
-                <select
-                  name="productId"
-                  value={form.productId}
-                  onChange={handleChange}
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    borderRadius: '8px',
-                    border: '1px solid #ccc',
-                    fontSize: '14px',
-                    backgroundColor: '#fff',
-                    cursor: 'pointer',
-                    appearance: 'none',
-                  }}
-                >
-                  <option value="">{t('pages.createTicket.form.selectProduct')}</option>
-                  {filteredProducts.map((prod) => (
-                    <option key={prod.id} value={prod.id}>
-                      {prod.product_name_tr || prod.product_name_en}
-                    </option>
-                  ))}
-                </select>
-                <span style={{
-                  position: 'absolute',
-                  top: '50%',
-                  right: '12px',
-                  transform: 'translateY(-50%)',
-                  pointerEvents: 'none',
-                  fontSize: '14px',
-                  color: '#555',
-                }}>
-                  ▼
-                </span>
-              </div>
-            </div>
-          )}
-          <Box mt={2} mb={2}>
-            <Button
-              variant="contained"
-              component="label"
-              fullWidth
-                  sx={{ mb: 1, borderRadius: 2 }}
-            >
-              {t('pages.createTicket.form.file')} (Max 10MB)
-              <input
-                type="file"
-                name="files"
-                hidden
-                multiple
-                onChange={handleChange}
-              />
-            </Button>
-            {previews.length > 0 && (
-              <Box display="flex" flexDirection="column" gap={1}>
-                {previews.map((file, idx) => (
-                  <Box key={idx} display="flex" alignItems="center" gap={2} p={1} border={1} borderColor="#eee" borderRadius={1}>
-                    <Box
-                      sx={{ cursor: 'pointer' }}
-                      onClick={() => handlePreview(file)}
-                    >
-                      {file.url && file.type.startsWith('image/') ? (
-                        <img src={file.url} alt={file.name} style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 4 }} />
-                      ) : file.type === 'application/pdf' ? (
-                        <Box width={48} height={48} display="flex" alignItems="center" justifyContent="center" bgcolor="#f5f5f5" borderRadius={1}>
-                          <Typography variant="caption" color="text.secondary">PDF</Typography>
-                        </Box>
-                      ) : (
-                        <Box width={48} height={48} display="flex" alignItems="center" justifyContent="center" bgcolor="#f5f5f5" borderRadius={1}>
-                          <Typography variant="caption" color="text.secondary">{file.name.split('.').pop()?.toUpperCase()}</Typography>
-                        </Box>
-                      )}
-                    </Box>
-                    <Box flex={1}>
-                      <Typography variant="body2">{file.name}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {file.size > 1024 * 1024 
-                          ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` 
-                          : `${(file.size / 1024).toFixed(1)} KB`
-                        }
-                      </Typography>
-                    </Box>
-                    <IconButton size="small" color="error" onClick={() => handleRemoveFile(idx)}>
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
-                ))}
-              </Box>
-            )}
-          </Box>
-            </form>
-          </Box>
-          <Box display="flex" gap={1} mt={2} flexShrink={0}>
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            fullWidth
-              onClick={handleSubmit}
-              disabled={loading}
-              sx={{ borderRadius: 2, minWidth: 80, py: 1.2, fontWeight: 600 }}
-          >
-              {loading ? t('pages.createTicket.form.submitting') : t('pages.createTicket.form.submit')}
-          </Button>
-          </Box>
+      <Box 
+        bgcolor="#f9f9f9" 
+        borderRadius={2} 
+        boxShadow={3} 
+        p={2} 
+        display="flex" 
+        flexDirection="column" 
+        flex={1} 
+        minHeight={0} 
+        mt={isModal ? 0 : 6}
+        height="100%"
+      >
+        <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+          <Typography variant="h6">{t('pages.createTicket.title')}</Typography>
         </Box>
-        {/* Resim ve PDF önizleme Dialog */}
-        <Dialog open={previewOpen} onClose={handleClosePreview} maxWidth="md" fullWidth>
-          <DialogTitle>{selectedPreview?.name}</DialogTitle>
-          <DialogContent>
-            {selectedPreview && selectedPreview.type.startsWith('image/') && (
-              <img src={selectedPreview.url} alt={selectedPreview.name} style={{ maxWidth: '100%', maxHeight: '70vh', display: 'block', margin: '0 auto' }} />
-            )}
-            {selectedPreview && selectedPreview.type === 'application/pdf' && (
-              <iframe
-                src={selectedPreview.url}
-                title={selectedPreview.name}
-                width="100%"
-                height="600px"
-                style={{ border: 'none', display: 'block', margin: '0 auto' }}
+        
+        <Box 
+          flex={1} 
+          my={2} 
+          p={1} 
+          minHeight={0}
+          sx={{
+            overflowY: 'auto',
+            maxHeight: isModal ? '60vh' : 'auto',
+            '&::-webkit-scrollbar': {
+              width: '6px',
+            },
+            '&::-webkit-scrollbar-track': {
+              background: '#f1f1f1',
+              borderRadius: '3px',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: '#c1c1c1',
+              borderRadius: '3px',
+            },
+            '&::-webkit-scrollbar-thumb:hover': {
+              background: '#a8a8a8',
+            },
+          }}
+        >
+          <form onSubmit={handleSubmit}>
+            <CustomSingleLineTextArea
+              label={t('pages.createTicket.form.title')}
+              name="title"
+              value={form.title}
+              onChange={handleChange}
+              required
+              placeholder={t('pages.createTicket.form.title')}
+              minLength={1}
+              maxLength={100}
+              showCharCounter={true}
+            />
+
+            <CustomMultilineTextArea
+              label={t('pages.createTicket.form.description')}
+              name="description"
+              value={form.description}
+              onChange={handleChange}
+              required
+              placeholder={t('pages.createTicket.form.description')}
+              rows={4}
+              minLength={1}
+              maxLength={1000}
+              showCharCounter={true}
+            />
+
+            <CustomDropdown
+              label={t('pages.createTicket.form.category')}
+              name="categoryId"
+              value={form.categoryId}
+              onChange={handleChange}
+              required
+              options={categories.map((cat) => ({
+                value: cat.id || cat._id,
+                label: cat.category_name_tr || cat.category_name_en || cat.name || cat.label
+              }))}
+              placeholder={t('pages.createTicket.form.select')}
+            />
+
+            {form.categoryId && filteredProducts.length > 0 && (
+              <CustomDropdown
+                label={t('pages.createTicket.form.product')}
+                name="productId"
+                value={form.productId}
+                onChange={handleChange}
+                options={filteredProducts.map((prod) => ({
+                  value: prod.id,
+                  label: prod.product_name_tr || prod.product_name_en
+                }))}
+                placeholder={t('pages.createTicket.form.selectProduct')}
               />
             )}
-          </DialogContent>
-        </Dialog>
+
+            {/* File Upload */}
+            <Box mt={2} mb={2}>
+              <CustomButton
+                variant="secondary"
+                component="label"
+                fullWidth
+                sx={{ mb: 1, borderRadius: 2 }}
+              >
+                {t('pages.createTicket.form.file')} (Max 10MB)
+                <input
+                  type="file"
+                  name="files"
+                  hidden
+                  multiple
+                  onChange={handleChange}
+                />
+              </CustomButton>
+              
+              {previews.length > 0 && (
+                <Box display="flex" flexDirection="column" gap={1}>
+                  {previews.map((file, idx) => (
+                    <Box key={idx} display="flex" alignItems="center" gap={2} p={1} border={1} borderColor="#eee" borderRadius={1}>
+                      <Box
+                        sx={{ cursor: 'pointer' }}
+                        onClick={() => handlePreview(file)}
+                      >
+                        {file.url && file.type.startsWith('image/') ? (
+                          <img src={file.url} alt={file.name} style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 4 }} />
+                        ) : file.type === 'application/pdf' ? (
+                          <Box width={48} height={48} display="flex" alignItems="center" justifyContent="center" bgcolor="#f5f5f5" borderRadius={1}>
+                            <Typography variant="caption" color="text.secondary">PDF</Typography>
+                          </Box>
+                        ) : (
+                          <Box width={48} height={48} display="flex" alignItems="center" justifyContent="center" bgcolor="#f5f5f5" borderRadius={1}>
+                            <Typography variant="caption" color="text.secondary">{file.name.split('.').pop()?.toUpperCase()}</Typography>
+                          </Box>
+                        )}
+                      </Box>
+                      <Box flex={1}>
+                        <Typography variant="body2">{file.name}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {file.size > 1024 * 1024 
+                            ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` 
+                            : `${(file.size / 1024).toFixed(1)} KB`
+                          }
+                        </Typography>
+                      </Box>
+                      <IconButton size="small" color="error" onClick={() => handleRemoveFile(idx)}>
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  ))}
+                </Box>
+              )}
+            </Box>
+          </form>
+        </Box>
+        
+        <Box display="flex" gap={1} mt={2} flexShrink={0}>
+          <CustomButton
+            type="submit"
+            variant="primary"
+            fullWidth
+            onClick={handleSubmit}
+            disabled={loading}
+            sx={{ borderRadius: 2, minWidth: 80, py: 1.2, fontWeight: 600 }}
+          >
+            {loading ? t('pages.createTicket.form.submitting') : t('pages.createTicket.form.submit')}
+          </CustomButton>
+        </Box>
       </Box>
+
+      {/* Resim ve PDF önizleme Dialog */}
+      <Dialog open={previewOpen} onClose={handleClosePreview} maxWidth="md" fullWidth>
+        <DialogTitle>{selectedPreview?.name}</DialogTitle>
+        <DialogContent>
+          {selectedPreview && selectedPreview.type.startsWith('image/') && (
+            <img src={selectedPreview.url} alt={selectedPreview.name} style={{ maxWidth: '100%', maxHeight: '70vh', display: 'block', margin: '0 auto' }} />
+          )}
+          {selectedPreview && selectedPreview.type === 'application/pdf' && (
+            <iframe
+              src={selectedPreview.url}
+              title={selectedPreview.name}
+              width="100%"
+              height="600px"
+              style={{ border: 'none', display: 'block', margin: '0 auto' }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Snackbar */}
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={3000} 
+        onClose={() => setSnackbar({ ...snackbar, open: false })} 
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Box>
   );
 };
 

@@ -30,6 +30,7 @@ class AuthController {
       const registerData = { 
         ...req.body, 
         locale,
+        languagePreference: req.body.languagePreference || locale || 'tr',
         // Password eksikse geçici password ekle (Google register için)
         password: req.body.password || 'temporary_password_123'
       };
@@ -381,7 +382,11 @@ class AuthController {
   async googleRegister(req, res) {
     try {
       const locale = res.getLocale();
-      const googleRegisterData = { ...req.body, locale };
+      const googleRegisterData = { 
+        ...req.body, 
+        locale,
+        languagePreference: req.body.languagePreference || locale || 'tr'
+      };
       
       const result = await authService.googleRegister(googleRegisterData);
       

@@ -20,6 +20,7 @@ export class GetUserByEmailQueryHandler {
         lastName: user.lastName,
         role: user.role?._id ? user.role._id : user.role, // ObjectId veya nesne olabilir
         roleName: user.roleName,
+        languagePreference: user.languagePreference, // <-- Dil tercihi eklendi
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
         phoneNumber: user.phoneNumber, // <-- Telefon numarası eklendi

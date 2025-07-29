@@ -27,6 +27,8 @@ export class UpdateUserCommandHandler {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        roleName: user.roleName,
+        languagePreference: user.languagePreference,
         isActive: user.isActive,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt

@@ -357,7 +357,7 @@ export default function ChatList({ activeChatTicketId, onSelectChat, loading: lo
             lastMessageTime: now,
             createdAt: now,
             timestamp: now,
-            ticket: { title: data.message && data.message.title ? data.message.title : 'Yeni Sohbet' },
+                          ticket: { title: data.message && data.message.title ? data.message.title : t('components.chatWidget.newChat') },
           };
           console.log('[DEBUG][ChatList] new_chat_created agentChatsPaginated adding:', newChatObj);
           return [newChatObj, ...prev];

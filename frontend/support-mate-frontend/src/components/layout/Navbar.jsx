@@ -2,6 +2,7 @@ import * as React from 'react';
 import { useLanguage } from '../../providers/LanguageProvider';
 import { useTranslation } from 'react-i18next';
 import { logout as apiLogout } from '../../api/authApi';
+import { getAuthenticatedUser, updateUser } from '../../api/userApi';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import { useNavigate } from 'react-router-dom';
@@ -226,9 +227,43 @@ export default function Navbar({
     setLanguageDropdownOpen(!languageDropdownOpen);
   };
   
-  const handleLanguageSelect = (selectedLanguage) => {
-    onLanguageChange(selectedLanguage);
-    setLanguageDropdownOpen(false);
+  const handleLanguageSelect = async (selectedLanguage) => {
+    try {
+      // UI'da dili güncelle (Accept-Language header'ı da güncellenir)
+      onLanguageChange(selectedLanguage);
+      setLanguageDropdownOpen(false);
+      
+      // Eğer kullanıcı giriş yapmışsa backend'e de kaydet
+      try {
+        const user = await getAuthenticatedUser();
+        const userId = user._id || user.id;
+        
+        if (userId) {
+          // Backend'e dil tercihini kaydet
+          await updateUser(userId, { languagePreference: selectedLanguage });
+          
+          // Başarı mesajı göster
+          setSnackbar({ 
+            open: true, 
+            message: t('pages.myAccount.languageUpdateSuccess') || 'Dil tercihi güncellendi', 
+            severity: 'success' 
+          });
+        }
+      } catch (backendError) {
+        // Backend hatası olsa bile UI'da dil değişmiş olur
+        console.warn('Backend dil güncelleme hatası:', backendError);
+      }
+    } catch (err) {
+      // Genel hata durumunda sadece UI'da dili güncelle
+      onLanguageChange(selectedLanguage);
+      setLanguageDropdownOpen(false);
+      
+      setSnackbar({ 
+        open: true, 
+        message: t('pages.myAccount.languageUpdateError') || 'Dil tercihi güncellenemedi', 
+        severity: 'error' 
+      });
+    }
   };
   
   const handleClickOutside = (event) => {

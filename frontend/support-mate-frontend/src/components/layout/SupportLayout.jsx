@@ -8,6 +8,7 @@ import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import { logout as apiLogout } from '../../api/authApi';
+import { getAuthenticatedUser, updateUser } from '../../api/userApi';
 import { useLanguage } from '../../providers/LanguageProvider';
 import { useTranslation } from 'react-i18next';
 import { jwtDecode } from 'jwt-decode';
@@ -220,7 +221,7 @@ export default function SupportLayout() {
               lastMessageTime: new Date().toISOString(),
               createdAt: new Date().toISOString(),
               timestamp: new Date().toISOString(),
-              ticket: { title: 'Yeni Sohbet' },
+              ticket: { title: t('components.chatWidget.newChat') },
             };
             
             console.log('[SupportLayout] Yeni chat objesi oluşturuldu:', newChat);
@@ -245,6 +246,30 @@ export default function SupportLayout() {
 
   // Chat listesi çekme (agentChats)
   
+
+  const handleLanguageChange = async (selectedLanguage) => {
+    try {
+      // UI'da dili güncelle (Accept-Language header'ı da güncellenir)
+      onLanguageChange(selectedLanguage);
+      
+      // Eğer kullanıcı giriş yapmışsa backend'e de kaydet
+      try {
+        const user = await getAuthenticatedUser();
+        const userId = user._id || user.id;
+        
+        if (userId) {
+          // Backend'e dil tercihini kaydet
+          await updateUser(userId, { languagePreference: selectedLanguage });
+        }
+      } catch (backendError) {
+        // Backend hatası olsa bile UI'da dil değişmiş olur
+        console.warn('Backend dil güncelleme hatası:', backendError);
+      }
+    } catch (err) {
+      // Genel hata durumunda sadece UI'da dili güncelle
+      onLanguageChange(selectedLanguage);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -273,22 +298,22 @@ export default function SupportLayout() {
         <Typography variant="h6" fontWeight={700} mb={1} textAlign="center" sx={{ color: '#fff' }}>
           {(() => {
             if (isCustomerSupporter({ roleName })) {
-              return 'Support Panel';
+              return t('components.sidebar.supportPanel');
             } else if (isEmployee({ roleName })) {
-              return 'Employee Panel';
+              return t('components.sidebar.employeePanel');
             } else if (isLeader({ roleName })) {
-              return 'Leader Panel';
+              return t('components.sidebar.leaderPanel');
             } else {
-              return 'Support Panel';
+              return t('components.sidebar.supportPanel');
             }
           })()}
         </Typography>
         <div style={{ marginBottom: 8 }}>
-          <label htmlFor="language-select" style={{ color: '#fff', fontSize: 14, marginBottom: 4, display: 'block' }}>Dil Seçimi</label>
+          <label htmlFor="language-select" style={{ color: '#fff', fontSize: 14, marginBottom: 4, display: 'block' }}>{t('components.sidebar.languageSelection')}</label>
           <select
             id="language-select"
             value={language}
-            onChange={e => onLanguageChange(e.target.value)}
+            onChange={e => handleLanguageChange(e.target.value)}
             style={{ width: '100%', padding: '6px 8px', borderRadius: 4, border: '1px solid #444', background: '#222', color: '#fff', fontSize: 14 }}
           >
             {LANGUAGES.map(lang => (
@@ -341,7 +366,7 @@ export default function SupportLayout() {
           ))}
         </List>
         <Button variant="outlined" color="error" onClick={handleLogout} sx={{ mt: 2, borderColor: '#fff', color: '#fff', '&:hover': { borderColor: '#fff', bgcolor: '#222' } }}>
-          Çıkış Yap
+          {t('components.navbar.logout')}
         </Button>
       </Paper>
       <div style={{ flex: 1 }}>

@@ -96,6 +96,11 @@ def get_current_user_with_details(credentials: HTTPAuthorizationCredentials = De
         
         # Get full user details from auth service via gRPC
         user_details = get_user_by_id(user_id, token)
+        
+        # Ensure languagePreference is included in user details
+        if user_details and "languagePreference" not in user_details:
+            user_details["languagePreference"] = "tr"  # Default value
+        
         return {
             "token_payload": payload,
             "user_details": user_details
@@ -115,7 +120,8 @@ def get_customer_info_for_agent(customer_id, agent_token):
                 "customer_id": customer_id,
                 "customer_email": customer_data.get("email"),
                 "customer_name": customer_data.get("name") or customer_data.get("firstName", "") + " " + customer_data.get("lastName", ""),
-                "customer_phone": customer_data.get("phone")
+                "customer_phone": customer_data.get("phone"),
+                "customer_language_preference": customer_data.get("languagePreference", "tr")
             }
         else:
             logger.warning(f"Customer data not found for customer_id: {customer_id}")

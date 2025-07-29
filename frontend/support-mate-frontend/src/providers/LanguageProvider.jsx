@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import i18n from 'i18next';
 import { I18nextProvider } from 'react-i18next';
+import { updateAcceptLanguageHeader } from '../api/axiosInstance';
 import tr from '../locales/tr.json';
 import en from '../locales/en.json';
 
@@ -41,10 +42,14 @@ export default function LanguageProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    console.log('LanguageProvider useEffect tetiklendi, language:', language);
     if (i18n.isInitialized && ready) {
       i18n.changeLanguage(language);
     }
     localStorage.setItem('language', language);
+    // Accept-Language header'ını güncelle
+    console.log('Accept-Language header güncelleniyor:', language);
+    updateAcceptLanguageHeader(language);
   }, [language, ready]);
 
   const onLanguageChange = (lng) => {
