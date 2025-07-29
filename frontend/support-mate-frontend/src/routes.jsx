@@ -85,6 +85,10 @@ export const appRoutes = [
         path: 'leaders',
         element: <AdminLeaders />,
       },
+      //{
+      //  path: 'statistics',
+      //  element: <AdminStatistics />,
+      //},
       {
         path: 'roles',
         element: <AdminUserRoles />,

@@ -22,6 +22,20 @@ class ProductRepository:
             result.append(Product(**prod))
         return result
 
+    def find_all(self) -> List[Product]:
+        """Tüm ürünleri getir (soft delete olmayanlar)"""
+        return self.get_all()
+
+    def find_by_category_id(self, category_id: str) -> List[Product]:
+        """Kategori ID'sine göre ürünleri getir"""
+        products = self.collection.find({"product_category_id": category_id, "isDeleted": False})
+        result = []
+        for prod in products:
+            if "_id" in prod:
+                prod["_id"] = str(prod["_id"])
+            result.append(Product(**prod))
+        return result
+
     def create(self, product: Product) -> str:
         product_dict = product.dict(by_alias=True)
         # Eğer id veya _id None ise dict'ten çıkar

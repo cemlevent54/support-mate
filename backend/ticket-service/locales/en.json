@@ -263,6 +263,16 @@
                 "description_required": "Task description is required.",
                 "description_too_long": "Task description cannot exceed 500 characters."
             }
+        },
+        "reportService": {
+            "logs": {
+                "get_dashboard_statistics": "Getting dashboard statistics.",
+                "get_dashboard_statistics_error": "Error occurred while getting dashboard statistics."
+            },
+            "responses": {
+                "get_dashboard_statistics": "Dashboard statistics retrieved successfully.",
+                "get_dashboard_statistics_error": "Dashboard statistics could not be retrieved."
+            }
         }
     },
 

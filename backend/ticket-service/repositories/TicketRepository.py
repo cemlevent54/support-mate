@@ -96,6 +96,20 @@ class TicketRepository:
             result.append(Ticket(**ticket))
         return result
 
+    def find_all(self):
+        """Tüm ticket'ları getir (soft delete olmayanlar)"""
+        return self.get_all()
+
+    def find_by_category_id(self, category_id: str):
+        """Kategori ID'sine göre ticket'ları getir"""
+        filter_query = {"categoryId": category_id, "isDeleted": False}
+        return self.get_all(filter_query)
+
+    def find_by_product_id(self, product_id: str):
+        """Ürün ID'sine göre ticket'ları getir"""
+        filter_query = {"productId": product_id, "isDeleted": False}
+        return self.get_all(filter_query)
+
     def get_all_with_pagination(self, filter_query=None, skip=0, limit=10, sort_by="createdAt", sort_order=-1):
         """
         Get tickets with pagination support

@@ -135,6 +135,40 @@ class TaskRepository:
         tasks = self.collection.find({"isDeleted": False})
         return [self._to_dto(task, token) for task in tasks]
 
+    def find_all(self) -> List[Task]:
+        """Tüm task'ları getir (soft delete olmayanlar)"""
+        tasks = self.collection.find({"isDeleted": False})
+        result = []
+        for task in tasks:
+            if "_id" in task:
+                task["_id"] = str(task["_id"])
+            result.append(Task(**task))
+        return result
+
+    def find_by_category_id_and_leader_exists(self, category_id: str) -> List[Task]:
+        """Kategori ID'sine göre ve leader'ı olan task'ları getir"""
+        try:
+            # Önce kategoriye ait ticket'ları bul
+            tickets = self.ticket_collection.find({"categoryId": category_id, "isDeleted": False})
+            ticket_ids = [str(ticket["_id"]) for ticket in tickets]
+            
+            # Bu ticket'lara ait task'ları bul
+            tasks = self.collection.find({
+                "relatedTicketId": {"$in": ticket_ids},
+                "isDeleted": False,
+                "createdBy": {"$exists": True, "$ne": None}
+            })
+            
+            result = []
+            for task in tasks:
+                if "_id" in task:
+                    task["_id"] = str(task["_id"])
+                result.append(Task(**task))
+            return result
+        except Exception as e:
+            print(f"Error in find_by_category_id_and_leader_exists: {e}")
+            return []
+
     def get_tasks_by_employee_id(self, employee_id: str, token: str = None) -> List[TaskResponseDto]:
         tasks = self.collection.find({"assignedEmployeeId": employee_id, "isDeleted": False})
         return [self._to_dto(task, token) for task in tasks]

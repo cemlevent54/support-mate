@@ -40,6 +40,10 @@ class CategoryRepository:
             doc['_id'] = str(doc['_id'])
         return Category(**doc)
 
+    def find_all(self) -> List[Category]:
+        """Tüm kategorileri getir (soft delete olmayanlar)"""
+        return self.list_all()
+
     def list_all(self) -> List[Category]:
         docs = self.collection.find({"isDeleted": {"$ne": True}})
         result = []

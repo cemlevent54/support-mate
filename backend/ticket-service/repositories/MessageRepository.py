@@ -34,6 +34,10 @@ class MessageRepository:
             return Message.model_validate(doc)
         return None
 
+    def find_all(self) -> List[Message]:
+        """Tüm mesajları getir (soft delete olmayanlar)"""
+        return self.list()
+
     def list(self, filter: dict = None) -> List[Message]:
         query = {"isDeleted": False}
         if filter:

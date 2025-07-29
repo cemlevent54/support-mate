@@ -45,6 +45,10 @@ class ChatRepository:
             return Chat.model_validate(doc)
         return None
 
+    def find_all(self) -> List[Chat]:
+        """Tüm chat'leri getir (soft delete olmayanlar)"""
+        return self.list()
+
     def find_chat_by_participants(self, user1_id: str, user2_id: str) -> Optional[Chat]:
         query = {
             "participants.userId": {"$all": [user1_id, user2_id]},

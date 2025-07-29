@@ -263,6 +263,16 @@
                 "description_required": "Görev açıklaması zorunludur.",
                 "description_too_long": "Görev açıklaması en fazla 500 karakter olabilir."
             }
+        },
+        "reportService": {
+            "logs": {
+                "get_dashboard_statistics": "Dashboard istatistikleri getiriliyor.",
+                "get_dashboard_statistics_error": "Dashboard istatistikleri getirilirken hata oluştu."
+            },
+            "responses": {
+                "get_dashboard_statistics": "Dashboard istatistikleri başarıyla getirildi.",
+                "get_dashboard_statistics_error": "Dashboard istatistikleri getirilemedi."
+            }
         }
     },
 
