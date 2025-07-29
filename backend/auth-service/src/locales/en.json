@@ -359,7 +359,8 @@
         "invalidTokenEmail": "No valid email found in token",
         "invalidVerificationCode": "Invalid verification code",
         "userAction": "User action performed",
-        "emailAlreadyInUse": "This email address is already in use. Please use a different email address or log in."
+        "emailAlreadyInUse": "This email address is already in use. Please use a different email address or log in.",
+        "userNotActive": "Your account is not active. Please contact the administrator."
       }
     },
     "permissionService": {
@@ -447,6 +448,8 @@
         "getAuthenticatedSuccess": "Authenticated user fetched successfully",
         "getAuthenticatedNotFound": "Authenticated user not found",
         "getAuthenticatedError": "Error occurred while fetching authenticated user",
+        "getLeadersWithEmployeesSuccess": "Leaders with employees retrieved successfully",
+        "getLeadersWithEmployeesError": "Error occurred while fetching leaders with employees",
         "roleNameRequired": "Role name is required"
       }
     },

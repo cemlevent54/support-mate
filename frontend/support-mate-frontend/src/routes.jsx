@@ -9,6 +9,7 @@ import MyAccount from './pages/auth/MyAccount';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
 import AdminUsers from './pages/admin/AdminUsers';
+import AdminLeaders from './pages/admin/AdminLeaders';
 import AdminUserRoles from './pages/admin/AdminUserRoles';
 import AdminRolePermissions from './pages/admin/AdminRolePermissions';
 import Box from '@mui/material/Box';
@@ -78,6 +79,10 @@ export const appRoutes = [
       {
         path: 'users',
         element: <AdminUsers />,
+      },
+      {
+        path: 'leaders',
+        element: <AdminLeaders />,
       },
       {
         path: 'roles',

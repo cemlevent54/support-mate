@@ -194,6 +194,146 @@ class UserRepository {
       throw err;
     }
   }
+
+  // Leader-Employee ilişkisi için yeni metodlar
+  async findEmployeesByLeaderId(leaderId) {
+    try {
+      logger.info('Finding employees for leader', { leaderId });
+      const employees = await UserModel.find({ 
+        leaderId, 
+        isDeleted: false,
+        roleName: 'Employee'
+      })
+      .populate('role')
+      .select('-password')
+      .sort({ createdAt: -1 });
+      
+      logger.info('Found employees for leader', { leaderId, count: employees.length });
+      return employees;
+    } catch (err) {
+      logger.error('Error finding employees for leader', { error: err, leaderId });
+      throw err;
+    }
+  }
+
+  async findLeaderByEmployeeId(employeeId) {
+    try {
+      logger.info('Finding leader for employee', { employeeId });
+      const employee = await UserModel.findById(employeeId)
+        .populate('role')
+        .select('-password');
+      
+      if (!employee || !employee.leaderId) {
+        logger.info('Employee not found or has no leader', { employeeId, hasLeaderId: !!employee?.leaderId });
+        return null;
+      }
+      
+      // Leader'ı ayrı bir sorgu ile bul
+      const leader = await UserModel.findById(employee.leaderId)
+        .populate('role')
+        .select('-password');
+      
+      logger.info('Employee found with leader', { 
+        employeeId, 
+        employeeFound: !!employee, 
+        hasLeaderId: !!employee?.leaderId,
+        leaderFound: !!leader,
+        leaderData: leader ? {
+          id: leader._id,
+          email: leader.email,
+          firstName: leader.firstName,
+          lastName: leader.lastName,
+          roleName: leader.roleName
+        } : null
+      });
+      
+      if (leader) {
+        logger.info('Found leader for employee', { employeeId, leaderId: leader._id });
+        return leader;
+      }
+      
+      logger.info('No leader found for employee', { employeeId });
+      return null;
+    } catch (err) {
+      logger.error('Error finding leader for employee', { error: err, employeeId });
+      throw err;
+    }
+  }
+
+  async assignEmployeeToLeader(employeeId, leaderId) {
+    try {
+      logger.info('Assigning employee to leader', { employeeId, leaderId });
+      
+      // Leader'ın geçerli olup olmadığını kontrol et
+      const leader = await UserModel.findById(leaderId);
+      if (!leader || leader.roleName !== 'Leader') {
+        throw new Error('Invalid leader ID or user is not a leader');
+      }
+      
+      // Employee'nin geçerli olup olmadığını kontrol et
+      const employee = await UserModel.findById(employeeId);
+      if (!employee || employee.roleName !== 'Employee') {
+        throw new Error('Invalid employee ID or user is not an employee');
+      }
+      
+      // Employee'yi leader'a ata
+      const updatedEmployee = await UserModel.findByIdAndUpdate(
+        employeeId,
+        { leaderId },
+        { new: true }
+      ).populate('role');
+      
+      logger.info('Employee assigned to leader successfully', { employeeId, leaderId });
+      return updatedEmployee;
+    } catch (err) {
+      logger.error('Error assigning employee to leader', { error: err, employeeId, leaderId });
+      throw err;
+    }
+  }
+
+  async removeEmployeeFromLeader(employeeId) {
+    try {
+      logger.info('Removing employee from leader', { employeeId });
+      
+      const updatedEmployee = await UserModel.findByIdAndUpdate(
+        employeeId,
+        { leaderId: null },
+        { new: true }
+      ).populate('role');
+      
+      if (updatedEmployee) {
+        logger.info('Employee removed from leader successfully', { employeeId });
+      } else {
+        logger.info('Employee not found', { employeeId });
+      }
+      
+      return updatedEmployee;
+    } catch (err) {
+      logger.error('Error removing employee from leader', { error: err, employeeId });
+      throw err;
+    }
+  }
+
+  async findLeadersWithEmployees() {
+    try {
+      logger.info('Finding all leaders with their employees');
+      
+      const leaders = await UserModel.find({ 
+        roleName: 'Leader',
+        isDeleted: false 
+      })
+      .populate('employees')
+      .populate('role')
+      .select('-password')
+      .sort({ createdAt: -1 });
+      
+      logger.info('Found leaders with employees', { count: leaders.length });
+      return leaders;
+    } catch (err) {
+      logger.error('Error finding leaders with employees', { error: err });
+      throw err;
+    }
+  }
 }
 
 export default new UserRepository(); 

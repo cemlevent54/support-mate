@@ -235,6 +235,57 @@
     "products": "Ürünler",
     "kanban": "Kanban"
   },
+  "adminLeaders": {
+    "title": "Leader Yönetimi",
+    "searchPlaceholder": "Leader ara...",
+    "roleFilter": "Rol Filtresi",
+    "allRoles": "Tümü",
+    "table": {
+      "id": "ID",
+      "fullName": "Ad Soyad",
+      "email": "E-posta",
+      "role": "Rol",
+      "employees": "Çalışanlar",
+      "employee": "Çalışan",
+      "status": "Durum",
+      "createdAt": "Kayıt Tarihi",
+      "actions": "İşlemler"
+    },
+    "status": {
+      "deleted": "Silinmiş",
+      "active": "Aktif",
+      "inactive": "Pasif"
+    },
+    "editDialog": {
+      "title": "Leader Düzenle",
+      "firstName": "Ad",
+      "lastName": "Soyad",
+      "email": "E-posta",
+      "role": "Rol",
+      "status": "Durum",
+      "active": "Aktif",
+      "inactive": "Pasif",
+      "cancel": "İptal",
+      "save": "Güncelle"
+    },
+    "snackbar": {
+      "leaderUpdated": "Leader başarıyla güncellendi",
+      "leaderDeleted": "Leader başarıyla silindi",
+      "leaderNotFound": "Leader bilgisi bulunamadı",
+      "leaderLoadError": "Leader'lar yüklenirken hata oluştu",
+      "leaderSaveError": "Leader kaydedilirken hata oluştu",
+      "leaderDeleteError": "Leader silinirken hata oluştu"
+    },
+    "confirmDelete": {
+      "title": "Leader'ı Sil",
+      "desc": "Bu leader'ı silmek istediğinizden emin misiniz?",
+      "yes": "Evet, Sil",
+      "no": "Vazgeç"
+    },
+    "noLeaders": "Leader bulunamadı",
+    "loading": "Yükleniyor...",
+    "rowsPerPage": "Sayfa başına leader:"
+  },
   "adminUsers": {
     "title": "Kullanıcı Yönetimi",
     "searchPlaceholder": "Kullanıcı ara...",

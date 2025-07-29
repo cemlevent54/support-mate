@@ -1,0 +1,131 @@
+.custom-table-wrapper {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  margin: 1rem 0;
+}
+
+.custom-table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.custom-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  background: #fff;
+}
+
+.custom-table thead {
+  background: #f8f9fa;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.custom-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #495057;
+  border-bottom: 1px solid #dee2e6;
+  white-space: nowrap;
+}
+
+.custom-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f3f4;
+  vertical-align: middle;
+}
+
+.custom-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.custom-table tbody tr.clickable-row {
+  cursor: pointer;
+}
+
+.custom-table tbody tr.clickable-row:hover {
+  background-color: #e3f2fd;
+}
+
+.custom-table .actions-cell {
+  text-align: center;
+  white-space: nowrap;
+  width: auto;
+}
+
+.custom-table-loading,
+.custom-table-error {
+  padding: 2rem;
+  text-align: center;
+  color: #6c757d;
+  font-size: 1rem;
+}
+
+.custom-table-error {
+  color: #dc3545;
+}
+
+.custom-table-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-top: 1px solid #dee2e6;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.custom-table-pagination button {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #dee2e6;
+  background: #fff;
+  color: #495057;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.custom-table-pagination button:hover:not(:disabled) {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.custom-table-pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.custom-table-pagination select {
+  padding: 0.5rem;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 0.9rem;
+}
+
+.custom-table-pagination span {
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .custom-table {
+    font-size: 0.8rem;
+  }
+  
+  .custom-table th,
+  .custom-table td {
+    padding: 8px 12px;
+  }
+  
+  .custom-table-pagination {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+} 

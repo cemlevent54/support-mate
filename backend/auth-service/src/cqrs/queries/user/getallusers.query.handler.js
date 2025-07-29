@@ -7,6 +7,31 @@ export class GetAllUsersQueryHandler {
     try {
       logger.info(translation('cqrs.queries.user.getAllUsers.logs.executing'), { query });
       
+      // Eğer role parametresi varsa ve string ise, findUsersByRole kullan
+      if (query.role && typeof query.role === 'string') {
+        const users = await userRepository.findUsersByRole(query.role);
+        const normalizedUsers = users.map(user => ({
+          id: user._id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role ? {
+            id: user.role._id,
+            name: user.role.name,
+            description: user.role.description,
+            permissions: user.role.permissions
+          } : null,
+          leaderId: user.leaderId || null,
+          isActive: user.isActive,
+          isDeleted: user.isDeleted,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt
+        }));
+        
+        logger.info(translation('cqrs.queries.user.getAllUsers.logs.success'), { count: normalizedUsers.length });
+        return { users: normalizedUsers, total: normalizedUsers.length, page: 1, limit: normalizedUsers.length, totalPages: 1 };
+      }
+      
       const options = {
         page: query.page || 1,
         limit: query.limit || 10,
@@ -28,6 +53,7 @@ export class GetAllUsersQueryHandler {
           description: user.role.description,
           permissions: user.role.permissions
         } : null,
+        leaderId: user.leaderId || null,
         isActive: user.isActive,
         isDeleted: user.isDeleted,
         createdAt: user.createdAt,

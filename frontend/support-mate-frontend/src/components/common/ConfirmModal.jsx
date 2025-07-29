@@ -13,6 +13,7 @@ export default function ConfirmModal({
   description,
   confirmText,
   cancelText,
+  zIndex = 1300,
   ...props
 }) {
   const { t } = useTranslation();
@@ -34,7 +35,7 @@ export default function ConfirmModal({
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 1300,
+      zIndex: zIndex,
       padding: '16px'
     }}>
       <div style={{

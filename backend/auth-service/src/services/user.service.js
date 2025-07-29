@@ -6,9 +6,20 @@ import {
   GetUserByIdQueryHandler,
   GetLeaderProfileQueryHandler,
   GetAllUsersQueryHandler,
-  GetUsersByRoleQueryHandler
+  GetUsersByRoleQueryHandler,
+  GetEmployeesByLeaderQueryHandler,
+  GetLeaderByEmployeeQueryHandler,
+  GetLeadersWithEmployeesQueryHandler
 } from '../cqrs/index.js';
-import { commandHandler, COMMAND_TYPES, UpdateUserCommandHandler, UpdateLeaderCommandHandler, DeleteUserCommandHandler } from '../cqrs/index.js';
+import { 
+  commandHandler, 
+  COMMAND_TYPES, 
+  UpdateUserCommandHandler, 
+  UpdateLeaderCommandHandler, 
+  DeleteUserCommandHandler,
+  AssignEmployeeToLeaderCommandHandler,
+  RemoveEmployeeFromLeaderCommandHandler
+} from '../cqrs/index.js';
 import translation from '../config/translation.js';
 
 // User servisinde kullanılacak izinler
@@ -191,6 +202,157 @@ class UserService {
       throw err;
     }
   }
+
+  // Leader-Employee ilişkisi için yeni metodlar
+  async getEmployeesByLeader(req) {
+    try {
+      let { leaderId } = req.params;
+      
+      // URL parametresindeki : karakterini temizle
+      if (leaderId && leaderId.startsWith(':')) {
+        leaderId = leaderId.substring(1);
+      }
+      
+      logger.info('Getting employees for leader', { leaderId });
+      
+      // Önce Leader'ın var olup olmadığını kontrol et
+      logger.info('Checking if leader exists', { leaderId });
+      const leader = await queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_ID, { id: leaderId });
+      logger.info('Leader check result', { leaderId, leaderFound: !!leader, roleName: leader?.roleName });
+      
+      if (!leader) {
+        logger.warn('Leader not found', { leaderId });
+        throw new Error('Leader not found');
+      }
+      
+      // Leader'ın gerçekten Leader rolünde olup olmadığını kontrol et
+      if (leader.roleName !== 'Leader') {
+        logger.warn('User is not a leader', { leaderId, roleName: leader.roleName });
+        throw new Error('User is not a leader');
+      }
+      
+      logger.info('Leader validation passed', { leaderId, roleName: leader.roleName });
+      
+      const query = { leaderId };
+      const employees = await queryHandler.dispatch(QUERY_TYPES.GET_EMPLOYEES_BY_LEADER, query);
+      
+      // Eğer hiç employee yoksa 404 dön
+      if (!employees || employees.length === 0) {
+        logger.warn('No employees found for leader', { leaderId });
+        throw new Error('No employees found for this leader');
+      }
+      
+      logger.info('Successfully retrieved employees for leader', { leaderId, count: employees.length });
+      return employees;
+    } catch (err) {
+      logger.error('Error getting employees for leader', { error: err, leaderId: req.params.leaderId });
+      throw err;
+    }
+  }
+
+  async getLeaderByEmployee(req) {
+    try {
+      let { employeeId } = req.params;
+      
+      // URL parametresindeki : karakterini temizle
+      if (employeeId && employeeId.startsWith(':')) {
+        employeeId = employeeId.substring(1);
+      }
+      
+      logger.info('Getting leader for employee', { employeeId });
+      
+      // Önce Employee'nin var olup olmadığını kontrol et
+      const employee = await queryHandler.dispatch(QUERY_TYPES.GET_USER_BY_ID, { id: employeeId });
+      logger.info('Employee check result', { employeeId, employeeFound: !!employee, roleName: employee?.roleName });
+      
+      if (!employee) {
+        logger.warn('Employee not found', { employeeId });
+        throw new Error('Employee not found');
+      }
+      
+      // Employee'nin gerçekten Employee rolünde olup olmadığını kontrol et
+      if (employee.roleName !== 'Employee') {
+        logger.warn('User is not an employee', { employeeId, roleName: employee.roleName });
+        throw new Error('User is not an employee');
+      }
+      
+      logger.info('Employee validation passed', { employeeId, roleName: employee.roleName });
+      
+      const query = { employeeId };
+      const leader = await queryHandler.dispatch(QUERY_TYPES.GET_LEADER_BY_EMPLOYEE, query);
+      logger.info('Leader query result', { employeeId, leaderFound: !!leader, leaderId: leader?.id });
+      
+      if (!leader) {
+        logger.warn('No leader found for employee', { employeeId });
+        throw new Error('No leader found for this employee');
+      }
+      
+      logger.info('Successfully retrieved leader for employee', { employeeId, leaderId: leader.id });
+      return leader;
+    } catch (err) {
+      logger.error('Error getting leader for employee', { error: err, employeeId: req.params.employeeId });
+      throw err;
+    }
+  }
+
+  async getLeadersWithEmployees(req) {
+    try {
+      logger.info('Getting all leaders with their employees');
+      
+      const query = {};
+      const leaders = await queryHandler.dispatch(QUERY_TYPES.GET_LEADERS_WITH_EMPLOYEES, query);
+      
+      logger.info('Successfully retrieved leaders with employees', { count: leaders.length });
+      return leaders;
+    } catch (err) {
+      logger.error('Error getting leaders with employees', { error: err });
+      throw err;
+    }
+  }
+
+  async assignEmployeeToLeader(req) {
+    try {
+      const { employeeId, leaderId } = req.body;
+      logger.info('Assigning employee to leader', { employeeId, leaderId });
+      
+      if (!employeeId || !leaderId) {
+        throw new Error('Employee ID and Leader ID are required');
+      }
+      
+      const command = { employeeId, leaderId };
+      const result = await commandHandler.dispatch(COMMAND_TYPES.ASSIGN_EMPLOYEE_TO_LEADER, command);
+      
+      logger.info('Successfully assigned employee to leader', { employeeId, leaderId });
+      return result;
+    } catch (err) {
+      logger.error('Error assigning employee to leader', { error: err, body: req.body });
+      throw err;
+    }
+  }
+
+  async removeEmployeeFromLeader(req) {
+    try {
+      let { employeeId } = req.params;
+      
+      // URL parametresindeki : karakterini temizle
+      if (employeeId && employeeId.startsWith(':')) {
+        employeeId = employeeId.substring(1);
+      }
+      
+      logger.info('Removing employee from leader', { employeeId });
+      
+      const command = { employeeId };
+      const result = await commandHandler.dispatch(COMMAND_TYPES.REMOVE_EMPLOYEE_FROM_LEADER, command);
+      
+      logger.info('Successfully removed employee from leader', { employeeId });
+      return result;
+    } catch (err) {
+      logger.error('Error removing employee from leader', { error: err, employeeId: req.params.employeeId });
+      throw err;
+    }
+  }
+
+  
 }
 
 const userService = new UserService();
@@ -200,9 +362,17 @@ export function registerUserHandlers() {
   queryHandler.register(QUERY_TYPES.GET_LEADER_PROFILE, new GetLeaderProfileQueryHandler());
   queryHandler.register(QUERY_TYPES.GET_ALL_USERS, new GetAllUsersQueryHandler());
   queryHandler.register(QUERY_TYPES.GET_USERS_BY_ROLE, new GetUsersByRoleQueryHandler());
+  // Leader-Employee ilişkisi için yeni query handler'lar
+  queryHandler.register(QUERY_TYPES.GET_EMPLOYEES_BY_LEADER, new GetEmployeesByLeaderQueryHandler());
+  queryHandler.register(QUERY_TYPES.GET_LEADER_BY_EMPLOYEE, new GetLeaderByEmployeeQueryHandler());
+  queryHandler.register(QUERY_TYPES.GET_LEADERS_WITH_EMPLOYEES, new GetLeadersWithEmployeesQueryHandler());
+  
   commandHandler.register(COMMAND_TYPES.UPDATE_USER, new UpdateUserCommandHandler());
   commandHandler.register(COMMAND_TYPES.UPDATE_LEADER, new UpdateLeaderCommandHandler());
   commandHandler.register(COMMAND_TYPES.DELETE_USER, new DeleteUserCommandHandler());
+  // Leader-Employee ilişkisi için yeni command handler'lar
+  commandHandler.register(COMMAND_TYPES.ASSIGN_EMPLOYEE_TO_LEADER, new AssignEmployeeToLeaderCommandHandler());
+  commandHandler.register(COMMAND_TYPES.REMOVE_EMPLOYEE_FROM_LEADER, new RemoveEmployeeFromLeaderCommandHandler());
 }
 
 export default userService; 

@@ -370,6 +370,12 @@ class AuthService {
       throw new Error(this.translation('services.authService.logs.loginFailed'));
     }
 
+    // Kullanıcının aktif olup olmadığını kontrol et
+    if (user.isDeleted === true) {
+      logger.warn('Login attempt for deleted user', { email, ipAddress, userId: user.id });
+      throw new Error(this.translation('services.authService.logs.userNotActive'));
+    }
+
     // Rate limiting kontrolü
     await this.checkRateLimit(email, ipAddress);
     
@@ -999,6 +1005,12 @@ class AuthService {
     if (!user) {
       logger.warn(this.translation('services.authService.logs.loginFailed'), { provider: 'google', email: googlePayload.email });
       throw new Error(this.translation('repositories.userRepository.logs.notFound'));
+    }
+
+    // Kullanıcının aktif olup olmadığını kontrol et
+    if (user.isDeleted === true) {
+      logger.warn('Google login attempt for deleted user', { email: googlePayload.email, userId: user.id });
+      throw new Error(this.translation('services.authService.logs.userNotActive'));
     }
     
     // Kullanıcıda googleId yoksa ekle

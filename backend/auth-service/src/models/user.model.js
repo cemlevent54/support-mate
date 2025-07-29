@@ -15,6 +15,8 @@ const UserSchema = new mongoose.Schema(
       roleName: { type: String, default: null },
       // Leader rolü için kategori desteği
       categoryIds: [{ type: String, default: [] }],
+      // Employee için Leader ilişkisi
+      leaderId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
       isActive: { type: Boolean, default: true },
       isDeleted: { type: Boolean, default: false },
       deletedAt: { type: Date, default: null },
@@ -24,6 +26,20 @@ const UserSchema = new mongoose.Schema(
       timestamps: true, // createdAt & updatedAt otomatik
     }
 );
+
+// Virtual field for employees (Leader için)
+UserSchema.virtual('employees', {
+  ref: 'User',
+  localField: '_id',
+  foreignField: 'leaderId'
+});
+
+// Virtual field for leader (Employee için)
+UserSchema.virtual('leader', {
+  ref: 'User',
+  localField: 'leaderId',
+  foreignField: '_id'
+});
 
 UserSchema.pre('save', async function (next) {
     const user = this;

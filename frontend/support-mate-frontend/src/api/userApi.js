@@ -62,3 +62,49 @@ export const deleteUser = async (id) => {
   }
 };
 
+// 7. Leaders with employees
+// GET /api/auth/users/leaders/with-employees
+export const getLeaders = async () => {
+  try {
+    const res = await axiosInstance.get(`${API_BASE_URL}/leaders/with-employees`);
+    return res.data;
+  } catch (err) {
+    throw err.response?.data || err;
+  }
+};
+
+// 8. Get employees (users with Employee role)
+// GET /api/auth/users?role=Employee
+export const getEmployees = async () => {
+  try {
+    const res = await axiosInstance.get(`${API_BASE_URL}?role=Employee`);
+    return res.data;
+  } catch (err) {
+    throw err.response?.data || err;
+  }
+};
+
+// 9. Assign employee to leader
+// POST /api/auth/users/assign-employee
+export const assignEmployeeToLeader = async (employeeId, leaderId) => {
+  try {
+    const res = await axiosInstance.post(`${API_BASE_URL}/assign-employee`, {
+      employeeId,
+      leaderId
+    });
+    return res.data;
+  } catch (err) {
+    throw err.response?.data || err;
+  }
+};
+
+// 10. Remove employee from leader
+// DELETE /api/auth/users/employees/:employeeId/leader
+export const removeEmployeeFromLeader = async (employeeId) => {
+  try {
+    const res = await axiosInstance.delete(`${API_BASE_URL}/employees/${employeeId}/leader`);
+    return res.data;
+  } catch (err) {
+    throw err.response?.data || err;
+  }
+};

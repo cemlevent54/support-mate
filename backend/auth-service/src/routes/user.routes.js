@@ -22,4 +22,24 @@ router.patch('/:id', authMiddleware, userController.updateUser);
 // soft delete /users/:id
 router.delete('/:id', authMiddleware, requireRole('Admin'), userController.deleteUser);
 
+
+
+// Leader-Employee ilişkisi için yeni endpoint'ler
+// GET /users/leaders/:leaderId/employees - Leader'ın employee'lerini getir
+router.get('/leaders/:leaderId/employees', authMiddleware, requireRole(['Admin', 'Leader']), userController.getEmployeesByLeader);
+
+// GET /users/employees/:employeeId/leader - Employee'nin leader'ını getir
+router.get('/employees/:employeeId/leader', authMiddleware, requireRole(['Admin', 'Employee']), userController.getLeaderByEmployee);
+
+// GET /users/leaders/with-employees - Tüm leader'ları employee'leriyle birlikte getir
+router.get('/leaders/with-employees', authMiddleware, requireRole(['Admin', 'Leader']), userController.getLeadersWithEmployees);
+
+// POST /users/assign-employee - Employee'yi Leader'a ata (sadece Admin)
+router.post('/assign-employee', authMiddleware, requireRole('Admin'), userController.assignEmployeeToLeader);
+
+// DELETE /users/employees/:employeeId/leader - Employee'yi Leader'dan çıkar (sadece Admin)
+router.delete('/employees/:employeeId/leader', authMiddleware, requireRole('Admin'), userController.removeEmployeeFromLeader);
+
+
+
 export default router; 

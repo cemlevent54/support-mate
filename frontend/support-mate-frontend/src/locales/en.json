@@ -237,6 +237,57 @@
     "products": "Products",
     "kanban": "Kanban"
   },
+  "adminLeaders": {
+    "title": "Leader Management",
+    "searchPlaceholder": "Search leader...",
+    "roleFilter": "Role Filter",
+    "allRoles": "All",
+    "table": {
+      "id": "ID",
+      "fullName": "Full Name",
+      "email": "Email",
+      "role": "Role",
+      "employees": "Employees",
+      "employee": "Employee",
+      "status": "Status",
+      "createdAt": "Created At",
+      "actions": "Actions"
+    },
+    "status": {
+      "deleted": "Deleted",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "editDialog": {
+      "title": "Edit Leader",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "email": "Email",
+      "role": "Role",
+      "status": "Status",
+      "active": "Active",
+      "inactive": "Inactive",
+      "cancel": "Cancel",
+      "save": "Update"
+    },
+    "snackbar": {
+      "leaderUpdated": "Leader updated successfully",
+      "leaderDeleted": "Leader deleted successfully",
+      "leaderNotFound": "Leader information not found",
+      "leaderLoadError": "Error loading leaders",
+      "leaderSaveError": "Error saving leader",
+      "leaderDeleteError": "Error deleting leader"
+    },
+    "confirmDelete": {
+      "title": "Delete Leader",
+      "desc": "Are you sure you want to delete this leader?",
+      "yes": "Yes, Delete",
+      "no": "Cancel"
+    },
+    "noLeaders": "No leaders found",
+    "loading": "Loading...",
+    "rowsPerPage": "Leaders per page:"
+  },
   "adminUsers": {
     "title": "User Management",
     "searchPlaceholder": "Search user...",

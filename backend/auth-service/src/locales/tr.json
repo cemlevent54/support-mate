@@ -359,7 +359,8 @@
         "invalidTokenEmail": "Token'da geçerli email bulunamadı",
         "invalidVerificationCode": "Geçersiz doğrulama kodu",
         "userAction": "Kullanıcı işlemi gerçekleştirildi",
-        "emailAlreadyInUse": "Bu e-posta adresi zaten kullanımda. Lütfen farklı bir e-posta adresi kullanın veya giriş yapın."
+        "emailAlreadyInUse": "Bu e-posta adresi zaten kullanımda. Lütfen farklı bir e-posta adresi kullanın veya giriş yapın.",
+        "userNotActive": "Hesabınız aktif değil. Lütfen yönetici ile iletişime geçin."
       }
     },
     "permissionService": {
@@ -447,6 +448,8 @@
         "getAuthenticatedSuccess": "Kimliği doğrulanmış kullanıcı başarıyla getirildi",
         "getAuthenticatedNotFound": "Kimliği doğrulanmış kullanıcı bulunamadı",
         "getAuthenticatedError": "Kimliği doğrulanmış kullanıcı getirilirken hata oluştu",
+        "getLeadersWithEmployeesSuccess": "Leader'lar çalışanları ile birlikte başarıyla getirildi",
+        "getLeadersWithEmployeesError": "Leader'lar çalışanları ile birlikte getirilirken hata oluştu",
         "roleNameRequired": "Rol adı gereklidir"
       }
     },
