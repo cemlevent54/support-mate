@@ -43,12 +43,21 @@ class TaskService:
         """Task atama bildirimi gönder"""
         try:
             assignee = get_user_by_id(task.assignedEmployeeId, token)
+            
+            # Çalışanın dil tercihini al, yoksa varsayılan olarak 'tr' kullan
+            assignee_language = assignee.get('languagePreference') if assignee else 'tr'
+            
             html_path = None
-            if language == 'tr':
+            if assignee_language == 'tr':
                 html_path = 'templates/email/task_assigned_tr.html'
-            elif language == 'en':
+            elif assignee_language == 'en':
                 html_path = 'templates/email/task_assigned_en.html'
-            send_task_assigned_event(task, assignee, html_path=html_path, language=language)
+            else:
+                # Bilinmeyen dil için varsayılan olarak Türkçe
+                html_path = 'templates/email/task_assigned_tr.html'
+                assignee_language = 'tr'
+                
+            send_task_assigned_event(task, assignee, html_path=html_path, language=assignee_language)
         except Exception as e:
             logger.error(f"Task assigned event gönderilemedi: {e}")
     
@@ -106,20 +115,79 @@ class TaskService:
         return True, None
     
     def _send_task_done_notifications(self, task_obj: Task, users: dict, language: str):
-        """Task DONE bildirimlerini gönder - sadece customer'a bildirim"""
+        """Task DONE bildirimlerini gönder - farklı roller için farklı bildirimler"""
         from kafka_files.kafkaProducer import send_task_done_event
 
-        # Sadece customer'a bildirim gönder
+        # Aynı kullanıcıya birden fazla mail gönderilmemesi için email seti
+        sent_emails = set()
+
+        # Customer'a bildirim gönder
         customer = users.get('customer')
-        if customer:
-            html_path = f"templates/email/task_done_customer_{language}.html"
+        if customer and customer.get('email') and customer.get('email') not in sent_emails:
+            customer_language = customer.get('languagePreference', 'tr') if customer else 'tr'
+            html_path = f"templates/email/task_done_customer_{customer_language}.html"
             try:
-                send_task_done_event(task_obj, customer, html_path=html_path, language=language)
-                logger.info(f"Task DONE bildirimi customer'a gönderildi: {customer.get('email', 'N/A')}")
+                send_task_done_event(task_obj, customer, html_path=html_path, language=customer_language, role='customer')
+                logger.info(f"Task DONE bildirimi customer'a gönderildi: {customer.get('email', 'N/A')} - Dil: {customer_language}")
+                sent_emails.add(customer.get('email'))
             except Exception as e:
                 logger.warning(f"Customer için bildirim gönderilemedi: {e}")
         else:
-            logger.warning("Customer bulunamadı, bildirim gönderilemedi")
+            if customer and customer.get('email') in sent_emails:
+                logger.info(f"Customer için mail zaten gönderildi: {customer.get('email')}")
+            else:
+                logger.warning(f"Customer bulunamadı veya email yok: {customer}")
+
+        # Employee'ye bildirim gönder
+        employee = users.get('employee')
+        if employee and employee.get('email') and employee.get('email') not in sent_emails:
+            employee_language = employee.get('languagePreference', 'tr') if employee else 'tr'
+            html_path = f"templates/email/task_done_employee_{employee_language}.html"
+            try:
+                send_task_done_event(task_obj, employee, html_path=html_path, language=employee_language, role='employee')
+                logger.info(f"Task DONE bildirimi employee'ye gönderildi: {employee.get('email', 'N/A')} - Dil: {employee_language}")
+                sent_emails.add(employee.get('email'))
+            except Exception as e:
+                logger.warning(f"Employee için bildirim gönderilemedi: {e}")
+        else:
+            if employee and employee.get('email') in sent_emails:
+                logger.info(f"Employee için mail zaten gönderildi: {employee.get('email')}")
+            else:
+                logger.warning(f"Employee bulunamadı veya email yok: {employee}")
+
+        # Supporter'a bildirim gönder
+        supporter = users.get('supporter')
+        if supporter and supporter.get('email') and supporter.get('email') not in sent_emails:
+            supporter_language = supporter.get('languagePreference', 'tr') if supporter else 'tr'
+            html_path = f"templates/email/task_done_supporter_{supporter_language}.html"
+            try:
+                send_task_done_event(task_obj, supporter, html_path=html_path, language=supporter_language, role='supporter')
+                logger.info(f"Task DONE bildirimi supporter'a gönderildi: {supporter.get('email', 'N/A')} - Dil: {supporter_language}")
+                sent_emails.add(supporter.get('email'))
+            except Exception as e:
+                logger.warning(f"Supporter için bildirim gönderilemedi: {e}")
+        else:
+            if supporter and supporter.get('email') in sent_emails:
+                logger.info(f"Supporter için mail zaten gönderildi: {supporter.get('email')}")
+            else:
+                logger.warning(f"Supporter bulunamadı veya email yok: {supporter}")
+
+        # Leader'a bildirim gönder
+        leader = users.get('leader')
+        if leader and leader.get('email') and leader.get('email') not in sent_emails:
+            leader_language = leader.get('languagePreference', 'tr') if leader else 'tr'
+            html_path = f"templates/email/task_done_leader_{leader_language}.html"
+            try:
+                send_task_done_event(task_obj, leader, html_path=html_path, language=leader_language, role='leader')
+                logger.info(f"Task DONE bildirimi leader'a gönderildi: {leader.get('email', 'N/A')} - Dil: {leader_language}")
+                sent_emails.add(leader.get('email'))
+            except Exception as e:
+                logger.warning(f"Leader için bildirim gönderilemedi: {e}")
+        else:
+            if leader and leader.get('email') in sent_emails:
+                logger.info(f"Leader için mail zaten gönderildi: {leader.get('email')}")
+            else:
+                logger.warning(f"Leader bulunamadı veya email yok: {leader}")
     
     def _handle_task_done_integration(self, task_obj: Task, user: dict, token: str, language: str):
         """Task DONE entegrasyonunu yönet"""
@@ -147,15 +215,43 @@ class TaskService:
             else:
                 logger.warning(f"Ticket bulunamadı veya geçersiz format: {ticket}")
 
+            # Token'ı doğru şekilde geçir
             customer = self._safe_get_user(customer_id, token)
             employee = self._safe_get_user(task_obj.assignedEmployeeId, token)
-            supporter = self._safe_get_user(task_obj.createdBy, token)
+            
+            # Supporter bilgisini ticket'ın assignedAgentId'sinden al
+            supporter = None
+            if ticket and ticket.get('success') and ticket.get('data'):
+                ticket_obj = ticket['data']
+                assigned_agent_id = getattr(ticket_obj, 'assignedAgentId', None)
+                if assigned_agent_id:
+                    logger.info(f"Ticket assignedAgentId bulundu: {assigned_agent_id}")
+                    supporter = self._safe_get_user(assigned_agent_id, token)
+                    logger.info(f"Supporter bilgisi gRPC ile alındı: {supporter.get('email', 'N/A') if supporter else 'None'}")
+                else:
+                    logger.warning(f"Ticket objesinde assignedAgentId bulunamadı")
+            else:
+                logger.warning(f"Ticket bilgisi alınamadı, supporter bilgisi alınamıyor")
+            
+            # Eğer ticket'tan supporter bilgisi alınamadıysa task'ın createdBy'sini kullan
+            if not supporter:
+                logger.info(f"Ticket'tan supporter bilgisi alınamadı, task createdBy kullanılıyor")
+                supporter = self._safe_get_user(task_obj.createdBy, token)
+            
+            leader = self._safe_get_user(task_obj.createdBy, token)  # Leader = task'ı oluşturan kişi
+            
+            # Debug için log ekle
+            logger.info(f"Customer: {customer.get('email', 'N/A') if customer else 'None'}")
+            logger.info(f"Employee: {employee.get('email', 'N/A') if employee else 'None'}")
+            logger.info(f"Supporter: {supporter.get('email', 'N/A') if supporter else 'None'}")
+            logger.info(f"Leader: {leader.get('email', 'N/A') if leader else 'None'}")
 
-            # 3. Bildirimleri gönder (sadece customer'a "destek talebiniz çözülmüştür" mesajı)
+            # 3. Bildirimleri gönder (farklı roller için farklı bildirimler)
             self._send_task_done_notifications(task_obj, {
                 'customer': customer,
                 'employee': employee,
-                'supporter': supporter
+                'supporter': supporter,
+                'leader': leader
             }, language)
 
         except Exception as e:

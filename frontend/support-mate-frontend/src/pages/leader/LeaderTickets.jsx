@@ -8,6 +8,8 @@ import CustomChatMessagesModal from '../../components/common/CustomChatMessagesM
 import CustomLoadingState from '../../components/common/CustomLoadingState';
 import CreateTask from '../support/CreateTask';
 import { useTranslation } from 'react-i18next';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
 
 import { jwtDecode } from 'jwt-decode';
 
@@ -23,6 +25,7 @@ const LeaderTickets = () => {
   const [userRole, setUserRole] = useState(null);
   const [taskDetails, setTaskDetails] = useState(null);
   const [taskLoading, setTaskLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   // Get user role from JWT
   useEffect(() => {
@@ -114,27 +117,41 @@ const LeaderTickets = () => {
   // Task oluşturulduktan sonra tabloyu yenile
   const handleTaskCreated = () => {
     console.log('LeaderTickets - Task created, refreshing tickets list');
-    // Tabloyu yenile
-    setLoading(true);
-    setError(null);
-    listTicketsForLeader()
-      .then((res) => {
-        if (res.success) {
-          // Ticket'ları createdAt'e göre sırala (en yeni en üstte)
-          const sortedTickets = (res.data || []).sort((a, b) => {
-            const dateA = new Date(a.createdAt);
-            const dateB = new Date(b.createdAt);
-            return dateB - dateA; // Azalan sıralama (en yeni en üstte)
-          });
-          setTickets(sortedTickets);
-        } else {
-          setError(res.message || t('leaderTickets.error', 'Bir hata oluştu.'));
-        }
-      })
-      .catch((err) => {
-        setError(err?.message || t('leaderTickets.error', 'Bir hata oluştu.'));
-      })
-      .finally(() => setLoading(false));
+    
+    // Başarı mesajı göster
+    setSnackbar({
+      open: true,
+      message: t('leaderTickets.taskCreatedSuccess', 'Task başarıyla oluşturuldu ve tablo güncellendi.'),
+      severity: 'success'
+    });
+    
+    // Kısa bir gecikme ekle (backend'de task oluşturma işleminin tamamlanması için)
+    setTimeout(() => {
+      // Tabloyu yenile
+      setLoading(true);
+      setError(null);
+      listTicketsForLeader()
+        .then((res) => {
+          if (res.success) {
+            // Ticket'ları createdAt'e göre sırala (en yeni en üstte)
+            const sortedTickets = (res.data || []).sort((a, b) => {
+              const dateA = new Date(a.createdAt);
+              const dateB = new Date(b.createdAt);
+              return dateB - dateA; // Azalan sıralama (en yeni en üstte)
+            });
+            setTickets(sortedTickets);
+            console.log('LeaderTickets - Tickets list refreshed successfully');
+          } else {
+            setError(res.message || t('leaderTickets.error', 'Bir hata oluştu.'));
+            console.error('LeaderTickets - Error refreshing tickets:', res.message);
+          }
+        })
+        .catch((err) => {
+          setError(err?.message || t('leaderTickets.error', 'Bir hata oluştu.'));
+          console.error('LeaderTickets - Error refreshing tickets:', err);
+        })
+        .finally(() => setLoading(false));
+    }, 500); // 500ms gecikme
   };
 
   // Custom actions for the table
@@ -267,6 +284,22 @@ const LeaderTickets = () => {
           }}
         />
       ) : null}
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </div>
   );
 };

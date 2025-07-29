@@ -11,7 +11,7 @@ class TaskCreateDto(BaseModel):
     status: TaskStatus = TaskStatus.PENDING
     assignedEmployeeId: str
     relatedTicketId: Optional[str] = None
-    createdByCustomerSupporterId: str  # API'den gelen alan
+    createdBy: Optional[str] = None  # Task'ı oluşturan Leader'ın ID'si (backend'de otomatik doldurulur)
     deadline: Optional[datetime] = None
 
     def to_task_model(self) -> Task:
@@ -24,7 +24,7 @@ class TaskCreateDto(BaseModel):
             status=self.status,
             assignedEmployeeId=self.assignedEmployeeId,
             relatedTicketId=self.relatedTicketId,
-            createdBy=self.createdByCustomerSupporterId,  # Dönüştürme
+            createdBy=self.createdBy,  # Leader ID'si (backend'de otomatik doldurulur)
             deadline=self.deadline
         )
 

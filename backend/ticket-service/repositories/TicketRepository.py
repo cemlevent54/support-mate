@@ -52,9 +52,18 @@ class TicketRepository:
             return False
 
     def update_status(self, ticket_id: str, new_status: str) -> bool:
+        update_fields = {
+            "status": new_status, 
+            "updatedAt": datetime.utcnow()
+        }
+        
+        # Eğer status CLOSED ise closedAt alanını da doldur
+        if new_status == "CLOSED":
+            update_fields["closedAt"] = datetime.utcnow()
+        
         result = self.collection.update_one(
             {"_id": ObjectId(ticket_id)},
-            {"$set": {"status": new_status, "updatedAt": datetime.utcnow()}}
+            {"$set": update_fields}
         )
         return result.modified_count > 0
 

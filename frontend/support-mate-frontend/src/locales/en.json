@@ -675,6 +675,7 @@
     "title": "Tickets",
     "loading": "Loading tickets...",
     "error": "An error occurred.",
+    "taskCreatedSuccess": "Task created successfully and table updated.",
     "chatModalTitle": "Chat",
     "detailModalTitle": "Ticket Details",
     "emptyChatModal": "Chat content will be shown here.",

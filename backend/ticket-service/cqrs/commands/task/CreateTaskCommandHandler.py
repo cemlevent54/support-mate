@@ -27,9 +27,9 @@ class CreateTaskCommandHandler:
         if hasattr(task, 'relatedTicketId') and task.relatedTicketId:
             self.ticket_repo.update_status(task.relatedTicketId, "IN_PROGRESS")
             
-            # Task'ı oluşturan leader'ın ID'sini ticket'a assignedLeaderId olarak ata
+            # Task'ı oluşturan Leader'ın ID'sini ticket'a assignedLeaderId olarak ata
             if hasattr(task, 'createdBy') and task.createdBy:
-                logger.info(f"Assigning leader {task.createdBy} to ticket {task.relatedTicketId}")
+                logger.info(f"Assigning Leader {task.createdBy} to ticket {task.relatedTicketId}")
                 self.ticket_repo.update_assigned_leader(task.relatedTicketId, task.createdBy)
         
         return task_id 

@@ -27,7 +27,17 @@ export default function CustomKanbanDetailsModal({ open, onClose, task }) {
         {/* Başlık ve kategori */}
         <div className="mb-4">
           <div className="text-2xl font-bold text-blue-700">{task.title}</div>
-          <div className="text-sm text-gray-500 mt-1">{task.category?.category_name_tr}</div>
+          <div className="text-sm text-gray-500 mt-1">
+            {(() => {
+              const language = localStorage.getItem('language') || 'tr';
+              if (task.category) {
+                return language === 'en' 
+                  ? task.category.category_name_en || task.category.category_name_tr || ''
+                  : task.category.category_name_tr || task.category.category_name_en || '';
+              }
+              return '';
+            })()}
+          </div>
         </div>
         {/* Detaylar */}
         <div className="space-y-3">

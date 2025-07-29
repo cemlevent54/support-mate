@@ -6,6 +6,7 @@ import CustomDropdown from '../../components/common/CustomDropdown';
 import CustomDateTimePicker from '../../components/common/CustomDateTimePicker';
 import CustomButton from '../../components/common/CustomButton';
 import { getUsersByRoleName } from '../../api/authApi';
+import { getEmployeesByLeader } from '../../api/userApi';
 import { createTask } from '../../api/taskApi';
 import { jwtDecode } from 'jwt-decode';
 import Snackbar from '@mui/material/Snackbar';
@@ -38,17 +39,39 @@ export default function CreateTask({ open, onClose, ticketId = '123456', onSucce
   React.useEffect(() => {
     if (open) {
       setLoadingUsers(true);
-      getUsersByRoleName('Employee')
-        .then((data) => {
-          // API'den dönen kullanıcı listesi data.data içinde
-          const userOptions = (Array.isArray(data?.data) ? data.data : []).map(user => ({
-            value: user.id,
-            label: user.firstName + ' ' + user.lastName
-          }));
-          setUsers(userOptions);
-        })
-        .catch(() => setUsers([]))
-        .finally(() => setLoadingUsers(false));
+      
+      // JWT'den Leader ID'sini al
+      const token = localStorage.getItem('jwt');
+      if (!token) {
+        setUsers([]);
+        setLoadingUsers(false);
+        return;
+      }
+      
+      try {
+        const decoded = jwtDecode(token);
+        const leaderId = decoded.userId || decoded.id || decoded.sub;
+        
+        // Leader'ın altındaki çalışanları getir
+        getEmployeesByLeader(leaderId)
+          .then((data) => {
+            // API'den dönen çalışan listesi data.data içinde
+            const userOptions = (Array.isArray(data?.data) ? data.data : []).map(user => ({
+              value: user.id,
+              label: user.firstName + ' ' + user.lastName
+            }));
+            setUsers(userOptions);
+          })
+          .catch((error) => {
+            console.error('Çalışanlar yüklenirken hata:', error);
+            setUsers([]);
+          })
+          .finally(() => setLoadingUsers(false));
+      } catch (error) {
+        console.error('JWT decode hatası:', error);
+        setUsers([]);
+        setLoadingUsers(false);
+      }
     }
   }, [open]);
 
@@ -142,6 +165,8 @@ export default function CreateTask({ open, onClose, ticketId = '123456', onSucce
     try {
       const token = localStorage.getItem('jwt');
       const decoded = jwtDecode(token);
+      const createdBy = decoded.userId || decoded.id || decoded.sub;
+      
       // API'ye uygun veri formatı
       const payload = {
         title: form.title,
@@ -150,7 +175,7 @@ export default function CreateTask({ open, onClose, ticketId = '123456', onSucce
         assignedEmployeeId: form.assignee,
         deadline: form.dueDate,
         relatedTicketId: form.ticketId,
-        createdByCustomerSupporterId: decoded.id,
+        createdBy: createdBy
       };
       const response = await createTask(payload, token);
       setSnackbar({ open: true, message: response.data?.message || t('leaderTickets.taskCreated'), severity: 'success' });
@@ -224,7 +249,7 @@ export default function CreateTask({ open, onClose, ticketId = '123456', onSucce
               onChange={handleChange}
               required
               options={users}
-              placeholder={loadingUsers ? t('createTask.form.loadingAssignees', 'Yükleniyor...') : t('createTask.form.assigneePlaceholder')}
+              placeholder={loadingUsers ? t('createTask.form.loadingAssignees', 'Yükleniyor...') : t('createTask.form.assigneePlaceholder', 'Çalışan seçin')}
               disabled={loadingUsers}
             />
           </div>

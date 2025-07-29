@@ -130,7 +130,7 @@ def send_task_assigned_event(task, user, html_path=None, language='tr'):
     except Exception as e:
         logger.error(f"Kafka task_assigned event could not be sent: {e}")
 
-def send_task_done_event(task, user, html_path=None, language='tr'):
+def send_task_done_event(task, user, html_path=None, language='tr', role='customer'):
     try:
         html_content = ""
         if html_path:
@@ -151,7 +151,8 @@ def send_task_done_event(task, user, html_path=None, language='tr'):
             "language": language,
             "taskId": task.id,
             "taskTitle": task.title,
-            "html": html_content
+            "html": html_content,
+            "role": role
         }
         logger.info(f"Sending task_done event to Kafka: {event}")
         producer = get_producer()

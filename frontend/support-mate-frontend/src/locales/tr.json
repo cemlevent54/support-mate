@@ -675,6 +675,7 @@
     "title": "Destek Talepleri",
     "loading": "Ticket'lar yükleniyor...",
     "error": "Bir hata oluştu.",
+    "taskCreatedSuccess": "Task başarıyla oluşturuldu ve tablo güncellendi.",
     "chatModalTitle": "Chat",
     "detailModalTitle": "Ticket Detayları",
     "emptyChatModal": "Burada chat içeriği gösterilecek.",

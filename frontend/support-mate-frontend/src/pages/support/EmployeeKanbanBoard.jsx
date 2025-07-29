@@ -47,7 +47,15 @@ export default function EmployeeKanbanBoard() {
           columns[status]?.items.push({
             id: task.id,
             title: task.title,
-            category: task.category?.category_name_tr || '',
+            category: (() => {
+              const language = localStorage.getItem('language') || 'tr';
+              if (task.category) {
+                return language === 'en' 
+                  ? task.category.category_name_en || task.category.category_name_tr || ''
+                  : task.category.category_name_tr || task.category.category_name_en || '';
+              }
+              return '';
+            })(),
             deadline: task.deadline,
             description: task.description,
             assignee: task.assignedEmployee?.firstName ? `${task.assignedEmployee.firstName} ${task.assignedEmployee.lastName}` : '',

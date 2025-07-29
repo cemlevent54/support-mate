@@ -28,10 +28,10 @@ def create_task(task: TaskCreateDto, request: Request, user=Depends(get_current_
     lang = get_lang(request)
     set_language(lang)
     task_controller = get_task_controller(lang)
-    if user.get("roleName") not in ["Customer Supporter", "Leader"]:
-        raise HTTPException(status_code=403, detail="Forbidden")
+    if user.get("roleName") != "Leader":
+        raise HTTPException(status_code=403, detail="Only Leaders can create tasks")
     token = request.headers.get("authorization", "").replace("Bearer ", "")
-    return task_controller.create_task_endpoint_for_customer_supporter(task, user, lang, token)
+    return task_controller.create_task_endpoint_for_leader(task, user, lang, token)
 
 # full path: /api/tickets/tasks
 @router.get("/tasks")
@@ -75,7 +75,8 @@ def update_task(task_id: str, task: TaskUpdateDto, request: Request, user=Depend
     task_controller = get_task_controller(lang)
     if user.get("roleName") not in ["Customer Supporter", "Employee"]:
         raise HTTPException(status_code=403, detail="Forbidden")
-    return task_controller.update_task(task_id, task, user, lang)
+    token = request.headers.get("authorization", "").replace("Bearer ", "")
+    return task_controller.update_task(task_id, task, user, lang, token)
 
 # soft delete
 # full path: /api/tickets/tasks/{task_id}

@@ -20,6 +20,57 @@ class TaskController:
         self.lang = lang
     
     # full path: /api/tickets/tasks
+    def create_task_endpoint_for_leader(self, task_create_dto: TaskCreateDto, user, lang, token=None):
+        set_language(lang)
+        logger.info(_("services.taskService.logs.create_task"))
+        try:
+            # Leader'ın ID'sini task'a ekle
+            task_create_dto.createdBy = user.get('id')
+            
+            # TaskCreateDto'yu Task modeline dönüştür
+            task = task_create_dto.to_task_model()
+            result = self.service.create_task(task, user, lang, token)
+            
+            # Validation hatası kontrolü
+            if isinstance(result, dict) and result.get("type") == "VALIDATION_ERROR":
+                return JSONResponse(
+                    status_code=400,
+                    content={
+                        "success": False,
+                        "message": result.get("error"),
+                        "data": None
+                    }
+                )
+            
+            if result is None:
+                return JSONResponse(
+                    status_code=409,
+                    content={
+                        "success": False,
+                        "message": _("services.taskService.responses.task_already_exists"),
+                        "data": None
+                    }
+                )
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "success": True,
+                    "message": _("services.taskService.logs.task_created"),
+                    "data": result
+                }
+            )
+        except Exception as e:
+            logger.error(_("services.taskService.logs.create_task_error"), exc_info=True)
+            return JSONResponse(
+                status_code=500,
+                content={
+                    "success": False,
+                    "message": str(e),
+                    "data": None
+                }
+            )
+    
+    # full path: /api/tickets/tasks (Customer Supporter için - eski metod)
     def create_task_endpoint_for_customer_supporter(self, task_create_dto: TaskCreateDto, user, lang, token=None):
         set_language(lang)
         logger.info(_("services.taskService.logs.create_task"))
@@ -170,11 +221,11 @@ class TaskController:
             )
     
     # full path: /api/tickets/tasks/{task_id}
-    def update_task(self, task_id: str, task: Task, user: dict, lang: str = 'tr') -> Any:
+    def update_task(self, task_id: str, task: Task, user: dict, lang: str = 'tr', token: str = None) -> Any:
         set_language(lang)
         logger.info(_("services.taskService.logs.update_task"))
         try:
-            result = self.service.update_task(task_id, task, user, language=lang)
+            result = self.service.update_task(task_id, task, user, token, language=lang)
             if result is None:
                 return JSONResponse(
                     status_code=404,
