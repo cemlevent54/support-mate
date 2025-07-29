@@ -6,7 +6,6 @@ import CustomButton from '../../components/common/CustomButton';
 import CustomRadioButton from '../../components/common/CustomRadioButton';
 import { getAuthenticatedUser, updateUser } from '../../api/userApi';
 import { changePassword } from '../../api/authApi';
-import { getCategories } from '../../api/categoryApi';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import { jwtDecode } from 'jwt-decode';
@@ -18,10 +17,8 @@ export default function RoleProfile() {
   const [phone, setPhone] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [selectedCategories, setSelectedCategories] = useState([]);
   const [userId, setUserId] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
   const [openSnackbar, setOpenSnackbar] = useState(false);
@@ -43,28 +40,6 @@ export default function RoleProfile() {
     } catch (e) {}
   }
 
-  // Kategori listesi (Leader rolü için)
-  const [categories, setCategories] = useState([]);
-
-  // Kategori listesini çek
-  useEffect(() => {
-    if (roleName === 'Leader') {
-      setCategoriesLoading(true);
-      getCategories()
-        .then((res) => {
-          const categoriesData = res.data || res;
-          console.log('Kategoriler yüklendi:', categoriesData);
-          setCategories(categoriesData);
-        })
-        .catch((err) => {
-          console.error('Kategoriler yüklenirken hata:', err);
-        })
-        .finally(() => {
-          setCategoriesLoading(false);
-        });
-    }
-  }, [roleName]);
-
   // Kullanıcı bilgisini çek
   useEffect(() => {
     setLoading(true);
@@ -84,12 +59,6 @@ export default function RoleProfile() {
         // LanguageProvider'ı kullanıcının veritabanındaki dil tercihi ile güncelle
         if (language !== userLanguagePreference) {
           onLanguageChange(userLanguagePreference);
-        }
-        
-        // Leader rolü için kategori bilgilerini set et
-        if (roleName === 'Leader' && user.categoryIds) {
-          console.log('Kullanıcı kategori ID\'leri:', user.categoryIds);
-          setSelectedCategories(user.categoryIds.map(id => id.toString()));
         }
         
         setError(null);
@@ -187,18 +156,6 @@ export default function RoleProfile() {
     }
   };
 
-  const handleCategoryChange = (categoryId) => {
-    setSelectedCategories(prev => {
-      if (prev.includes(categoryId)) {
-        // Kategori zaten seçiliyse kaldır
-        return prev.filter(id => id !== categoryId);
-      } else {
-        // Kategori seçili değilse ekle
-        return [...prev, categoryId];
-      }
-    });
-  };
-
   const handleSave = async (e) => {
     e.preventDefault();
     
@@ -234,11 +191,6 @@ export default function RoleProfile() {
         email, 
         phoneNumber: phone 
       };
-      
-      // Leader rolü için kategori bilgilerini de ekle
-      if (roleName === 'Leader' && selectedCategories.length > 0) {
-        updateData.categoryIds = selectedCategories;
-      }
       
       await updateUser(userId, updateData);
       setMessage(t('pages.roleProfile.updateSuccess'));
@@ -386,94 +338,6 @@ export default function RoleProfile() {
                 showCharCounter={true}
                 size="small"
               />
-
-              {/* Leader rolü için kategori seçimi */}
-              {roleName === 'Leader' && (
-                <div style={{ marginTop: '8px' }}>
-                  <label style={{
-                    display: 'block',
-                    marginBottom: '8px',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: '#374151'
-                  }}>
-                    {t('pages.roleProfile.categorySelection')}
-                  </label>
-                  {categoriesLoading ? (
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '20px',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      backgroundColor: '#f9fafb',
-                      color: '#6b7280',
-                      fontSize: '14px'
-                    }}>
-                      {t('pages.roleProfile.loadingCategories', 'Kategoriler yükleniyor...')}
-                    </div>
-                  ) : (
-                    <div style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '8px',
-                      maxHeight: '200px',
-                      overflowY: 'auto',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      padding: '12px',
-                      backgroundColor: '#f9fafb'
-                    }}>
-                      {categories.length > 0 ? (
-                        categories.map(category => (
-                          <label key={category.id} style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            cursor: 'pointer',
-                            padding: '4px 0',
-                            fontSize: '14px',
-                            color: '#374151'
-                          }}>
-                            <input
-                              type="checkbox"
-                              checked={selectedCategories.includes(category.id.toString())}
-                              onChange={() => handleCategoryChange(category.id.toString())}
-                              style={{
-                                width: '16px',
-                                height: '16px',
-                                accentColor: '#1976d2'
-                              }}
-                            />
-                            <span>{category.category_name_tr || category.category_name_en || category.name}</span>
-                          </label>
-                        ))
-                      ) : (
-                        <div style={{
-                          padding: '12px',
-                          textAlign: 'center',
-                          color: '#6b7280',
-                          fontSize: '14px',
-                          fontStyle: 'italic'
-                        }}>
-                          {t('pages.roleProfile.noCategories', 'Kategori bulunamadı')}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {selectedCategories.length > 0 && (
-                    <div style={{
-                      marginTop: '8px',
-                      fontSize: '12px',
-                      color: '#6b7280',
-                      fontStyle: 'italic'
-                    }}>
-                      {t('pages.roleProfile.selectedCategories', 'Seçili kategoriler:')} {selectedCategories.length}
-                    </div>
-                  )}
-                </div>
-              )}
               
               <CustomButton
                 type="submit"

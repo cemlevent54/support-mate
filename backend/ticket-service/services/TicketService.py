@@ -514,7 +514,7 @@ class TicketService:
         return {"success": True, "data": self._make_json_serializable(ticket_dtos), "message": message}
 
     def list_tickets_for_leader(self, user, lang='tr', token=None):
-        tickets = self.list_leader_handler.execute(user)
+        tickets = self.list_leader_handler.execute(user, token=token)
         
         if not tickets:
             message = _(f"services.ticketService.responses.tickets_listed")
@@ -589,15 +589,7 @@ class TicketService:
         message = _(f"services.ticketService.responses.tickets_listed")
         return {"success": True, "data": self._make_json_serializable(ticket_dtos), "message": message}
 
-    def assign_ticket_to_leader(self, ticket_id: str, leader_id: str, user: dict, lang='tr'):
-        result = self.assign_leader_handler.execute(ticket_id, leader_id, user)
-        
-        if result.get("success"):
-            message = _(f"services.ticketService.responses.leader_assigned")
-            return {"success": True, "data": result.get("data"), "message": message}
-        else:
-            message = _(f"services.ticketService.responses.leader_assign_failed")
-            return {"success": False, "data": None, "message": result.get("message", message)}
+    # Bu metod kaldırıldı - Leader'lar artık task oluşturarak ticket'ları alacak
 
     async def assign_agent_to_pending_ticket(self, agent_id, token=None):
         result = await self.assign_agent_handler.execute(agent_id, token)

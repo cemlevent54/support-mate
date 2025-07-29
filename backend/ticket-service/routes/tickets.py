@@ -245,18 +245,5 @@ def list_tickets_leader(request: Request, user=Depends(get_current_user)):
     return ticket_controller.list_tickets_endpoint_for_leader(user, lang=lang, token=token)
 
 # --- Customer Supporter routes ---
-# patch
-# assign ticket to leader
-# full path: /api/tickets/agent/tickets/{ticket_id}
-# request body: {
-#     "assignedLeaderId": "leader_id"
-# }
-@router.patch("/agent/tickets/{ticket_id}")
-def assign_ticket_to_leader(ticket_id: str, request_body: AssignTicketToLeaderRequest, request: Request = None, user=Depends(get_current_user)):
-    lang = get_lang(request)
-    set_language(lang)
-    if user.get("roleName") != "Customer Supporter":
-        raise HTTPException(status_code=403, detail="Forbidden")
-    
-    return ticket_controller.assign_ticket_to_leader_endpoint(ticket_id, request_body.assignedLeaderId, user, lang=lang)
+# Bu endpoint kaldırıldı - Leader'lar artık task oluşturarak ticket'ları alacak
 

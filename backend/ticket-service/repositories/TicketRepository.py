@@ -113,4 +113,19 @@ class TicketRepository:
             return result.modified_count > 0
         except Exception as e:
             logger.error(_(f"services.ticketRepository.logs.soft_delete_error").format(error=str(e)))
+            return False
+
+    def update_assigned_leader(self, ticket_id: str, leader_id: str) -> bool:
+        """
+        Update the assignedLeaderId field of a ticket
+        """
+        try:
+            result = self.collection.update_one(
+                {"_id": ObjectId(ticket_id)},
+                {"$set": {"assignedLeaderId": leader_id, "updatedAt": datetime.utcnow()}}
+            )
+            logger.info(f"Updated assignedLeaderId for ticket {ticket_id} to {leader_id}, modified_count: {result.modified_count}")
+            return result.modified_count > 0
+        except Exception as e:
+            logger.error(f"Error updating assignedLeaderId for ticket {ticket_id}: {e}")
             return False 

@@ -94,7 +94,8 @@ const authService = {
                     },
                     languagePreference: user.languagePreference || 'tr',
                     isOnline: user.isOnline || false,
-                    lastSeen: user.lastSeen ? user.lastSeen.toISOString() : null
+                    lastSeen: user.lastSeen ? user.lastSeen.toISOString() : null,
+                    categoryIds: user.categoryIds || []
                 },
                 success: true,
                 message: 'User found successfully'
@@ -166,7 +167,8 @@ const authService = {
                     },
                     languagePreference: user.languagePreference || 'tr',
                     isOnline: user.isOnline || false,
-                    lastSeen: user.lastSeen ? user.lastSeen.toISOString() : null
+                    lastSeen: user.lastSeen ? user.lastSeen.toISOString() : null,
+                    categoryIds: user.categoryIds || []
                 },
                 success: true,
                 message: 'User found successfully'

@@ -18,10 +18,9 @@ import { getCategories } from '../../api/categoryApi';
 import { getProductsUser } from '../../api/productApi';
 import { createTicket } from '../../api/ticketApi';
 import { getUserIdFromJWT } from '../../utils/jwt';
-import { getUsersByRoleName } from '../../api/authApi';
 
 export default function CreateSupportTicket({ open, onClose, isModal = true, chat = null }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -32,14 +31,12 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
-  const [leaders, setLeaders] = useState([]);
-  const [loadingLeaders, setLoadingLeaders] = useState(false);
-  const [leaderError, setLeaderError] = useState('');
   const [previews, setPreviews] = useState([]);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedPreview, setSelectedPreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [currentLanguage, setCurrentLanguage] = useState(i18n.language || 'tr');
 
   useEffect(() => {
     getCategories().then(res => {
@@ -72,25 +69,18 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
     }
   }, [form.categoryId, products]);
 
+  // Dil değişikliğini dinle
   useEffect(() => {
-    if (open) {
-      setLoadingLeaders(true);
-      setLeaderError('');
-      getUsersByRoleName('Leader')
-        .then((data) => {
-          const leaderOptions = (Array.isArray(data?.data) ? data.data : []).map(leader => ({
-            value: leader.id,
-            label: leader.firstName + ' ' + leader.lastName
-          }));
-          setLeaders(leaderOptions);
-        })
-        .catch(() => {
-          setLeaders([]);
-          setLeaderError('Leader listesi alınamadı.');
-        })
-        .finally(() => setLoadingLeaders(false));
-    }
-  }, [open]);
+    const handleLanguageChange = (lng) => {
+      setCurrentLanguage(lng);
+    };
+
+    i18n.on('languageChanged', handleLanguageChange);
+    
+    return () => {
+      i18n.off('languageChanged', handleLanguageChange);
+    };
+  }, [i18n]);
 
   useEffect(() => {
     if (form.files && form.files.length > 0) {
@@ -236,15 +226,7 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
       return;
     }
     
-    if (!form.assignedLeaderId) {
-      setSnackbar({ 
-        open: true, 
-        message: t('pages.createTicket.form.leaderRequired') || 'Lider seçimi zorunludur.', 
-        severity: 'error' 
-      });
-      setLoading(false);
-      return;
-    }
+
     
     try {
       let customerId = form.customerId;
@@ -264,7 +246,6 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
         categoryId: form.categoryId,
         productId: form.productId,
         files: form.files || [],
-        ...(form.assignedLeaderId ? { assignedLeaderId: form.assignedLeaderId } : {}),
         ...(customerId ? { customerId } : {}),
         ...(chatId ? { chatId } : {})
       };
@@ -397,61 +378,55 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
                 value={form.categoryId}
                 onChange={handleChange}
                 required
-                options={categories.map((cat) => ({
-                  value: cat.id || cat._id,
-                  label: cat.category_name_tr || cat.category_name_en || cat.name || cat.label
-                }))}
+                options={categories.map((cat) => {
+                  const label = currentLanguage === 'tr' 
+                    ? cat.category_name_tr 
+                    : cat.category_name_en;
+                  return {
+                    value: cat.id || cat._id,
+                    label: label || cat.name || cat.label
+                  };
+                })}
                 placeholder={t('pages.createTicket.form.select') || "Seçiniz"}
               />
 
-              {form.categoryId && (
+              {form.categoryId && filteredProducts.length > 0 && (
                 <CustomDropdown
                   label={t('pages.createTicket.form.product') || "Ürün"}
                   name="productId"
                   value={form.productId}
                   onChange={handleChange}
-                  required={filteredProducts.length > 0}
-                  options={filteredProducts.length > 0 ? 
-                    filteredProducts.map((prod) => ({
+                  options={filteredProducts.map((prod) => {
+                    const label = currentLanguage === 'tr' 
+                      ? prod.product_name_tr 
+                      : prod.product_name_en;
+                    return {
                       value: prod.id || prod._id,
-                      label: prod.product_name_tr || prod.product_name_en || prod.name
-                    })) : 
-                    [{ value: '', label: t('pages.createTicket.form.noProduct') || "Bu kategoriye ait ürün yok" }]
-                  }
+                      label: label || prod.name
+                    };
+                  })}
                   placeholder={t('pages.createTicket.form.selectProduct') || "Ürün Seçiniz"}
                 />
               )}
 
-              <CustomDropdown
-                label={t('pages.createTicket.form.leader') || 'Leader Seçin'}
-                name="assignedLeaderId"
-                value={form.assignedLeaderId || ''}
-                onChange={handleChange}
-                required
-                disabled={loadingLeaders}
-                options={leaders}
-                placeholder={t('pages.createTicket.form.select') || "Seçiniz"}
-              />
-              
-              {loadingLeaders && <Typography variant="caption" color="text.secondary">Liderler yükleniyor...</Typography>}
-              {leaderError && <Alert severity="error">{leaderError}</Alert>}
-
               {/* File Upload */}
               <Box mt={2} mb={2}>
+                <input
+                  id="file-upload"
+                  type="file"
+                  name="files"
+                  style={{ display: 'none' }}
+                  multiple
+                  onChange={handleChange}
+                  accept="image/*,.pdf,.doc,.docx,.txt,.xls,.xlsx"
+                />
                 <CustomButton
                   variant="secondary"
-                  component="label"
                   fullWidth
-                  sx={{ mb: 1, borderRadius: 2 }}
+                  sx={{ mb: 1, borderRadius: 2, cursor: 'pointer' }}
+                  onClick={() => document.getElementById('file-upload').click()}
                 >
                   Dosya Yükle (Max 10MB)
-                  <input
-                    type="file"
-                    name="files"
-                    hidden
-                    multiple
-                    onChange={handleChange}
-                  />
                 </CustomButton>
                 
                 {previews.length > 0 && (

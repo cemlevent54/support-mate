@@ -85,7 +85,8 @@ class AuthGrpcClient:
                     },
                     "languagePreference": user.languagePreference,
                     "isOnline": user.isOnline,
-                    "lastSeen": user.lastSeen
+                    "lastSeen": user.lastSeen,
+                    "categoryIds": list(user.categoryIds) if hasattr(user, 'categoryIds') else []
                 }
             else:
                 logger.error(f"Failed to get user by ID: {response.message}")
@@ -128,7 +129,8 @@ class AuthGrpcClient:
                     },
                     "languagePreference": user.languagePreference,
                     "isOnline": user.isOnline,
-                    "lastSeen": user.lastSeen
+                    "lastSeen": user.lastSeen,
+                    "categoryIds": list(user.categoryIds) if hasattr(user, 'categoryIds') else []
                 }
             else:
                 logger.error(f"Failed to get user by email: {response.message}")

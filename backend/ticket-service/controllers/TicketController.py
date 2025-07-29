@@ -251,22 +251,4 @@ class TicketController:
                 "message": _("Internal server error")
             })
 
-    def assign_ticket_to_leader_endpoint(self, ticket_id: str, assignedLeaderId: str, user: dict, lang='tr'):
-        logger.info(_(f"services.ticketController.logs.assign_ticket_to_leader_called").format(user_id=user.get('id'), ticket_id=ticket_id, leader_id=assignedLeaderId))
-        set_language(lang)
-        result = self.ticket_service.assign_ticket_to_leader(ticket_id, assignedLeaderId, user, lang=lang)
-        logger.info(_(f"services.ticketController.logs.assign_ticket_to_leader_result").format(result=result.get('success')))
-        
-        # HTTP status code'ları ayarla
-        if not result.get('success'):
-            message = result.get('message', '')
-            if 'already assigned to a leader' in message:
-                return JSONResponse(status_code=409, content={**result, "message": _(result.get('message', ''))})
-            elif 'not found' in message:
-                return JSONResponse(status_code=404, content={**result, "message": _(result.get('message', ''))})
-            elif 'must be assigned to an agent' in message or 'Invalid leader' in message:
-                return JSONResponse(status_code=400, content={**result, "message": _(result.get('message', ''))})
-            else:
-                return JSONResponse(status_code=500, content={**result, "message": _(result.get('message', ''))})
-        
-        return JSONResponse(status_code=200, content={**result, "message": _(result.get('message', ''))})
+    # Bu metod kaldırıldı - Leader'lar artık task oluşturarak ticket'ları alacak

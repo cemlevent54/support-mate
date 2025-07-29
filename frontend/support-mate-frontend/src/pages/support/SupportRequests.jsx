@@ -4,7 +4,7 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import CustomTicketTable from '../../components/tickets/CustomTicketTable/CustomTicketTable';
 import CustomTicketDetailModal from '../../components/tickets/CustomTicketDetailModal/CustomTicketDetailModal';
-import CustomAssignLeaderModal from '../../components/tickets/CustomAssignLeaderModal/CustomAssignLeaderModal';
+// CustomAssignLeaderModal kaldırıldı - Leader'lar artık task oluşturarak ticket'ları alacak
 import ChatIcon from '@mui/icons-material/Chat';
 import InfoIcon from '@mui/icons-material/Info';
 import AssignmentIcon from '@mui/icons-material/Assignment';
@@ -27,8 +27,7 @@ const SupportRequests = ({ onStartChat }) => {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
-  const [assignModalOpen, setAssignModalOpen] = useState(false);
-  const [assignTicket, setAssignTicket] = useState(null);
+  // Assign modal states kaldırıldı - Leader'lar artık task oluşturarak ticket'ları alacak
   const navigate = useNavigate();
   const params = useParams();
 
@@ -139,103 +138,7 @@ const SupportRequests = ({ onStartChat }) => {
     }
   };
 
-  const handleAssign = (ticket) => {
-    console.log('[SupportRequests] handleAssign called with ticket:', ticket);
-    setAssignTicket(ticket.raw || ticket);
-    setAssignModalOpen(true);
-  };
-
-  const handleAssignModalClose = () => {
-    setAssignModalOpen(false);
-    setAssignTicket(null);
-  };
-
-  const handleAssignSuccess = () => {
-    // Refresh the tickets list after successful assignment
-    const fetchTickets = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await listTicketsForAgent();
-        if (response.success && Array.isArray(response.data)) {
-          const sorted = response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-          setRows(sorted.map((ticket, idx) => {
-            console.log('SupportRequests - processing ticket category:', ticket.category);
-            let categoryName = "-";
-            
-            // Kategori ismini çıkarma mantığını düzelt
-            if (ticket.category) {
-              // Kategori bir obje ise
-              if (typeof ticket.category === 'object') {
-                // category_name_tr ve category_name_en alanları varsa
-                if (ticket.category.category_name_tr || ticket.category.category_name_en) {
-                  if (i18n.language === "tr") {
-                    categoryName = ticket.category.category_name_tr || ticket.category.category_name_en || "-";
-                  } else {
-                    categoryName = ticket.category.category_name_en || ticket.category.category_name_tr || "-";
-                  }
-                }
-                // categoryNameTr ve categoryNameEn alanları varsa
-                else if (ticket.category.categoryNameTr || ticket.category.categoryNameEn) {
-                  if (i18n.language === "tr") {
-                    categoryName = ticket.category.categoryNameTr || ticket.category.categoryNameEn || "-";
-                  } else {
-                    categoryName = ticket.category.categoryNameEn || ticket.category.categoryNameTr || "-";
-                  }
-                }
-                // Diğer olası alan adları
-                else if (ticket.category.name_tr || ticket.category.name_en) {
-                  if (i18n.language === "tr") {
-                    categoryName = ticket.category.name_tr || ticket.category.name_en || "-";
-                  } else {
-                    categoryName = ticket.category.name_en || ticket.category.name_tr || "-";
-                  }
-                }
-                // Kategori objesinin kendisi string ise
-                else if (typeof ticket.category === 'string') {
-                  categoryName = ticket.category;
-                }
-                // Kategori objesinin herhangi bir string alanı varsa
-                else {
-                  const categoryValues = Object.values(ticket.category).filter(val => typeof val === 'string' && val.trim() !== '');
-                  if (categoryValues.length > 0) {
-                    categoryName = categoryValues[0];
-                  }
-                }
-              }
-              // Kategori direkt string ise
-              else if (typeof ticket.category === 'string') {
-                categoryName = ticket.category;
-              }
-            }
-            
-            console.log('SupportRequests - extracted categoryName:', categoryName);
-            
-            return {
-              id: ticket._id || idx + 1,
-              title: ticket.title,
-              description: ticket.description,
-              category: categoryName,
-              status: ticket.status || "-",
-              createdAt: ticket.createdAt ? new Date(ticket.createdAt).toLocaleString('tr-TR') : "-",
-              files: ticket.attachments || [],
-              chatId: ticket.chatId,
-              raw: { ...ticket } // Orijinal kategori objesini koru
-            };
-          }));
-        } else {
-          setRows([]);
-          setError(response.message || "Talepler alınamadı.");
-        }
-      } catch (err) {
-        setError("Talepler alınırken bir hata oluştu.");
-        setRows([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchTickets();
-  };
+  // Assign handler'lar kaldırıldı - Leader'lar artık task oluşturarak ticket'ları alacak
 
   const handlePreviewFile = (file) => {
     setPreviewFile(file);
@@ -296,17 +199,7 @@ const SupportRequests = ({ onStartChat }) => {
           >
             Detay
           </Button>
-          {isCustomerSupporterRole && ['OPEN', 'IN_REVIEW', 'WAITING_FOR_CUSTOMER_APPROVE'].includes(params.row.status) && (
-            <Button
-              variant="outlined"
-              color="secondary"
-              size="small"
-              startIcon={<AssignmentIcon />}
-              onClick={() => handleAssign(params.row)}
-            >
-              Assign
-            </Button>
-          )}
+          {/* Assign butonu kaldırıldı - Leader'lar artık task oluşturarak ticket'ları alacak */}
           {/* Debug: Status kontrolü */}
           {console.log('=== DEBUG INFO ===', {
             ticketId: params.row.id,
@@ -317,7 +210,7 @@ const SupportRequests = ({ onStartChat }) => {
             isCustomerSupporterRole,
             userRole,
             allowedStatuses: ['OPEN', 'IN_REVIEW', 'WAITING_FOR_CUSTOMER_APPROVE'],
-            shouldShowAssign: ['OPEN', 'IN_REVIEW', 'WAITING_FOR_CUSTOMER_APPROVE'].includes(params.row.status),
+            shouldShowAssign: ['WAITING_FOR_CUSTOMER_APPROVE'].includes(params.row.status),
             statusIncluded: ['OPEN', 'IN_REVIEW', 'WAITING_FOR_CUSTOMER_APPROVE'].includes(params.row.status),
             statusComparison: {
               'OPEN': params.row.status === 'OPEN',
@@ -341,7 +234,6 @@ const SupportRequests = ({ onStartChat }) => {
         error={error}
         onChat={handleGoChat}
         onDetail={handleOpenDetail}
-        onAssign={handleAssign}
       />
       <CustomTicketDetailModal
         open={modalOpen}
@@ -352,12 +244,7 @@ const SupportRequests = ({ onStartChat }) => {
         onChatClick={handleGoChat}
       />
       
-      <CustomAssignLeaderModal
-        open={assignModalOpen}
-        onClose={handleAssignModalClose}
-        ticket={assignTicket}
-        onSuccess={handleAssignSuccess}
-      />
+      {/* CustomAssignLeaderModal kaldırıldı - Leader'lar artık task oluşturarak ticket'ları alacak */}
       
       <Dialog open={previewOpen} onClose={handleClosePreview} maxWidth="md" fullWidth>
         <DialogTitle>{previewFile?.name}</DialogTitle>

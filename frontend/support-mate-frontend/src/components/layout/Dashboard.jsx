@@ -41,6 +41,7 @@ export default function Dashboard() {
   const sidebarItems = [
     { key: 'dashboard', label: t('adminDashboard.dashboard'), path: '/admin', roles: ['Admin'] },
     { key: 'users', label: t('adminDashboard.users'), path: '/admin/users', roles: ['Admin'] },
+    { key: 'leaders', label: t('adminDashboard.leaders'), path: '/admin/leaders', roles: ['Admin'] },
     { key: 'roles', label: t('adminDashboard.roles'), path: '/admin/roles', roles: ['Admin'] },
     { key: 'tickets', label: t('adminDashboard.tickets'), path: '/admin/tickets', roles: ['Admin'] },
     { key: 'categories', label: t('adminDashboard.categories'), path: '/admin/categories', roles: ['Admin'] },

@@ -148,17 +148,7 @@ export const listTicketsForLeader = async () => {
   return response.data;
 }
 
-// Assign leader to ticket
-export const assignLeaderToTicket = async (ticketId, leaderId) => {
-  const response = await axiosInstance.patch(`${BASE_URL}/agent/tickets/${ticketId}`, {
-    assignedLeaderId: leaderId
-  }, {
-    headers: {
-      'accept-language': getLang(),
-    },
-  });
-  return response.data;
-}
+// Bu fonksiyon kaldırıldı - Leader'lar artık task oluşturarak ticket'ları alacak
 
 
 

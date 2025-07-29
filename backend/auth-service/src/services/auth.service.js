@@ -718,7 +718,8 @@ class AuthService {
             (user.role && typeof user.role === 'string') ? user.role :
             (user.role && user.role.toString && user.role.toString !== Object.prototype.toString) ? user.role.toString() : 
             undefined,
-      roleName: user.role && user.role.name ? user.role.name : user.roleName
+      roleName: user.role && user.role.name ? user.role.name : user.roleName,
+      categoryIds: user.categoryIds || []
     };
   }
 

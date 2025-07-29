@@ -25,7 +25,8 @@ export class GetUserByEmailQueryHandler {
         updatedAt: user.updatedAt,
         phoneNumber: user.phoneNumber, // <-- Telefon numarası eklendi
         isEmailVerified: user.isEmailVerified, // <-- EKLENDİ
-        emailVerifiedAt: user.emailVerifiedAt // <-- EKLENDİ
+        emailVerifiedAt: user.emailVerifiedAt, // <-- EKLENDİ
+        categoryIds: user.categoryIds || [] // <-- Leader için kategori ID'leri eklendi
       };
       logger.info(translation('cqrs.queries.user.getUserByEmail.logs.success'), { user });
       return result;

@@ -38,7 +38,11 @@ export default function AdminLeaders() {
   const [employeesLoading, setEmployeesLoading] = useState(false);
   const [confirmRemoveEmployee, setConfirmRemoveEmployee] = useState({ open: false, employeeId: null, employeeName: '' });
 
-
+  // Category assignment modal states
+  const [categoryModal, setCategoryModal] = useState({ open: false, leader: null });
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [categoryUpdateLoading, setCategoryUpdateLoading] = useState(false);
 
   const showSnackbar = (message, severity) => {
     setSnackbar({ open: true, message, severity });
@@ -178,11 +182,55 @@ export default function AdminLeaders() {
     fetchCategories();
   }, [fetchLeaders, fetchRoles, fetchCategories]);
 
+  // Category assignment functions
+  const handleOpenCategoryModal = (leader) => {
+    console.log('handleOpenCategoryModal called:', leader);
+    setCategoryModal({ open: true, leader });
+    
+    // Leader'ın mevcut kategorilerini set et
+    if (leader.categoryIds && Array.isArray(leader.categoryIds)) {
+      setSelectedCategories(leader.categoryIds.map(id => id.toString()));
+    } else {
+      setSelectedCategories([]);
+    }
+  };
 
+  const handleCloseCategoryModal = () => {
+    setCategoryModal({ open: false, leader: null });
+    setSelectedCategories([]);
+  };
 
+  const handleCategoryChange = (categoryId) => {
+    setSelectedCategories(prev => {
+      if (prev.includes(categoryId)) {
+        // Kategori zaten seçiliyse kaldır
+        return prev.filter(id => id !== categoryId);
+      } else {
+        // Kategori seçili değilse ekle
+        return [...prev, categoryId];
+      }
+    });
+  };
 
-
-
+  const handleSaveCategories = async () => {
+    if (!categoryModal.leader) return;
+    
+    setCategoryUpdateLoading(true);
+    try {
+      // updateUser API'sini kullanarak kategori güncellemesi yap
+      const { updateUser } = await import('../../api/userApi');
+      await updateUser(categoryModal.leader.id, { categoryIds: selectedCategories });
+      
+      showSnackbar('Kategoriler başarıyla güncellendi', 'success');
+      handleCloseCategoryModal();
+      fetchLeaders(); // Leader listesini yenile
+    } catch (error) {
+      console.error('Kategori güncellenirken hata:', error);
+      showSnackbar(error.message || 'Kategori güncellenirken hata oluştu', 'error');
+    } finally {
+      setCategoryUpdateLoading(false);
+    }
+  };
 
   const filteredLeaders = leaders;
 
@@ -226,8 +274,6 @@ export default function AdminLeaders() {
     }
     return <Chip label={leader.isActive ? t('adminLeaders.status.active') : t('adminLeaders.status.inactive')} color={leader.isActive ? 'success' : 'default'} size="small" />;
   };
-
-
 
   // Table columns definition
   const tableColumns = [
@@ -312,6 +358,19 @@ export default function AdminLeaders() {
   // Render actions for table
   const renderActions = (row) => (
     <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+      <CustomButton
+        size="small"
+        variant="primary"
+        onClick={() => {
+          console.log('Kategori Ata butonuna tıklandı:', row);
+          handleOpenCategoryModal(row.actions);
+        }}
+        disabled={permissionsLoading || row.isDeleted || (!isAdmin() && !hasPermission('user:write'))}
+        title={(!isAdmin() && !hasPermission('user:write')) ? 'Kategori atama yetkiniz yok' : ''}
+        style={{ backgroundColor: '#4caf50', color: '#fff' }}
+      >
+        Kategori Ata
+      </CustomButton>
       <CustomButton
         size="small"
         variant="danger"
@@ -429,8 +488,6 @@ export default function AdminLeaders() {
         </Typography>
       </Box>
 
-
-
       {/* Leaders Table */}
       <CustomTable
         rows={tableData}
@@ -441,8 +498,6 @@ export default function AdminLeaders() {
         renderActions={renderActions}
         emptyMessage={t('adminLeaders.noLeaders')}
       />
-
-
 
       {/* Snackbar */}
       <Snackbar
@@ -458,6 +513,89 @@ export default function AdminLeaders() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* Category Assignment Modal */}
+      <Dialog open={categoryModal.open} onClose={handleCloseCategoryModal} maxWidth="md" fullWidth>
+        <DialogTitle>
+          {categoryModal.leader ? 
+            `${categoryModal.leader.firstName} ${categoryModal.leader.lastName} - Kategori Atama` : 
+            'Kategori Atama'
+          }
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="h6" mb={2}>
+              Kategori Seçimi
+            </Typography>
+            {categoriesLoading ? (
+              <Typography>Kategoriler yükleniyor...</Typography>
+            ) : categories.length === 0 ? (
+              <Typography>Kategori bulunamadı</Typography>
+            ) : (
+              <Box sx={{ 
+                maxHeight: '400px', 
+                overflowY: 'auto',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                padding: '12px',
+                backgroundColor: '#f9fafb'
+              }}>
+                {categories.map(category => {
+                  const currentLang = localStorage.getItem('language') || 'tr';
+                  const categoryName = currentLang === 'en' ? category.category_name_en : category.category_name_tr;
+                  
+                  return (
+                    <label key={category.id} style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      cursor: 'pointer',
+                      padding: '8px 0',
+                      fontSize: '14px',
+                      color: '#374151',
+                      borderBottom: '1px solid #e5e7eb',
+                      '&:last-child': {
+                        borderBottom: 'none'
+                      }
+                    }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedCategories.includes(category.id.toString())}
+                        onChange={() => handleCategoryChange(category.id.toString())}
+                        style={{
+                          width: '16px',
+                          height: '16px',
+                          accentColor: '#1976d2'
+                        }}
+                      />
+                      <span>{categoryName || category.name}</span>
+                    </label>
+                  );
+                })}
+              </Box>
+            )}
+            {selectedCategories.length > 0 && (
+              <Box sx={{ mt: 2, p: 2, backgroundColor: '#e3f2fd', borderRadius: '6px' }}>
+                <Typography variant="body2" color="primary">
+                  Seçili kategoriler: {selectedCategories.length}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <CustomButton onClick={handleCloseCategoryModal} variant="outline">
+            İptal
+          </CustomButton>
+          <CustomButton 
+            onClick={handleSaveCategories} 
+            variant="primary"
+            disabled={categoryUpdateLoading}
+          >
+            {categoryUpdateLoading ? 'Kaydediliyor...' : 'Kaydet'}
+          </CustomButton>
+        </DialogActions>
+      </Dialog>
 
       {/* Employee Management Modal */}
       <Dialog open={employeeModal.open} onClose={handleCloseEmployeeModal} maxWidth="md" fullWidth>
@@ -594,8 +732,6 @@ export default function AdminLeaders() {
           <CustomButton onClick={handleCloseEmployeeModal} variant="outline">Kapat</CustomButton>
         </DialogActions>
       </Dialog>
-
-
 
       {/* ConfirmModal ile çalışan çıkarma onayı */}
       <ConfirmModal

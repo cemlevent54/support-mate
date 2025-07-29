@@ -52,6 +52,7 @@ message User {
   bool isOnline = 8;
   string lastSeen = 9;
   string languagePreference = 10;
+  repeated string categoryIds = 11;
 }
 
 message Role {

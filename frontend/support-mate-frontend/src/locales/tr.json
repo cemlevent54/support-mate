@@ -226,11 +226,12 @@
     "deleteNo": "Vazgeç"
   },
   "adminDashboard": {
-    "title": "Admin Panel",
+    "title": "Admin Paneli",
     "dashboard": "Dashboard",
     "users": "Kullanıcılar",
-    "tickets": "Destek Talepleri",
+    "leaders": "Liderler",
     "roles": "Roller",
+    "tickets": "Destek Talepleri",
     "categories": "Kategoriler",
     "products": "Ürünler",
     "kanban": "Kanban"
