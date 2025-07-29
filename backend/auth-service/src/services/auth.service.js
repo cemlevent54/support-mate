@@ -370,9 +370,15 @@ class AuthService {
       throw new Error(this.translation('services.authService.logs.loginFailed'));
     }
 
-    // Kullanıcının aktif olup olmadığını kontrol et
+    // Kullanıcının silinmiş olup olmadığını kontrol et
     if (user.isDeleted === true) {
       logger.warn('Login attempt for deleted user', { email, ipAddress, userId: user.id });
+      throw new Error(this.translation('services.authService.logs.userNotActive'));
+    }
+
+    // Kullanıcının aktif olup olmadığını kontrol et
+    if (user.isActive === false) {
+      logger.warn('Login attempt for inactive user', { email, ipAddress, userId: user.id });
       throw new Error(this.translation('services.authService.logs.userNotActive'));
     }
 
@@ -993,12 +999,15 @@ class AuthService {
   }
 
   async findOrUpdateGoogleUser(googlePayload) {
-    // Kullanıcıyı email ile bul
-    let user = await this.queryHandler.dispatch(QUERY_TYPES.FIND_ANY_USER_BY_EMAIL, { email: googlePayload.email });
-    
-    // Email ile bulunamazsa googleId ile bul
-    if (!user && googlePayload.sub) {
+    // Önce Google ID ile kullanıcıyı bul
+    let user = null;
+    if (googlePayload.sub) {
       user = await this.queryHandler.dispatch(QUERY_TYPES.FIND_USER_BY_GOOGLE_ID, { googleId: googlePayload.sub });
+    }
+    
+    // Google ID ile bulunamazsa email ile bul
+    if (!user) {
+      user = await this.queryHandler.dispatch(QUERY_TYPES.FIND_ANY_USER_BY_EMAIL, { email: googlePayload.email });
     }
     
     // Kullanıcı yoksa hata döndür
@@ -1006,20 +1015,49 @@ class AuthService {
       logger.warn(this.translation('services.authService.logs.loginFailed'), { provider: 'google', email: googlePayload.email });
       throw new Error(this.translation('repositories.userRepository.logs.notFound'));
     }
+    
+    // Eğer Google ID ile bulunan kullanıcı farklı bir email'e sahipse hata döndür
+    if (user.googleId === googlePayload.sub && user.email !== googlePayload.email) {
+      logger.warn('Google ID already in use by different user', { 
+        requestedEmail: googlePayload.email, 
+        foundEmail: user.email, 
+        googleId: googlePayload.sub 
+      });
+      throw new Error(this.translation('services.authService.logs.googleIdAlreadyInUse'));
+    }
 
-    // Kullanıcının aktif olup olmadığını kontrol et
+    // Kullanıcının silinmiş olup olmadığını kontrol et
     if (user.isDeleted === true) {
       logger.warn('Google login attempt for deleted user', { email: googlePayload.email, userId: user.id });
+      throw new Error(this.translation('services.authService.logs.userNotActive'));
+    }
+
+    // Kullanıcının aktif olup olmadığını kontrol et
+    if (user.isActive === false) {
+      logger.warn('Google login attempt for inactive user', { email: googlePayload.email, userId: user.id });
       throw new Error(this.translation('services.authService.logs.userNotActive'));
     }
     
     // Kullanıcıda googleId yoksa ekle
     if (!user.googleId && googlePayload.sub) {
-      const updateCommand = {
-        userId: user.id,
-        googleId: googlePayload.sub
-      };
-      user = await this.commandHandler.dispatch(COMMAND_TYPES.UPDATE_USER_GOOGLE_ID, updateCommand);
+      try {
+        const updateCommand = {
+          userId: user.id,
+          googleId: googlePayload.sub
+        };
+        user = await this.commandHandler.dispatch(COMMAND_TYPES.UPDATE_USER_GOOGLE_ID, updateCommand);
+      } catch (error) {
+        // Eğer googleId zaten başka bir kullanıcı tarafından kullanılıyorsa
+        if (error.message && error.message.includes('E11000 duplicate key error')) {
+          logger.warn('Google ID already in use by another user', { 
+            email: googlePayload.email, 
+            userId: user.id, 
+            googleId: googlePayload.sub 
+          });
+          throw new Error(this.translation('services.authService.logs.googleIdAlreadyInUse'));
+        }
+        throw error;
+      }
     }
     
     return user;
