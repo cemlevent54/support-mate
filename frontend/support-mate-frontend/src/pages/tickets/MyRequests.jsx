@@ -14,6 +14,8 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import CustomTicketTable from '../../components/tickets/CustomTicketTable/CustomTicketTable';
 import CustomTicketDetailModal from '../../components/tickets/CustomTicketDetailModal/CustomTicketDetailModal';
+import CreateTicket from './CreateTicket';
+import CustomButton from '../../components/common/CustomButton';
 
 
 const MyRequests = ({ openCreateTicketModal, onTicketCreated }) => {
@@ -39,6 +41,7 @@ const categoryLabels = {
   const [selectedChatTicket, setSelectedChatTicket] = useState(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
+  const [createTicketModalOpen, setCreateTicketModalOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -189,6 +192,9 @@ const categoryLabels = {
     console.log('MyRequests - handleTicketCreated called with:', ticketData);
     // Tabloyu güncelle
     fetchTickets();
+    
+    // Modal'ı kapat
+    setCreateTicketModalOpen(false);
     
     // Eğer global callback varsa onu da çağır
     if (onTicketCreated) {
@@ -358,6 +364,34 @@ const categoryLabels = {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* CreateTicket Modal */}
+      <Modal 
+        open={createTicketModalOpen} 
+        onClose={() => setCreateTicketModalOpen(false)}
+        sx={{
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'flex-end',
+          p: 2,
+          zIndex: 9998
+        }}
+      >
+        <Box sx={{ 
+          width: 500, 
+          height: 'auto',
+          maxHeight: '90vh',
+          bgcolor: 'transparent',
+          outline: 'none',
+          mb: 8
+        }}>
+          <CreateTicket 
+            onClose={() => setCreateTicketModalOpen(false)} 
+            isModal={true} 
+            onTicketCreated={handleTicketCreated} 
+          />
+        </Box>
+      </Modal>
 
     </>
   );

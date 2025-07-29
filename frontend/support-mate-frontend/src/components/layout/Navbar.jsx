@@ -2,7 +2,6 @@ import * as React from 'react';
 import { useLanguage } from '../../providers/LanguageProvider';
 import { useTranslation } from 'react-i18next';
 import { logout as apiLogout } from '../../api/authApi';
-import { getAuthenticatedUser, updateUser } from '../../api/userApi';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import { useNavigate } from 'react-router-dom';
@@ -73,92 +72,6 @@ const navbarStyle = `
     background-color: rgba(255, 255, 255, 0.2);
   }
   
-  .navbar-language-dropdown {
-    position: relative;
-    margin-left: 16px;
-  }
-  
-  .navbar-language-button {
-    background: #fff;
-    border: none;
-    border-radius: 6px;
-    padding: 8px 12px;
-    font-weight: 600;
-    color: #1976d2;
-    cursor: pointer;
-    font-size: 0.9rem;
-    min-width: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    transition: all 0.2s;
-  }
-  
-  .navbar-language-button:hover {
-    background: #f8f9fa;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-  
-  .navbar-language-button:focus {
-    outline: 2px solid rgba(255, 255, 255, 0.5);
-    outline-offset: 2px;
-  }
-  
-  .navbar-language-arrow {
-    margin-left: 6px;
-    font-size: 0.8rem;
-    transition: transform 0.2s;
-  }
-  
-  .navbar-language-dropdown.open .navbar-language-arrow {
-    transform: rotate(180deg);
-  }
-  
-  .navbar-language-menu {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    background: #fff;
-    border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    min-width: 80px;
-    z-index: 1200;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-10px);
-    transition: all 0.2s;
-    margin-top: 4px;
-  }
-  
-  .navbar-language-dropdown.open .navbar-language-menu {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-  }
-  
-  .navbar-language-option {
-    padding: 8px 12px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: #333;
-    transition: background-color 0.2s;
-    border: none;
-    background: none;
-    width: 100%;
-    text-align: left;
-  }
-  
-  .navbar-language-option:hover {
-    background-color: #f5f5f5;
-  }
-  
-  .navbar-language-option.active {
-    background-color: #e3f2fd;
-    color: #1976d2;
-    font-weight: 600;
-  }
-  
   .navbar-left-icon {
     margin-right: 16px;
     display: flex;
@@ -218,57 +131,13 @@ export default function Navbar({
   const { language, onLanguageChange } = useLanguage();
   const { t } = useTranslation();
   const [snackbar, setSnackbar] = React.useState({ open: false, message: '', severity: 'info' });
-  const [languageDropdownOpen, setLanguageDropdownOpen] = React.useState(false);
   const navigate = useNavigate();
 
   const handleSnackbarClose = () => setSnackbar({ ...snackbar, open: false });
   
-  const handleLanguageToggle = () => {
-    setLanguageDropdownOpen(!languageDropdownOpen);
-  };
-  
-  const handleLanguageSelect = async (selectedLanguage) => {
-    try {
-      // UI'da dili güncelle (Accept-Language header'ı da güncellenir)
-      onLanguageChange(selectedLanguage);
-      setLanguageDropdownOpen(false);
-      
-      // Eğer kullanıcı giriş yapmışsa backend'e de kaydet
-      try {
-        const user = await getAuthenticatedUser();
-        const userId = user._id || user.id;
-        
-        if (userId) {
-          // Backend'e dil tercihini kaydet
-          await updateUser(userId, { languagePreference: selectedLanguage });
-          
-          // Başarı mesajı göster
-          setSnackbar({ 
-            open: true, 
-            message: t('pages.myAccount.languageUpdateSuccess') || 'Dil tercihi güncellendi', 
-            severity: 'success' 
-          });
-        }
-      } catch (backendError) {
-        // Backend hatası olsa bile UI'da dil değişmiş olur
-        console.warn('Backend dil güncelleme hatası:', backendError);
-      }
-    } catch (err) {
-      // Genel hata durumunda sadece UI'da dili güncelle
-      onLanguageChange(selectedLanguage);
-      setLanguageDropdownOpen(false);
-      
-      setSnackbar({ 
-        open: true, 
-        message: t('pages.myAccount.languageUpdateError') || 'Dil tercihi güncellenemedi', 
-        severity: 'error' 
-      });
-    }
-  };
-  
   const handleClickOutside = (event) => {
     if (!event.target.closest('.navbar-language-dropdown')) {
-      setLanguageDropdownOpen(false);
+      // Language dropdown removed, so this function is no longer needed
     }
   };
   
@@ -347,33 +216,6 @@ export default function Navbar({
     );
   }
 
-  const languageToggle = (
-    <div className={`navbar-language-dropdown ${languageDropdownOpen ? 'open' : ''}`}>
-      <button
-        className="navbar-language-button"
-        onClick={handleLanguageToggle}
-        type="button"
-      >
-        {language.toUpperCase()}
-        <span className="navbar-language-arrow">▼</span>
-      </button>
-      <div className="navbar-language-menu">
-        <button
-          className={`navbar-language-option ${language === 'tr' ? 'active' : ''}`}
-          onClick={() => handleLanguageSelect('tr')}
-        >
-          TR
-        </button>
-        <button
-          className={`navbar-language-option ${language === 'en' ? 'active' : ''}`}
-          onClick={() => handleLanguageSelect('en')}
-        >
-          EN
-        </button>
-      </div>
-    </div>
-  );
-
   return (
     <>
       <style>{navbarStyle}</style>
@@ -390,7 +232,6 @@ export default function Navbar({
               </div>
               <div className="navbar-right-content">
                 {rightContent}
-                {languageToggle}
               </div>
             </div>
           </div>

@@ -19,7 +19,7 @@ import { getCategories } from '../../api/categoryApi';
 import { getProductsUser } from "../../api/productApi";
 
 const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -37,6 +37,7 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
   const [ticketData, setTicketData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [currentLanguage, setCurrentLanguage] = useState(i18n.language || 'tr');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -98,6 +99,19 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
       setFilteredProducts([]);
     }
   }, [form.categoryId, products]);
+
+  // Dil değişikliğini dinle
+  useEffect(() => {
+    const handleLanguageChange = (lng) => {
+      setCurrentLanguage(lng);
+    };
+
+    i18n.on('languageChanged', handleLanguageChange);
+    
+    return () => {
+      i18n.off('languageChanged', handleLanguageChange);
+    };
+  }, [i18n]);
 
   if (userRole !== "user") {
     return <Box mt={10}><Alert severity="error">{t('pages.createTicket.noPermission')}</Alert></Box>;
@@ -260,9 +274,10 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
         
         if (isModal && onClose) {
           console.log('CreateTicket - Modal mode, calling onTicketCreated with:', response.data);
-          if (onTicketCreated) {
-            onTicketCreated(response.data);
-          }
+          // onTicketCreated callback'ini çağırmıyoruz çünkü chat ekranını tetikliyor
+          // if (onTicketCreated) {
+          //   onTicketCreated(response.data);
+          // }
           onClose();
         }
       } else {
@@ -284,6 +299,7 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
         setForm({ title: "", description: "", categoryId: "", files: [] });
         
         if (isModal && onClose) {
+          // onTicketCreated callback'ini çağırmıyoruz çünkü chat ekranını tetikliyor
           setTimeout(() => {
             onClose();
           }, 3000);
@@ -384,10 +400,15 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
               value={form.categoryId}
               onChange={handleChange}
               required
-              options={categories.map((cat) => ({
-                value: cat.id || cat._id,
-                label: cat.category_name_tr || cat.category_name_en || cat.name || cat.label
-              }))}
+              options={categories.map((cat) => {
+                const label = currentLanguage === 'tr' 
+                  ? cat.category_name_tr 
+                  : cat.category_name_en;
+                return {
+                  value: cat.id,
+                  label: label
+                };
+              })}
               placeholder={t('pages.createTicket.form.select')}
             />
 
@@ -397,30 +418,36 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
                 name="productId"
                 value={form.productId}
                 onChange={handleChange}
-                options={filteredProducts.map((prod) => ({
-                  value: prod.id,
-                  label: prod.product_name_tr || prod.product_name_en
-                }))}
+                options={filteredProducts.map((prod) => {
+                  const label = currentLanguage === 'tr' 
+                    ? prod.product_name_tr 
+                    : prod.product_name_en;
+                  return {
+                    value: prod.id,
+                    label: label
+                  };
+                })}
                 placeholder={t('pages.createTicket.form.selectProduct')}
               />
             )}
 
             {/* File Upload */}
             <Box mt={2} mb={2}>
+              <input
+                id="file-upload"
+                type="file"
+                name="files"
+                style={{ display: 'none' }}
+                multiple
+                onChange={handleChange}
+              />
               <CustomButton
                 variant="secondary"
-                component="label"
                 fullWidth
-                sx={{ mb: 1, borderRadius: 2 }}
+                sx={{ mb: 1, borderRadius: 2, cursor: 'pointer' }}
+                onClick={() => document.getElementById('file-upload').click()}
               >
                 {t('pages.createTicket.form.file')} (Max 10MB)
-                <input
-                  type="file"
-                  name="files"
-                  hidden
-                  multiple
-                  onChange={handleChange}
-                />
               </CustomButton>
               
               {previews.length > 0 && (
@@ -463,14 +490,13 @@ const CreateTicket = ({ onClose, isModal = false, onTicketCreated = null }) => {
           </form>
         </Box>
         
-        <Box display="flex" gap={1} mt={2} flexShrink={0}>
+        <Box display="flex" justifyContent="flex-end" gap={1} mt={2} flexShrink={0}>
           <CustomButton
             type="submit"
             variant="primary"
-            fullWidth
             onClick={handleSubmit}
             disabled={loading}
-            sx={{ borderRadius: 2, minWidth: 80, py: 1.2, fontWeight: 600 }}
+            sx={{ borderRadius: 2, minWidth: 120, py: 1.2, fontWeight: 600 }}
           >
             {loading ? t('pages.createTicket.form.submitting') : t('pages.createTicket.form.submit')}
           </CustomButton>

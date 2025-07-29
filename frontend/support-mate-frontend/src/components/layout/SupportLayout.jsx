@@ -8,7 +8,6 @@ import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import { logout as apiLogout } from '../../api/authApi';
-import { getAuthenticatedUser, updateUser } from '../../api/userApi';
 import { useLanguage } from '../../providers/LanguageProvider';
 import { useTranslation } from 'react-i18next';
 import { jwtDecode } from 'jwt-decode';
@@ -34,11 +33,6 @@ const leaderSidebarItems = [
   { key: 'leaderTickets', labelKey: 'supportDashboard.sidebar.leaderTickets', path: '/support/tickets' },
   { key: 'kanban', labelKey: 'supportDashboard.sidebar.kanban', path: '/support/kanban' },
   { key: 'profile', labelKey: 'supportDashboard.sidebar.profile', path: '/support/profile' },
-];
-
-const LANGUAGES = [
-  { code: 'tr', label: 'Türkçe' },
-  { code: 'en', label: 'English' }
 ];
 
 export default function SupportLayout() {
@@ -247,30 +241,6 @@ export default function SupportLayout() {
   // Chat listesi çekme (agentChats)
   
 
-  const handleLanguageChange = async (selectedLanguage) => {
-    try {
-      // UI'da dili güncelle (Accept-Language header'ı da güncellenir)
-      onLanguageChange(selectedLanguage);
-      
-      // Eğer kullanıcı giriş yapmışsa backend'e de kaydet
-      try {
-        const user = await getAuthenticatedUser();
-        const userId = user._id || user.id;
-        
-        if (userId) {
-          // Backend'e dil tercihini kaydet
-          await updateUser(userId, { languagePreference: selectedLanguage });
-        }
-      } catch (backendError) {
-        // Backend hatası olsa bile UI'da dil değişmiş olur
-        console.warn('Backend dil güncelleme hatası:', backendError);
-      }
-    } catch (err) {
-      // Genel hata durumunda sadece UI'da dili güncelle
-      onLanguageChange(selectedLanguage);
-    }
-  };
-
   const handleLogout = async () => {
     try {
       const token = localStorage.getItem('jwt');
@@ -308,19 +278,6 @@ export default function SupportLayout() {
             }
           })()}
         </Typography>
-        <div style={{ marginBottom: 8 }}>
-          <label htmlFor="language-select" style={{ color: '#fff', fontSize: 14, marginBottom: 4, display: 'block' }}>{t('components.sidebar.languageSelection')}</label>
-          <select
-            id="language-select"
-            value={language}
-            onChange={e => handleLanguageChange(e.target.value)}
-            style={{ width: '100%', padding: '6px 8px', borderRadius: 4, border: '1px solid #444', background: '#222', color: '#fff', fontSize: 14 }}
-          >
-            {LANGUAGES.map(lang => (
-              <option key={lang.code} value={lang.code}>{lang.label}</option>
-            ))}
-          </select>
-        </div>
         <List sx={{ flexGrow: 1 }}>
           {filteredSidebarItems.map(item => (
             <ListItem key={item.key} disablePadding>

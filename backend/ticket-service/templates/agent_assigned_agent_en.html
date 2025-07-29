@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>New Support Ticket Assigned</title>
+    <style type="text/css">
+        body { font-family: Arial, sans-serif; background: #f7f7f7; color: #222; }
+        .container { background: #fff; padding: 32px; border-radius: 8px; max-width: 600px; margin: 40px auto; box-shadow: 0 2px 8px rgba(0,0,0,0.07);}
+        .header { color: #2a7ae2; font-size: 24px; margin-bottom: 16px; }
+        .info { margin: 16px 0; }
+        .footer { margin-top: 32px; font-size: 13px; color: #888; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">New Support Ticket Assigned to You</div>
+        <div class="info">
+            <p>Dear <b>${firstName} ${lastName}</b>,</p>
+            <p>
+                A new support ticket titled <b>${ticketTitle}</b> has been assigned to you.<br>
+                Please contact the customer as soon as possible.
+            </p>
+            <p>
+                Ticket Number: <b>${ticketId}</b>
+            </p>
+            <p>
+                Customer: <b>${customerName}</b> (${customerEmail})
+            </p>
+        </div>
+        <div class="footer">
+            This email was sent automatically, please do not reply.<br>
+            You can contact our support team at <a href="mailto:support@example.com">support@example.com</a>.
+        </div>
+    </div>
+</body>
+</html> 

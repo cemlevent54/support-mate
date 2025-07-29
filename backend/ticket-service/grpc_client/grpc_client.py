@@ -83,6 +83,7 @@ class AuthGrpcClient:
                         "name": user.role.name,
                         "description": user.role.description
                     },
+                    "languagePreference": user.languagePreference,
                     "isOnline": user.isOnline,
                     "lastSeen": user.lastSeen
                 }
@@ -125,6 +126,7 @@ class AuthGrpcClient:
                         "name": user.role.name,
                         "description": user.role.description
                     },
+                    "languagePreference": user.languagePreference,
                     "isOnline": user.isOnline,
                     "lastSeen": user.lastSeen
                 }

@@ -51,6 +51,7 @@ message User {
   Role role = 7;
   bool isOnline = 8;
   string lastSeen = 9;
+  string languagePreference = 10;
 }
 
 message Role {

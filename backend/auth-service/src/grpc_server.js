@@ -92,7 +92,7 @@ const authService = {
                         name: user.role.name,
                         description: user.role.description
                     },
-                    languagePreference: user.languagePreference,
+                    languagePreference: user.languagePreference || 'tr',
                     isOnline: user.isOnline || false,
                     lastSeen: user.lastSeen ? user.lastSeen.toISOString() : null
                 },
@@ -164,7 +164,7 @@ const authService = {
                         name: user.role.name,
                         description: user.role.description
                     },
-                    languagePreference: user.languagePreference,
+                    languagePreference: user.languagePreference || 'tr',
                     isOnline: user.isOnline || false,
                     lastSeen: user.lastSeen ? user.lastSeen.toISOString() : null
                 },

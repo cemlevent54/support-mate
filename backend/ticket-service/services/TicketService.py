@@ -378,6 +378,14 @@ class TicketService:
             user_detail = get_user_by_id(ticket.get('customerId'), token)
             logger.info(f"[DEBUG] User detail: {user_detail}")
             
+            # Kullanıcının dil tercihini al
+            user_language = user_detail.get('languagePreference') if user_detail else 'tr'
+            # Eğer languagePreference None, boş string veya geçersiz değerse varsayılan 'tr' kullan
+            if not user_language or user_language not in ['tr', 'en']:
+                user_language = 'tr'
+            logger.info(f"[DEBUG] User language preference: {user_language}")
+            logger.info(f"[DEBUG] User detail: {user_detail}")
+            
             # Ticket objesini dictionary'ye çevir
             if hasattr(data, 'model_dump'):
                 logger.info(f"[DEBUG] Converting ticket data using model_dump")
@@ -391,8 +399,8 @@ class TicketService:
             
             logger.info(f"[DEBUG] Ticket obj for mail: {ticket_obj}")
             
-            # Dile göre template seç
-            template_name = f"ticket_created_{lang}.html"
+            # Kullanıcının dil tercihine göre template seç
+            template_name = f"ticket_created_{user_language}.html"
             template_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates", template_name)
             logger.info(f"[DEBUG] Template path: {template_path}")
             
@@ -401,8 +409,8 @@ class TicketService:
                 template_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates", "ticket_created.html")
                 logger.info(f"Language template not found: {template_name}, using default template")
             
-            logger.info(f"[DEBUG] Sending ticket_created_event with language: {lang}")
-            send_ticket_created_event(ticket_obj, user_detail, html_path=template_path, language=lang)
+            logger.info(f"[DEBUG] Sending ticket_created_event with user language: {user_language}")
+            send_ticket_created_event(ticket_obj, user_detail, html_path=template_path, language=user_language)
             logger.info(_(f"services.ticketService.logs.ticket_created_mail_sent").format(user_id=ticket.get('customerId')))
         except Exception as e:
             logger.error(_(f"services.ticketService.logs.ticket_created_mail_failed").format(error=e), exc_info=True)
@@ -591,8 +599,8 @@ class TicketService:
             message = _(f"services.ticketService.responses.leader_assign_failed")
             return {"success": False, "data": None, "message": result.get("message", message)}
 
-    async def assign_agent_to_pending_ticket(self, agent_id):
-        result = await self.assign_agent_handler.execute(agent_id)
+    async def assign_agent_to_pending_ticket(self, agent_id, token=None):
+        result = await self.assign_agent_handler.execute(agent_id, token)
         
         if result.get("success"):
             message = _(f"services.ticketService.responses.agent_assigned")

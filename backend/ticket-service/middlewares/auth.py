@@ -46,6 +46,8 @@ def get_user_by_id(user_id, token):
         )
     
     try:
+        
+        
         user_data = auth_grpc_client.get_user_by_id(user_id, token)
         if user_data:
             logger.info(f"Successfully fetched user data for user_id: {user_id}")
@@ -58,10 +60,15 @@ def get_user_by_id(user_id, token):
             )
     except Exception as e:
         logger.error(f"Error while fetching user data via gRPC: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Auth service unavailable"
-        )
+        # Hata durumunda basit bir kullanıcı objesi döndür
+        logger.warning(f"Returning basic user info for user_id: {user_id} due to error")
+        return {
+            "id": user_id,
+            "firstName": "User",
+            "lastName": "",
+            "email": "",
+            "languagePreference": "tr"
+        }
 
 def get_user_by_email(email, token):
     """Get user information by email using gRPC"""

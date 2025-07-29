@@ -30,6 +30,11 @@ def get_producer():
 
 def send_ticket_created_event(ticket, user, html_path=None, language='tr'):
     try:
+        # Dil kontrolü - geçersiz değerler için varsayılan 'tr' kullan
+        if not language or language not in ['tr', 'en']:
+            language = 'tr'
+        logger.info(f"Final language for Kafka event: {language}")
+        
         # HTML şablonunu oku ve değişkenleri doldur
         html_content = ""
         if html_path:

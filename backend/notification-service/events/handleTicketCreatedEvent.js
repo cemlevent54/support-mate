@@ -5,7 +5,12 @@ export default async function handleTicketCreated(data) {
   logger.info('Ticket created event received (notification-service):', { email: data.email, language: data.language });
   
   // Dile göre subject ve text belirle
-  const language = data.language || 'tr';
+  let language = data.language || 'tr';
+  // Eğer language geçersiz değerse varsayılan 'tr' kullan
+  if (!language || !['tr', 'en'].includes(language)) {
+    language = 'tr';
+  }
+  logger.info('Final language for email:', language);
   let subject, text;
   
   if (language === 'en') {
