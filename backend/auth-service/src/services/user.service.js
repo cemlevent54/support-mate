@@ -65,7 +65,48 @@ class UserService {
   async getAllUsers(req) {
     try {
       const { page, limit, role } = req.query;
-      logger.info(translation('services.userService.logs.getAllRequest'), { page, limit, role });
+      const userRole = req.user?.roleName;
+      
+      logger.info(translation('services.userService.logs.getAllRequest'), { page, limit, role, userRole });
+      
+      // Leader rolü için sadece leaderId null olan Employee'leri getir
+      if (userRole === 'Leader') {
+        const getUsersByRoleQuery = { role: 'Employee' };
+        const allEmployees = await queryHandler.dispatch(QUERY_TYPES.GET_USERS_BY_ROLE, getUsersByRoleQuery);
+        
+        // Sadece leaderId null olan Employee'leri filtrele
+        const availableEmployees = allEmployees.filter(employee => {
+          // leaderId alanının varlığını ve değerini kontrol et
+          const hasLeaderId = employee.leaderId !== null && 
+                             employee.leaderId !== undefined && 
+                             employee.leaderId !== '' && 
+                             employee.leaderId !== 'null' &&
+                             employee.leaderId !== 'undefined';
+          
+          // Eğer leaderId yoksa veya geçersizse, bu Employee atanabilir
+          return !hasLeaderId;
+        });
+        
+        logger.info(translation('services.userService.logs.getAllSuccess'), { 
+          total: availableEmployees.length, 
+          role: 'Employee',
+          filtered: 'leaderId null only'
+        });
+        
+        // Eğer atanabilir employee yoksa özel mesaj döndür
+        if (availableEmployees.length === 0) {
+          logger.info(translation('services.userService.logs.noAvailableEmployees'), { userRole });
+          return {
+            message: translation('services.userService.logs.noAvailableEmployees'),
+            data: [],
+            success: false
+          };
+        }
+        
+        return availableEmployees;
+      }
+      
+      // Admin rolü için tüm kullanıcıları getir
       const getAllUsersQuery = {
         page: page ? parseInt(page) : undefined,
         limit: limit ? parseInt(limit) : undefined,
@@ -313,10 +354,21 @@ class UserService {
   async assignEmployeeToLeader(req) {
     try {
       const { employeeId, leaderId } = req.body;
-      logger.info('Assigning employee to leader', { employeeId, leaderId });
+      const requestingUser = req.user;
+      logger.info('Assigning employee to leader', { employeeId, leaderId, requestingUserId: requestingUser?.id });
       
       if (!employeeId || !leaderId) {
         throw new Error('Employee ID and Leader ID are required');
+      }
+      
+      // Leader güvenlik kontrolü: Leader sadece kendine atama yapabilir
+      if (requestingUser?.roleName === 'Leader' && requestingUser?.id !== leaderId) {
+        logger.warn('Leader trying to assign employee to another leader', { 
+          requestingUserId: requestingUser?.id, 
+          targetLeaderId: leaderId,
+          requestingUserRole: requestingUser?.roleName
+        });
+        throw new Error('You can only assign employees to yourself');
       }
       
       const command = { employeeId, leaderId };
@@ -333,13 +385,39 @@ class UserService {
   async removeEmployeeFromLeader(req) {
     try {
       let { employeeId } = req.params;
+      const requestingUser = req.user;
       
       // URL parametresindeki : karakterini temizle
       if (employeeId && employeeId.startsWith(':')) {
         employeeId = employeeId.substring(1);
       }
       
-      logger.info('Removing employee from leader', { employeeId });
+      logger.info('Removing employee from leader', { employeeId, requestingUserId: requestingUser?.id });
+      
+      // Leader güvenlik kontrolü: Leader sadece kendi altındaki çalışanları çıkarabilir
+      if (requestingUser?.roleName === 'Leader') {
+        // Employee'nin mevcut leader'ını kontrol et
+        const employee = await this.getUserByIdRaw(employeeId);
+        if (!employee) {
+          throw new Error('Employee not found');
+        }
+        
+        logger.info('Employee check for removal', { 
+          employeeId,
+          employeeLeaderId: employee.leaderId,
+          requestingUserId: requestingUser?.id,
+          isSameLeader: employee.leaderId === requestingUser.id
+        });
+        
+        if (employee.leaderId !== requestingUser.id) {
+          logger.warn('Leader trying to remove employee from another leader', { 
+            requestingUserId: requestingUser?.id, 
+            employeeLeaderId: employee.leaderId,
+            employeeId 
+          });
+          throw new Error('You can only remove employees from your own team');
+        }
+      }
       
       const command = { employeeId };
       const result = await commandHandler.dispatch(COMMAND_TYPES.REMOVE_EMPLOYEE_FROM_LEADER, command);

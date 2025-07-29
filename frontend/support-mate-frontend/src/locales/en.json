@@ -1,4 +1,7 @@
 {
+  "common": {
+    "loading": "Loading..."
+  },
   "accountDeleteSuccess": "Your account has been deleted.",
   "accountDeleteError": "An error occurred while deleting your account.",
   "components": {
@@ -287,7 +290,34 @@
     },
     "noLeaders": "No leaders found",
     "loading": "Loading...",
-    "rowsPerPage": "Leaders per page:"
+    "rowsPerPage": "Leaders per page:",
+    "actions": {
+      "viewCategories": "View Categories",
+      "viewEmployees": "View Employees",
+      "noPermissionToViewCategories": "You don't have permission to view categories",
+      "noPermissionToViewEmployees": "You don't have permission to view employees"
+    },
+    "categoryModal": {
+      "title": "View Categories",
+      "assignedCategories": "Assigned Categories",
+      "loading": "Categories loading...",
+      "noCategories": "No categories found",
+      "selectedCategories": "Selected categories",
+      "close": "Close"
+    },
+    "employeeModal": {
+      "addEmployee": "Add Employee",
+      "viewEmployees": "View Employees",
+      "assignableEmployees": "Assignable Employees",
+      "currentEmployees": "Current Employees",
+      "loading": "Employees loading...",
+      "noAssignableEmployees": "No assignable employees found",
+      "noAssignedEmployees": "No employees assigned to this leader",
+      "active": "Active",
+      "inactive": "Inactive",
+      "assign": "Assign",
+      "close": "Close"
+    }
   },
   "adminUsers": {
     "title": "User Management",
@@ -408,6 +438,7 @@
       "profile": "Profile",
       "kanban": "Kanban",
       "leaderTickets": "Leader Tickets",
+      "employees": "Employees",
       "language": "Language"
     },
     "chatsTitle": "Chats",
@@ -517,7 +548,7 @@
       "rowsPerPage": "Rows / Page",
       "total": "Total"
     },
-    "loading": "Loading...",
+    "loading": "Loading admin tickets...",
     "noTickets": "No records found",
     "modal": {
       "title": "Request Details",
@@ -536,30 +567,29 @@
   },
 
   "adminCategories": {
-    "title": "Categories",
+    "title": "Category Management",
     "add": "Add Category",
     "edit": "Edit Category",
-    "delete": "Delete",
+    "delete": "Delete Category",
     "save": "Save",
     "cancel": "Cancel",
-    "fetchError": "An error occurred while fetching categories.",
-    "createError": "An error occurred while creating category.",
-    "updateError": "An error occurred while updating category.",
-    "deleteError": "An error occurred while deleting category.",
-    "notFound": "Category not found.",
-    "deleteSuccess": "Category deleted successfully.",
-    "notCreated": "Category not created.",
-    "notUpdated": "Category not updated.",
-    "notDeleted": "Category not deleted.",
-    "table": {
-      "nameTr": "Category Name (TR)",
-      "nameEn": "Category Name (EN)",
-      "actions": "Actions"
-    },
+    "selectLeaders": "Select Leaders",
+    "noLeaders": "No leaders assigned",
+    "saveSuccess": "Category saved successfully",
+    "saveError": "Error saving category",
+    "deleteSuccess": "Category deleted successfully",
+    "deleteError": "Error deleting category",
+    "fetchError": "Error loading categories",
     "confirmDeleteTitle": "Delete Category",
     "confirmDeleteDesc": "Are you sure you want to delete this category?",
     "confirmDeleteYes": "Yes, Delete",
-    "confirmDeleteNo": "Cancel"
+    "confirmDeleteNo": "Cancel",
+    "table": {
+      "nameTr": "Category Name (TR)",
+      "nameEn": "Category Name (EN)",
+      "leaders": "Leaders",
+      "actions": "Actions"
+    }
   },
   "adminProducts": {
     "title": "Products",
@@ -642,7 +672,8 @@
     "close": "Close"
   },
   "leaderTickets": {
-    "title": "Assigned Tickets",
+    "title": "Tickets",
+    "loading": "Loading tickets...",
     "error": "An error occurred.",
     "chatModalTitle": "Chat",
     "detailModalTitle": "Ticket Details",
@@ -729,6 +760,7 @@
   },
   "supportRequests": {
     "title": "Support Requests",
+    "loading": "Loading support requests...",
     "modalTitle": "Ticket Details",
     "buttons": {
       "chat": "Chat",
@@ -762,6 +794,65 @@
       "pending": "Pending",
       "inProgress": "In Progress",
       "done": "Done"
+    }
+  },
+  "leaderEmployees": {
+    "title": "Employee Management",
+    "table": {
+      "fullName": "Full Name",
+      "email": "Email",
+      "status": "Status",
+      "createdAt": "Registration Date",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "deleted": "Deleted"
+    },
+    "actions": {
+      "addEmployee": "Add Employee",
+      "detail": "Detail",
+      "manageEmployee": "Manage Employee",
+      "assign": "Assign",
+      "remove": "Remove",
+      "close": "Close"
+    },
+    "modal": {
+      "addEmployee": {
+        "title": "Add Employee",
+        "assignableEmployees": "Assignable Employees",
+        "loading": "Loading employees...",
+        "noAvailableEmployees": "No available employees found"
+      },
+      "manageEmployee": {
+        "title": "Employee Management",
+        "currentEmployees": "Current Employees"
+      }
+    },
+    "confirm": {
+      "removeEmployee": {
+        "title": "Remove Employee",
+        "description": "Are you sure you want to remove the employee \"{{employeeName}}\"?",
+        "confirmText": "Yes, Remove",
+        "cancelText": "Cancel"
+      }
+    },
+    "messages": {
+      "noEmployeesAssigned": "No employees assigned yet",
+      "detailFeatureComingSoon": "Detail feature coming soon"
+    },
+    "errors": {
+      "loadEmployeesError": "Error loading employees",
+      "loadAvailableEmployeesError": "Error loading available employees",
+      "sessionNotFound": "Session information not found",
+      "userInfoNotFound": "User information could not be retrieved",
+      "assignEmployeeError": "Error assigning employee",
+      "removeEmployeeError": "Error removing employee",
+      "onlyLeadersCanAddEmployees": "Only Leaders can add employees",
+      "onlySelfAssignment": "You can only assign employees to yourself",
+      "onlyOwnTeamRemoval": "You can only remove employees from your own team",
+      "employeeNotFound": "Employee not found"
     }
   }
 } 

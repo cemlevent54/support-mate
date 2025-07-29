@@ -55,8 +55,7 @@ export class GetLeaderByEmployeeQueryHandler {
         isDeleted: leader.isDeleted,
         createdAt: leader.createdAt,
         updatedAt: leader.updatedAt,
-        phoneNumber: leader.phoneNumber,
-        categoryIds: leader.categoryIds || []
+        phoneNumber: leader.phoneNumber
       };
       
       logger.info(translation('cqrs.queries.user.getLeaderByEmployee.logs.success'), { 

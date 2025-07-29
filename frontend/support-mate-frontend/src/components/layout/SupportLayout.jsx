@@ -31,6 +31,7 @@ const sidebarItems = [
 
 const leaderSidebarItems = [
   { key: 'leaderTickets', labelKey: 'supportDashboard.sidebar.leaderTickets', path: '/support/tickets' },
+  { key: 'employees', labelKey: 'supportDashboard.sidebar.employees', path: '/support/employees' },
   { key: 'kanban', labelKey: 'supportDashboard.sidebar.kanban', path: '/support/kanban' },
   { key: 'profile', labelKey: 'supportDashboard.sidebar.profile', path: '/support/profile' },
 ];

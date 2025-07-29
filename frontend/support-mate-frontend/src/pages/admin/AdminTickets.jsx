@@ -4,6 +4,7 @@ import CustomTicketTable from '../../components/tickets/CustomTicketTable/Custom
 import CustomTicketDetailModal from '../../components/tickets/CustomTicketDetailModal/CustomTicketDetailModal';
 import CustomChatMessagesModal from '../../components/common/CustomChatMessagesModal';
 import CustomTaskDetailsModal from '../../components/common/CustomTaskDetailsModal';
+import CustomLoadingState from '../../components/common/CustomLoadingState';
 import { listTicketsForAdmin } from '../../api/ticketApi';
 import { getTask } from '../../api/taskApi';
 import { useTranslation } from 'react-i18next';
@@ -159,15 +160,24 @@ const AdminTickets = () => {
   return (
     <>
       <Typography variant="h5" fontWeight={700} mb={3}>{t('adminTickets.table.title')}</Typography>
-      <CustomTicketTable
-        rows={rows}
-        loading={loading}
-        error={error}
-        onChat={handleOpenChat}
-        onDetail={handleOpenDetail}
-        i18nNamespace="adminTickets"
-        renderActions={renderAdminActions}
-      />
+      
+      {loading ? (
+        <CustomLoadingState 
+          loading={true}
+          message={t('adminTickets.loading', 'Admin ticket\'ları yükleniyor...')}
+          size="large"
+        />
+      ) : (
+        <CustomTicketTable
+          rows={rows}
+          loading={loading}
+          error={error}
+          onChat={handleOpenChat}
+          onDetail={handleOpenDetail}
+          i18nNamespace="adminTickets"
+          renderActions={renderAdminActions}
+        />
+      )}
 
       {/* Custom Ticket Detail Modal */}
       <CustomTicketDetailModal

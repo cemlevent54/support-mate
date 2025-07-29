@@ -4,6 +4,7 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import CustomTicketTable from '../../components/tickets/CustomTicketTable/CustomTicketTable';
 import CustomTicketDetailModal from '../../components/tickets/CustomTicketDetailModal/CustomTicketDetailModal';
+import CustomLoadingState from '../../components/common/CustomLoadingState';
 // CustomAssignLeaderModal kaldırıldı - Leader'lar artık task oluşturarak ticket'ları alacak
 import ChatIcon from '@mui/icons-material/Chat';
 import InfoIcon from '@mui/icons-material/Info';
@@ -228,13 +229,22 @@ const SupportRequests = ({ onStartChat }) => {
       <Typography variant="h5" fontWeight={700} mb={3} mt={4}>
         {t('supportRequests.title')}
       </Typography>
-      <CustomTicketTable
-        rows={rows}
-        loading={loading}
-        error={error}
-        onChat={handleGoChat}
-        onDetail={handleOpenDetail}
-      />
+      
+      {loading ? (
+        <CustomLoadingState 
+          loading={true}
+          message={t('supportRequests.loading', 'Destek talepleri yükleniyor...')}
+          size="large"
+        />
+      ) : (
+        <CustomTicketTable
+          rows={rows}
+          loading={loading}
+          error={error}
+          onChat={handleGoChat}
+          onDetail={handleOpenDetail}
+        />
+      )}
       <CustomTicketDetailModal
         open={modalOpen}
         onClose={handleCloseDetail}

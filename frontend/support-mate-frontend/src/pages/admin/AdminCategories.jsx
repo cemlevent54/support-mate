@@ -7,6 +7,12 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import Chip from '@mui/material/Chip';
+import OutlinedInput from '@mui/material/OutlinedInput';
 import CustomTable from '../../components/tickets/CustomTable';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import { useTranslation } from 'react-i18next';
@@ -16,6 +22,7 @@ import {
   updateCategory,
   deleteCategory
 } from '../../api/categoryApi';
+import { getLeaders } from '../../api/userApi';
 import Snackbar from '@mui/material/Snackbar';
 
 const AdminCategories = () => {
@@ -23,15 +30,21 @@ const AdminCategories = () => {
   const columns = [
     { key: 'category_name_tr', label: t('adminCategories.table.nameTr') },
     { key: 'category_name_en', label: t('adminCategories.table.nameEn') },
+    { key: 'leaders', label: t('adminCategories.table.leaders') },
     { key: 'actions', label: t('adminCategories.table.actions'), minWidth: 160 },
   ];
   const [categories, setCategories] = useState([]);
+  const [leaders, setLeaders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [form, setForm] = useState({ category_name_tr: '', category_name_en: '' });
+  const [form, setForm] = useState({ 
+    category_name_tr: '', 
+    category_name_en: '', 
+    leaderIds: [] 
+  });
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -50,15 +63,31 @@ const AdminCategories = () => {
     }
   };
 
+  // Leader listesini çek
+  const fetchLeaders = async () => {
+    try {
+      const response = await getLeaders();
+      if (response.data && Array.isArray(response.data)) {
+        setLeaders(response.data);
+      } else {
+        setLeaders([]);
+      }
+    } catch (err) {
+      console.error('Leader\'lar yüklenirken hata:', err);
+      setLeaders([]);
+    }
+  };
+
   useEffect(() => {
     fetchCategories();
+    fetchLeaders();
     // eslint-disable-next-line
   }, []);
 
   // Modal aç/kapat ve form yönetimi
   const handleOpenAdd = () => {
     setEditMode(false);
-    setForm({ category_name_tr: '', category_name_en: '' });
+    setForm({ category_name_tr: '', category_name_en: '', leaderIds: [] });
     setModalOpen(true);
   };
   const handleOpenEdit = (cat) => {
@@ -67,17 +96,27 @@ const AdminCategories = () => {
     setForm({
       category_name_tr: cat.category_name_tr,
       category_name_en: cat.category_name_en,
+      leaderIds: cat.leaderIds || [],
     });
     setModalOpen(true);
   };
   const handleCloseModal = () => {
     setModalOpen(false);
     setSelectedCategory(null);
-    setForm({ category_name_tr: '', category_name_en: '' });
+    setForm({ category_name_tr: '', category_name_en: '', leaderIds: [] });
   };
   const handleFormChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
   };
+
+  const handleLeaderChange = (event) => {
+    const {
+      target: { value },
+    } = event;
+    setForm({ ...form, leaderIds: typeof value === 'string' ? value.split(',') : value });
+  };
+
   const handleSave = async () => {
     try {
       setLoading(true);
@@ -95,6 +134,7 @@ const AdminCategories = () => {
             id: response?.data?.id,
             category_name_tr: form.category_name_tr,
             category_name_en: form.category_name_en,
+            leaderIds: form.leaderIds,
             createdAt: response?.data?.createdAt || new Date().toISOString(),
             isDeleted: false,
             deletedAt: null
@@ -128,7 +168,6 @@ const AdminCategories = () => {
       fetchCategories();
       setSnackbar({ open: true, message: response?.message || t('adminCategories.deleteSuccess'), severity: 'success' });
     } catch (err) {
-      setError(t('adminTickets.error'));
       setSnackbar({ open: true, message: err?.response?.data?.message || t('adminCategories.deleteError'), severity: 'error' });
     } finally {
       setLoading(false);
@@ -138,6 +177,21 @@ const AdminCategories = () => {
     setConfirmOpen(false);
     setDeleteId(null);
   };
+
+  // Leader isimlerini getir
+  const getLeaderNames = (leaderIds) => {
+    if (!leaderIds || !Array.isArray(leaderIds)) return [];
+    return leaderIds.map(id => {
+      const leader = leaders.find(l => l.id === id);
+      return leader ? `${leader.firstName} ${leader.lastName}` : id;
+    });
+  };
+
+  // Table data'yı hazırla
+  const tableData = categories.map(cat => ({
+    ...cat,
+    leaders: getLeaderNames(cat.leaderIds).join(', ') || t('adminCategories.noLeaders')
+  }));
 
   return (
     <Box maxWidth={1100} mx="auto" mt={6}>
@@ -149,7 +203,7 @@ const AdminCategories = () => {
       </Box>
       <CustomTable
         columns={columns}
-        rows={categories}
+        rows={tableData}
         loading={loading}
         error={error}
         actions={(row) => (
@@ -171,7 +225,7 @@ const AdminCategories = () => {
         }}
       />
       {/* Ekle/Düzenle Modal */}
-      <Dialog open={modalOpen} onClose={handleCloseModal} maxWidth="xs" fullWidth>
+      <Dialog open={modalOpen} onClose={handleCloseModal} maxWidth="sm" fullWidth>
         <DialogTitle>{editMode ? t('adminCategories.edit') : t('adminCategories.add')}</DialogTitle>
         <DialogContent>
           <TextField
@@ -190,6 +244,35 @@ const AdminCategories = () => {
             onChange={handleFormChange}
             fullWidth
           />
+          <FormControl fullWidth margin="normal">
+            <InputLabel>{t('adminCategories.selectLeaders')}</InputLabel>
+            <Select
+              multiple
+              value={form.leaderIds}
+              onChange={handleLeaderChange}
+              input={<OutlinedInput label={t('adminCategories.selectLeaders')} />}
+              renderValue={(selected) => (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                  {selected.map((value) => {
+                    const leader = leaders.find(l => l.id === value);
+                    return (
+                      <Chip 
+                        key={value} 
+                        label={leader ? `${leader.firstName} ${leader.lastName}` : value} 
+                        size="small" 
+                      />
+                    );
+                  })}
+                </Box>
+              )}
+            >
+              {leaders.map((leader) => (
+                <MenuItem key={leader.id} value={leader.id}>
+                  {`${leader.firstName} ${leader.lastName}`}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseModal} variant="outlined">{t('adminCategories.cancel')}</Button>

@@ -58,6 +58,11 @@ export const usePermissions = () => {
     return userRole && userRole.toLowerCase() === 'admin';
   };
 
+  // Leader mi kontrol et
+  const isLeader = () => {
+    return userRole && userRole.toLowerCase() === 'leader';
+  };
+
   return {
     userPermissions,
     userRole,
@@ -65,6 +70,7 @@ export const usePermissions = () => {
     hasPermission,
     hasAnyPermission,
     hasAllPermissions,
-    isAdmin
+    isAdmin,
+    isLeader
   };
 }; 

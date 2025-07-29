@@ -14,6 +14,7 @@ export class GetUsersByRoleQueryHandler {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        leaderId: user.leaderId ? user.leaderId.toString() : null, // ObjectId'yi string'e çevir
         role: user.role ? {
           id: user.role._id,
           name: user.role.name,

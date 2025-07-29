@@ -30,26 +30,14 @@ export class UpdateLeaderCommandHandler {
         }
       }
       
-      // Leader rolü için kategori güncellemesi
-      if (updateData.categoryIds) {
-        // categoryIds array olarak gelmeli
-        if (!Array.isArray(updateData.categoryIds)) {
-          logger.error('UpdateLeaderCommand: categoryIds must be an array', { categoryIds: updateData.categoryIds });
-          throw new Error('categoryIds must be an array');
-        }
-        
-        // Kategori ID'lerinin geçerli olduğunu kontrol et (opsiyonel)
-        // Burada category repository'den kontrol edilebilir
-      }
-      
       const user = await userRepository.updateUser(command.id, updateData);
       if (!user) {
         logger.error(translation('cqrs.commands.user.updateLeader.logs.notFound'), { id: command.id });
         throw new Error(translation('cqrs.commands.user.updateLeader.logs.notFound'));
       }
       
-      // Güncellenmiş kullanıcıyı kategori bilgileriyle birlikte getir
-      const updatedUser = await userRepository.findUserByIdWithCategories(command.id);
+      // Güncellenmiş kullanıcıyı getir
+      const updatedUser = await userRepository.findUserById(command.id);
       
       // MongoDB'den gelen _id'yi id olarak normalize et
       const result = {
@@ -62,9 +50,7 @@ export class UpdateLeaderCommandHandler {
         isActive: updatedUser.isActive,
         createdAt: updatedUser.createdAt,
         updatedAt: updatedUser.updatedAt,
-        phoneNumber: updatedUser.phoneNumber,
-        // Leader için kategori ID'leri
-        categoryIds: updatedUser.categoryIds || []
+        phoneNumber: updatedUser.phoneNumber
       };
       
       logger.info(translation('cqrs.commands.user.updateLeader.logs.success'), { userId: updatedUser._id });

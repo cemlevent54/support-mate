@@ -4,6 +4,7 @@ from models.ticket import Ticket
 from typing import List, Optional
 from repositories.ChatRepository import ChatRepository
 from repositories.MessageRepository import MessageRepository
+from repositories.CategoryRepository import CategoryRepository
 from middlewares.auth import get_user_by_id
 
 logger = logging.getLogger(__name__)
@@ -11,11 +12,12 @@ logger = logging.getLogger(__name__)
 class ListTicketsForLeaderQueryHandler:
     def __init__(self):
         self._repository = TicketRepository()
+        self._category_repository = CategoryRepository()
 
     def execute(self, user: dict, token: str = None) -> list:
         """
-        List tickets based on leader's categories and task assignments
-        - If ticket has no task: Show to all leaders with matching categories
+        List tickets based on leader's assigned categories
+        - Leader can only see tickets from categories where they are assigned (leaderIds contains leader's ID)
         - If ticket has task: Show only to the leader who assigned the task
         """
         try:
@@ -25,45 +27,30 @@ class ListTicketsForLeaderQueryHandler:
             
             leader_id = user.get('id')
             
-            # gRPC ile auth service'ten user bilgisini al
-            leader_category_ids = []
-            if token and leader_id:
-                try:
-                    logger.info(f"Getting user details via gRPC for leader ID: {leader_id}")
-                    user_details = get_user_by_id(leader_id, token)
-                    logger.info(f"User details from gRPC: {user_details}")
-                    
-                    if user_details and 'categoryIds' in user_details:
-                        leader_category_ids = user_details.get('categoryIds', [])
-                        logger.info(f"Category IDs from gRPC: {leader_category_ids}")
-                    else:
-                        logger.warning(f"No categoryIds in user details from gRPC")
-                except Exception as e:
-                    logger.error(f"Error getting user details via gRPC: {str(e)}")
-                    leader_category_ids = []
-            else:
-                # Fallback: JWT'den al
-                leader_category_ids = user.get('categoryIds', [])
-                logger.info(f"Using categoryIds from JWT: {leader_category_ids}")
-            
-            logger.info(f"Leader ID: {leader_id}")
-            logger.info(f"Final Leader category IDs: {leader_category_ids}")
-            logger.info(f"Category IDs type: {type(leader_category_ids)}")
-            logger.info(f"Category IDs length: {len(leader_category_ids) if leader_category_ids else 0}")
-            
             if not leader_id:
                 logger.warning("Leader ID not found in user data")
                 logger.info("=== DETAILED LOGGING END ===")
                 return []
             
+            logger.info(f"Leader ID: {leader_id}")
+            
+            # Get all categories where this leader is assigned
+            all_categories = self._category_repository.list_all()
+            leader_category_ids = []
+            
+            for category in all_categories:
+                category_leader_ids = getattr(category, 'leaderIds', [])
+                if leader_id in category_leader_ids:
+                    leader_category_ids.append(category.id)
+            
+            logger.info(f"Leader {leader_id} is assigned to categories: {leader_category_ids}")
+            
             if not leader_category_ids:
-                logger.warning(f"Leader {leader_id} has no categoryIds")
+                logger.warning(f"Leader {leader_id} is not assigned to any categories")
                 logger.info("=== DETAILED LOGGING END ===")
                 return []
             
-            logger.info(f"Leader {leader_id} has categories: {leader_category_ids}")
-            
-            # Find tickets that match leader's categories and are not deleted
+            # Find tickets that match leader's assigned categories and are not deleted
             tickets_data = self._repository.collection.find({
                 "isDeleted": False,
                 "categoryId": {"$in": leader_category_ids}
@@ -105,7 +92,7 @@ class ListTicketsForLeaderQueryHandler:
                 
                 tickets.append(ticket_dict)
             
-            logger.info(f"Found {len(tickets)} tickets for leader {leader_id} with categories {leader_category_ids}")
+            logger.info(f"Found {len(tickets)} tickets for leader {leader_id} with assigned categories {leader_category_ids}")
             logger.info("=== DETAILED LOGGING END ===")
             return tickets
             

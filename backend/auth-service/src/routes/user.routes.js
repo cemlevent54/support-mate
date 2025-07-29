@@ -11,10 +11,10 @@ const router = Router();
 router.get('/profile', authMiddleware, userController.getAuthenticatedUser);
 
 // GET /users/role?roleName=Employee
-router.get('/role', authMiddleware, userController.getUsersByRole);
+router.get('/role', authMiddleware, requireRole(['Admin', 'Leader']), userController.getUsersByRole);
 // GET /users/:id
 router.get('/:id', userController.getUserById);
-router.get('/', authMiddleware, requireRole('Admin'), userController.getAllUsers);
+router.get('/', authMiddleware, requireRole(['Admin', 'Leader']), userController.getAllUsers);
 
 // PATCH /users/:id - Kullanıcı kendi profilini güncelleyebilir veya Admin tüm kullanıcıları güncelleyebilir
 router.patch('/:id', authMiddleware, userController.updateUser);
@@ -35,10 +35,10 @@ router.get('/employees/:employeeId/leader', authMiddleware, requireRole(['Admin'
 router.get('/leaders/with-employees', authMiddleware, requireRole(['Admin', 'Leader']), userController.getLeadersWithEmployees);
 
 // POST /users/assign-employee - Employee'yi Leader'a ata (sadece Admin)
-router.post('/assign-employee', authMiddleware, requireRole('Admin'), userController.assignEmployeeToLeader);
+router.post('/assign-employee', authMiddleware, requireRole(['Admin', 'Leader']), userController.assignEmployeeToLeader);
 
 // DELETE /users/employees/:employeeId/leader - Employee'yi Leader'dan çıkar (sadece Admin)
-router.delete('/employees/:employeeId/leader', authMiddleware, requireRole('Admin'), userController.removeEmployeeFromLeader);
+router.delete('/employees/:employeeId/leader', authMiddleware, requireRole(['Admin', 'Leader']), userController.removeEmployeeFromLeader);
 
 
 

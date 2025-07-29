@@ -5,6 +5,7 @@ import CustomTicketTable from '../../components/tickets/CustomTicketTable/Custom
 import CustomTicketDetailModal from '../../components/tickets/CustomTicketDetailModal/CustomTicketDetailModal';
 import CustomTaskDetailsModal from '../../components/common/CustomTaskDetailsModal';
 import CustomChatMessagesModal from '../../components/common/CustomChatMessagesModal';
+import CustomLoadingState from '../../components/common/CustomLoadingState';
 import CreateTask from '../support/CreateTask';
 import { useTranslation } from 'react-i18next';
 
@@ -196,24 +197,33 @@ const LeaderTickets = () => {
       <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '2rem', color: '#333' }}>
         {t('leaderTickets.title')}
       </h1>
-      <CustomTicketTable
-        rows={tickets}
-        columns={columns}
-        loading={loading}
-        error={error}
-        i18nNamespace="leaderTickets"
-        onDetail={row => {
-          setSelectedTicket(row);
-          setModalType('detail');
-          setModalOpen(true);
-        }}
-        onChat={row => {
-          setSelectedTicket(row);
-          setModalType('chat');
-          setModalOpen(true);
-        }}
-        renderActions={renderActions}
-      />
+      
+      {loading ? (
+        <CustomLoadingState 
+          loading={true}
+          message={t('leaderTickets.loading', 'Ticket\'lar yükleniyor...')}
+          size="large"
+        />
+      ) : (
+        <CustomTicketTable
+          rows={tickets}
+          columns={columns}
+          loading={loading}
+          error={error}
+          i18nNamespace="leaderTickets"
+          onDetail={row => {
+            setSelectedTicket(row);
+            setModalType('detail');
+            setModalOpen(true);
+          }}
+          onChat={row => {
+            setSelectedTicket(row);
+            setModalType('chat');
+            setModalOpen(true);
+          }}
+          renderActions={renderActions}
+        />
+      )}
 
       {/* CreateTask Component */}
       <CreateTask 

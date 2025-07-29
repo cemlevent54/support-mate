@@ -23,7 +23,6 @@ export class GetLeadersWithEmployeesQueryHandler {
         createdAt: leader.createdAt,
         updatedAt: leader.updatedAt,
         phoneNumber: leader.phoneNumber,
-        categoryIds: leader.categoryIds || [],
         // Employee'leri normalize et
         employees: leader.employees ? leader.employees.map(employee => ({
           id: employee._id,

@@ -68,28 +68,6 @@ class UserRepository {
     }
   }
 
-  async findUserByIdWithCategories(id) {
-    try {
-      logger.info(translation('repositories.userRepository.logs.finding'), { id });
-      // Basit findById kullan, populate sadece role
-      const user = await UserModel.findById(id).populate('role');
-      
-      if (user) {
-        logger.info(translation('repositories.userRepository.logs.found'), { id, categoryIds: user.categoryIds });
-      } else {
-        logger.info(translation('repositories.userRepository.logs.notFound'), { id });
-      }
-      return user;
-    } catch (err) {
-      logger.error(translation('repositories.userRepository.logs.errorFinding'), { 
-        error: err.message || err, 
-        stack: err.stack,
-        id 
-      });
-      throw err;
-    }
-  }
-
   async findAllUsers(options = {}) {
     try {
       const { page = 1, limit = 10, role, search } = options;

@@ -450,6 +450,7 @@
         "getAuthenticatedError": "Error occurred while fetching authenticated user",
         "getLeadersWithEmployeesSuccess": "Leaders with employees retrieved successfully",
         "getLeadersWithEmployeesError": "Error occurred while fetching leaders with employees",
+        "noAvailableEmployees": "No available employees found",
         "roleNameRequired": "Role name is required"
       }
     },

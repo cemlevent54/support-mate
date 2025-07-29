@@ -1,4 +1,7 @@
 {
+  "common": {
+    "loading": "Yükleniyor..."
+  },
   "accountDeleteSuccess": "Hesabınız silindi.",
   "accountDeleteError": "Hesap silinirken bir hata oluştu.",
   "components": {
@@ -285,7 +288,34 @@
     },
     "noLeaders": "Leader bulunamadı",
     "loading": "Yükleniyor...",
-    "rowsPerPage": "Sayfa başına leader:"
+    "rowsPerPage": "Sayfa başına leader:",
+    "actions": {
+      "viewCategories": "Kategorileri Gör",
+      "viewEmployees": "Çalışanları Gör",
+      "noPermissionToViewCategories": "Kategorileri görme yetkiniz yok",
+      "noPermissionToViewEmployees": "Çalışanları görme yetkiniz yok"
+    },
+    "categoryModal": {
+      "title": "Kategorileri Gör",
+      "assignedCategories": "Atanmış Kategoriler",
+      "loading": "Kategoriler yükleniyor...",
+      "noCategories": "Kategori bulunamadı",
+      "selectedCategories": "Seçili kategoriler",
+      "close": "Kapat"
+    },
+    "employeeModal": {
+      "addEmployee": "Çalışan Ekle",
+      "viewEmployees": "Çalışanları Gör",
+      "assignableEmployees": "Atanabilir Çalışanlar",
+      "currentEmployees": "Mevcut Çalışanlar",
+      "loading": "Çalışanlar yükleniyor...",
+      "noAssignableEmployees": "Atanabilir çalışan bulunamadı",
+      "noAssignedEmployees": "Bu leader'a atanmış çalışan bulunmuyor",
+      "active": "Aktif",
+      "inactive": "Pasif",
+      "assign": "Ata",
+      "close": "Kapat"
+    }
   },
   "adminUsers": {
     "title": "Kullanıcı Yönetimi",
@@ -407,6 +437,7 @@
       "profile": "Profil",
       "kanban": "Kanban",
       "leaderTickets": "Leader Talepleri",
+      "employees": "Çalışanlar",
       "language": "Dil"
     },
     "chatsTitle": "Sohbetler",
@@ -517,7 +548,7 @@
       "rowsPerPage": "Kayıt / Sayfa",
       "total": "Toplam"
     },
-    "loading": "Yükleniyor...",
+    "loading": "Admin ticket'ları yükleniyor...",
     "noTickets": "Kayıt yok",
     "modal": {
       "title": "Talep Detayları",
@@ -536,30 +567,29 @@
   },
 
   "adminCategories": {
-    "fetchError": "Kategoriler alınırken bir hata oluştu.",
-    "createError": "Kategori oluşturulurken bir hata oluştu.",
-    "updateError": "Kategori güncellenirken bir hata oluştu.",
-    "deleteError": "Kategori silinirken bir hata oluştu.",
-    "notFound": "Kategori bulunamadı.",
-    "notCreated": "Kategori oluşturulamadı.",
-    "notUpdated": "Kategori güncellenemedi.",
-    "notDeleted": "Kategori silinemedi.",
-    "deleteSuccess": "Kategori başarıyla silindi.",
-    "title": "Kategoriler",
+    "title": "Kategori Yönetimi",
     "add": "Kategori Ekle",
-    "edit": "Kategoriyi Düzenle",
-    "delete": "Sil",
+    "edit": "Kategori Düzenle",
+    "delete": "Kategori Sil",
     "save": "Kaydet",
     "cancel": "İptal",
+    "selectLeaders": "Liderler Seç",
+    "noLeaders": "Lider atanmamış",
+    "saveSuccess": "Kategori başarıyla kaydedildi",
+    "saveError": "Kategori kaydedilirken hata oluştu",
+    "deleteSuccess": "Kategori başarıyla silindi",
+    "deleteError": "Kategori silinirken hata oluştu",
+    "fetchError": "Kategoriler yüklenirken hata oluştu",
+    "confirmDeleteTitle": "Kategori Sil",
+    "confirmDeleteDesc": "Bu kategoriyi silmek istediğinize emin misiniz?",
+    "confirmDeleteYes": "Evet, Sil",
+    "confirmDeleteNo": "İptal",
     "table": {
       "nameTr": "Kategori Adı (TR)",
       "nameEn": "Kategori Adı (EN)",
+      "leaders": "Liderler",
       "actions": "İşlemler"
-    },
-    "confirmDeleteTitle": "Kategoriyi Sil",
-    "confirmDeleteDesc": "Bu kategoriyi silmek istediğinize emin misiniz?",
-    "confirmDeleteYes": "Evet, Sil",
-    "confirmDeleteNo": "Vazgeç"
+    }
   },
   "adminProducts": {
     "title": "Ürünler",
@@ -642,7 +672,8 @@
     "close": "Kapat"
   },
   "leaderTickets": {
-    "title": "Atandığım Ticketlar",
+    "title": "Destek Talepleri",
+    "loading": "Ticket'lar yükleniyor...",
     "error": "Bir hata oluştu.",
     "chatModalTitle": "Chat",
     "detailModalTitle": "Ticket Detayları",
@@ -729,6 +760,7 @@
   },
   "supportRequests": {
     "title": "Destek Talepleri",
+    "loading": "Destek talepleri yükleniyor...",
     "modalTitle": "Ticket Detayları",
     "buttons": {
       "chat": "Chat",
@@ -762,6 +794,65 @@
       "pending": "Bekliyor",
       "inProgress": "Devam Ediyor",
       "done": "Tamamlandı"
+    }
+  },
+  "leaderEmployees": {
+    "title": "Çalışan Yönetimi",
+    "table": {
+      "fullName": "Ad Soyad",
+      "email": "E-posta",
+      "status": "Durum",
+      "createdAt": "Kayıt Tarihi",
+      "actions": "İşlemler"
+    },
+    "status": {
+      "active": "Aktif",
+      "inactive": "Pasif",
+      "deleted": "Silinmiş"
+    },
+    "actions": {
+      "addEmployee": "Çalışan Ekle",
+      "detail": "Detay",
+      "manageEmployee": "Çalışan Yönet",
+      "assign": "Ata",
+      "remove": "Çıkar",
+      "close": "Kapat"
+    },
+    "modal": {
+      "addEmployee": {
+        "title": "Çalışan Ekle",
+        "assignableEmployees": "Atanabilir Çalışanlar",
+        "loading": "Çalışanlar yükleniyor...",
+        "noAvailableEmployees": "Atanabilir çalışan bulunamadı"
+      },
+      "manageEmployee": {
+        "title": "Çalışan Yönetimi",
+        "currentEmployees": "Mevcut Çalışanlar"
+      }
+    },
+    "confirm": {
+      "removeEmployee": {
+        "title": "Çalışanı Çıkar",
+        "description": "\"{{employeeName}}\" adlı çalışanı çıkarmak istediğinizden emin misiniz?",
+        "confirmText": "Evet, Çıkar",
+        "cancelText": "İptal"
+      }
+    },
+    "messages": {
+      "noEmployeesAssigned": "Henüz çalışan atanmamış",
+      "detailFeatureComingSoon": "Detay özelliği yakında eklenecek"
+    },
+    "errors": {
+      "loadEmployeesError": "Employee'lar yüklenirken hata oluştu",
+      "loadAvailableEmployeesError": "Çalışanlar yüklenirken hata oluştu",
+      "sessionNotFound": "Oturum bilgisi bulunamadı",
+      "userInfoNotFound": "Kullanıcı bilgisi alınamadı",
+      "assignEmployeeError": "Çalışan atanırken hata oluştu",
+      "removeEmployeeError": "Çalışan çıkarılırken hata oluştu",
+      "onlyLeadersCanAddEmployees": "Sadece Leader'lar çalışan ekleyebilir",
+      "onlySelfAssignment": "Sadece kendinize çalışan atayabilirsiniz",
+      "onlyOwnTeamRemoval": "Sadece kendi ekibinizden çalışan çıkarabilirsiniz",
+      "employeeNotFound": "Çalışan bulunamadı"
     }
   }
 } 

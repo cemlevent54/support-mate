@@ -31,12 +31,26 @@ class UserController {
   getAllUsers = async (req, res) => {
     try {
       const result = await userService.getAllUsers(req);
-      const message = res.__('services.userService.logs.getAllSuccess');
       const locale = res.getLocale();
       
       logger.info('=== Get All Users Response Log ===');
-      logger.info(`Response message: ${message}`);
       logger.info(`Response locale: ${locale}`);
+      
+      // Eğer result bir object ve success false ise, özel mesaj döndür
+      if (result && typeof result === 'object' && result.success === false) {
+        logger.info(`Response message: ${result.message}`);
+        logger.info(`Total users: ${result.data.length}`);
+        logger.info('=== End Get All Users Response Log ===');
+        
+        return res.status(200).json({
+          success: false,
+          message: result.message,
+          data: result.data
+        });
+      }
+      
+      const message = res.__('services.userService.logs.getAllSuccess');
+      logger.info(`Response message: ${message}`);
       logger.info(`Total users: ${result.total || result.length}`);
       logger.info('=== End Get All Users Response Log ===');
       
@@ -249,6 +263,8 @@ class UserController {
         badRequestError(res, 'Invalid leader ID format');
       } else if (err.message === 'Invalid ID format') {
         badRequestError(res, 'Invalid ID format');
+      } else if (err.message === 'You can only assign employees to yourself') {
+        badRequestError(res, 'You can only assign employees to yourself');
       } else if (err.message.includes('Invalid leader ID') || err.message.includes('Invalid employee ID')) {
         badRequestError(res, err.message);
       } else {
@@ -273,6 +289,10 @@ class UserController {
     } catch (err) {
       if (err.message === 'Invalid employee ID format') {
         badRequestError(res, 'Invalid employee ID format');
+      } else if (err.message === 'Employee not found') {
+        notFoundError(res, 'Employee not found');
+      } else if (err.message === 'You can only remove employees from your own team') {
+        badRequestError(res, 'You can only remove employees from your own team');
       } else {
         internalServerError(res, 'Internal Server Error');
       }

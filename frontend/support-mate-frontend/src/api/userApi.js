@@ -108,3 +108,14 @@ export const removeEmployeeFromLeader = async (employeeId) => {
     throw err.response?.data || err;
   }
 };
+
+// 11. Get employees by leader
+// GET /api/auth/users/leaders/:leaderId/employees
+export const getEmployeesByLeader = async (leaderId) => {
+  try {
+    const res = await axiosInstance.get(`${API_BASE_URL}/leaders/${leaderId}/employees`);
+    return res.data;
+  } catch (err) {
+    throw err.response?.data || err;
+  }
+};

@@ -6,6 +6,7 @@ class Category(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
     category_name_tr: str
     category_name_en: str
+    leaderIds: List[str] = Field(default_factory=list)
     createdAt: datetime = Field(default_factory=datetime.utcnow)
     isDeleted: bool = False
     deletedAt: Optional[datetime] = None

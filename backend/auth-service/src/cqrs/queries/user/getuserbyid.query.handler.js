@@ -32,7 +32,8 @@ export class GetUserByIdQueryHandler {
         isDeleted: user.isDeleted,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
-        phoneNumber: user.phoneNumber
+        phoneNumber: user.phoneNumber,
+        leaderId: user.leaderId ? user.leaderId.toString() : null
       };
       
       logger.info(translation('cqrs.queries.user.getUserById.logs.success'), { userId: user._id });

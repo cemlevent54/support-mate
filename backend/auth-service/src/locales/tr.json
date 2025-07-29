@@ -450,6 +450,7 @@
         "getAuthenticatedError": "Kimliği doğrulanmış kullanıcı getirilirken hata oluştu",
         "getLeadersWithEmployeesSuccess": "Leader'lar çalışanları ile birlikte başarıyla getirildi",
         "getLeadersWithEmployeesError": "Leader'lar çalışanları ile birlikte getirilirken hata oluştu",
+        "noAvailableEmployees": "Atanabilir çalışan bulunamadı",
         "roleNameRequired": "Rol adı gereklidir"
       }
     },

@@ -41,6 +41,7 @@ class CategoryService:
             id=created_category.id,
             category_name_tr=created_category.category_name_tr,
             category_name_en=created_category.category_name_en,
+            leaderIds=getattr(created_category, "leaderIds", []),
             createdAt=created_category.createdAt,
             isDeleted=created_category.isDeleted,
             deletedAt=created_category.deletedAt
@@ -59,6 +60,7 @@ class CategoryService:
                 id=updated_category.id,
                 category_name_tr=updated_category.category_name_tr,
                 category_name_en=updated_category.category_name_en,
+                leaderIds=getattr(updated_category, "leaderIds", []),
                 createdAt=updated_category.createdAt,
                 isDeleted=updated_category.isDeleted,
                 deletedAt=updated_category.deletedAt
@@ -87,6 +89,7 @@ class CategoryService:
             id=cat.id,
             category_name_tr=cat.category_name_tr,
             category_name_en=cat.category_name_en,
+            leaderIds=getattr(cat, "leaderIds", []),
             createdAt=cat.createdAt,
             isDeleted=cat.isDeleted,
             deletedAt=cat.deletedAt
@@ -101,6 +104,7 @@ class CategoryService:
             id=category.id,
             category_name_tr=getattr(category, "category_name_tr", None),
             category_name_en=getattr(category, "category_name_en", None),
+            leaderIds=getattr(category, "leaderIds", []),
             createdAt=getattr(category, "createdAt", None),
             isDeleted=getattr(category, "isDeleted", None),
             deletedAt=getattr(category, "deletedAt", None)

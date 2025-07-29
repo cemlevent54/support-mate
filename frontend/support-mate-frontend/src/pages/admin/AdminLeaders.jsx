@@ -14,7 +14,7 @@ import {
 
 import CustomTable from '../../components/common/CustomTable';
 import CustomButton from '../../components/common/CustomButton';
-import { getLeaders, getEmployees, assignEmployeeToLeader, removeEmployeeFromLeader } from '../../api/userApi';
+import { getLeaders, getEmployees, assignEmployeeToLeader } from '../../api/userApi';
 import * as roleApi from '../../api/roleApi';
 import { getAdminCategories } from '../../api/categoryApi';
 import ConfirmModal from '../../components/common/ConfirmModal';
@@ -36,13 +36,13 @@ export default function AdminLeaders() {
   const [employeeModal, setEmployeeModal] = useState({ open: false, leader: null, action: 'add' });
   const [employees, setEmployees] = useState([]);
   const [employeesLoading, setEmployeesLoading] = useState(false);
-  const [confirmRemoveEmployee, setConfirmRemoveEmployee] = useState({ open: false, employeeId: null, employeeName: '' });
+  // confirmRemoveEmployee state'i kaldırıldı - Admin sadece görüntüleme yapıyor
 
   // Category assignment modal states
   const [categoryModal, setCategoryModal] = useState({ open: false, leader: null });
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
-  const [categoryUpdateLoading, setCategoryUpdateLoading] = useState(false);
+  // categoryUpdateLoading state'i kaldırıldı - Admin sadece görüntüleme yapıyor
 
   const showSnackbar = (message, severity) => {
     setSnackbar({ open: true, message, severity });
@@ -187,12 +187,11 @@ export default function AdminLeaders() {
     console.log('handleOpenCategoryModal called:', leader);
     setCategoryModal({ open: true, leader });
     
-    // Leader'ın mevcut kategorilerini set et
-    if (leader.categoryIds && Array.isArray(leader.categoryIds)) {
-      setSelectedCategories(leader.categoryIds.map(id => id.toString()));
-    } else {
-      setSelectedCategories([]);
-    }
+    // Leader'ın mevcut kategorilerini set et - artık kategorilerin leaderIds'ini kontrol ediyoruz
+    const leaderCategories = categories.filter(category => 
+      category.leaderIds && category.leaderIds.includes(leader.id)
+    );
+    setSelectedCategories(leaderCategories.map(cat => cat.id.toString()));
   };
 
   const handleCloseCategoryModal = () => {
@@ -200,37 +199,7 @@ export default function AdminLeaders() {
     setSelectedCategories([]);
   };
 
-  const handleCategoryChange = (categoryId) => {
-    setSelectedCategories(prev => {
-      if (prev.includes(categoryId)) {
-        // Kategori zaten seçiliyse kaldır
-        return prev.filter(id => id !== categoryId);
-      } else {
-        // Kategori seçili değilse ekle
-        return [...prev, categoryId];
-      }
-    });
-  };
-
-  const handleSaveCategories = async () => {
-    if (!categoryModal.leader) return;
-    
-    setCategoryUpdateLoading(true);
-    try {
-      // updateUser API'sini kullanarak kategori güncellemesi yap
-      const { updateUser } = await import('../../api/userApi');
-      await updateUser(categoryModal.leader.id, { categoryIds: selectedCategories });
-      
-      showSnackbar('Kategoriler başarıyla güncellendi', 'success');
-      handleCloseCategoryModal();
-      fetchLeaders(); // Leader listesini yenile
-    } catch (error) {
-      console.error('Kategori güncellenirken hata:', error);
-      showSnackbar(error.message || 'Kategori güncellenirken hata oluştu', 'error');
-    } finally {
-      setCategoryUpdateLoading(false);
-    }
-  };
+  // handleCategoryChange ve handleSaveCategories fonksiyonları kaldırıldı - Admin sadece görüntüleme yapıyor
 
   const filteredLeaders = leaders;
 
@@ -326,22 +295,11 @@ export default function AdminLeaders() {
   const tableData = filteredLeaders.map(leader => {
     console.log('Processing leader:', leader);
     console.log('Leader employees:', leader.employees);
-    console.log('Leader categoryIds:', leader.categoryIds);
     
-    // Leader'ın kategorilerini bul
-    const leaderCategories = leader.categoryIds ? 
-      categories.filter(category => {
-        const categoryId = category.id || category._id;
-        const isMatch = leader.categoryIds.includes(categoryId);
-        console.log('Category matching:', {
-          categoryId,
-          categoryName: category.name,
-          leaderCategoryIds: leader.categoryIds,
-          isMatch
-        });
-        return isMatch;
-      }) : 
-      [];
+    // Leader'ın kategorilerini bul - artık kategorilerin leaderIds'ini kontrol ediyoruz
+    const leaderCategories = categories.filter(category => 
+      category.leaderIds && category.leaderIds.includes(leader.id)
+    );
     
     console.log('Leader categories:', leaderCategories);
     
@@ -362,42 +320,29 @@ export default function AdminLeaders() {
         size="small"
         variant="primary"
         onClick={() => {
-          console.log('Kategori Ata butonuna tıklandı:', row);
+          console.log('Kategorileri Gör butonuna tıklandı:', row);
           handleOpenCategoryModal(row.actions);
         }}
         disabled={permissionsLoading || row.isDeleted || (!isAdmin() && !hasPermission('user:write'))}
-        title={(!isAdmin() && !hasPermission('user:write')) ? 'Kategori atama yetkiniz yok' : ''}
+        title={(!isAdmin() && !hasPermission('user:write')) ? t('adminLeaders.actions.noPermissionToViewCategories') : ''}
         style={{ backgroundColor: '#4caf50', color: '#fff' }}
       >
-        Kategori Ata
+        {t('adminLeaders.actions.viewCategories')}
       </CustomButton>
-      <CustomButton
-        size="small"
-        variant="danger"
-        onClick={() => {
-          console.log('Çalışan Ekle butonuna tıklandı:', row);
-          // row.actions leader objesini içeriyor
-          handleOpenEmployeeModal(row.actions, 'add');
-        }}
-        disabled={false} // Geçici olarak disabled kaldırıldı
-        title="Çalışan Ekle"
-        style={{ backgroundColor: '#ff0000', color: '#fff' }}
-      >
-        Çalışan Ekle
-      </CustomButton>
+      {/* Admin için çalışan ekle butonu kaldırıldı - sadece görüntüleme */}
       <CustomButton
         size="small"
         variant="secondary"
         onClick={() => {
-          console.log('Çalışan Yönet butonuna tıklandı:', row);
+          console.log('Çalışanları Gör butonuna tıklandı:', row);
           console.log('Leader employees:', row.employees);
           // row.actions leader objesini içeriyor
           handleOpenEmployeeModal(row.actions, 'manage');
         }}
         disabled={permissionsLoading || row.isDeleted || (!isAdmin() && !hasPermission('user:write'))}
-        title={(!isAdmin() && !hasPermission('user:write')) ? 'Çalışan yönetimi yetkiniz yok' : ''}
+        title={(!isAdmin() && !hasPermission('user:write')) ? t('adminLeaders.actions.noPermissionToViewEmployees') : ''}
       >
-        Çalışan Yönet
+        {t('adminLeaders.actions.viewEmployees')}
       </CustomButton>
 
     </div>
@@ -446,38 +391,7 @@ export default function AdminLeaders() {
     }
   };
 
-  const handleRemoveEmployee = async (employeeId) => {
-    try {
-      console.log('handleRemoveEmployee called with employeeId:', employeeId);
-      const response = await removeEmployeeFromLeader(employeeId);
-      showSnackbar(response.message, 'success');
-      handleCloseEmployeeModal();
-      fetchLeaders(); // Leader listesini yenile
-    } catch (error) {
-      console.error('Çalışan çıkarılırken hata:', error);
-      showSnackbar(error.message || 'Çalışan çıkarılırken hata oluştu', 'error');
-    }
-  };
-
-  const handleConfirmRemoveEmployee = async () => {
-    const employeeId = confirmRemoveEmployee.employeeId;
-    if (!employeeId) return;
-    
-    try {
-      const response = await removeEmployeeFromLeader(employeeId);
-      showSnackbar(response.message, 'success');
-      setConfirmRemoveEmployee({ open: false, employeeId: null, employeeName: '' });
-      handleCloseEmployeeModal(); // Çalışan yönetimi modalını kapat
-      fetchLeaders(); // Leader listesini yenile
-    } catch (error) {
-      console.error('Çalışan çıkarılırken hata:', error);
-      showSnackbar(error.message || 'Çalışan çıkarılırken hata oluştu', 'error');
-    }
-  };
-
-  const handleCancelRemoveEmployee = () => {
-    setConfirmRemoveEmployee({ open: false, employeeId: null, employeeName: '' });
-  };
+  // handleRemoveEmployee, handleConfirmRemoveEmployee, handleCancelRemoveEmployee fonksiyonları kaldırıldı - Admin sadece görüntüleme yapıyor
 
   return (
     <Box>
@@ -518,19 +432,19 @@ export default function AdminLeaders() {
       <Dialog open={categoryModal.open} onClose={handleCloseCategoryModal} maxWidth="md" fullWidth>
         <DialogTitle>
           {categoryModal.leader ? 
-            `${categoryModal.leader.firstName} ${categoryModal.leader.lastName} - Kategori Atama` : 
-            'Kategori Atama'
+            `${categoryModal.leader.firstName} ${categoryModal.leader.lastName} - ${t('adminLeaders.categoryModal.title')}` : 
+            t('adminLeaders.categoryModal.title')
           }
         </DialogTitle>
         <DialogContent>
           <Box sx={{ mt: 2 }}>
             <Typography variant="h6" mb={2}>
-              Kategori Seçimi
+              {t('adminLeaders.categoryModal.assignedCategories')}
             </Typography>
             {categoriesLoading ? (
-              <Typography>Kategoriler yükleniyor...</Typography>
+              <Typography>{t('adminLeaders.categoryModal.loading')}</Typography>
             ) : categories.length === 0 ? (
-              <Typography>Kategori bulunamadı</Typography>
+              <Typography>{t('adminLeaders.categoryModal.noCategories')}</Typography>
             ) : (
               <Box sx={{ 
                 maxHeight: '400px', 
@@ -561,11 +475,12 @@ export default function AdminLeaders() {
                       <input
                         type="checkbox"
                         checked={selectedCategories.includes(category.id.toString())}
-                        onChange={() => handleCategoryChange(category.id.toString())}
+                        disabled={true} // Admin için read-only
                         style={{
                           width: '16px',
                           height: '16px',
-                          accentColor: '#1976d2'
+                          accentColor: '#1976d2',
+                          opacity: '0.5'
                         }}
                       />
                       <span>{categoryName || category.name}</span>
@@ -577,7 +492,7 @@ export default function AdminLeaders() {
             {selectedCategories.length > 0 && (
               <Box sx={{ mt: 2, p: 2, backgroundColor: '#e3f2fd', borderRadius: '6px' }}>
                 <Typography variant="body2" color="primary">
-                  Seçili kategoriler: {selectedCategories.length}
+                  {t('adminLeaders.categoryModal.selectedCategories')}: {selectedCategories.length}
                 </Typography>
               </Box>
             )}
@@ -585,15 +500,9 @@ export default function AdminLeaders() {
         </DialogContent>
         <DialogActions>
           <CustomButton onClick={handleCloseCategoryModal} variant="outline">
-            İptal
+            {t('adminLeaders.categoryModal.close')}
           </CustomButton>
-          <CustomButton 
-            onClick={handleSaveCategories} 
-            variant="primary"
-            disabled={categoryUpdateLoading}
-          >
-            {categoryUpdateLoading ? 'Kaydediliyor...' : 'Kaydet'}
-          </CustomButton>
+          {/* Admin için kaydet butonu kaldırıldı - sadece görüntüleme */}
         </DialogActions>
       </Dialog>
 
@@ -603,8 +512,8 @@ export default function AdminLeaders() {
         {console.log('Leader in modal:', employeeModal.leader)}
         <DialogTitle>
           {employeeModal.action === 'add' 
-            ? `${employeeModal.leader?.firstName} ${employeeModal.leader?.lastName} - Çalışan Ekle`
-            : `${employeeModal.leader?.firstName} ${employeeModal.leader?.lastName} - Çalışan Yönetimi`
+            ? `${employeeModal.leader?.firstName} ${employeeModal.leader?.lastName} - ${t('adminLeaders.employeeModal.addEmployee')}`
+            : `${employeeModal.leader?.firstName} ${employeeModal.leader?.lastName} - ${t('adminLeaders.employeeModal.viewEmployees')}`
           }
         </DialogTitle>
         <DialogContent>
@@ -612,13 +521,13 @@ export default function AdminLeaders() {
             // Çalışan Ekleme Modal'ı
             <Box>
               <Typography variant="h6" mb={2}>
-                Atanabilir Çalışanlar
+                {t('adminLeaders.employeeModal.assignableEmployees')}
               </Typography>
               {console.log('Modal content - employeesLoading:', employeesLoading, 'employees:', employees)}
               {employeesLoading ? (
-                <Typography>Çalışanlar yükleniyor...</Typography>
+                <Typography>{t('adminLeaders.employeeModal.loading')}</Typography>
               ) : employees.length === 0 ? (
-                <Typography>Atanabilir çalışan bulunamadı</Typography>
+                <Typography>{t('adminLeaders.employeeModal.noAssignableEmployees')}</Typography>
               ) : (
                 <Box sx={{ maxHeight: '400px', overflowY: 'auto' }}>
                   {employees.map((employee, index) => (
@@ -658,7 +567,7 @@ export default function AdminLeaders() {
                         onClick={() => handleAssignEmployee(employee.id)}
                         sx={{ ml: 2 }}
                       >
-                        Ata
+                        {t('adminLeaders.employeeModal.assign')}
                       </CustomButton>
                     </Box>
                   ))}
@@ -666,14 +575,14 @@ export default function AdminLeaders() {
               )}
             </Box>
           ) : (
-            // Çalışan Yönetimi Modal'ı
+            // Çalışanları Görme Modal'ı
             <Box>
               <Typography variant="h6" mb={2}>
-                Mevcut Çalışanlar
+                {t('adminLeaders.employeeModal.currentEmployees')}
               </Typography>
               {console.log('Leader employees:', employeeModal.leader?.employees)}
               {!employeeModal.leader?.employees || employeeModal.leader.employees.length === 0 ? (
-                <Typography>Bu leader'a atanmış çalışan bulunmuyor</Typography>
+                <Typography>{t('adminLeaders.employeeModal.noAssignedEmployees')}</Typography>
               ) : (
                 <Box sx={{ maxHeight: '400px', overflowY: 'auto' }}>
                   {employeeModal.leader.employees.map((employee, index) => (
@@ -701,26 +610,13 @@ export default function AdminLeaders() {
                           {employee.email}
                         </Typography>
                         <Chip
-                          label={employee.isActive ? 'Aktif' : 'Pasif'}
+                          label={employee.isActive ? t('adminLeaders.employeeModal.active') : t('adminLeaders.employeeModal.inactive')}
                           color={employee.isActive ? 'success' : 'default'}
                           size="small"
                           sx={{ mt: 1 }}
                         />
                       </Box>
-                      <CustomButton
-                        size="small"
-                        variant="danger"
-                        onClick={() => {
-                          setConfirmRemoveEmployee({
-                            open: true,
-                            employeeId: employee.id,
-                            employeeName: `${employee.firstName} ${employee.lastName}`
-                          });
-                        }}
-                        sx={{ ml: 2 }}
-                      >
-                        Çıkar
-                      </CustomButton>
+                      {/* Admin için çıkar butonu kaldırıldı - sadece görüntüleme */}
                     </Box>
                   ))}
                 </Box>
@@ -729,22 +625,11 @@ export default function AdminLeaders() {
           )}
         </DialogContent>
         <DialogActions>
-          <CustomButton onClick={handleCloseEmployeeModal} variant="outline">Kapat</CustomButton>
+          <CustomButton onClick={handleCloseEmployeeModal} variant="outline">{t('adminLeaders.employeeModal.close')}</CustomButton>
         </DialogActions>
       </Dialog>
 
-      {/* ConfirmModal ile çalışan çıkarma onayı */}
-      <ConfirmModal
-        open={confirmRemoveEmployee.open}
-        onConfirm={handleConfirmRemoveEmployee}
-        onCancel={handleCancelRemoveEmployee}
-        title="Çalışanı Çıkar"
-        description={`"${confirmRemoveEmployee.employeeName}" adlı çalışanı bu leader'dan çıkarmak istediğinizden emin misiniz?`}
-        confirmText="Evet, Çıkar"
-        cancelText="İptal"
-        confirmColor="danger"
-        zIndex={9999}
-      />
+      {/* ConfirmModal kaldırıldı - Admin sadece görüntüleme yapıyor */}
     </Box>
   );
 }
