@@ -12,6 +12,7 @@ import AdminUsers from './pages/admin/AdminUsers';
 import AdminLeaders from './pages/admin/AdminLeaders';
 import AdminUserRoles from './pages/admin/AdminUserRoles';
 import AdminRolePermissions from './pages/admin/AdminRolePermissions';
+import AdminDashboard from './pages/admin/AdminDashboard';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import SixDigitVerifyEmail from './pages/auth/SixDigitVerifyEmail';
@@ -70,12 +71,11 @@ export const appRoutes = [
     children: [
       {
         path: '',
-        element: (
-          <Box>
-            <Typography variant="h5" fontWeight={600} mb={2}>Hoş Geldiniz</Typography>
-            <Typography>Admin panelini kullanmaya başlayın.</Typography>
-          </Box>
-        ),
+        element: <AdminDashboard />,
+      },
+      {
+        path: 'dashboard',
+        element: <AdminDashboard />,
       },
       {
         path: 'users',

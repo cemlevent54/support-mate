@@ -294,21 +294,133 @@ class UserRepository {
 
   async findLeadersWithEmployees() {
     try {
-      logger.info('Finding all leaders with their employees');
+      logger.info(translation('repositories.userRepository.logs.findingLeadersWithEmployees'));
       
       const leaders = await UserModel.find({ 
-        roleName: 'Leader',
+        roleName: 'Leader', 
         isDeleted: false 
-      })
-      .populate('employees')
-      .populate('role')
-      .select('-password')
-      .sort({ createdAt: -1 });
+      }).populate('role');
       
-      logger.info('Found leaders with employees', { count: leaders.length });
-      return leaders;
+      // Her leader için employee'leri bul
+      const leadersWithEmployees = await Promise.all(
+        leaders.map(async (leader) => {
+          const employees = await UserModel.find({ 
+            leaderId: leader._id, 
+            isDeleted: false 
+          }).populate('role');
+          
+          return {
+            ...leader.toObject(),
+            employees
+          };
+        })
+      );
+      
+      logger.info(translation('repositories.userRepository.logs.foundLeadersWithEmployees'), { 
+        leaderCount: leadersWithEmployees.length 
+      });
+      
+      return leadersWithEmployees;
     } catch (err) {
-      logger.error('Error finding leaders with employees', { error: err });
+      logger.error(translation('repositories.userRepository.logs.errorFindingLeadersWithEmployees'), { error: err });
+      throw err;
+    }
+  }
+
+  // Report metodları
+  async getTotalUsers() {
+    try {
+      logger.info('UserRepository: getTotalUsers executing');
+      
+      const totalUsers = await UserModel.countDocuments({ isDeleted: false });
+      
+      logger.info('UserRepository: getTotalUsers success', { totalUsers });
+      return totalUsers;
+    } catch (err) {
+      logger.error('UserRepository: getTotalUsers error', { error: err });
+      throw err;
+    }
+  }
+
+  async getActiveAgents() {
+    try {
+      logger.info('UserRepository: getActiveAgents executing');
+      
+      // Son 24 saatte aktif olan agent'ları say
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      
+      const activeAgents = await UserModel.countDocuments({
+        isDeleted: false,
+        roleName: { $in: ['Employee', 'Supporter'] },
+        lastActivity: { $gte: twentyFourHoursAgo }
+      });
+      
+      logger.info('UserRepository: getActiveAgents success', { activeAgents });
+      return activeAgents;
+    } catch (err) {
+      logger.error('UserRepository: getActiveAgents error', { error: err });
+      throw err;
+    }
+  }
+
+  // Dashboard statistics için yeni metodlar
+  async getUsersByRoles() {
+    try {
+      logger.info('UserRepository: getUsersByRoles executing');
+      
+      const usersByRoles = await UserModel.aggregate([
+        { $match: { isDeleted: false } },
+        { $group: { 
+          _id: '$roleName', 
+          numberOfUsers: { $sum: 1 } 
+        }},
+        { $sort: { numberOfUsers: -1 } }
+      ]);
+      
+      // Role bilgilerini formatla
+      const roles = usersByRoles.map(role => ({
+        roleName: role._id,
+        numberOfUsers: role.numberOfUsers
+      }));
+      
+      logger.info('UserRepository: getUsersByRoles success', { roles });
+      return roles;
+    } catch (err) {
+      logger.error('UserRepository: getUsersByRoles error', { error: err });
+      throw err;
+    }
+  }
+
+  async getBlockedUsers() {
+    try {
+      logger.info('UserRepository: getBlockedUsers executing');
+      
+      const blockedUsers = await UserModel.countDocuments({
+        isDeleted: false,
+        isActive: false
+      });
+      
+      logger.info('UserRepository: getBlockedUsers success', { blockedUsers });
+      return blockedUsers;
+    } catch (err) {
+      logger.error('UserRepository: getBlockedUsers error', { error: err });
+      throw err;
+    }
+  }
+
+  async getVerifiedUsers() {
+    try {
+      logger.info('UserRepository: getVerifiedUsers executing');
+      
+      const verifiedUsers = await UserModel.countDocuments({
+        isDeleted: false,
+        isEmailVerified: true
+      });
+      
+      logger.info('UserRepository: getVerifiedUsers success', { verifiedUsers });
+      return verifiedUsers;
+    } catch (err) {
+      logger.error('UserRepository: getVerifiedUsers error', { error: err });
       throw err;
     }
   }

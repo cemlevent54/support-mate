@@ -528,5 +528,13 @@
       "alreadyExists": "[Permission Migration] Already exists: {{code}}",
       "allMigrated": "[Permission Migration] All static permissions migrated."
     }
+  },
+  "controllers": {
+    "reportController": {
+      "logs": {
+        "dashboardStatisticsRetrieved": "Dashboard statistics retrieved successfully",
+        "dashboardStatisticsError": "Failed to get dashboard statistics"
+      }
+    }
   }
 }

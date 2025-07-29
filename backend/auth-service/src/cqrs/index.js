@@ -45,6 +45,9 @@ export { GetPermissionByIdQueryHandler } from './queries/permission/getpermissio
 export { GetAllPermissionsQueryHandler } from './queries/permission/getallpermissions.query.handler.js';
 export { GetPermissionByCodeQueryHandler } from './queries/permission/getpermissionbycode.query.handler.js';
 
+// Query Handlers - Report
+export { GetDashboardStatisticsQueryHandler } from './queries/report/getdashboardstatistics.query.handler.js';
+
 // Command Types
 export const COMMAND_TYPES = {
   CREATE_USER: 'CREATE_USER',
@@ -74,5 +77,7 @@ export const QUERY_TYPES = {
   // Leader-Employee ilişkisi için yeni query tipleri
   GET_EMPLOYEES_BY_LEADER: 'GET_EMPLOYEES_BY_LEADER',
   GET_LEADER_BY_EMPLOYEE: 'GET_LEADER_BY_EMPLOYEE',
-  GET_LEADERS_WITH_EMPLOYEES: 'GET_LEADERS_WITH_EMPLOYEES'
+  GET_LEADERS_WITH_EMPLOYEES: 'GET_LEADERS_WITH_EMPLOYEES',
+  // Report query tipleri
+  GET_DASHBOARD_STATISTICS: 'GET_DASHBOARD_STATISTICS'
 }; 

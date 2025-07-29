@@ -108,86 +108,124 @@
       }
     },
     "queries": {
-      "permission": {
-        "getAllPermissions": {
-          "logs": {
-            "executing": "Tüm yetkiler sorgusu başlatıldı",
-            "success": "Tüm yetkiler başarıyla getirildi",
-            "fail": "Tüm yetkiler getirilirken hata oluştu"
-          }
-        },
-        "getPermissionById": {
-          "logs": {
-            "executing": "ID ile yetki sorgusu başlatıldı",
-            "success": "Yetki başarıyla getirildi",
-            "fail": "Yetki getirilirken hata oluştu"
-          }
-        },
-        "getPermissionByCode": {
-          "logs": {
-            "executing": "Kod ile yetki sorgusu başlatıldı",
-            "success": "Yetki başarıyla getirildi",
-            "fail": "Yetki getirilirken hata oluştu"
-          }
-        }
-      },
-      "role": {
-        "getAllRoles": {
-          "logs": {
-            "executing": "Tüm roller sorgusu başlatıldı",
-            "success": "Tüm roller başarıyla getirildi",
-            "fail": "Tüm roller getirilirken hata oluştu"
-          }
-        },
-        "getRoleById": {
-          "logs": {
-            "executing": "ID ile rol sorgusu başlatıldı",
-            "success": "Rol başarıyla getirildi",
-            "fail": "Rol getirilirken hata oluştu"
-          }
-        },
-        "getRoleByName": {
-          "logs": {
-            "executing": "İsim ile rol sorgusu başlatıldı",
-            "success": "Rol başarıyla getirildi",
-            "fail": "Rol getirilirken hata oluştu"
-          }
-        }
-      },
       "user": {
-        "getAllUsers": {
-          "logs": {
-            "executing": "Tüm kullanıcılar sorgusu başlatıldı",
-            "success": "Tüm kullanıcılar başarıyla getirildi",
-            "fail": "Tüm kullanıcılar getirilirken hata oluştu"
-          }
-        },
         "getUserById": {
           "logs": {
-            "executing": "ID ile kullanıcı sorgusu başlatıldı",
+            "executing": "Kullanıcı ID ile getirme işlemi başlatıldı",
             "success": "Kullanıcı başarıyla getirildi",
             "fail": "Kullanıcı getirilirken hata oluştu"
           }
         },
         "getUserByEmail": {
           "logs": {
-            "executing": "Email ile kullanıcı sorgusu başlatıldı",
+            "executing": "Kullanıcı email ile getirme işlemi başlatıldı",
             "success": "Kullanıcı başarıyla getirildi",
             "fail": "Kullanıcı getirilirken hata oluştu"
           }
         },
-        "getUsersByRole": {
+        "findAnyUserByEmail": {
           "logs": {
-            "executing": "Rol ile kullanıcılar sorgusu başlatıldı",
-            "success": "Kullanıcılar başarıyla getirildi",
+            "executing": "Kullanıcı email ile arama işlemi başlatıldı",
+            "success": "Kullanıcı başarıyla bulundu",
+            "fail": "Kullanıcı aranırken hata oluştu"
+          }
+        },
+        "findUserByGoogleId": {
+          "logs": {
+            "executing": "Kullanıcı Google ID ile arama işlemi başlatıldı",
+            "success": "Kullanıcı başarıyla bulundu",
+            "fail": "Kullanıcı aranırken hata oluştu"
+          }
+        },
+        "getAllUsers": {
+          "logs": {
+            "executing": "Tüm kullanıcıları getirme işlemi başlatıldı",
+            "success": "Tüm kullanıcılar başarıyla getirildi",
             "fail": "Kullanıcılar getirilirken hata oluştu"
           }
         },
-        "getLeaderProfile": {
+        "getUsersByRole": {
           "logs": {
-            "executing": "Leader profili sorgusu başlatıldı",
-            "success": "Leader profili başarıyla getirildi",
-            "fail": "Leader profili getirilirken hata oluştu"
+            "executing": "Rol bazlı kullanıcı getirme işlemi başlatıldı",
+            "success": "Rol bazlı kullanıcılar başarıyla getirildi",
+            "fail": "Kullanıcılar getirilirken hata oluştu"
+          }
+        },
+        "getEmployeesByLeader": {
+          "logs": {
+            "executing": "Leader'a bağlı çalışanları getirme işlemi başlatıldı",
+            "success": "Leader'a bağlı çalışanlar başarıyla getirildi",
+            "fail": "Çalışanlar getirilirken hata oluştu"
+          }
+        },
+        "getLeaderByEmployee": {
+          "logs": {
+            "executing": "Çalışanın leader'ını getirme işlemi başlatıldı",
+            "success": "Çalışanın leader'ı başarıyla getirildi",
+            "notFound": "Çalışanın leader'ı bulunamadı",
+            "fail": "Leader getirilirken hata oluştu"
+          }
+        },
+        "getLeadersWithEmployees": {
+          "logs": {
+            "executing": "Çalışanları ile birlikte leader'ları getirme işlemi başlatıldı",
+            "success": "Leader'lar başarıyla getirildi",
+            "fail": "Leader'lar getirilirken hata oluştu"
+          }
+        }
+      },
+      "role": {
+        "getRoleById": {
+          "logs": {
+            "executing": "Rol ID ile getirme işlemi başlatıldı",
+            "success": "Rol başarıyla getirildi",
+            "fail": "Rol getirilirken hata oluştu"
+          }
+        },
+        "getAllRoles": {
+          "logs": {
+            "executing": "Tüm rolleri getirme işlemi başlatıldı",
+            "success": "Tüm roller başarıyla getirildi",
+            "fail": "Roller getirilirken hata oluştu"
+          }
+        },
+        "getRoleByName": {
+          "logs": {
+            "executing": "Rol adı ile getirme işlemi başlatıldı",
+            "success": "Rol başarıyla getirildi",
+            "fail": "Rol getirilirken hata oluştu"
+          }
+        }
+      },
+      "permission": {
+        "getPermissionById": {
+          "logs": {
+            "executing": "Yetki ID ile getirme işlemi başlatıldı",
+            "success": "Yetki başarıyla getirildi",
+            "fail": "Yetki getirilirken hata oluştu"
+          }
+        },
+        "getAllPermissions": {
+          "logs": {
+            "executing": "Tüm yetkileri getirme işlemi başlatıldı",
+            "success": "Tüm yetkiler başarıyla getirildi",
+            "fail": "Yetkiler getirilirken hata oluştu"
+          }
+        },
+        "getPermissionByCode": {
+          "logs": {
+            "executing": "Yetki kodu ile getirme işlemi başlatıldı",
+            "success": "Yetki başarıyla getirildi",
+            "fail": "Yetki getirilirken hata oluştu"
+          }
+        }
+      },
+      "report": {
+        "getDashboardStatistics": {
+          "logs": {
+            "executing": "Dashboard istatistikleri getirme işlemi başlatıldı",
+            "success": "Dashboard istatistikleri başarıyla getirildi",
+            "fail": "Dashboard istatistikleri getirilirken hata oluştu"
           }
         }
       }
@@ -275,7 +313,10 @@
         "errorUpdating": "Kullanıcı güncellenirken hata oluştu",
         "deleting": "Kullanıcı siliniyor",
         "deleted": "Kullanıcı başarıyla silindi",
-        "errorDeleting": "Kullanıcı silinirken hata oluştu"
+        "errorDeleting": "Kullanıcı silinirken hata oluştu",
+        "findingLeadersWithEmployees": "Çalışanları ile birlikte leader'lar aranıyor",
+        "foundLeadersWithEmployees": "Leader'lar başarıyla bulundu",
+        "errorFindingLeadersWithEmployees": "Leader'lar aranırken hata oluştu"
       }
     }
   },
@@ -283,84 +324,39 @@
     "authService": {
       "logs": {
         "registerRequest": "Kayıt isteği alındı",
-        "userExists": "Kullanıcı zaten mevcut",
-        "userReactivated": "Soft silinmiş kullanıcı yeniden aktifleştirildi",
-        "registerSuccess": "Kayıt işlemi başarılı",
-        "registerConflict": "Kayıt başarısız: email zaten kullanımda",
-        "registerError": "Kayıt sırasında hata oluştu",
+        "registerSuccess": "Kayıt başarılı",
+        "registerError": "Kayıt hatası",
+        "registerConflict": "Kayıt çakışması",
         "loginRequest": "Giriş isteği alındı",
         "loginSuccess": "Giriş başarılı",
-        "loginFailed": "Giriş başarısız: email veya şifre hatalı",
-        "loginError": "Giriş sırasında hata oluştu",
-        "accountLocked": "Hesap geçici olarak kilitlendi. 15 dakika sonra tekrar deneyin.",
-        "tooManyFailedAttempts": "Çok fazla başarısız deneme. Hesabınız geçici olarak kilitlendi.",
-        "accountLockedMinutes": "Hesap geçici olarak kilitlendi. {minutes} dakika sonra tekrar deneyin.",
-        "emailNotVerified": "E-posta adresiniz henüz doğrulanmamış. Lütfen e-posta kutunuzu kontrol edin ve doğrulama linkine tıklayın.",
-        "alreadyLoggedIn": "Kullanıcı zaten giriş yapmış durumda. Başka bir oturum açık.",
+        "loginError": "Giriş hatası",
+        "loginFailed": "Giriş başarısız",
         "logoutRequest": "Çıkış isteği alındı",
         "logoutSuccess": "Çıkış başarılı",
-        "logoutError": "Çıkış sırasında hata oluştu",
+        "logoutError": "Çıkış hatası",
         "refreshRequest": "Token yenileme isteği alındı",
-        "refreshSuccess": "Token başarıyla yenilendi",
-        "refreshError": "Token yenileme sırasında hata oluştu",
-        "forgotPasswordRequest": "Şifremi unuttum isteği alındı",
-        "forgotPasswordSuccess": "Şifre sıfırlama başarılı",
-        "forgotPasswordError": "Şifre sıfırlama sırasında hata oluştu",
-        "resetPasswordRequest": "Şifre sıfırlama isteği alındı",
-        "resetPasswordSuccess": "Şifre başarıyla güncellendi",
-        "resetPasswordError": "Şifre sıfırlama sırasında hata oluştu",
-        "changePasswordRequest": "Şifre değiştirme isteği alındı",
-        "changePasswordSuccess": "Şifre başarıyla değiştirildi",
-        "changePasswordError": "Şifre değiştirme sırasında hata oluştu",
-        "customerSupporterOnline": "Customer Supporter online kaydedildi",
-        "customerSupporterOnlineError": "Customer Supporter online kaydedilemedi",
-        "onlineRoleName": "Kullanıcı rolü",
-        "customerSupportLoginDetected": "Customer Supporter girişi tespit edildi",
-        "redisPushSuccess": "Redis rPush('online_users_queue', userId) başarılı",
-        "currentOnlineUsers": "Şu anda online Customer Supporter userId'leri (queue):",
-        "customerSupporterAlreadyOnline": "Customer Supporter zaten online",
-        "refreshTokenSet": "Refresh token httpOnly cookie olarak ayarlandı",
-        "useridRequired": "userId gerekli",
-        "tokensRefreshed": "Tokenlar başarıyla yenilendi",
-        "passwordResetLinkSent": "Eğer e-posta mevcutsa, şifre sıfırlama bağlantısı gönderilecektir",
-        "passwordMinLength": "Şifre en az 8 karakter olmalıdır",
-        "passwordsDoNotMatch": "Şifreler eşleşmiyor",
-        "tokenPasswordRequired": "Token, şifre ve şifre tekrarı gereklidir",
-        "invalidOrExpiredResetToken": "Geçersiz veya süresi dolmuş şifre sıfırlama token'ı",
-        "codeAndTokenRequired": "Kod ve token gereklidir",
-        "tokenNoEmail": "Token'da e-posta bulunamadı",
-        "tokenCodeNoMatch": "Token ve kod eşleşmiyor",
-        "noVerificationCode": "Bu e-posta için doğrulama kodu bulunamadı",
-        "invalidVerificationCode": "Geçersiz doğrulama kodu",
-        "verificationCodeExpired": "Doğrulama kodunun süresi doldu",
-        "emailAlreadyVerified": "E-posta zaten doğrulanmış",
-        "emailVerified": "E-posta başarıyla doğrulandı",
-        "internalServerError": "Sunucu hatası",
-        "allFieldsRequired": "Tüm alanlar gereklidir",
-        "userNotFound": "Kullanıcı bulunamadı",
-        "loggedOut": "Başarıyla çıkış yapıldı",
-        "googleRedisPushSuccess": "Redis rPush('online_users_queue', userId) (Google) başarılı",
-        "googleCurrentOnlineUsers": "Şu anda online Customer Supporter userId'leri (queue) (Google):",
-        "googleCustomerSupporterAlreadyOnline": "Customer Supporter zaten online (Google)",
-        "googleCustomerSupporterOnlineError": "Customer Supporter online kaydedilemedi (Google)",
-        "verificationCodeResent": "Kodun süresi doldu. Yeni doğrulama kodu e-posta adresinize gönderildi.",
-        "validationError": "Doğrulama hatası: {0}",
-        "verificationCodeSaved": "Doğrulama kodu Redis'e kaydedildi",
-        "verificationCodeSaveError": "Doğrulama kodu Redis'e kaydedilemedi",
-        "verificationCodeNotFound": "Doğrulama kodu bulunamadı",
-        "verificationCodeGetError": "Doğrulama kodu alınırken hata oluştu",
-        "verificationCodeDeleted": "Doğrulama kodu silindi",
-        "verificationCodeDeleteError": "Doğrulama kodu silinirken hata oluştu",
-        "verificationCodeVerifyError": "Doğrulama kodu doğrulanırken hata oluştu",
+        "refreshSuccess": "Token yenileme başarılı",
+        "refreshError": "Token yenileme hatası",
+        "userLogoutProcessStarted": "Kullanıcı çıkış işlemi başlatıldı",
+        "useridRequired": "Kullanıcı ID gerekli",
+        "emailAlreadyInUse": "Bu email adresi zaten kullanımda",
+        "userNotActive": "Kullanıcı aktif değil",
+        "emailNotVerified": "Email adresi doğrulanmamış",
+        "userReactivated": "Kullanıcı yeniden aktifleştirildi",
         "verificationEmailSent": "Doğrulama emaili gönderildi",
-        "emailVerificationSuccess": "Email başarıyla doğrulandı",
-        "missingVerificationData": "Doğrulama kodu veya token eksik",
+        "validationError": "Doğrulama hatası",
+        "missingVerificationData": "Doğrulama verileri eksik",
         "invalidVerificationToken": "Geçersiz doğrulama token'ı",
-        "invalidTokenEmail": "Token'da geçerli email bulunamadı",
         "invalidVerificationCode": "Geçersiz doğrulama kodu",
-        "userAction": "Kullanıcı işlemi gerçekleştirildi",
-        "emailAlreadyInUse": "Bu e-posta adresi zaten kullanımda. Lütfen farklı bir e-posta adresi kullanın veya giriş yapın.",
-        "userNotActive": "Hesabınız aktif değil. Lütfen yönetici ile iletişime geçin."
+        "invalidTokenEmail": "Token'da email bilgisi bulunamadı",
+        "verificationCodeResent": "Doğrulama kodu yeniden gönderildi",
+        "emailVerificationSuccess": "Email doğrulama başarılı",
+        "onlineRoleName": "Rol adı",
+        "customerSupportLoginDetected": "Müşteri destek girişi tespit edildi",
+        "redisPushSuccess": "Redis'e başarıyla eklendi",
+        "currentOnlineUsers": "Mevcut online kullanıcılar",
+        "customerSupporterAlreadyOnline": "Müşteri destek zaten online",
+        "customerSupporterOnlineError": "Müşteri destek online hatası"
       }
     },
     "permissionService": {
@@ -527,6 +523,14 @@
       "added": "[Permission Migration] Eklendi: {{code}}",
       "alreadyExists": "[Permission Migration] Zaten mevcut: {{code}}",
       "allMigrated": "[Permission Migration] Tüm statik yetkiler migrate edildi."
+    }
+  },
+  "controllers": {
+    "reportController": {
+      "logs": {
+        "dashboardStatisticsRetrieved": "Dashboard istatistikleri başarıyla getirildi",
+        "dashboardStatisticsError": "Dashboard istatistikleri getirilirken hata oluştu"
+      }
     }
   }
 }
