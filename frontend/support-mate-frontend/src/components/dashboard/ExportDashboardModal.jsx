@@ -103,8 +103,14 @@ const ExportDashboardModal = ({ open, onClose, onSnackbar }) => {
             });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
+            let downloadName = response.data.file_name;
+            if (!downloadName) {
+              downloadName = format === 'excel'
+                ? 'dashboard_export.xlsx'
+                : `dashboard_export.${format}`;
+            }
             a.href = url;
-            a.download = response.data.file_name || `dashboard_export.${format}`;
+            a.download = downloadName;
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);

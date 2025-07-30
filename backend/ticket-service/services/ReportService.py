@@ -10,6 +10,19 @@ from datetime import datetime
 
 logger = get_logger()
 
+VALID_FORMATS = {"pdf", "excel"}
+BOOLEAN_FIELDS = [
+    "taskStats", "ticketStats", "userStats", "chatStats", "categoryStats", "sendMail"
+]
+
+def validate_export_command(command):
+    file_type = command.get("format")
+    if file_type not in VALID_FORMATS:
+        raise ValueError(f"Invalid format: {file_type}. Only 'pdf' or 'excel' allowed.")
+    for field in BOOLEAN_FIELDS:
+        if field in command and not isinstance(command[field], bool):
+            raise ValueError(f"Invalid value for {field}: {command[field]}. Only true/false allowed.")
+
 class ReportService:
     def __init__(self, lang: str = 'tr'):
         self.get_dashboard_statistics_handler = GetDashboardStatisticsQueryHandler()
@@ -35,6 +48,9 @@ class ReportService:
     async def export_dashboard_statistics(self, command: dict, user_email: str = None, token: str = None):
         try:
             logger.info("ReportService: export_dashboard_statistics executing")
+            # --- VALIDASYON ---
+            validate_export_command(command)
+            # --- VALIDASYON ---
             
             # Kontroller
             if not user_email:
@@ -54,13 +70,23 @@ class ReportService:
             
             # Dosya ismi oluştur
             now = datetime.now()
-            file_name = f"{now.strftime('%d_%m_%Y_%H_%M_%S')}_dashboard_export.{file_type}"
+            if file_type == "excel":
+                ext = "xlsx"
+            else:
+                ext = file_type
+            file_name = f"{now.strftime('%d_%m_%Y_%H_%M_%S')}_dashboard_export.{ext}"
             logger.info(f"Generated file name: {file_name}")
             
             if send_mail:
                 logger.info("Sending mail...")
                 # Mail gönder
-                send_dashboard_statistics_event(user_email, export_data, language=self.lang, file_type=file_type)
+                send_dashboard_statistics_event(
+                    user_email,
+                    export_data,
+                    language=self.lang,
+                    file_type=file_type,
+                    file_name=file_name
+                )
                 logger.info("Mail sent successfully")
                 return {
                     "type": "mail",

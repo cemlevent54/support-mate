@@ -55,7 +55,7 @@ LOG_CONFIG = {
         },
     },
     "root": {
-        "level": "DEBUG",
+        "level": "WARNING",
         "handlers": ["console", "file"]
     },
     "loggers": {

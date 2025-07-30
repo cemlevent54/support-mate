@@ -233,7 +233,7 @@ def send_task_rejected_event(task, user, html_path=None, language='tr'):
     except Exception as e:
         logger.error(f"Kafka task_rejected event could not be sent: {e}")
 
-def send_dashboard_statistics_event(email, export_data, language='tr', file_type='json'):
+def send_dashboard_statistics_event(email, export_data, language='tr', file_type='json', file_name=None):
     try:
         logger.info(f"[KAFKA][DASHBOARD-STATISTICS] Starting event processing...")
         logger.info(f"[KAFKA][DASHBOARD-STATISTICS] Email: {email}")
@@ -242,8 +242,13 @@ def send_dashboard_statistics_event(email, export_data, language='tr', file_type
         logger.info(f"[KAFKA][DASHBOARD-STATISTICS] Export data keys: {list(export_data.keys()) if export_data else 'None'}")
         
         # Tarih ve saat bilgisiyle dosya ismi oluştur
-        now = datetime.now()
-        file_name = f"{now.strftime('%d_%m_%Y_%H_%M_%S')}_dashboard_export.{file_type}"
+        if not file_name:
+            now = datetime.now()
+            if file_type == "excel":
+                ext = "xlsx"
+            else:
+                ext = file_type
+            file_name = f"{now.strftime('%d_%m_%Y_%H_%M_%S')}_dashboard_export.{ext}"
         logger.info(f"[KAFKA][DASHBOARD-STATISTICS] Generated file name: {file_name}")
         
         # Mail template'ini oku

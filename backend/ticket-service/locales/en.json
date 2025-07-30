@@ -267,7 +267,8 @@
         "reportService": {
             "logs": {
                 "get_dashboard_statistics": "Getting dashboard statistics.",
-                "get_dashboard_statistics_error": "Error occurred while getting dashboard statistics."
+                "get_dashboard_statistics_error": "Error occurred while getting dashboard statistics.",
+                "export_dashboard_statistics_error": "Error occurred while exporting dashboard statistics."
             },
             "responses": {
                 "export_dashboard_statistics": "Dashboard statistics exported successfully.",

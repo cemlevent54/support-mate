@@ -267,7 +267,8 @@
         "reportService": {
             "logs": {
                 "get_dashboard_statistics": "Dashboard istatistikleri getiriliyor.",
-                "get_dashboard_statistics_error": "Dashboard istatistikleri getirilirken hata oluştu."
+                "get_dashboard_statistics_error": "Dashboard istatistikleri getirilirken hata oluştu.",
+                "export_dashboard_statistics_error": "Dashboard istatistikleri dışa aktarılırken hata oluştu."
             },
             "responses": {
                 "export_dashboard_statistics": "Dashboard istatistikleri başarıyla dışa aktarıldı.",

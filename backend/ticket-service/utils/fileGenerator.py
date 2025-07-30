@@ -12,6 +12,8 @@ from reportlab.lib.units import inch
 from io import BytesIO
 from jinja2 import Environment, FileSystemLoader
 from xhtml2pdf import pisa
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment
 
 logger = logging.getLogger(__name__)
 
@@ -239,7 +241,196 @@ def create_data_table(data_dict):
     from reportlab.platypus import KeepTogether
     return KeepTogether([table])
 
+def write_section_title(ws, row, title):
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=8)
+    cell = ws.cell(row=row, column=1, value=title)
+    cell.font = Font(size=14, bold=True)
+    cell.alignment = Alignment(horizontal='left', vertical='center')
 
+def write_table(ws, start_row, headers, rows):
+    for col, header in enumerate(headers, start=1):
+        cell = ws.cell(row=start_row, column=col, value=header)
+        cell.font = Font(bold=True)
+    for row_index, row_data in enumerate(rows, start=start_row+1):
+        for col_index, cell_value in enumerate(row_data, start=1):
+            # None değerleri boş string olarak göster
+            if cell_value is None:
+                cell_value = ''
+            ws.cell(row=row_index, column=col_index, value=cell_value)
+    return start_row + len(rows) + 2  # 2 satır boşluk bırak
+
+def create_excel_file(export_data, language='tr'):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Dashboard Report"
+    current_row = 1
+
+    # Başlık ve tarih
+    ws.cell(row=current_row, column=1, value="Dashboard Statistics Report").font = Font(size=16, bold=True)
+    current_row += 1
+    ws.cell(row=current_row, column=1, value=f"Date: {datetime.now().strftime('%d.%m.%Y %H:%M')}")
+    current_row += 2
+
+    # TASK STATISTICS
+    tasks = export_data.get('tasks', {})
+    if tasks:
+        if 'status' in tasks:
+            write_section_title(ws, current_row, "Task Statistics - Status Distribution")
+            current_row += 1
+            headers = ["Status", "Count"]
+            rows = [[k, v] for k, v in tasks['status'].items()]
+            current_row = write_table(ws, current_row, headers, rows)
+        if 'priority' in tasks:
+            write_section_title(ws, current_row, "Task Statistics - Priority Distribution")
+            current_row += 1
+            headers = ["Priority", "Count"]
+            rows = [[k, v] for k, v in tasks['priority'].items()]
+            current_row = write_table(ws, current_row, headers, rows)
+        if 'leader' in tasks:
+            write_section_title(ws, current_row, "Leader Task Distribution")
+            current_row += 1
+            headers = ["Leader Name", "Email", "Assigned Tasks", "Completed", "Overdue"]
+            rows = [
+                [
+                    l.get('name', ''),
+                    l.get('email', ''),
+                    l.get('assignTaskCount', ''),
+                    l.get('doneTaskCount', ''),
+                    l.get('overDueTaskCount', '')
+                ]
+                for l in tasks['leader']
+            ]
+            current_row = write_table(ws, current_row, headers, rows)
+        if 'employee' in tasks:
+            write_section_title(ws, current_row, "Employee Task Distribution")
+            current_row += 1
+            headers = ["Employee Name", "Email", "Completed", "Overdue"]
+            rows = [
+                [
+                    e.get('name', ''),
+                    e.get('email', ''),
+                    e.get('doneTaskCount', ''),
+                    e.get('overDueTaskCount', '')
+                ]
+                for e in tasks['employee']
+            ]
+            current_row = write_table(ws, current_row, headers, rows)
+
+    # TICKET STATISTICS
+    tickets = export_data.get('tickets', {})
+    if tickets:
+        if 'status' in tickets:
+            write_section_title(ws, current_row, "Ticket Statistics - Status")
+            current_row += 1
+            headers = ["Status", "Count"]
+            rows = [[k, v] for k, v in tickets['status'].items()]
+            current_row = write_table(ws, current_row, headers, rows)
+        if 'resolveTimes' in tickets:
+            write_section_title(ws, current_row, "Resolution Times")
+            current_row += 1
+            headers = ["Time Range", "Count"]
+            rows = [[k, v] for k, v in tickets['resolveTimes'].items()]
+            current_row = write_table(ws, current_row, headers, rows)
+        if 'numberOfNotAssignedAgentTickets' in tickets:
+            write_section_title(ws, current_row, "Unassigned Ticket Information")
+            current_row += 1
+            headers = ["Info", "Value"]
+            rows = [["Unassigned Ticket Count", tickets['numberOfNotAssignedAgentTickets']]]
+            current_row = write_table(ws, current_row, headers, rows)
+        if 'dates' in tickets:
+            write_section_title(ws, current_row, "Daily Ticket Distribution")
+            current_row += 1
+            headers = ["Date", "Day", "Total", "Open", "In Review", "In Progress", "Closed"]
+            rows = [[d.get('date', ''), d.get('dayName', ''), d.get('totalTickets', ''), d.get('openTickets', ''), d.get('inReviewTickets', ''), d.get('inProgressTickets', ''), d.get('closedTickets', '')] for d in tickets['dates']]
+            current_row = write_table(ws, current_row, headers, rows)
+
+    # USER STATISTICS
+    users = export_data.get('users', {})
+    if users:
+        write_section_title(ws, current_row, "User Statistics - General Info")
+        current_row += 1
+        headers = ["Info", "Value"]
+        rows = [
+            ["Total Users", users.get('total')],
+            ["Verified Users", users.get('verifiedUsers')],
+            ["Blocked Users", users.get('blockedUsers')]
+        ]
+        current_row = write_table(ws, current_row, headers, rows)
+        if 'roles' in users:
+            write_section_title(ws, current_row, "User Distribution by Role")
+            current_row += 1
+            headers = ["Role", "Count"]
+            rows = [[r.get('roleName'), r.get('count', r.get('numberOfUsers'))] for r in users['roles']]
+            current_row = write_table(ws, current_row, headers, rows)
+
+    # CHATS
+    chats = export_data.get('chats', {})
+    if chats:
+        write_section_title(ws, current_row, "General Chat Information")
+        current_row += 1
+        headers = ["Info", "Value"]
+        rows = [
+            ["Total Chats", chats.get('chatCount')],
+            ["Total Messages", chats.get('messageCount')]
+        ]
+        current_row = write_table(ws, current_row, headers, rows)
+        if 'dates' in chats:
+            write_section_title(ws, current_row, "Daily Chat Distribution")
+            current_row += 1
+            headers = ["Date", "Day", "Chat Count", "Total Messages", "Supporter Msg", "User Msg"]
+            rows = [[d.get('date', ''), d.get('dayName', ''), d.get('chatCount'), d.get('messageCount'), d.get('agentMessages'), d.get('customerMessages')] for d in chats['dates']]
+            current_row = write_table(ws, current_row, headers, rows)
+
+    # CATEGORIES
+    categories = export_data.get('categories', [])
+    if categories:
+        write_section_title(ws, current_row, "Category Statistics")
+        current_row += 1
+        headers = ["Category Name", "Leader Count", "Product Count", "Related Ticket Count"]
+        rows = [[c.get('categoryNameTr') or c.get('categoryNameEn'), c.get('numberOfLeader'), c.get('numberOfProduct'), c.get('numberOfRelatedTicket')] for c in categories]
+        current_row = write_table(ws, current_row, headers, rows)
+
+    # PRODUCTS
+    products = export_data.get('products', [])
+    if products:
+        write_section_title(ws, current_row, "Product Statistics")
+        current_row += 1
+        headers = ["Product Name", "Category Name", "Related Ticket Count"]
+        
+        # Kategori ID'lerini kategori adlarına çevirmek için mapping oluştur
+        categories = export_data.get('categories', [])
+        category_mapping = {}
+        for cat in categories:
+            category_mapping[cat.get('id')] = cat.get('categoryNameTr') or cat.get('categoryNameEn')
+        
+        rows = []
+        for p in products:
+            category_id = p.get('productCategoryId')
+            category_name = category_mapping.get(category_id, category_id)  # Eğer mapping yoksa ID'yi göster
+            rows.append([
+                p.get('productNameTr') or p.get('productNameEn'),
+                category_name,
+                p.get('relatedTicketCount')
+            ])
+        current_row = write_table(ws, current_row, headers, rows)
+
+    # Otomatik sütun genişliği
+    for col in ws.columns:
+        max_length = 0
+        col_letter = col[0].column_letter
+        for cell in col:
+            try:
+                if cell.value:
+                    max_length = max(max_length, len(str(cell.value)))
+            except:
+                pass
+        ws.column_dimensions[col_letter].width = max_length + 2
+
+    # Dosyayı BytesIO ile kaydet ve base64 döndür
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return base64.b64encode(output.read()).decode('utf-8')
 
 def create_file_content(export_data, file_type, language='tr'):
     """Dosya türüne göre içerik oluştur"""
@@ -250,6 +441,8 @@ def create_file_content(export_data, file_type, language='tr'):
         return base64.b64encode(csv_content.encode('utf-8')).decode('utf-8')
     elif file_type == 'pdf':
         return create_pdf_file(export_data, language)
+    elif file_type == 'excel':
+        return create_excel_file(export_data, language)
     else:
         # Default JSON
         return base64.b64encode(json.dumps(export_data, indent=2, ensure_ascii=False).encode('utf-8')).decode('utf-8')
