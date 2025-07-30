@@ -1,13 +1,13 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, UTC
 
 class Category(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
     category_name_tr: str
     category_name_en: str
     leaderIds: List[str] = Field(default_factory=list)
-    createdAt: datetime = Field(default_factory=datetime.utcnow)
+    createdAt: datetime = Field(default_factory=lambda: datetime.now(UTC))
     isDeleted: bool = False
     deletedAt: Optional[datetime] = None
 

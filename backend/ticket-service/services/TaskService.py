@@ -3,9 +3,7 @@ from cqrs.commands.task.UpdateTaskCommandHandler import UpdateTaskCommandHandler
 from cqrs.commands.task.DeleteTaskCommandHandler import DeleteTaskCommandHandler
 from cqrs.queries.task.ListTasksQueryHandler import ListTasksQueryHandler
 from cqrs.queries.task.GetTaskQueryHandler import GetTaskQueryHandler
-from cqrs.queries.task.GetTaskQueryHandler import GetTaskQueryHandler
 from cqrs.queries.ticket.GetTicketQueryHandler import GetTicketQueryHandler
-from cqrs.commands.task.UpdateTaskCommandHandler import UpdateTaskCommandHandler
 from cqrs.commands.ticket.UpdateTicketStatusCommandHandler import UpdateTicketStatusCommandHandler
 from models.task import Task
 from typing import List, Optional
@@ -79,8 +77,8 @@ class TaskService:
         if not deadline:
             return False, _("services.taskService.responses.deadline_required")
         
-        from datetime import datetime, timedelta
-        current_date = datetime.utcnow()
+        from datetime import datetime, timedelta, UTC
+        current_date = datetime.now(UTC)
         
         # Geçmiş tarih kontrolü
         if deadline < current_date:
@@ -192,9 +190,6 @@ class TaskService:
     def _handle_task_done_integration(self, task_obj: Task, user: dict, token: str, language: str):
         """Task DONE entegrasyonunu yönet"""
         try:
-            from cqrs.commands.ticket.UpdateTicketStatusCommandHandler import UpdateTicketStatusCommandHandler
-            from cqrs.queries.ticket.GetTicketQueryHandler import GetTicketQueryHandler
-
             # 1. Ticket durumunu CLOSED olarak güncelle ve closedAt alanını set et
             UpdateTicketStatusCommandHandler().execute(task_obj.relatedTicketId, 'CLOSED')
 
@@ -265,7 +260,7 @@ class TaskService:
         logger.info(f"Token provided: {token is not None}")
         
         # Task verilerini logla
-        task_data = task.dict()
+        task_data = task.model_dump()
         logger.info(f"Task Data: {json.dumps(task_data, default=str, indent=2)}")
         logger.info(f"Task createdBy field: {task.createdBy}")
         
@@ -287,7 +282,7 @@ class TaskService:
         # Task oluştur
         logger.info("Attempting to create task...")
         try:
-            task_id = self.create_handler.handle(task.dict())
+            task_id = self.create_handler.handle(task.model_dump())
             logger.info(f"Task created successfully with ID: {task_id}")
         except TaskAlreadyExistsException as e:
             logger.warning(f"TaskAlreadyExistsException caught: {e}")
@@ -324,7 +319,7 @@ class TaskService:
         # DTO dönüşümü
         logger.info("Converting task to DTO...")
         try:
-            dto = TaskResponseDto.from_model(created_task).dict()
+            dto = TaskResponseDto.from_model(created_task).model_dump()
             logger.info("DTO conversion completed successfully")
         except Exception as e:
             logger.error(f"DTO conversion failed: {e}")
@@ -346,7 +341,7 @@ class TaskService:
         set_language(language)
 
         try:
-            if not self.update_handler.handle(task_id, task.dict()):
+            if not self.update_handler.handle(task_id, task.model_dump()):
                 return None
         except ValueError as e:
             # DONE task'ın geri alınması durumunda
@@ -362,14 +357,13 @@ class TaskService:
         task_status = getattr(task, "status", None)
         if task_status in ["PENDING", "IN_PROGRESS"]:
             # Task PENDING veya IN_PROGRESS ise ticket IN_PROGRESS olmalı
-            from cqrs.commands.ticket.UpdateTicketStatusCommandHandler import UpdateTicketStatusCommandHandler
             UpdateTicketStatusCommandHandler().execute(updated_task.relatedTicketId, 'IN_PROGRESS')
             logger.info(f"Task status {task_status} olduğu için ticket status IN_PROGRESS olarak güncellendi")
         elif task_status == "DONE":
             # Task DONE ise ticket CLOSED olmalı
             self._handle_task_done_integration(updated_task, user, token, language)
 
-        dto = TaskResponseDto.from_model(updated_task).dict()
+        dto = TaskResponseDto.from_model(updated_task).model_dump()
         return self.dto_to_serializable(dto)
 
     def soft_delete_task(self, task_id: str, user: dict, language: str = 'tr'):
@@ -379,7 +373,7 @@ class TaskService:
             return None
         logger.info(_("services.taskService.logs.task_deleted"))
         deleted_task = self.get_task_handler.find_by_id(task_id)
-        dto = TaskResponseDto.from_model(deleted_task).dict() if deleted_task else None
+        dto = TaskResponseDto.from_model(deleted_task).model_dump() if deleted_task else None
         return self.dto_to_serializable(dto) if dto else None
 
     def get_tasks(self, user: dict, token: str = None, language: str = 'tr'):

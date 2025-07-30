@@ -31,40 +31,40 @@ class CategoryService:
         return dto
 
     def create_category(self, category: Category):
-        category_id = self.create_handler.handle(category.dict())
+        category_id = self.create_handler.handle(category.model_dump())
         if category_id is None:
             return None
         logger.info(_("services.categoryService.logs.category_created"))
         # Yeni kaydı veritabanından çek
         created_category = self.list_handler.repository.find_by_id(category_id)
         dto = CategoryResponseDTO(
-            id=created_category.id,
+            id=getattr(created_category, "id", None) or getattr(created_category, "_id", None),
             category_name_tr=created_category.category_name_tr,
             category_name_en=created_category.category_name_en,
             leaderIds=getattr(created_category, "leaderIds", []),
             createdAt=created_category.createdAt,
             isDeleted=created_category.isDeleted,
             deletedAt=created_category.deletedAt
-        ).dict()
+        ).model_dump()
         return self.dto_to_serializable(dto)
 
     def update_category(self, category_id: str, category: Category):
         if not category.category_name_tr or not category.category_name_en:
             return None
         logger.info(_("services.categoryService.logs.updating_category"))
-        updated = self.update_handler.handle(category_id, category.dict())
+        updated = self.update_handler.handle(category_id, category.model_dump())
         if updated:
             logger.info(_("services.categoryService.logs.category_updated"))
             updated_category = self.list_handler.repository.find_by_id(category_id)
             dto = CategoryResponseDTO(
-                id=updated_category.id,
+                id=getattr(updated_category, "id", None) or getattr(updated_category, "_id", None),
                 category_name_tr=updated_category.category_name_tr,
                 category_name_en=updated_category.category_name_en,
                 leaderIds=getattr(updated_category, "leaderIds", []),
                 createdAt=updated_category.createdAt,
                 isDeleted=updated_category.isDeleted,
                 deletedAt=updated_category.deletedAt
-            ).dict()
+            ).model_dump()
             return self.dto_to_serializable(dto)
         else:
             logger.error(_("services.categoryService.logs.update_error"))
@@ -86,14 +86,14 @@ class CategoryService:
     def list_categories(self):
         categories = self.list_handler.handle()
         data = [self.dto_to_serializable(CategoryResponseDTO(
-            id=cat.id,
+            id=getattr(cat, "id", None) or getattr(cat, "_id", None),
             category_name_tr=cat.category_name_tr,
             category_name_en=cat.category_name_en,
             leaderIds=getattr(cat, "leaderIds", []),
             createdAt=cat.createdAt,
             isDeleted=cat.isDeleted,
             deletedAt=cat.deletedAt
-        ).dict()) for cat in categories]
+        ).model_dump()) for cat in categories]
         return data
 
     def get_category_by_id(self, category_id: str):
@@ -101,12 +101,12 @@ class CategoryService:
         if not category:
             return None
         dto = CategoryResponseDTO(
-            id=category.id,
+            id=getattr(category, "id", None) or getattr(category, "_id", None),
             category_name_tr=getattr(category, "category_name_tr", None),
             category_name_en=getattr(category, "category_name_en", None),
             leaderIds=getattr(category, "leaderIds", []),
             createdAt=getattr(category, "createdAt", None),
             isDeleted=getattr(category, "isDeleted", None),
             deletedAt=getattr(category, "deletedAt", None)
-        ).dict()
+        ).model_dump()
         return self.dto_to_serializable(dto) 
