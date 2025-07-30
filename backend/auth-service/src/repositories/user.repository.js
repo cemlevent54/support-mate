@@ -424,6 +424,23 @@ class UserRepository {
       throw err;
     }
   }
+
+  async getUsersCreatedAfter(date) {
+    try {
+      logger.info('UserRepository: getUsersCreatedAfter executing', { date });
+      
+      const users = await UserModel.find({
+        isDeleted: false,
+        createdAt: { $gte: date }
+      }).select('createdAt');
+      
+      logger.info('UserRepository: getUsersCreatedAfter success', { userCount: users.length });
+      return users;
+    } catch (err) {
+      logger.error('UserRepository: getUsersCreatedAfter error', { error: err });
+      throw err;
+    }
+  }
 }
 
 export default new UserRepository(); 

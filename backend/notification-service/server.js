@@ -1,9 +1,9 @@
 import express from 'express';
 import dotenv from 'dotenv';
-import logger from './config/logger.js';
-import { initializeApp } from './config/index.js';
-import { startKafkaConsumer } from './kafka/startKafkaConsumer.js';
-import { healthCheck } from './config/health.js';
+import logger from './src/config/logger.js';
+import { initializeApp } from './src/config/index.js';
+import { startKafkaConsumer } from './src/kafka/startKafkaConsumer.js';
+import { healthCheck } from './src/config/health.js';
 
 dotenv.config();
 

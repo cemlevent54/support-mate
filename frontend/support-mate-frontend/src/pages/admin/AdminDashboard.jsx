@@ -32,60 +32,48 @@ import {
 import { useTranslation } from 'react-i18next';
 import { getDashboardStatistics, getTicketDashboardStatistics } from '../../api/statisticsApi';
 
-// Default mock veriler
-const defaultMockData = {
-  users: {
-    total: 12,
-    roles: [
-      { roleName: "User", numberOfUsers: 5 },
-      { roleName: "Customer Supporter", numberOfUsers: 2 },
-      { roleName: "Leader", numberOfUsers: 2 },
-      { roleName: "Employee", numberOfUsers: 2 },
-      { roleName: "Admin", numberOfUsers: 1 }
-    ],
-    blockedUsers: 1,
-    verifiedUsers: 11
-  },
-  onlineAgents: 0,
-  // Frontend'de oluşturulacak ek veriler
-  ticketTrend: [
-    { date: '2025-01-23', count: 12 },
-    { date: '2025-01-24', count: 15 },
-    { date: '2025-01-25', count: 22 },
-    { date: '2025-01-26', count: 19 },
-    { date: '2025-01-27', count: 27 },
-    { date: '2025-01-28', count: 31 },
-    { date: '2025-01-29', count: 40 },
-  ],
-  tasksByStatus: [
-    { name: 'Pending', value: 10, color: '#FF9800' },
-    { name: 'In Progress', value: 25, color: '#2196F3' },
-    { name: 'Done', value: 65, color: '#4CAF50' },
-  ],
-  closedTickets: {
-    today: 5,
-    weekly: [3, 7, 10, 5, 6, 12, 9],
-    monthly: 96,
-  },
-  todayTickets: 11,
-  totalTickets: 156,
-};
-
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 const AdminDashboard = ({ 
-  data = defaultMockData,
   title = 'Dashboard',
-  subtitle = 'System Metrics',
+  subtitle = 'Sistem Metrikleri',
   showTitle = true,
   className = '',
   onTimeRangeChange,
   onDataUpdate
 }) => {
   const { t } = useTranslation();
+  const { i18n } = useTranslation();
+  
   const [timeRange, setTimeRange] = useState('weekly');
-  const [localData, setLocalData] = useState(data);
-  const [loading, setLoading] = useState(false);
+  const [dashboardData, setDashboardData] = useState({
+    users: {
+      total: 0,
+      roles: [],
+      blockedUsers: 0,
+      verifiedUsers: 0
+    },
+    onlineAgents: 0,
+    ticketStats: {
+      categories: [],
+      tickets: {
+        status: {},
+        resolveTimes: {},
+        dates: []
+      },
+      tasks: {
+        status: {},
+        priority: {}
+      },
+      products: [],
+      chats: {
+        chatCount: 0,
+        messageCount: 0,
+        dates: []
+      }
+    }
+  });
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   // API'den veri çekme
@@ -100,31 +88,49 @@ const AdminDashboard = ({
         const ticketResponse = await getTicketDashboardStatistics();
         
         if (authResponse.success && ticketResponse.success) {
-          // API verilerini local data ile birleştir
+          // API verilerini birleştir
           const authData = authResponse.data;
           const ticketData = ticketResponse.data;
           
           // Ticket verilerini grafik formatına çevir
           const ticketStats = {
             categories: ticketData.categories || [],
-            tickets: ticketData.tickets || {},
-            tasks: ticketData.tasks || {},
+            tickets: ticketData.tickets || {
+              status: {},
+              resolveTimes: {},
+              dates: []
+            },
+            tasks: ticketData.tasks || {
+              status: {},
+              priority: {},
+              leader: [],
+              employee: []
+            },
             products: ticketData.products || [],
-            chats: ticketData.chats || {}
+            chats: ticketData.chats || {
+              chatCount: 0,
+              messageCount: 0,
+              dates: []
+            }
           };
           
           const combinedData = {
-            ...localData,
-            users: authData.users,
-            onlineAgents: authData.onlineAgents,
+            users: authData.users || {
+              total: 0,
+              roles: [],
+              blockedUsers: 0,
+              verifiedUsers: 0,
+              date: []
+            },
+            onlineAgents: authData.onlineAgents || 0,
             ticketStats: ticketStats
           };
-          setLocalData(combinedData);
+          setDashboardData(combinedData);
         } else {
-          setError('Veri çekilemedi');
+          setError(t('adminDashboard.dataError'));
         }
       } catch (err) {
-        setError('API bağlantı hatası');
+        setError(t('adminDashboard.apiError'));
         console.error('Dashboard veri çekme hatası:', err);
       } finally {
         setLoading(false);
@@ -132,12 +138,7 @@ const AdminDashboard = ({
     };
 
     fetchDashboardData();
-  }, []);
-
-  // Props'tan gelen data değiştiğinde local state'i güncelle
-  useEffect(() => {
-    setLocalData(data);
-  }, [data]);
+  }, [t]);
 
   const handleTimeRangeChange = (event, newTimeRange) => {
     if (newTimeRange !== null) {
@@ -149,7 +150,7 @@ const AdminDashboard = ({
   };
 
   const getTotalUsers = () => {
-    return localData.users?.total || 0;
+    return dashboardData.users?.total || 0;
   };
 
   const getRoleIcon = (role) => {
@@ -191,25 +192,20 @@ const AdminDashboard = ({
     return date.toLocaleDateString('tr-TR', { month: 'short', day: 'numeric' });
   };
 
-  const weeklyData = localData.closedTickets.weekly.map((value, index) => ({
-    day: ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'][index],
-    closed: value,
-  }));
-
   // Kullanıcı istatistikleri için bar chart verisi
   const userStatsData = [
-    { name: 'Toplam Kullanıcı', value: localData.users?.total || 0, color: '#2196F3' },
-    { name: 'Doğrulanmış', value: localData.users?.verifiedUsers || 0, color: '#4CAF50' },
-    { name: 'Engellenmiş', value: localData.users?.blockedUsers || 0, color: '#F44336' },
-    { name: 'Doğrulanmamış', value: (localData.users?.total || 0) - (localData.users?.verifiedUsers || 0) - (localData.users?.blockedUsers || 0), color: '#FF9800' }
+    { name: t('adminDashboard.totalUsers'), value: dashboardData.users?.total || 0, color: '#2196F3' },
+    { name: t('adminDashboard.verifiedUsers'), value: dashboardData.users?.verifiedUsers || 0, color: '#4CAF50' },
+    { name: t('adminDashboard.blockedUsers'), value: dashboardData.users?.blockedUsers || 0, color: '#F44336' },
+    { name: t('adminDashboard.notVerified'), value: (dashboardData.users?.total || 0) - (dashboardData.users?.verifiedUsers || 0) - (dashboardData.users?.blockedUsers || 0), color: '#FF9800' }
   ].filter(item => item.value > 0); // 0 olan değerleri filtrele
 
   // Task status verilerini API'den al
-  const taskStatusData = localData.ticketStats?.tasks?.status ? 
-    Object.entries(localData.ticketStats.tasks.status).map(([key, value]) => ({
-      name: key === 'PENDING' ? 'Bekleyen' : 
-            key === 'IN_PROGRESS' ? 'Devam Eden' : 
-            key === 'DONE' ? 'Tamamlanan' : key,
+  const taskStatusData = dashboardData.ticketStats?.tasks?.status ? 
+    Object.entries(dashboardData.ticketStats.tasks.status).map(([key, value]) => ({
+      name: key === 'PENDING' ? t('adminDashboard.pending') : 
+            key === 'IN_PROGRESS' ? t('adminDashboard.inProgress') : 
+            key === 'DONE' ? t('adminDashboard.done') : key,
       value: value,
       color: key === 'PENDING' ? '#FF9800' : 
              key === 'IN_PROGRESS' ? '#2196F3' : 
@@ -217,12 +213,12 @@ const AdminDashboard = ({
     })).filter(item => item.value > 0) : [];
 
   // Closed ticket verilerini API'den al
-  const closedTicketData = localData.ticketStats?.tickets?.resolveTimes ? 
-    Object.entries(localData.ticketStats.tickets.resolveTimes).map(([key, value]) => ({
-      name: key === 'inaday' ? '1 Gün İçinde' :
-            key === 'inaweek' ? '1 Hafta İçinde' :
-            key === 'inamonth' ? '1 Ay İçinde' :
-            key === 'notresolved' ? 'Çözülmemiş' : key,
+  const closedTicketData = dashboardData.ticketStats?.tickets?.resolveTimes ? 
+    Object.entries(dashboardData.ticketStats.tickets.resolveTimes).map(([key, value]) => ({
+      name: key === 'inaday' ? t('adminDashboard.resolutionInDay') :
+            key === 'inaweek' ? t('adminDashboard.resolutionInWeek') :
+            key === 'inamonth' ? t('adminDashboard.resolutionInMonth') :
+            key === 'notresolved' ? t('adminDashboard.notResolved') : key,
       value: value,
       color: key === 'inaday' ? '#4CAF50' :
              key === 'inaweek' ? '#2196F3' :
@@ -236,7 +232,7 @@ const AdminDashboard = ({
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg text-gray-600">Yükleniyor...</div>
+        <div className="text-lg text-gray-600">{t('adminDashboard.loading')}</div>
       </div>
     );
   }
@@ -282,7 +278,7 @@ const AdminDashboard = ({
 
           {/* Rol dağılımı */}
           <div className="space-y-2">
-            {localData.users?.roles?.map((role) => (
+            {dashboardData.users?.roles?.map((role) => (
               <div key={role.roleName} className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <div 
@@ -313,7 +309,7 @@ const AdminDashboard = ({
           </div>
           
           <h4 className="text-3xl font-bold text-gray-800 mb-2">
-            {localData.onlineAgents || 0}
+            {dashboardData.onlineAgents || 0}
           </h4>
           
           <p className="text-sm text-gray-500">
@@ -325,7 +321,7 @@ const AdminDashboard = ({
         <div className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 p-6">
           <div className="flex items-center justify-between mb-4">
             <h6 className="text-gray-600 font-medium">
-              Doğrulanmış Kullanıcılar
+              {t('adminDashboard.verifiedUsers')}
             </h6>
             <div className="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
               <VerifiedUserIcon />
@@ -333,11 +329,19 @@ const AdminDashboard = ({
           </div>
           
           <h4 className="text-3xl font-bold text-gray-800 mb-2">
-            {localData.users?.verifiedUsers || 0}
+            {dashboardData.users?.verifiedUsers || 0}
           </h4>
           
           <p className="text-sm text-gray-500">
-            Toplam kullanıcıların %{localData.users?.total ? Math.round((localData.users.verifiedUsers / localData.users.total) * 100) : 0}'i
+            {dashboardData.users?.total ? (
+              i18n.language === 'tr' ? (
+                `Toplam kullanıcıların %${Math.round((dashboardData.users.verifiedUsers / dashboardData.users.total) * 100)}'i`
+              ) : (
+                `Verified users make up ${Math.round((dashboardData.users.verifiedUsers / dashboardData.users.total) * 100)}% of all users`
+              )
+            ) : (
+              i18n.language === 'tr' ? 'Toplam kullanıcı sayısı mevcut değil' : 'Total user count is not available'
+            )}
           </p>
         </div>
 
@@ -345,7 +349,7 @@ const AdminDashboard = ({
         <div className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 p-6">
           <div className="flex items-center justify-between mb-4">
             <h6 className="text-gray-600 font-medium">
-              Engellenmiş Kullanıcılar
+              {t('adminDashboard.blockedUsers')}
             </h6>
             <div className="w-10 h-10 bg-red-100 text-red-600 rounded-full flex items-center justify-center">
               <BlockIcon />
@@ -353,11 +357,19 @@ const AdminDashboard = ({
           </div>
           
           <h4 className="text-3xl font-bold text-gray-800 mb-2">
-            {localData.users?.blockedUsers || 0}
+            {dashboardData.users?.blockedUsers || 0}
           </h4>
           
           <p className="text-sm text-gray-500">
-            Toplam kullanıcıların %{localData.users?.total ? Math.round((localData.users.blockedUsers / localData.users.total) * 100) : 0}'i
+            {dashboardData.users?.total ? (
+              i18n.language === 'tr' ? (
+                `Toplam kullanıcıların %${Math.round((dashboardData.users.blockedUsers / dashboardData.users.total) * 100)}'i`
+              ) : (
+                `Blocked users make up ${Math.round((dashboardData.users.blockedUsers / dashboardData.users.total) * 100)}% of all users`
+              )
+            ) : (
+              i18n.language === 'tr' ? 'Toplam kullanıcı sayısı mevcut değil' : 'Total user count is not available'
+            )}
           </p>
         </div>
       </div>
@@ -368,7 +380,7 @@ const AdminDashboard = ({
         <div className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 p-6">
           <div className="flex items-center justify-between mb-4">
             <h6 className="text-gray-600 font-medium">
-              Toplam Ticket
+              {t('adminDashboard.totalTicket')}
             </h6>
             <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
               <SupportIcon />
@@ -376,12 +388,12 @@ const AdminDashboard = ({
           </div>
           
           <h4 className="text-3xl font-bold text-gray-800 mb-2">
-            {localData.ticketStats?.tickets?.status ? 
-              Object.values(localData.ticketStats.tickets.status).reduce((sum, count) => sum + count, 0) : 0}
+            {dashboardData.ticketStats?.tickets?.status ? 
+              Object.values(dashboardData.ticketStats.tickets.status).reduce((sum, count) => sum + count, 0) : 0}
           </h4>
           
           <p className="text-sm text-gray-500">
-            Tüm durumlar
+            {t('adminDashboard.allStatuses')}
           </p>
         </div>
 
@@ -389,7 +401,7 @@ const AdminDashboard = ({
         <div className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 p-6">
           <div className="flex items-center justify-between mb-4">
             <h6 className="text-gray-600 font-medium">
-              Açık Ticket
+              {t('adminDashboard.openTicket')}
             </h6>
             <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center">
               <WarningIcon />
@@ -397,11 +409,11 @@ const AdminDashboard = ({
           </div>
           
           <h4 className="text-3xl font-bold text-gray-800 mb-2">
-            {localData.ticketStats?.tickets?.status?.OPEN || 0}
+            {dashboardData.ticketStats?.tickets?.status?.OPEN || 0}
           </h4>
           
           <p className="text-sm text-gray-500">
-            Bekleyen işlemler
+            {t('adminDashboard.pendingTasks')}
           </p>
         </div>
 
@@ -409,7 +421,7 @@ const AdminDashboard = ({
         <div className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 p-6">
           <div className="flex items-center justify-between mb-4">
             <h6 className="text-gray-600 font-medium">
-              Toplam Task
+              {t('adminDashboard.totalTask')}
             </h6>
             <div className="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
               <AssignmentIcon />
@@ -417,12 +429,12 @@ const AdminDashboard = ({
           </div>
           
           <h4 className="text-3xl font-bold text-gray-800 mb-2">
-            {localData.ticketStats?.tasks?.status ? 
-              Object.values(localData.ticketStats.tasks.status).reduce((sum, count) => sum + count, 0) : 0}
+            {dashboardData.ticketStats?.tasks?.status ? 
+              Object.values(dashboardData.ticketStats.tasks.status).reduce((sum, count) => sum + count, 0) : 0}
           </h4>
           
           <p className="text-sm text-gray-500">
-            Tüm görevler
+            {t('adminDashboard.allTasks')}
           </p>
         </div>
 
@@ -430,7 +442,7 @@ const AdminDashboard = ({
         <div className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 p-6">
           <div className="flex items-center justify-between mb-4">
             <h6 className="text-gray-600 font-medium">
-              Toplam Ürün
+              {t('adminDashboard.totalProduct')}
             </h6>
             <div className="w-10 h-10 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center">
               <WorkIcon />
@@ -438,11 +450,11 @@ const AdminDashboard = ({
           </div>
           
           <h4 className="text-3xl font-bold text-gray-800 mb-2">
-            {localData.ticketStats?.products?.length || 0}
+            {dashboardData.ticketStats?.products?.length || 0}
           </h4>
           
           <p className="text-sm text-gray-500">
-            Sistem ürünleri
+            {t('adminDashboard.systemProducts')}
           </p>
         </div>
       </div>
@@ -453,10 +465,10 @@ const AdminDashboard = ({
         <div className="lg:col-span-2 bg-white rounded-lg shadow-lg p-6">
           <div className="flex items-center justify-between mb-6">
             <h6 className="text-lg font-semibold text-gray-800">
-              Kullanıcı İstatistikleri
+              {t('adminDashboard.userStatistics')}
             </h6>
             <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm border border-blue-200">
-              Toplam: {getTotalUsers()}
+              {t('adminDashboard.total')}: {getTotalUsers()}
             </span>
           </div>
           
@@ -466,7 +478,7 @@ const AdminDashboard = ({
               <XAxis dataKey="name" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} />
               <RechartsTooltip 
-                formatter={(value, name) => [value, 'Kullanıcı Sayısı']}
+                formatter={(value, name) => [value, t('adminDashboard.userCount')]}
               />
               <Bar 
                 dataKey="value" 
@@ -485,7 +497,7 @@ const AdminDashboard = ({
         <div className="bg-white rounded-lg shadow-lg p-6">
           <div className="flex items-center justify-between mb-6">
             <h6 className="text-lg font-semibold text-gray-800">
-              Task Durumları
+              {t('adminDashboard.taskStatuses')}
             </h6>
             <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
               <AssignmentIcon />
@@ -522,16 +534,16 @@ const AdminDashboard = ({
         <div className="bg-white rounded-lg shadow-lg p-6">
           <div className="flex items-center justify-between mb-6">
             <h6 className="text-lg font-semibold text-gray-800">
-              Ticket Trend'i (Son 7 Gün)
+              {t('adminDashboard.ticketTrendLast7Days')}
             </h6>
             <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm border border-blue-200">
-              Toplam: {localData.ticketStats?.tickets?.status ? 
-                Object.values(localData.ticketStats.tickets.status).reduce((sum, count) => sum + count, 0) : 0}
+              {t('adminDashboard.total')}: {dashboardData.ticketStats?.tickets?.status ? 
+                Object.values(dashboardData.ticketStats.tickets.status).reduce((sum, count) => sum + count, 0) : 0}
             </span>
           </div>
           
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={localData.ticketStats?.tickets?.dates || []}>
+            <LineChart data={dashboardData.ticketStats?.tickets?.dates || []}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
                 dataKey="date" 
@@ -563,7 +575,7 @@ const AdminDashboard = ({
                 dataKey="totalTickets" 
                 stroke="#9C27B0" 
                 strokeWidth={3}
-                name="Toplam Ticket"
+                name={t('adminDashboard.totalTicket')}
                 dot={{ fill: '#9C27B0', strokeWidth: 2, r: 6 }}
                 activeDot={{ r: 8, stroke: '#9C27B0', strokeWidth: 2, fill: '#fff' }}
               />
@@ -572,7 +584,7 @@ const AdminDashboard = ({
                 dataKey="openTickets" 
                 stroke="#FF9800" 
                 strokeWidth={3}
-                name="Açık Ticket"
+                name={t('adminDashboard.openTicket')}
                 dot={{ fill: '#FF9800', strokeWidth: 2, r: 6 }}
                 activeDot={{ r: 8, stroke: '#FF9800', strokeWidth: 2, fill: '#fff' }}
               />
@@ -581,7 +593,7 @@ const AdminDashboard = ({
                 dataKey="inReviewTickets" 
                 stroke="#2196F3" 
                 strokeWidth={3}
-                name="İncelemede"
+                name={t('adminDashboard.inReview')}
                 dot={{ fill: '#2196F3', strokeWidth: 2, r: 6 }}
                 activeDot={{ r: 8, stroke: '#2196F3', strokeWidth: 2, fill: '#fff' }}
               />
@@ -590,7 +602,7 @@ const AdminDashboard = ({
                 dataKey="inProgressTickets" 
                 stroke="#FFC107" 
                 strokeWidth={3}
-                name="Devam Eden"
+                name={t('adminDashboard.inProgress')}
                 dot={{ fill: '#FFC107', strokeWidth: 2, r: 6 }}
                 activeDot={{ r: 8, stroke: '#FFC107', strokeWidth: 2, fill: '#fff' }}
               />
@@ -599,7 +611,7 @@ const AdminDashboard = ({
                 dataKey="closedTickets" 
                 stroke="#4CAF50" 
                 strokeWidth={3}
-                name="Kapanan"
+                name={t('adminDashboard.closed')}
                 dot={{ fill: '#4CAF50', strokeWidth: 2, r: 6 }}
                 activeDot={{ r: 8, stroke: '#4CAF50', strokeWidth: 2, fill: '#fff' }}
               />
@@ -611,16 +623,16 @@ const AdminDashboard = ({
         <div className="bg-white rounded-lg shadow-lg p-6">
           <div className="flex items-center justify-between mb-6">
             <h6 className="text-lg font-semibold text-gray-800">
-              Çözüm Süreleri
+              {t('adminDashboard.resolutionTimes')}
             </h6>
             
             <div className="flex items-center space-x-4">
               <div className="text-center">
                 <h4 className="text-3xl font-bold text-green-600">
-                  {localData.ticketStats?.tickets?.status?.CLOSED || 0}
+                  {dashboardData.ticketStats?.tickets?.status?.CLOSED || 0}
                 </h4>
                 <p className="text-sm text-gray-500">
-                  Kapanan Ticket
+                  {t('adminDashboard.closedTicket')}
                 </p>
               </div>
               
@@ -629,7 +641,7 @@ const AdminDashboard = ({
                   {totalClosedTickets}
                 </h4>
                 <p className="text-sm text-gray-500">
-                  Çözülen Ticket
+                  {t('adminDashboard.resolvedTicket')}
                 </p>
               </div>
             </div>
@@ -641,7 +653,7 @@ const AdminDashboard = ({
               <XAxis dataKey="name" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} />
               <RechartsTooltip 
-                formatter={(value, name) => [value, 'Ticket Sayısı']}
+                formatter={(value, name) => [value, t('adminDashboard.ticketCount')]}
               />
               <Bar 
                 dataKey="value" 
@@ -663,7 +675,7 @@ const AdminDashboard = ({
         <div className="bg-white rounded-lg shadow-lg p-6">
           <div className="flex items-center justify-between mb-6">
             <h6 className="text-lg font-semibold text-gray-800">
-              Ticket Durumları
+              {t('adminDashboard.ticketStatuses')}
             </h6>
             <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
               <SupportIcon />
@@ -673,8 +685,8 @@ const AdminDashboard = ({
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
-                data={localData.ticketStats?.tickets?.status ? 
-                  Object.entries(localData.ticketStats.tickets.status).map(([key, value]) => ({
+                data={dashboardData.ticketStats?.tickets?.status ? 
+                  Object.entries(dashboardData.ticketStats.tickets.status).map(([key, value]) => ({
                     name: key,
                     value: value,
                     color: key === 'OPEN' ? '#FF9800' : 
@@ -690,8 +702,8 @@ const AdminDashboard = ({
                 fill="#8884d8"
                 dataKey="value"
               >
-                {localData.ticketStats?.tickets?.status ? 
-                  Object.entries(localData.ticketStats.tickets.status).map(([key, value], index) => (
+                {dashboardData.ticketStats?.tickets?.status ? 
+                  Object.entries(dashboardData.ticketStats.tickets.status).map(([key, value], index) => (
                     <Cell 
                       key={`cell-${index}`} 
                       fill={key === 'OPEN' ? '#FF9800' : 
@@ -712,7 +724,7 @@ const AdminDashboard = ({
         <div className="bg-white rounded-lg shadow-lg p-6">
           <div className="flex items-center justify-between mb-6">
             <h6 className="text-lg font-semibold text-gray-800">
-              Task Öncelikleri
+              {t('adminDashboard.taskPriorities')}
             </h6>
             <div className="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
               <AssignmentIcon />
@@ -720,8 +732,8 @@ const AdminDashboard = ({
           </div>
           
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={localData.ticketStats?.tasks?.priority ? 
-              Object.entries(localData.ticketStats.tasks.priority).map(([key, value]) => ({
+            <BarChart data={dashboardData.ticketStats?.tasks?.priority ? 
+              Object.entries(dashboardData.ticketStats.tasks.priority).map(([key, value]) => ({
                 priority: key,
                 count: value,
                 color: key === 'LOW' ? '#4CAF50' : 
@@ -733,15 +745,15 @@ const AdminDashboard = ({
               <XAxis dataKey="priority" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} />
               <RechartsTooltip 
-                formatter={(value, name) => [value, 'Task Sayısı']}
+                formatter={(value, name) => [value, t('adminDashboard.taskCount')]}
               />
               <Bar 
                 dataKey="count" 
                 fill="#4CAF50"
                 radius={[4, 4, 0, 0]}
               >
-                {localData.ticketStats?.tasks?.priority ? 
-                  Object.entries(localData.ticketStats.tasks.priority).map(([key, value], index) => (
+                {dashboardData.ticketStats?.tasks?.priority ? 
+                  Object.entries(dashboardData.ticketStats.tasks.priority).map(([key, value], index) => (
                     <Cell 
                       key={`cell-${index}`} 
                       fill={key === 'LOW' ? '#4CAF50' : 
@@ -756,13 +768,123 @@ const AdminDashboard = ({
         </div>
       </div>
 
+      {/* Yeni Satır - Kullanıcı Kayıt Trendi */}
+      <div className="grid grid-cols-1 gap-6">
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h6 className="text-lg font-semibold text-gray-800">
+              {t('adminDashboard.userRegistrationTrend')}
+            </h6>
+            <div className="w-10 h-10 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center">
+              <PeopleIcon />
+            </div>
+          </div>
+          
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={dashboardData.users?.date || []}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                dataKey="date" 
+                tick={{ fontSize: 12 }}
+                tickFormatter={(value) => {
+                  const date = new Date(value);
+                  return date.toLocaleDateString('tr-TR', { 
+                    month: 'short', 
+                    day: 'numeric' 
+                  });
+                }}
+              />
+              <YAxis tick={{ fontSize: 12 }} />
+              <RechartsTooltip 
+                formatter={(value, name) => [value, t('adminDashboard.newUsers')]}
+                labelFormatter={(value) => {
+                  const date = new Date(value);
+                  return date.toLocaleDateString('tr-TR', { 
+                    weekday: 'long',
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  });
+                }}
+              />
+              <Legend />
+              <Line 
+                type="monotone" 
+                dataKey="numberOfCreatedUsers" 
+                stroke="#9C27B0" 
+                strokeWidth={3}
+                name={t('adminDashboard.newUsers')}
+                dot={{ fill: '#9C27B0', strokeWidth: 2, r: 6 }}
+                activeDot={{ r: 8, stroke: '#9C27B0', strokeWidth: 2, fill: '#fff' }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Yeni Satır - Leader ve Employee Task İstatistikleri */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Leader Task İstatistikleri */}
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h6 className="text-lg font-semibold text-gray-800">
+              {t('adminDashboard.leaderTaskStatistics')}
+            </h6>
+            <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
+              <GroupIcon />
+            </div>
+          </div>
+          
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={dashboardData.ticketStats?.tasks?.leader || []}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="id" tick={{ fontSize: 10 }} />
+              <YAxis tick={{ fontSize: 12 }} />
+              <RechartsTooltip 
+                formatter={(value, name) => [value, name]}
+              />
+              <Legend />
+              <Bar dataKey="assignTaskCount" fill="#2196F3" name={t('adminDashboard.assignTaskCount')} />
+              <Bar dataKey="doneTaskCount" fill="#4CAF50" name={t('adminDashboard.doneTaskCount')} />
+              <Bar dataKey="overDueTaskCount" fill="#F44336" name={t('adminDashboard.overDueTaskCount')} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Employee Task İstatistikleri */}
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h6 className="text-lg font-semibold text-gray-800">
+              {t('adminDashboard.employeeTaskStatistics')}
+            </h6>
+            <div className="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
+              <WorkIcon />
+            </div>
+          </div>
+          
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={dashboardData.ticketStats?.tasks?.employee || []}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="id" tick={{ fontSize: 10 }} />
+              <YAxis tick={{ fontSize: 12 }} />
+              <RechartsTooltip 
+                formatter={(value, name) => [value, name]}
+              />
+              <Legend />
+              <Bar dataKey="doneTaskCount" fill="#4CAF50" name={t('adminDashboard.doneTaskCount')} />
+              <Bar dataKey="overDueTaskCount" fill="#F44336" name={t('adminDashboard.overDueTaskCount')} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
       {/* Beşinci Satır - Kategori ve Chat Trend Grafikleri */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Kategori İstatistikleri */}
         <div className="bg-white rounded-lg shadow-lg p-6">
           <div className="flex items-center justify-between mb-6">
             <h6 className="text-lg font-semibold text-gray-800">
-              Kategori İstatistikleri
+              {t('adminDashboard.categoryStatistics')}
             </h6>
             <div className="w-10 h-10 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center">
               <GroupIcon />
@@ -770,7 +892,7 @@ const AdminDashboard = ({
           </div>
           
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={localData.ticketStats?.categories || []}>
+            <BarChart data={dashboardData.ticketStats?.categories || []}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="categoryNameTr" tick={{ fontSize: 10 }} />
               <YAxis tick={{ fontSize: 12 }} />
@@ -778,9 +900,9 @@ const AdminDashboard = ({
                 formatter={(value, name) => [value, name]}
               />
               <Legend />
-              <Bar dataKey="numberOfRelatedTicket" fill="#2196F3" name="Ticket Sayısı" />
-              <Bar dataKey="numberOfProduct" fill="#4CAF50" name="Ürün Sayısı" />
-              <Bar dataKey="numberOfLeader" fill="#FF9800" name="Leader Sayısı" />
+              <Bar dataKey="numberOfRelatedTicket" fill="#2196F3" name={t('adminDashboard.ticketCount')} />
+              <Bar dataKey="numberOfProduct" fill="#4CAF50" name={t('adminDashboard.productCount')} />
+              <Bar dataKey="numberOfLeader" fill="#FF9800" name={t('adminDashboard.leaderCount')} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -789,7 +911,7 @@ const AdminDashboard = ({
         <div className="bg-white rounded-lg shadow-lg p-6">
           <div className="flex items-center justify-between mb-6">
             <h6 className="text-lg font-semibold text-gray-800">
-              Chat İstatistikleri
+              {t('adminDashboard.chatStatistics')}
             </h6>
             <div className="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center">
               <SupportIcon />
@@ -799,20 +921,20 @@ const AdminDashboard = ({
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="text-center">
               <h4 className="text-2xl font-bold text-blue-600">
-                {localData.ticketStats?.chats?.chatCount || 0}
+                {dashboardData.ticketStats?.chats?.chatCount || 0}
               </h4>
-              <p className="text-sm text-gray-500">Toplam Chat</p>
+              <p className="text-sm text-gray-500">{t('adminDashboard.totalChat')}</p>
             </div>
             <div className="text-center">
               <h4 className="text-2xl font-bold text-green-600">
-                {localData.ticketStats?.chats?.messageCount || 0}
+                {dashboardData.ticketStats?.chats?.messageCount || 0}
               </h4>
-              <p className="text-sm text-gray-500">Toplam Mesaj</p>
+              <p className="text-sm text-gray-500">{t('adminDashboard.totalMessage')}</p>
             </div>
           </div>
           
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={localData.ticketStats?.chats?.dates?.filter(date => date.messageCount > 0) || []}>
+            <BarChart data={dashboardData.ticketStats?.chats?.dates?.filter(date => date.messageCount > 0) || []}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" tick={{ fontSize: 10 }} />
               <YAxis tick={{ fontSize: 12 }} />
@@ -820,8 +942,8 @@ const AdminDashboard = ({
                 formatter={(value, name) => [value, name]}
               />
               <Legend />
-              <Bar dataKey="customerMessages" fill="#4CAF50" name="Müşteri Mesajları" />
-              <Bar dataKey="agentMessages" fill="#2196F3" name="Agent Mesajları" />
+              <Bar dataKey="customerMessages" fill="#4CAF50" name={t('adminDashboard.customerMessages')} />
+              <Bar dataKey="agentMessages" fill="#2196F3" name={t('adminDashboard.agentMessages')} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -832,7 +954,7 @@ const AdminDashboard = ({
         <div className="bg-white rounded-lg shadow-lg p-6">
           <div className="flex items-center justify-between mb-6">
             <h6 className="text-lg font-semibold text-gray-800">
-              Mesaj Trend'i (Son 7 Gün)
+              {t('adminDashboard.messageTrendLast7Days')}
             </h6>
             <div className="w-10 h-10 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center">
               <TrendingUpIcon />
@@ -840,7 +962,7 @@ const AdminDashboard = ({
           </div>
           
           <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={localData.ticketStats?.chats?.dates || []}>
+            <LineChart data={dashboardData.ticketStats?.chats?.dates || []}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
                 dataKey="date" 
@@ -872,7 +994,7 @@ const AdminDashboard = ({
                 dataKey="messageCount" 
                 stroke="#2196F3" 
                 strokeWidth={3}
-                name="Toplam Mesaj"
+                name={t('adminDashboard.totalMessage')}
                 dot={{ fill: '#2196F3', strokeWidth: 2, r: 6 }}
                 activeDot={{ r: 8, stroke: '#2196F3', strokeWidth: 2, fill: '#fff' }}
               />
@@ -881,7 +1003,7 @@ const AdminDashboard = ({
                 dataKey="customerMessages" 
                 stroke="#4CAF50" 
                 strokeWidth={3}
-                name="Müşteri Mesajları"
+                name={t('adminDashboard.customerMessages')}
                 dot={{ fill: '#4CAF50', strokeWidth: 2, r: 6 }}
                 activeDot={{ r: 8, stroke: '#4CAF50', strokeWidth: 2, fill: '#fff' }}
               />
@@ -890,7 +1012,7 @@ const AdminDashboard = ({
                 dataKey="agentMessages" 
                 stroke="#FF9800" 
                 strokeWidth={3}
-                name="Agent Mesajları"
+                name={t('adminDashboard.agentMessages')}
                 dot={{ fill: '#FF9800', strokeWidth: 2, r: 6 }}
                 activeDot={{ r: 8, stroke: '#FF9800', strokeWidth: 2, fill: '#fff' }}
               />
@@ -899,7 +1021,7 @@ const AdminDashboard = ({
                 dataKey="chatCount" 
                 stroke="#9C27B0" 
                 strokeWidth={3}
-                name="Chat Sayısı"
+                name={t('adminDashboard.chatCount')}
                 dot={{ fill: '#9C27B0', strokeWidth: 2, r: 6 }}
                 activeDot={{ r: 8, stroke: '#9C27B0', strokeWidth: 2, fill: '#fff' }}
               />

@@ -1,7 +1,40 @@
 version: "3.8"
 services:
-  # Backend servisleri buraya eklenecek
-  # Örnek: auth-service, api-gateway vb.
+  auth-service:
+    build: ./auth-service
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+    networks:
+      - my-net
+
+  notification-service:
+    build: ./notification-service
+    ports:
+      - "8082:8082"
+    environment:
+      - PORT=8082
+      - KAFKA_BROKERS=kafka:9092
+      - MAIL_HOST=smtp.gmail.com
+      - MAIL_PORT=587
+      - MAIL_SECURE=false
+      - MAIL_USER=cemleventavc@gmail.com
+      - MAIL_PASS=ycvy cjmx yypq veix
+      - MAIL_FROM=cemleventavc@gmail.com
+      - MAIL_DISPLAY_NAME=Support Mate
+    networks:
+      - my-net
+
+  nginx:
+    build: ./my-nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - auth-service
+      - notification-service
+    networks:
+      - my-net
 
 networks:
   my-net:

@@ -227,13 +227,30 @@ class GetDashboardStatisticsQueryHandler:
                             leader_stats[task.createdBy] = {
                                 "id": task.createdBy,
                                 "assignTaskCount": 0,
-                                "doneTaskCount": 0
+                                "doneTaskCount": 0,
+                                "overDueTaskCount": 0
                             }
                         
                         leader_stats[task.createdBy]["assignTaskCount"] += 1
                         
                         if hasattr(task, 'status') and task.status == "DONE":
                             leader_stats[task.createdBy]["doneTaskCount"] += 1
+                        
+                        # Overdue task kontrolü
+                        if hasattr(task, 'deadline') and task.deadline:
+                            current_time = datetime.now()
+                            if hasattr(task.deadline, 'replace'):
+                                # datetime objesi ise
+                                if task.deadline < current_time and task.status != "DONE":
+                                    leader_stats[task.createdBy]["overDueTaskCount"] += 1
+                            elif isinstance(task.deadline, str):
+                                # string ise datetime'a çevir
+                                try:
+                                    due_date = datetime.fromisoformat(task.deadline.replace('Z', '+00:00'))
+                                    if due_date < current_time and task.status != "DONE":
+                                        leader_stats[task.createdBy]["overDueTaskCount"] += 1
+                                except:
+                                    continue
                 except Exception as e:
                     logger.error(f"Error processing task {getattr(task, 'id', 'unknown')}: {e}")
                     continue
@@ -255,11 +272,28 @@ class GetDashboardStatisticsQueryHandler:
                         if task.assignedEmployeeId not in employee_stats:
                             employee_stats[task.assignedEmployeeId] = {
                                 "id": task.assignedEmployeeId,
-                                "doneTaskCount": 0
+                                "doneTaskCount": 0,
+                                "overDueTaskCount": 0
                             }
                         
                         if hasattr(task, 'status') and task.status == "DONE":
                             employee_stats[task.assignedEmployeeId]["doneTaskCount"] += 1
+                        
+                        # Overdue task kontrolü
+                        if hasattr(task, 'deadline') and task.deadline:
+                            current_time = datetime.now()
+                            if hasattr(task.deadline, 'replace'):
+                                # datetime objesi ise
+                                if task.deadline < current_time and task.status != "DONE":
+                                    employee_stats[task.assignedEmployeeId]["overDueTaskCount"] += 1
+                            elif isinstance(task.deadline, str):
+                                # string ise datetime'a çevir
+                                try:
+                                    due_date = datetime.fromisoformat(task.deadline.replace('Z', '+00:00'))
+                                    if due_date < current_time and task.status != "DONE":
+                                        employee_stats[task.assignedEmployeeId]["overDueTaskCount"] += 1
+                                except:
+                                    continue
                 except Exception as e:
                     logger.error(f"Error processing task {getattr(task, 'id', 'unknown')}: {e}")
                     continue
