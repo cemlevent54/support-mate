@@ -36,6 +36,53 @@ class EmailService {
     };
     return this.transporter.sendMail(mailOptions);
   }
+
+  async sendMailWithAttachment({ to, subject, text, html, attachments }) {
+    try {
+      logger.info('[EMAIL-SERVICE] Starting sendMailWithAttachment...');
+      logger.info('[EMAIL-SERVICE] Mail options:', {
+        to,
+        subject,
+        hasText: !!text,
+        hasHtml: !!html,
+        htmlLength: html ? html.length : 0,
+        attachmentsCount: attachments ? attachments.length : 0
+      });
+
+      if (attachments && attachments.length > 0) {
+        logger.info('[EMAIL-SERVICE] Attachment details:', attachments.map(att => ({
+          filename: att.filename,
+          contentType: att.contentType,
+          size: att.content ? att.content.length : 0
+        })));
+      }
+
+      const mailOptions = {
+        from: process.env.MAIL_FROM || process.env.MAIL_USER,
+        to,
+        subject,
+        text,
+        html,
+        attachments: attachments || []
+      };
+
+      logger.info('[EMAIL-SERVICE] Sending mail with transporter...');
+      const result = await this.transporter.sendMail(mailOptions);
+      logger.info('[EMAIL-SERVICE] Mail sent successfully:', {
+        messageId: result.messageId,
+        response: result.response
+      });
+      return result;
+    } catch (error) {
+      logger.error('[EMAIL-SERVICE] Error sending mail:', error);
+      logger.error('[EMAIL-SERVICE] Error details:', {
+        message: error.message,
+        code: error.code,
+        command: error.command
+      });
+      throw error;
+    }
+  }
 }
 
 const emailService = new EmailService();

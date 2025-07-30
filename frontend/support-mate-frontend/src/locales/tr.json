@@ -314,7 +314,9 @@
     "doneTaskCount": "Tamamlanan Task Sayısı",
     "overDueTaskCount": "Geciken Task Sayısı",
     "userRegistrationTrend": "Kullanıcı Kayıt Trendi (Son 7 Gün)",
-    "newUsers": "Yeni Kullanıcılar"
+    "newUsers": "Yeni Kullanıcılar",
+    "unassignedTicket": "Atanmamış Ticket",
+    "noAgentAssigned": "Agent atanmamış"
   },
   "adminLeaders": {
     "title": "Leader Yönetimi",
@@ -932,5 +934,28 @@
       "onlyOwnTeamRemoval": "Sadece kendi ekibinizden çalışan çıkarabilirsiniz",
       "employeeNotFound": "Çalışan bulunamadı"
     }
+  },
+  "exportModal": {
+    "close": "Kapat",
+    "title": "Paneli Dışa Aktar",
+    "description": "Aşağıdan dosya formatı seçerek panel istatistiklerini dışa aktarabilirsiniz.",
+    "format": "Dosya Formatı Seçin",
+    "pdf": "PDF",
+    "excel": "Excel",
+    "csv": "CSV",
+    "taskStats": "Görev İstatistikleri",
+    "ticketStats": "Talep İstatistikleri",
+    "userStats": "Kullanıcı İstatistikleri",
+    "chatStats": "Chat İstatistikleri",
+    "categoryStats": "Kategori & Ürün İstatistikleri",
+    "yes": "Evet",
+    "no": "Hayır",
+    "sendMail": "Mail Gönder",
+    "download": "İndir",
+    "sending": "Gönderiliyor...",
+    "downloading": "İndiriliyor...",
+    "mailSent": "Dışa aktarma dosyası e-posta adresinize gönderildi.",
+    "downloadSuccess": "Dosya başarıyla indirildi.",
+    "error": "Dışa aktarma sırasında bir hata oluştu. Lütfen tekrar deneyin."
   }
 } 

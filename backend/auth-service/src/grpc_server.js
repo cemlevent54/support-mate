@@ -261,6 +261,52 @@ const authService = {
                 message: 'Internal server error'
             });
         }
+    },
+
+    // Dashboard istatistiklerini getir
+    GetDashboardStatistics: async (call, callback) => {
+        try {
+            // Tüm kullanıcıları getir
+            const users = await User.find().populate('role');
+            
+            // İstatistikleri hesapla
+            const totalUsers = users.length;
+            const blockedUsers = users.filter(user => user.isBlocked).length;
+            const verifiedUsers = users.filter(user => user.isEmailVerified).length;
+            
+            // Role bazında istatistikler
+            const roleStats = {};
+            users.forEach(user => {
+                const roleName = user.role ? user.role.name : 'Unknown';
+                roleStats[roleName] = (roleStats[roleName] || 0) + 1;
+            });
+            
+            const roles = Object.entries(roleStats).map(([roleName, count]) => ({
+                roleName,
+                count
+            }));
+
+            const response = {
+                data: {
+                    users: {
+                        total: totalUsers,
+                        roles: roles,
+                        blockedUsers: blockedUsers,
+                        verifiedUsers: verifiedUsers
+                    }
+                },
+                success: true,
+                message: 'Dashboard statistics retrieved successfully'
+            };
+
+            callback(null, response);
+        } catch (error) {
+            console.error('GetDashboardStatistics error:', error);
+            callback({
+                code: grpc.status.INTERNAL,
+                message: 'Internal server error'
+            });
+        }
     }
 };
 

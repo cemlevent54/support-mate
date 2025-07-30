@@ -217,6 +217,47 @@ class AuthGrpcClient:
         except Exception as e:
             logger.error(f"Unexpected error while validating token: {str(e)}")
             return None
+
+    def get_dashboard_statistics(self) -> Optional[Dict[str, Any]]:
+        """Dashboard istatistiklerini getirir"""
+        if not self._check_protobuf_files():
+            return None
+        
+        try:
+            stub = self._get_stub()
+            if not stub:
+                logger.error("gRPC stub not available")
+                return None
+                
+            request = auth_pb2.Empty()
+            response = stub.GetDashboardStatistics(request, timeout=self._connection_timeout)
+            
+            if response.success:
+                data = response.data
+                return {
+                    "users": {
+                        "total": data.users.total,
+                        "roles": [
+                            {
+                                "roleName": role.roleName,
+                                "count": role.count
+                            }
+                            for role in data.users.roles
+                        ],
+                        "blockedUsers": data.users.blockedUsers,
+                        "verifiedUsers": data.users.verifiedUsers
+                    }
+                }
+            else:
+                logger.error(f"Failed to get dashboard statistics: {response.message}")
+                return None
+                
+        except grpc.RpcError as e:
+            logger.error(f"gRPC error while getting dashboard statistics: {e.details()}")
+            return None
+        except Exception as e:
+            logger.error(f"Unexpected error while getting dashboard statistics: {str(e)}")
+            return None
     
     def test_connection(self) -> bool:
         """gRPC bağlantısını test eder"""

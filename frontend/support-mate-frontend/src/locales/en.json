@@ -316,7 +316,9 @@
     "doneTaskCount": "Completed Task Count",
     "overDueTaskCount": "Overdue Task Count",
     "userRegistrationTrend": "User Registration Trend (Last 7 Days)",
-    "newUsers": "New Users"
+    "newUsers": "New Users",
+    "unassignedTicket": "Unassigned Ticket",
+    "noAgentAssigned": "No Agent Assigned"
   },
   "adminLeaders": {
     "title": "Leader Management",
@@ -932,5 +934,28 @@
       "onlyOwnTeamRemoval": "You can only remove employees from your own team",
       "employeeNotFound": "Employee not found"
     }
+  },
+  "exportModal": {
+    "close": "Close",
+    "title": "Export Dashboard",
+    "description": "You can export dashboard statistics by selecting the file format below.",
+    "format": "Select file format",
+    "pdf": "PDF",
+    "excel": "Excel",
+    "csv": "CSV",
+    "taskStats": "Task Statistics",
+    "ticketStats": "Ticket Statistics",
+    "userStats": "User Statistics",
+    "chatStats": "Chat Statistics",
+    "categoryStats": "Category & Product Statistics",
+    "yes": "Yes",
+    "no": "No",
+    "sendMail": "Send Mail",
+    "download": "Download",
+    "sending": "Sending...",
+    "downloading": "Downloading...",
+    "mailSent": "Export file has been sent to your email.",
+    "downloadSuccess": "File downloaded successfully.",
+    "error": "An error occurred during export. Please try again."
   }
 } 

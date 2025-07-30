@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10proto/auth.proto\x12\x04\x61uth\"+\n\x0eGetUserRequest\x12\n\n\x02id\x18\x01 \x01(\t\x12\r\n\x05token\x18\x02 \x01(\t\"5\n\x15GetUserByEmailRequest\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\r\n\x05token\x18\x02 \x01(\t\"J\n\x0cUserResponse\x12\x18\n\x04user\x18\x01 \x01(\x0b\x32\n.auth.User\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07message\x18\x03 \x01(\t\"R\n\x13OnlineUsersResponse\x12\x19\n\x05users\x18\x01 \x03(\x0b\x32\n.auth.User\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07message\x18\x03 \x01(\t\"%\n\x14ValidateTokenRequest\x12\r\n\x05token\x18\x01 \x01(\t\"G\n\x15ValidateTokenResponse\x12\r\n\x05valid\x18\x01 \x01(\x08\x12\x0e\n\x06userId\x18\x02 \x01(\t\x12\x0f\n\x07message\x18\x03 \x01(\t\"\xd2\x01\n\x04User\x12\n\n\x02id\x18\x01 \x01(\t\x12\r\n\x05\x65mail\x18\x02 \x01(\t\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x11\n\tfirstName\x18\x04 \x01(\t\x12\x10\n\x08lastName\x18\x05 \x01(\t\x12\r\n\x05phone\x18\x06 \x01(\t\x12\x18\n\x04role\x18\x07 \x01(\x0b\x32\n.auth.Role\x12\x10\n\x08isOnline\x18\x08 \x01(\x08\x12\x10\n\x08lastSeen\x18\t \x01(\t\x12\x1a\n\x12languagePreference\x18\n \x01(\t\x12\x13\n\x0b\x63\x61tegoryIds\x18\x0b \x03(\t\"5\n\x04Role\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x03 \x01(\t\"\x07\n\x05\x45mpty2\x9a\x02\n\x0b\x41uthService\x12\x37\n\x0bGetUserById\x12\x14.auth.GetUserRequest\x1a\x12.auth.UserResponse\x12\x41\n\x0eGetUserByEmail\x12\x1b.auth.GetUserByEmailRequest\x1a\x12.auth.UserResponse\x12\x45\n\x1bGetOnlineCustomerSupporters\x12\x0b.auth.Empty\x1a\x19.auth.OnlineUsersResponse\x12H\n\rValidateToken\x12\x1a.auth.ValidateTokenRequest\x1a\x1b.auth.ValidateTokenResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10proto/auth.proto\x12\x04\x61uth\"+\n\x0eGetUserRequest\x12\n\n\x02id\x18\x01 \x01(\t\x12\r\n\x05token\x18\x02 \x01(\t\"5\n\x15GetUserByEmailRequest\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\r\n\x05token\x18\x02 \x01(\t\"J\n\x0cUserResponse\x12\x18\n\x04user\x18\x01 \x01(\x0b\x32\n.auth.User\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07message\x18\x03 \x01(\t\"R\n\x13OnlineUsersResponse\x12\x19\n\x05users\x18\x01 \x03(\x0b\x32\n.auth.User\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07message\x18\x03 \x01(\t\"%\n\x14ValidateTokenRequest\x12\r\n\x05token\x18\x01 \x01(\t\"G\n\x15ValidateTokenResponse\x12\r\n\x05valid\x18\x01 \x01(\x08\x12\x0e\n\x06userId\x18\x02 \x01(\t\x12\x0f\n\x07message\x18\x03 \x01(\t\"\xd2\x01\n\x04User\x12\n\n\x02id\x18\x01 \x01(\t\x12\r\n\x05\x65mail\x18\x02 \x01(\t\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x11\n\tfirstName\x18\x04 \x01(\t\x12\x10\n\x08lastName\x18\x05 \x01(\t\x12\r\n\x05phone\x18\x06 \x01(\t\x12\x18\n\x04role\x18\x07 \x01(\x0b\x32\n.auth.Role\x12\x10\n\x08isOnline\x18\x08 \x01(\x08\x12\x10\n\x08lastSeen\x18\t \x01(\t\x12\x1a\n\x12languagePreference\x18\n \x01(\t\x12\x13\n\x0b\x63\x61tegoryIds\x18\x0b \x03(\t\"5\n\x04Role\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x03 \x01(\t\"h\n\x1b\x44\x61shboardStatisticsResponse\x12\'\n\x04\x64\x61ta\x18\x01 \x01(\x0b\x32\x19.auth.DashboardStatistics\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07message\x18\x03 \x01(\t\":\n\x13\x44\x61shboardStatistics\x12#\n\x05users\x18\x01 \x01(\x0b\x32\x14.auth.UserStatistics\"q\n\x0eUserStatistics\x12\r\n\x05total\x18\x01 \x01(\x05\x12#\n\x05roles\x18\x02 \x03(\x0b\x32\x14.auth.RoleStatistics\x12\x14\n\x0c\x62lockedUsers\x18\x03 \x01(\x05\x12\x15\n\rverifiedUsers\x18\x04 \x01(\x05\"1\n\x0eRoleStatistics\x12\x10\n\x08roleName\x18\x01 \x01(\t\x12\r\n\x05\x63ount\x18\x02 \x01(\x05\"\x07\n\x05\x45mpty2\xe4\x02\n\x0b\x41uthService\x12\x37\n\x0bGetUserById\x12\x14.auth.GetUserRequest\x1a\x12.auth.UserResponse\x12\x41\n\x0eGetUserByEmail\x12\x1b.auth.GetUserByEmailRequest\x1a\x12.auth.UserResponse\x12\x45\n\x1bGetOnlineCustomerSupporters\x12\x0b.auth.Empty\x1a\x19.auth.OnlineUsersResponse\x12H\n\rValidateToken\x12\x1a.auth.ValidateTokenRequest\x1a\x1b.auth.ValidateTokenResponse\x12H\n\x16GetDashboardStatistics\x12\x0b.auth.Empty\x1a!.auth.DashboardStatisticsResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -47,8 +47,16 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_USER']._serialized_end=609
   _globals['_ROLE']._serialized_start=611
   _globals['_ROLE']._serialized_end=664
-  _globals['_EMPTY']._serialized_start=666
-  _globals['_EMPTY']._serialized_end=673
-  _globals['_AUTHSERVICE']._serialized_start=676
-  _globals['_AUTHSERVICE']._serialized_end=958
+  _globals['_DASHBOARDSTATISTICSRESPONSE']._serialized_start=666
+  _globals['_DASHBOARDSTATISTICSRESPONSE']._serialized_end=770
+  _globals['_DASHBOARDSTATISTICS']._serialized_start=772
+  _globals['_DASHBOARDSTATISTICS']._serialized_end=830
+  _globals['_USERSTATISTICS']._serialized_start=832
+  _globals['_USERSTATISTICS']._serialized_end=945
+  _globals['_ROLESTATISTICS']._serialized_start=947
+  _globals['_ROLESTATISTICS']._serialized_end=996
+  _globals['_EMPTY']._serialized_start=998
+  _globals['_EMPTY']._serialized_end=1005
+  _globals['_AUTHSERVICE']._serialized_start=1008
+  _globals['_AUTHSERVICE']._serialized_end=1364
 # @@protoc_insertion_point(module_scope)

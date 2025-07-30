@@ -23,6 +23,8 @@ const CustomRadioButton = ({
   maxLength,
   showCharCounter = false,
   sx = {},
+  row = false,
+  showError = false,
   ...props
 }) => {
   const { t } = useTranslation();
@@ -38,6 +40,7 @@ const CustomRadioButton = ({
   };
 
   const getErrorText = () => {
+    if (!showError) return '';
     if (error) {
       return typeof error === 'string' ? error : t('components.customTextInput.validation.required');
     }
@@ -53,9 +56,11 @@ const CustomRadioButton = ({
     return helperText;
   };
 
-  const hasError = error || (required && !value) || 
-    (minLength && value && value.length < minLength) || 
-    (maxLength && value && value.length > maxLength);
+  const hasError = showError && (
+    error || (required && !value) ||
+    (minLength && value && value.length < minLength) ||
+    (maxLength && value && value.length > maxLength)
+  );
 
   return (
     <Box sx={{ mb: 2, ...sx }}>
@@ -84,9 +89,13 @@ const CustomRadioButton = ({
           name={name}
           value={value || ''}
           onChange={handleChange}
+          row={row}
+          className={row ? 'flex flex-row gap-4' : 'flex flex-col'}
           sx={{
+            flexDirection: row ? 'row' : 'column',
+            gap: row ? 2 : 0,
             '& .MuiFormControlLabel-root': {
-              margin: '4px 0',
+              margin: row ? '0 16px 0 0' : '4px 0',
               padding: '8px 12px',
               borderRadius: '8px',
               border: '1px solid transparent',
@@ -113,13 +122,13 @@ const CustomRadioButton = ({
             }
           }}
         >
-          {options.map((option, index) => (
+          {options.map((option) => (
             <FormControlLabel
-              key={option.value || index}
+              key={option.value}
               value={option.value}
               control={<Radio />}
               label={option.label}
-              disabled={disabled || option.disabled}
+              disabled={option.disabled}
             />
           ))}
         </RadioGroup>

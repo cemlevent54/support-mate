@@ -3,6 +3,8 @@ import logging
 from kafka import KafkaProducer
 from config.kafka import get_kafka_brokers
 from string import Template
+from utils.fileGenerator import create_file_content, read_mail_template
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +14,7 @@ TASK_ASSIGNED_TOPIC = "task-assigned"
 TASK_DONE_TOPIC = "task-done"
 TASK_APPROVED_TOPIC = "task-approved"
 TASK_REJECTED_TOPIC = "task-rejected"
+DASHBOARD_STATISTICS_TOPIC = "dashboard-statistics"
 
 _producer = None
 
@@ -229,3 +232,56 @@ def send_task_rejected_event(task, user, html_path=None, language='tr'):
             logger.error("KafkaProducer mevcut değil, event gönderilemedi.")
     except Exception as e:
         logger.error(f"Kafka task_rejected event could not be sent: {e}")
+
+def send_dashboard_statistics_event(email, export_data, language='tr', file_type='json'):
+    try:
+        logger.info(f"[KAFKA][DASHBOARD-STATISTICS] Starting event processing...")
+        logger.info(f"[KAFKA][DASHBOARD-STATISTICS] Email: {email}")
+        logger.info(f"[KAFKA][DASHBOARD-STATISTICS] Language: {language}")
+        logger.info(f"[KAFKA][DASHBOARD-STATISTICS] File type: {file_type}")
+        logger.info(f"[KAFKA][DASHBOARD-STATISTICS] Export data keys: {list(export_data.keys()) if export_data else 'None'}")
+        
+        # Tarih ve saat bilgisiyle dosya ismi oluştur
+        now = datetime.now()
+        file_name = f"{now.strftime('%d_%m_%Y_%H_%M_%S')}_dashboard_export.{file_type}"
+        logger.info(f"[KAFKA][DASHBOARD-STATISTICS] Generated file name: {file_name}")
+        
+        # Mail template'ini oku
+        logger.info(f"[KAFKA][DASHBOARD-STATISTICS] Reading mail template for language: {language}")
+        html_content = read_mail_template(language)
+        logger.info(f"[KAFKA][DASHBOARD-STATISTICS] Mail template length: {len(html_content) if html_content else 0}")
+        
+        # Dosya içeriğini oluştur
+        logger.info(f"[KAFKA][DASHBOARD-STATISTICS] Creating file content for type: {file_type}")
+        file_base64 = create_file_content(export_data, file_type, language)
+        logger.info(f"[KAFKA][DASHBOARD-STATISTICS] File content length: {len(file_base64) if file_base64 else 0}")
+        
+        event = {
+            "email": email,
+            "language": language,
+            "fileName": file_name,
+            "fileType": file_type,
+            "exportData": export_data,
+            "html": html_content,
+            "fileBase64": file_base64
+        }
+        logger.info(f"[KAFKA][DASHBOARD-STATISTICS] Event prepared successfully")
+        logger.info(f"[KAFKA][DASHBOARD-STATISTICS] Event email: {event['email']}")
+        logger.info(f"[KAFKA][DASHBOARD-STATISTICS] Event file name: {event['fileName']}")
+        logger.info(f"[KAFKA][DASHBOARD-STATISTICS] Event file type: {event['fileType']}")
+        logger.info(f"[KAFKA][DASHBOARD-STATISTICS] Event html length: {len(event['html']) if event['html'] else 0}")
+        logger.info(f"[KAFKA][DASHBOARD-STATISTICS] Event file base64 length: {len(event['fileBase64']) if event['fileBase64'] else 0}")
+        
+        producer = get_producer()
+        if producer:
+            logger.info(f"[KAFKA][DASHBOARD-STATISTICS] Producer found, sending event to topic: {DASHBOARD_STATISTICS_TOPIC}")
+            producer.send(DASHBOARD_STATISTICS_TOPIC, event)
+            producer.flush()
+            logger.info(f"[KAFKA][DASHBOARD-STATISTICS] Event sent successfully to Kafka")
+        else:
+            logger.error("[KAFKA][DASHBOARD-STATISTICS] KafkaProducer mevcut değil, event gönderilemedi.")
+    except Exception as e:
+        logger.error(f"[KAFKA][DASHBOARD-STATISTICS] Event could not be sent: {e}")
+        logger.error(f"[KAFKA][DASHBOARD-STATISTICS] Exception type: {type(e)}")
+        import traceback
+        logger.error(f"[KAFKA][DASHBOARD-STATISTICS] Traceback: {traceback.format_exc()}")

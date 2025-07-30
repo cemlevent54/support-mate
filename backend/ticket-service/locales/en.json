@@ -270,6 +270,8 @@
                 "get_dashboard_statistics_error": "Error occurred while getting dashboard statistics."
             },
             "responses": {
+                "export_dashboard_statistics": "Dashboard statistics exported successfully.",
+                "export_dashboard_statistics_error": "Dashboard statistics could not be exported.",
                 "get_dashboard_statistics": "Dashboard statistics retrieved successfully.",
                 "get_dashboard_statistics_error": "Dashboard statistics could not be retrieved."
             }

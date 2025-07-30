@@ -27,3 +27,13 @@ async def get_dashboard_statistics(request: Request, user=Depends(get_current_us
         return forbidden_error(message=_("services.reportService.responses.get_dashboard_statistics_error"))
 
     return await report_controller.get_dashboard_statistics(request, user)
+
+# POST /reports/export-dashboard-statistics
+@router.post("/reports/export-dashboard-statistics")
+async def export_dashboard_statistics(request: Request, user=Depends(get_current_user)):
+    lang = get_lang(request)
+    set_language(lang)
+    report_controller = get_report_controller(lang=lang)
+    if user["roleName"] != "Admin":
+        return forbidden_error(message=_("services.reportService.responses.export_dashboard_statistics_error"))
+    return await report_controller.export_dashboard_statistics(request, user)

@@ -79,6 +79,7 @@ class GetDashboardStatisticsQueryHandler:
                     logger.info(f"Category {category.id} stats: numberOfLeader={numberOfLeader}, numberOfRelatedTicket={numberOfRelatedTicket}, numberOfProduct={numberOfProduct}")
                     
                     categories_stats.append({
+                        "id": category.id,  # Kategori ID'sini ekle
                         "categoryNameTr": category.category_name_tr,
                         "categoryNameEn": category.category_name_en,
                         "numberOfLeader": numberOfLeader,
@@ -147,18 +148,24 @@ class GetDashboardStatisticsQueryHandler:
                     logger.error(f"Error processing ticket resolve time: {e}")
                     continue
             
+            # Atanmamış agent ticket sayısı
+            number_of_not_assigned_agent_tickets = sum(
+                1 for ticket in all_tickets if not getattr(ticket, 'assignedAgentId', None)
+            )
+            
             # Günlük ticket istatistikleri
             dates_stats = self._get_daily_ticket_statistics(all_tickets)
             
             return {
                 "status": status_stats,
                 "resolveTimes": resolve_times,
-                "dates": dates_stats
+                "dates": dates_stats,
+                "numberOfNotAssignedAgentTickets": number_of_not_assigned_agent_tickets
             }
             
         except Exception as error:
             logger.error("GetDashboardStatisticsQueryHandler: _get_tickets_statistics error", {"error": str(error)})
-            return {"status": {}, "resolveTimes": {}}
+            return {"status": {}, "resolveTimes": {}, "numberOfNotAssignedAgentTickets": 0}
 
     def _get_tasks_statistics(self) -> Dict[str, Any]:
         """Task istatistiklerini getir"""
