@@ -20,6 +20,9 @@ const handleDashboardStatisticsEvent = async (event) => {
       case 'pdf':
         mimeType = 'application/pdf';
         break;
+      case 'excel':
+        mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        break;
       default:
         mimeType = 'application/octet-stream';
     }

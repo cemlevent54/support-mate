@@ -956,6 +956,12 @@
     "downloading": "İndiriliyor...",
     "mailSent": "Dışa aktarma dosyası e-posta adresinize gönderildi.",
     "downloadSuccess": "Dosya başarıyla indirildi.",
-    "error": "Dışa aktarma sırasında bir hata oluştu. Lütfen tekrar deneyin."
+    "error": "Dışa aktarma sırasında bir hata oluştu. Lütfen tekrar deneyin.",
+    "validation": {
+      "invalidFormat": "Geçersiz format: {format}. Sadece 'pdf', 'excel', 'json', 'csv' formatları desteklenir.",
+      "invalidFieldValue": "Geçersiz değer: {field} alanı için {value}. Sadece true/false değerleri kabul edilir.",
+      "noFieldsSelected": "En az bir alan seçilmelidir. Lütfen alanlardan en az birini seçin",
+      "userEmailRequired": "Kullanıcı e-postası gereklidir."
+    }
   }
 } 

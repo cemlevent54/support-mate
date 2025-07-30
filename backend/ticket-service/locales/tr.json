@@ -275,6 +275,15 @@
                 "export_dashboard_statistics_error": "Dashboard istatistikleri dışa aktarılamadı.",
                 "get_dashboard_statistics": "Dashboard istatistikleri başarıyla getirildi.",
                 "get_dashboard_statistics_error": "Dashboard istatistikleri getirilemedi."
+            },
+            "validation": {
+                "invalid_format": "Geçersiz format: {format}. Sadece 'pdf', 'excel', 'json', 'csv' formatları desteklenir.",
+                "invalid_field_value": "Geçersiz değer: {field} alanı için {value}. Sadece true/false değerleri kabul edilir.",
+                "no_fields_selected": "En az bir alan seçilmelidir. Lütfen alanlardan en az birini seçin",
+                "user_email_required": "Kullanıcı e-postası gereklidir.",
+                "invalid_response_type": "Geçersiz response tipi",
+                "no_data_to_export": "Dışa aktarılacak veri bulunamadı. Lütfen en az bir alan seçin.",
+                "file_content_empty": "Dosya içeriği oluşturulamadı. Lütfen tekrar deneyin."
             }
         }
     },

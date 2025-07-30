@@ -275,6 +275,15 @@
                 "export_dashboard_statistics_error": "Dashboard statistics could not be exported.",
                 "get_dashboard_statistics": "Dashboard statistics retrieved successfully.",
                 "get_dashboard_statistics_error": "Dashboard statistics could not be retrieved."
+            },
+            "validation": {
+                "invalid_format": "Invalid format: {format}. Only 'pdf', 'excel', 'json', 'csv' formats are supported.",
+                "invalid_field_value": "Invalid value: {value} for field {field}. Only true/false values are accepted.",
+                "no_fields_selected": "At least one field must be selected. Please select at least one of them",
+                "user_email_required": "User email is required.",
+                "invalid_response_type": "Invalid response type",
+                "no_data_to_export": "No data to export. Please select at least one field.",
+                "file_content_empty": "File content could not be created. Please try again."
             }
         }
     },

@@ -257,7 +257,7 @@ def send_dashboard_statistics_event(email, export_data, language='tr', file_type
         logger.info(f"[KAFKA][DASHBOARD-STATISTICS] Mail template length: {len(html_content) if html_content else 0}")
         
         # Dosya içeriğini oluştur
-        logger.info(f"[KAFKA][DASHBOARD-STATISTICS] Creating file content for type: {file_type}")
+        logger.info(f"[KAFKA][DASHBOARD-STATISTICS] Creating file content for type: {file_type} with language: {language}")
         file_base64 = create_file_content(export_data, file_type, language)
         logger.info(f"[KAFKA][DASHBOARD-STATISTICS] File content length: {len(file_base64) if file_base64 else 0}")
         

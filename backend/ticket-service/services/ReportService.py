@@ -2,7 +2,7 @@ from cqrs.queries.report.GetDashboardStatisticsQueryHandler import GetDashboardS
 from cqrs.commands.report.ExportDashboardStatisticsCommandHandler import ExportDashboardStatisticsCommandHandler
 from typing import List, Optional
 from config.logger import get_logger
-from config.language import _
+from config.language import _, set_language
 from kafka_files.kafkaProducer import send_dashboard_statistics_event
 from utils.fileGenerator import create_file_content
 import base64
@@ -10,18 +10,34 @@ from datetime import datetime
 
 logger = get_logger()
 
-VALID_FORMATS = {"pdf", "excel"}
+VALID_FORMATS = {"pdf", "excel", "json", "csv"}
 BOOLEAN_FIELDS = [
     "taskStats", "ticketStats", "userStats", "chatStats", "categoryStats", "sendMail"
+]
+
+EXPORT_FIELDS = [
+    "taskStats", "ticketStats", "userStats", "chatStats", "categoryStats"
 ]
 
 def validate_export_command(command):
     file_type = command.get("format")
     if file_type not in VALID_FORMATS:
-        raise ValueError(f"Invalid format: {file_type}. Only 'pdf' or 'excel' allowed.")
-    for field in BOOLEAN_FIELDS:
-        if field in command and not isinstance(command[field], bool):
-            raise ValueError(f"Invalid value for {field}: {command[field]}. Only true/false allowed.")
+        raise ValueError(_("services.reportService.validation.invalid_format", format=file_type))
+    
+    # En az bir export alanı seçilmiş olmalı (sendMail hariç)
+    selected_export_fields = []
+    for field in EXPORT_FIELDS:
+        if field in command and command[field] is True:
+            selected_export_fields.append(field)
+        elif field in command and not isinstance(command[field], bool):
+            raise ValueError(_("services.reportService.validation.invalid_field_value", field=field, value=command[field]))
+    
+    if not selected_export_fields:
+        raise ValueError(_("services.reportService.validation.no_fields_selected"))
+    
+    # sendMail alanı için validasyon
+    if "sendMail" in command and not isinstance(command["sendMail"], bool):
+        raise ValueError(_("services.reportService.validation.invalid_field_value", field="sendMail", value=command["sendMail"]))
 
 class ReportService:
     def __init__(self, lang: str = 'tr'):
@@ -54,10 +70,20 @@ class ReportService:
             
             # Kontroller
             if not user_email:
-                raise ValueError("User email is required")
+                raise ValueError(_("services.reportService.validation.user_email_required"))
             
             send_mail = command.get("sendMail", False)
             file_type = command.get("format", "json")
+            
+            # Export alanlarını kontrol et
+            selected_export_fields = []
+            for field in EXPORT_FIELDS:
+                if field in command and command[field] is True:
+                    selected_export_fields.append(field)
+            
+            # En az bir alan seçilmemişse hata ver
+            if not selected_export_fields:
+                raise ValueError(_("services.reportService.validation.no_fields_selected"))
             
             logger.info(f"Export parameters - send_mail: {send_mail}, file_type: {file_type}, user_email: {user_email}")
             
@@ -79,6 +105,11 @@ class ReportService:
             
             if send_mail:
                 logger.info("Sending mail...")
+                
+                # Export data kontrolü - eğer hiç veri yoksa hata ver
+                if not export_data or (isinstance(export_data, dict) and not any(export_data.values())):
+                    raise ValueError(_("services.reportService.validation.no_data_to_export"))
+                
                 # Mail gönder
                 send_dashboard_statistics_event(
                     user_email,
@@ -95,18 +126,29 @@ class ReportService:
                 }
             else:
                 logger.info("Creating file for download...")
+                
+                # Export data kontrolü - eğer hiç veri yoksa hata ver
+                if not export_data or (isinstance(export_data, dict) and not any(export_data.values())):
+                    raise ValueError(_("services.reportService.validation.no_data_to_export"))
+                
                 # Dosya oluştur
                 file_content = create_file_content(export_data, file_type, self.lang)
-                logger.info(f"File content created, length: {len(file_content) if file_content else 0}")
+                logger.info(f"File content created with language: {self.lang}, length: {len(file_content) if file_content else 0}")
                 
                 if not file_content:
-                    raise ValueError("File content is empty or None")
+                    raise ValueError(_("services.reportService.validation.file_content_empty"))
                 
                 file_buffer = base64.b64decode(file_content)
                 logger.info(f"File buffer created, size: {len(file_buffer)} bytes")
                 
                 # MIME type belirle
-                mime_type = "application/json" if file_type == "json" else "text/csv" if file_type == "csv" else "application/pdf"
+                mime_type_map = {
+                    "json": "application/json",
+                    "csv": "text/csv", 
+                    "pdf": "application/pdf",
+                    "excel": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                }
+                mime_type = mime_type_map.get(file_type, "application/octet-stream")
                 logger.info(f"MIME type: {mime_type}")
                 
                 result = {

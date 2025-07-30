@@ -956,6 +956,12 @@
     "downloading": "Downloading...",
     "mailSent": "Export file has been sent to your email.",
     "downloadSuccess": "File downloaded successfully.",
-    "error": "An error occurred during export. Please try again."
+    "error": "An error occurred during export. Please try again.",
+    "validation": {
+      "invalidFormat": "Invalid format: {format}. Only 'pdf', 'excel', 'json', 'csv' formats are supported.",
+      "invalidFieldValue": "Invalid value: {value} for field {field}. Only true/false values are accepted.",
+      "noFieldsSelected": "At least one field must be selected. Please select at least one of them",
+      "userEmailRequired": "User email is required."
+    }
   }
 } 

@@ -83,10 +83,9 @@ const ExportDashboardModal = ({ open, onClose, onSnackbar }) => {
       
       if (sendMail) {
         if (onSnackbar) {
-          onSnackbar(
-            t('exportModal.mailSent', 'Export file has been sent to your email.'),
-            'success'
-          );
+          // Backend'den gelen message'ı kullan, yoksa varsayılan mesajı kullan
+          const message = response?.data?.message || t('exportModal.mailSent', 'Export file has been sent to your email.');
+          onSnackbar(message, 'success');
         }
       } else {
         if (response && response.data && response.data.file_buffer) {
@@ -116,18 +115,29 @@ const ExportDashboardModal = ({ open, onClose, onSnackbar }) => {
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
             if (onSnackbar) {
-              onSnackbar(
-                t('exportModal.downloadSuccess', 'File downloaded successfully.'),
-                'success'
-              );
+              // Backend'den gelen message'ı kullan, yoksa varsayılan mesajı kullan
+              const message = response?.data?.message || t('exportModal.downloadSuccess', 'File downloaded successfully.');
+              onSnackbar(message, 'success');
             }
           } catch (error) {
             console.error('File download error:', error);
+            
+            // Backend'den gelen hata mesajını al
+            let errorMessage = t('exportModal.error', 'An error occurred during export. Please try again.');
+            
+            if (error.response && error.response.data) {
+              const responseData = error.response.data;
+              if (responseData.message) {
+                errorMessage = responseData.message;
+              } else if (responseData.error) {
+                errorMessage = responseData.error;
+              }
+            } else if (error.message) {
+              errorMessage = error.message;
+            }
+            
             if (onSnackbar) {
-              onSnackbar(
-                t('exportModal.error', 'An error occurred during export. Please try again.'),
-                'error'
-              );
+              onSnackbar(errorMessage, 'error');
             }
           }
         }
@@ -135,11 +145,23 @@ const ExportDashboardModal = ({ open, onClose, onSnackbar }) => {
       onClose();
     } catch (error) {
       console.error('Export error:', error);
+      
+      // Backend'den gelen hata mesajını al
+      let errorMessage = t('exportModal.error', 'An error occurred during export. Please try again.');
+      
+      if (error.response && error.response.data) {
+        const responseData = error.response.data;
+        if (responseData.message) {
+          errorMessage = responseData.message;
+        } else if (responseData.error) {
+          errorMessage = responseData.error;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       if (onSnackbar) {
-        onSnackbar(
-          t('exportModal.error', 'An error occurred during export. Please try again.'),
-          'error'
-        );
+        onSnackbar(errorMessage, 'error');
       }
     } finally {
       setLoading(false);
@@ -191,7 +213,6 @@ const ExportDashboardModal = ({ open, onClose, onSnackbar }) => {
           options={[
             { value: 'pdf', label: t('exportModal.pdf', 'PDF') },
             { value: 'excel', label: t('exportModal.excel', 'Excel') },
-            { value: 'csv', label: t('exportModal.csv', 'CSV') },
           ]}
           row
         />

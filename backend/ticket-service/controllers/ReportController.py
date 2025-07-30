@@ -35,7 +35,7 @@ class ReportController:
             # JWT'den user email'ini al
             user_email = user.get("email")
             if not user_email:
-                return api_error(error="User email not found", message="Kullanıcı email adresi bulunamadı")
+                return api_error(error=_("services.reportService.validation.user_email_required"), message=_("services.reportService.validation.user_email_required"))
             
             # Authorization header'dan token'ı al
             auth_header = request.headers.get("authorization", "")
@@ -57,11 +57,14 @@ class ReportController:
                     "mime_type": result["mime_type"]
                 }, message=_("services.reportService.responses.export_dashboard_statistics"))
             else:
-                return api_error(error="Invalid response type", message="Geçersiz response tipi")
+                return api_error(error=_("services.reportService.validation.invalid_response_type"), message=_("services.reportService.validation.invalid_response_type"))
                 
         except Exception as e:
             logger.error(_("services.reportService.logs.export_dashboard_statistics_error"))
             logger.error(f"Export error details: {str(e)}")
             import traceback
             logger.error(f"Export error traceback: {traceback.format_exc()}")
-            return api_error(error=str(e), message=_("services.reportService.logs.export_dashboard_statistics_error"))
+            
+            # Service'den gelen hata mesajını kullan, eğer yoksa genel hata mesajını kullan
+            error_message = str(e) if str(e) else _("services.reportService.logs.export_dashboard_statistics_error")
+            return api_error(error=error_message, message=error_message)
