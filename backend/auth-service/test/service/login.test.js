@@ -100,7 +100,8 @@ describe('AuthService.login', () => {
     mockDeps.cacheService.client.incr.resolves(1); // First attempt
     mockDeps.cacheService.client.set.resolves('OK');
 
-    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns(true);
+    // Mock AuthService methods
+    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns();
     const ensureNoActiveSessionStub = sinon.stub(authService, 'ensureNoActiveSession').resolves(true);
     const createSessionStub = sinon.stub(authService, 'createSession').resolves(fakeTokens);
     const handleOnlineQueueStub = sinon.stub(authService, 'handleOnlineQueue').resolves();
@@ -150,7 +151,8 @@ describe('AuthService.login', () => {
     mockDeps.cacheService.client.set.resolves('OK');
     mockDeps.cacheService.client.del.resolves(1); // Successfully deleted
 
-    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns(true);
+    // Mock AuthService methods
+    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns();
     const ensureNoActiveSessionStub = sinon.stub(authService, 'ensureNoActiveSession').resolves(true);
     const createSessionStub = sinon.stub(authService, 'createSession').resolves(fakeTokens);
     const handleOnlineQueueStub = sinon.stub(authService, 'handleOnlineQueue').resolves();
@@ -208,7 +210,8 @@ describe('AuthService.login', () => {
     mockDeps.cacheService.client.incr.resolves(1); // First attempt
     mockDeps.cacheService.client.set.resolves('OK');
 
-    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns(true);
+    // Mock AuthService methods
+    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns();
     const ensureNoActiveSessionStub = sinon.stub(authService, 'ensureNoActiveSession').resolves(true);
     const createSessionStub = sinon.stub(authService, 'createSession').resolves(fakeTokens);
     const handleOnlineQueueStub = sinon.stub(authService, 'handleOnlineQueue').resolves();
@@ -260,7 +263,8 @@ describe('AuthService.login', () => {
     mockDeps.cacheService.client.incr.resolves(1); // First attempt
     mockDeps.cacheService.client.set.resolves('OK');
 
-    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns(true);
+    // Mock AuthService methods
+    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns();
     const ensureNoActiveSessionStub = sinon.stub(authService, 'ensureNoActiveSession').resolves(true);
     const createSessionStub = sinon.stub(authService, 'createSession').resolves(fakeTokens);
     const handleOnlineQueueStub = sinon.stub(authService, 'handleOnlineQueue').resolves();
@@ -312,7 +316,8 @@ describe('AuthService.login', () => {
     mockDeps.cacheService.client.incr.resolves(1); // First attempt
     mockDeps.cacheService.client.set.resolves('OK');
 
-    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns(true);
+    // Mock AuthService methods
+    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns();
     const ensureNoActiveSessionStub = sinon.stub(authService, 'ensureNoActiveSession').resolves(true);
     const createSessionStub = sinon.stub(authService, 'createSession').resolves(fakeTokens);
     const handleOnlineQueueStub = sinon.stub(authService, 'handleOnlineQueue').resolves();
@@ -365,7 +370,8 @@ describe('AuthService.login', () => {
     mockDeps.cacheService.client.incr.resolves(1); // First attempt
     mockDeps.cacheService.client.set.resolves('OK');
 
-    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns(true);
+    // Mock AuthService methods
+    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns();
     const ensureNoActiveSessionStub = sinon.stub(authService, 'ensureNoActiveSession').resolves(true);
     const createSessionStub = sinon.stub(authService, 'createSession').resolves(fakeTokens);
     const handleOnlineQueueStub = sinon.stub(authService, 'handleOnlineQueue').resolves();
@@ -419,7 +425,8 @@ describe('AuthService.login', () => {
     mockDeps.cacheService.client.incr.resolves(1); // First attempt
     mockDeps.cacheService.client.set.resolves('OK');
 
-    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns(true);
+    // Mock AuthService methods
+    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns();
     const ensureNoActiveSessionStub = sinon.stub(authService, 'ensureNoActiveSession').resolves(true);
     const createSessionStub = sinon.stub(authService, 'createSession').resolves(fakeTokens);
     const handleOnlineQueueStub = sinon.stub(authService, 'handleOnlineQueue').resolves();
@@ -666,7 +673,8 @@ describe('AuthService.login', () => {
     mockDeps.cacheService.client.incr.resolves(1); // First attempt
     mockDeps.cacheService.client.set.resolves('OK');
 
-    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns(true);
+    // Mock AuthService methods
+    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns();
     const ensureNoActiveSessionStub = sinon.stub(authService, 'ensureNoActiveSession').resolves(true);
     const createSessionStub = sinon.stub(authService, 'createSession').resolves(fakeTokens);
     const handleOnlineQueueStub = sinon.stub(authService, 'handleOnlineQueue').resolves();

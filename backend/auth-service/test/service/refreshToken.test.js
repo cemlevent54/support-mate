@@ -485,7 +485,8 @@ describe('AuthService.refreshToken', () => {
         id: 'user123',
         email: 'test@example.com',
         role: 'role123',
-        roleName: 'User'
+        roleName: 'User',
+        categoryIds: []
       });
     });
 
@@ -506,7 +507,8 @@ describe('AuthService.refreshToken', () => {
         id: 'user123',
         email: 'test@example.com',
         role: 'role123',
-        roleName: 'User'
+        roleName: 'User',
+        categoryIds: []
       });
     });
 
@@ -527,7 +529,8 @@ describe('AuthService.refreshToken', () => {
         id: 'user123',
         email: 'test@example.com',
         role: undefined,
-        roleName: 'User'
+        roleName: 'User',
+        categoryIds: []
       });
     });
 
@@ -550,7 +553,8 @@ describe('AuthService.refreshToken', () => {
         id: 'user123',
         email: 'test@example.com',
         role: 'role123',
-        roleName: 'User'
+        roleName: 'User',
+        categoryIds: []
       });
     });
   });

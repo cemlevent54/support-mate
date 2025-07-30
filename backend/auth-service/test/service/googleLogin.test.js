@@ -102,11 +102,11 @@ describe('AuthService.googleLogin', () => {
     };
     mockDeps.googleClient.verifyIdToken.resolves(mockTicket);
 
-    // Mock queryHandler to return user
+    // Mock queryHandler to return user by Google ID first
     mockDeps.queryHandler.dispatch.resolves(fakeUser);
 
     // Mock AuthService methods
-    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns(true);
+    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns();
     const ensureNoActiveSessionStub = sinon.stub(authService, 'ensureNoActiveSession').resolves(true);
     const createSessionStub = sinon.stub(authService, 'createSession').resolves(fakeTokens);
     const handleOnlineQueueStub = sinon.stub(authService, 'handleOnlineQueue').resolves();
@@ -121,7 +121,7 @@ describe('AuthService.googleLogin', () => {
     expect(result).to.have.property('expireAt', fakeTokens.expireAt);
 
     expect(mockDeps.googleClient.verifyIdToken.calledOnce).to.be.true;
-    expect(mockDeps.queryHandler.dispatch.calledWith('FIND_ANY_USER_BY_EMAIL', { email: 'test@gmail.com' })).to.be.true;
+    expect(mockDeps.queryHandler.dispatch.calledWith('FIND_USER_BY_GOOGLE_ID', { googleId: 'google123' })).to.be.true;
     expect(ensureEmailVerifiedStub.calledOnce).to.be.true;
     expect(ensureNoActiveSessionStub.calledWith(fakeUser, 'tr')).to.be.true;
     expect(createSessionStub.calledOnce).to.be.true;
@@ -169,7 +169,7 @@ describe('AuthService.googleLogin', () => {
     mockDeps.commandHandler.dispatch.resolves(updatedUser);
 
     // Mock AuthService methods
-    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns(true);
+    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns();
     const ensureNoActiveSessionStub = sinon.stub(authService, 'ensureNoActiveSession').resolves(true);
     const createSessionStub = sinon.stub(authService, 'createSession').resolves(fakeTokens);
     const handleOnlineQueueStub = sinon.stub(authService, 'handleOnlineQueue').resolves();
@@ -216,12 +216,12 @@ describe('AuthService.googleLogin', () => {
     };
     mockDeps.googleClient.verifyIdToken.resolves(mockTicket);
 
-    // Mock queryHandler - email ile bulunamaz, googleId ile bulunur
+    // Mock queryHandler - Google ID ile bulunamaz, email ile bulunur
     mockDeps.queryHandler.dispatch.onFirstCall().resolves(null);
     mockDeps.queryHandler.dispatch.onSecondCall().resolves(fakeUser);
 
     // Mock AuthService methods
-    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns(true);
+    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').returns();
     const ensureNoActiveSessionStub = sinon.stub(authService, 'ensureNoActiveSession').resolves(true);
     const createSessionStub = sinon.stub(authService, 'createSession').resolves(fakeTokens);
     const handleOnlineQueueStub = sinon.stub(authService, 'handleOnlineQueue').resolves();
@@ -232,8 +232,8 @@ describe('AuthService.googleLogin', () => {
     });
 
     expect(result).to.have.property('user', fakeUser);
-    expect(mockDeps.queryHandler.dispatch.firstCall.args).to.deep.equal(['FIND_ANY_USER_BY_EMAIL', { email: 'test@gmail.com' }]);
-    expect(mockDeps.queryHandler.dispatch.secondCall.args).to.deep.equal(['FIND_USER_BY_GOOGLE_ID', { googleId: 'google123' }]);
+    expect(mockDeps.queryHandler.dispatch.firstCall.args).to.deep.equal(['FIND_USER_BY_GOOGLE_ID', { googleId: 'google123' }]);
+    expect(mockDeps.queryHandler.dispatch.secondCall.args).to.deep.equal(['FIND_ANY_USER_BY_EMAIL', { email: 'test@gmail.com' }]);
   });
 
   it('should throw error if no credential provided', async () => {
@@ -310,8 +310,8 @@ describe('AuthService.googleLogin', () => {
       expect.fail('Should have thrown an error');
     } catch (err) {
       expect(err.message).to.equal('translated-text'); // repositories.userRepository.logs.notFound
-      expect(mockDeps.queryHandler.dispatch.firstCall.args).to.deep.equal(['FIND_ANY_USER_BY_EMAIL', { email: 'nonexistent@gmail.com' }]);
-      expect(mockDeps.queryHandler.dispatch.secondCall.args).to.deep.equal(['FIND_USER_BY_GOOGLE_ID', { googleId: 'google123' }]);
+      expect(mockDeps.queryHandler.dispatch.firstCall.args).to.deep.equal(['FIND_USER_BY_GOOGLE_ID', { googleId: 'google123' }]);
+      expect(mockDeps.queryHandler.dispatch.secondCall.args).to.deep.equal(['FIND_ANY_USER_BY_EMAIL', { email: 'nonexistent@gmail.com' }]);
     }
   });
 
@@ -344,8 +344,8 @@ describe('AuthService.googleLogin', () => {
     // Mock queryHandler to return user
     mockDeps.queryHandler.dispatch.resolves(fakeUser);
 
-    // Mock ensureEmailVerified to throw error
-    sinon.stub(authService, 'ensureEmailVerified').throws(new Error('Email not verified'));
+    // Mock AuthService methods - ensureEmailVerified hata fırlatacak
+    const ensureEmailVerifiedStub = sinon.stub(authService, 'ensureEmailVerified').throws(new Error('translated-text'));
 
     try {
       await authService.googleLogin({
@@ -354,7 +354,49 @@ describe('AuthService.googleLogin', () => {
       });
       expect.fail('Should have thrown an error');
     } catch (err) {
-      expect(err.message).to.equal('Email not verified');
+      expect(err.message).to.equal('translated-text');
+      expect(ensureEmailVerifiedStub.calledOnce).to.be.true;
+    }
+  });
+
+  it('should throw error if user is deleted', async () => {
+    const fakeGooglePayload = {
+      email: 'test@gmail.com',
+      sub: 'google123',
+      name: 'Test User',
+      email_verified: true
+    };
+
+    const fakeUser = {
+      id: 'user123',
+      email: 'test@gmail.com',
+      firstName: 'Test',
+      lastName: 'User',
+      roleName: 'User',
+      isEmailVerified: true,
+      emailVerifiedAt: new Date(),
+      role: { _id: 'role123', name: 'User' },
+      googleId: 'google123',
+      isDeleted: true // Silinmiş kullanıcı
+    };
+
+    // Mock Google token verification
+    const mockTicket = {
+      getPayload: () => fakeGooglePayload
+    };
+    mockDeps.googleClient.verifyIdToken.resolves(mockTicket);
+
+    // Mock queryHandler to return deleted user
+    mockDeps.queryHandler.dispatch.resolves(fakeUser);
+
+    try {
+      await authService.googleLogin({
+        credential: 'valid_google_token',
+        locale: 'tr'
+      });
+      expect.fail('Should have thrown an error');
+    } catch (err) {
+      expect(err.message).to.equal('translated-text'); // services.authService.logs.userNotActive
     }
   });
 
