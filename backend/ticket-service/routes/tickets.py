@@ -171,13 +171,13 @@ def list_tickets_agent(request: Request, user=Depends(get_current_user), page: i
 # --- Genel routes ---
 @router.post("", response_model=APIResponse)
 async def create_ticket_route(
-    title: str = Form(...),
-    description: str = Form(...),
-    categoryId: str = Form(...),
-    productId: str = Form(None),
-    customerId: str = Form(None),
-    chatId: str = Form(None),
-    assignedLeaderId: str = Form(None),
+    title: str = Form(""),
+    description: str = Form(""),
+    categoryId: str = Form(""),
+    productId: str = Form(""),
+    customerId: str = Form(""),
+    chatId: str = Form(""),
+    assignedLeaderId: str = Form(""),
     files: List[UploadFile] = File([]),
     user=Depends(get_current_user),
     request: Request = None
@@ -186,18 +186,29 @@ async def create_ticket_route(
     lang = get_lang(request)
     set_language(lang)
     
+    # Debug için log ekle
+    logger.info(f"Received ticket data: title='{title}', description='{description}', categoryId='{categoryId}'")
+    
+    # Zorunlu alanların boş olup olmadığını kontrol et
+    if not title or not title.strip():
+        raise HTTPException(status_code=400, detail="Title is required")
+    if not description or not description.strip():
+        raise HTTPException(status_code=400, detail="Description is required")
+    if not categoryId or not categoryId.strip():
+        raise HTTPException(status_code=400, detail="CategoryId is required")
+    
     # File processing
     attachments = await _validate_and_process_files(files)
     
     # Ticket data preparation
     ticket_data = _prepare_ticket_data(
-        title=title,
-        description=description,
-        categoryId=categoryId,
-        productId=productId,
-        customerId=customerId,
-        chatId=chatId,
-        assignedLeaderId=assignedLeaderId,
+        title=title.strip(),
+        description=description.strip(),
+        categoryId=categoryId.strip(),
+        productId=productId.strip() if productId and productId.strip() else None,
+        customerId=customerId.strip() if customerId and customerId.strip() else None,
+        chatId=chatId.strip() if chatId and chatId.strip() else None,
+        assignedLeaderId=assignedLeaderId.strip() if assignedLeaderId and assignedLeaderId.strip() else None,
         attachments=attachments,
         user=user
     )

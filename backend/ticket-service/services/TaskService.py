@@ -79,16 +79,18 @@ class TaskService:
         
         from datetime import datetime, timedelta, UTC
         current_date = datetime.now(UTC)
-        
+        # deadline'ın timezone bilgisini kontrol et
+        if deadline.tzinfo is None:
+            deadline = deadline.replace(tzinfo=UTC)
+        else:
+            deadline = deadline.astimezone(UTC)
         # Geçmiş tarih kontrolü
         if deadline < current_date:
             return False, _("services.taskService.responses.past_deadline_not_allowed")
-        
         # Çok uzak tarih kontrolü (1 yıl)
         max_future_date = current_date + timedelta(days=365)
         if deadline > max_future_date:
             return False, _("services.taskService.responses.deadline_too_far")
-        
         return True, None
 
     def _validate_task_fields(self, task: Task) -> tuple[bool, Optional[str]]:

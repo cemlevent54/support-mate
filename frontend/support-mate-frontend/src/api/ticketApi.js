@@ -8,18 +8,45 @@ const AUTH_BASE_URL = 'http://localhost:9000' + '/api/auth';
 
 // Ticket oluştur (FormData ile dosya yükleme desteği)
 export const createTicket = async (ticketData) => {
+  console.log('createTicket çağrıldı, ticketData:', ticketData);
   console.log(BASE_URL);
   const formData = new FormData();
-  formData.append('title', ticketData.title);
-  formData.append('description', ticketData.description);
-  formData.append('categoryId', ticketData.categoryId);
-  if (ticketData.productId) formData.append('productId', ticketData.productId);
-  if (ticketData.customerId) formData.append('customerId', ticketData.customerId);
-  if (ticketData.chatId) formData.append('chatId', ticketData.chatId);
-  formData.append('assignedLeaderId', ticketData.assignedLeaderId);
+  
+  // Zorunlu alanları her zaman ekle
+  formData.append('title', ticketData.title || '');
+  formData.append('description', ticketData.description || '');
+  formData.append('categoryId', ticketData.categoryId || '');
+  
+  // Opsiyonel alanları her zaman ekle (boş string olarak)
+  formData.append('productId', ticketData.productId || '');
+  formData.append('customerId', ticketData.customerId || '');
+  formData.append('chatId', ticketData.chatId || '');
+  formData.append('assignedLeaderId', ticketData.assignedLeaderId || '');
+  
+  // Dosyaları ekle
   (ticketData.files || []).forEach(file => {
     formData.append('files', file);
   });
+
+  // FormData içeriğini logla
+  console.log('=== FORMDATA DEBUG ===');
+  console.log('FormData entries:');
+  for (let pair of formData.entries()) {
+    console.log('FormData:', pair[0], '=', pair[1]);
+  }
+  
+  // FormData'nın boş olup olmadığını kontrol et
+  const formDataEntries = Array.from(formData.entries());
+  console.log('FormData entries count:', formDataEntries.length);
+  console.log('FormData has title:', formData.has('title'));
+  console.log('FormData has description:', formData.has('description'));
+  console.log('FormData has categoryId:', formData.has('categoryId'));
+  
+  // FormData değerlerini kontrol et
+  console.log('FormData title value:', formData.get('title'));
+  console.log('FormData description value:', formData.get('description'));
+  console.log('FormData categoryId value:', formData.get('categoryId'));
+
   const response = await axiosInstance.post(BASE_URL, formData, {
     headers: {
       'Content-Type': 'multipart/form-data',

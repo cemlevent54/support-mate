@@ -98,6 +98,8 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
+    
+    console.log('handleChange çağrıldı:', { name, value, files });
   
     if (name === 'files') {
       const maxSize = 10 * 1024 * 1024;
@@ -123,16 +125,25 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
         return;
       }
   
-      setForm((prev) => ({ ...prev, files: validFiles }));
+      setForm((prev) => {
+        console.log('Files güncelleniyor:', { prev, validFiles });
+        return { ...prev, files: validFiles };
+      });
     } else {
       if (name === 'categoryId') {
-        setForm((prev) => ({
-          ...prev,
-          categoryId: value,
-          productId: '',
-        }));
+        setForm((prev) => {
+          console.log('CategoryId güncelleniyor:', { prev, value });
+          return {
+            ...prev,
+            categoryId: value,
+            productId: '',
+          };
+        });
       } else {
-        setForm((prev) => ({ ...prev, [name]: value }));
+        setForm((prev) => {
+          console.log('Form güncelleniyor:', { prev, name, value });
+          return { ...prev, [name]: value };
+        });
       }
     }
   };
@@ -240,15 +251,71 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
         chatId = chat._id || chat.chatId || chat.id;
       }
       
-      const ticketPayload = {
+      // Form verilerini kontrol et ve logla
+      console.log('=== FORM VERİLERİ DEBUG ===');
+      console.log('Form state:', form);
+      console.log('Form verileri:', {
         title: form.title,
         description: form.description,
         categoryId: form.categoryId,
         productId: form.productId,
+        customerId,
+        chatId,
+        files: form.files
+      });
+      console.log('Title length:', form.title?.length);
+      console.log('Description length:', form.description?.length);
+      console.log('CategoryId length:', form.categoryId?.length);
+      console.log('Title type:', typeof form.title);
+      console.log('Title value:', `"${form.title}"`);
+      console.log('Description value:', `"${form.description}"`);
+      console.log('CategoryId value:', `"${form.categoryId}"`);
+      
+      // Form verilerinin boş olup olmadığını kontrol et
+      if (!form.title || !form.title.trim()) {
+        console.error('Title boş!');
+        setSnackbar({ 
+          open: true, 
+          message: 'Başlık alanı boş olamaz.', 
+          severity: 'error' 
+        });
+        setLoading(false);
+        return;
+      }
+      
+      if (!form.description || !form.description.trim()) {
+        console.error('Description boş!');
+        setSnackbar({ 
+          open: true, 
+          message: 'Açıklama alanı boş olamaz.', 
+          severity: 'error' 
+        });
+        setLoading(false);
+        return;
+      }
+      
+      if (!form.categoryId || !form.categoryId.trim()) {
+        console.error('CategoryId boş!');
+        setSnackbar({ 
+          open: true, 
+          message: 'Kategori seçimi zorunludur.', 
+          severity: 'error' 
+        });
+        setLoading(false);
+        return;
+      }
+      
+      const ticketPayload = {
+        title: form.title.trim(),
+        description: form.description.trim(),
+        categoryId: form.categoryId.trim(),
+        productId: form.productId || '',
         files: form.files || [],
         ...(customerId ? { customerId } : {}),
         ...(chatId ? { chatId } : {})
       };
+      
+      console.log('Ticket payload:', ticketPayload);
       
       const response = await createTicket(ticketPayload);
       if (response.success) {
@@ -267,10 +334,24 @@ export default function CreateSupportTicket({ open, onClose, isModal = true, cha
         });
       }
     } catch (err) {
+      console.log('Error response:', err?.response?.data);
+      
       if (err?.response?.data?.detail) {
+        let errorMessage = '';
+        
+        // Eğer detail bir array ise, hata mesajlarını birleştir
+        if (Array.isArray(err.response.data.detail)) {
+          errorMessage = err.response.data.detail
+            .map(error => `${error.loc.join('.')}: ${error.msg}`)
+            .join(', ');
+        } else {
+          // Eğer detail bir string ise, doğrudan kullan
+          errorMessage = err.response.data.detail;
+        }
+        
         setSnackbar({
           open: true,
-          message: err.response.data.detail,
+          message: errorMessage,
           severity: 'error'
         });
       } else if (err?.response?.data?.message) {
