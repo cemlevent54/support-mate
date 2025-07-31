@@ -1,0 +1,35 @@
+services:
+  auth-service:
+    build: .
+    container_name: auth_service
+    ports:
+      - "${PORT}:8080"
+      - "50051:50051"
+    environment:
+      - NODE_ENV=${NODE_ENV}
+      - MONGO_URI=mongodb://root:password@mongodb_service:27017/auth-service?authSource=admin
+      - REDIS_URL=redis://redis_service:6379
+      - KAFKA_BROKERS=kafka:9092
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
+      - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN}
+      - WEBSITE_URL=${WEBSITE_URL}
+      - DEFAULT_LOCALE=${DEFAULT_LOCALE}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - EMAIL_CODE_LENGTH=${EMAIL_CODE_LENGTH}
+      - EMAIL_CODE_EXPIRATION_MINUTES=${EMAIL_CODE_EXPIRATION_MINUTES}
+      - CHOKIDAR_USEPOLLING=true
+    
+    networks:
+      - mongodb-network
+    restart: always
+    volumes:
+      - ./logs:/app/logs
+      - ./src:/app/src
+
+networks:
+  mongodb-network:
+    external: true
+    

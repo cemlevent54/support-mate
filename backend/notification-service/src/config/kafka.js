@@ -3,8 +3,24 @@ import logger from './logger.js';
 
 class KafkaService {
   constructor() {
-    const brokers = process.env.KAFKA_BROKERS ? process.env.KAFKA_BROKERS.split(',').map(b => b.trim()) : ['localhost:9092'];
-    this.kafka = new Kafka({ brokers });
+    // Environment variable'ı zorla kontrol et
+    const kafkaBrokers = process.env.KAFKA_BROKERS;
+    if (!kafkaBrokers) {
+      logger.error('KAFKA_BROKERS environment variable is not set!');
+      throw new Error('KAFKA_BROKERS environment variable is required');
+    }
+    
+    const brokers = kafkaBrokers.split(',').map(b => b.trim());
+    logger.info('Kafka brokers configuration:', { brokers, env: process.env.KAFKA_BROKERS });
+    
+    this.kafka = new Kafka({ 
+      brokers,
+      clientId: 'notification-service',
+      retry: {
+        initialRetryTime: 100,
+        retries: 8
+      }
+    });
     this.producer = this.kafka.producer();
     this.consumer = this.kafka.consumer({ groupId: 'notification-group' });
   }

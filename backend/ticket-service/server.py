@@ -45,10 +45,6 @@ if __name__ == "__main__":
     # Statik dosya servisi (uploads klasörü)
     fastapi_app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
-    uvicorn.run(
-        "server:socket_app",
-        host="0.0.0.0",
-        port=8086,
-        reload=True,
-        log_config=LOG_CONFIG
-    )
+    # uvicorn.run kaldırıldı çünkü artık Dockerfile'da uvicorn çalıştırılıyor
+    # Hot reload Dockerfile'da yapılıyor
+    pass

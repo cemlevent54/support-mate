@@ -25,11 +25,11 @@
     - [Notification Service](#notification-service)
   - [📊 Database & Infrastructure](#database--infrastructure)
 - [⬇️ Installation Instructions](#installation-instructions)
+  - [🗄️ Database Infrastructure](#database-infrastructure)
   - [📚 Backend](#backend-instructions)
   - [📚 Frontend](#frontend-instructions)
-  - [🧪 Unit Tests](#testing-backend-services)
+
   - [📁 Complete Folder Structure](#complete-folder-structure)
-- [🖼️ Example Screenshots](#example-screenshots)
 
 
 ### Introduction
@@ -176,3 +176,120 @@ The system supports multiple user roles including users, customer supporters, le
 - **WebSocket/Socket.io** - Real-time bidirectional communication
 
 
+## ⬇️ Installation Instructions
+
+### 🗄️ Database Infrastructure
+
+The following database and messaging infrastructure must be installed first for the system to work:
+
+#### 1. MongoDB Installation
+
+MongoDB is used as the main database of the system. User data, tickets, and chat messages are stored here.
+
+```bash
+cd mongodb
+docker-compose up -d
+```
+
+**Access Information:**
+- **MongoDB**: localhost:27017
+- **MongoDB Express**: http://localhost:5000
+  - Username: admin
+  - Password: admin123
+
+#### 2. Redis Installation
+
+Redis is used for session management and caching.
+
+```bash
+cd redis
+docker-compose up -d
+```
+
+**Access Information:**
+- **Redis**: localhost:6379
+- **Redis Commander**: http://localhost:5002
+
+#### 3. Apache Kafka Installation
+
+Kafka is used for event-driven communication between microservices.
+
+```bash
+cd kafka
+docker-compose up -d
+```
+
+**Access Information:**
+- **Kafka**: localhost:9092
+- **Kafka UI**: http://localhost:5008
+- **Zookeeper**: localhost:2181
+
+#### Installation Order
+
+1. **MongoDB** - Main database
+2. **Redis** - Cache and session management
+3. **Kafka** - Event streaming platform
+
+Wait for these services to start completely before starting the backend services.
+
+### 📚 Backend
+
+Follow the steps below to install backend services:
+
+#### API Gateway Service
+
+```bash
+cd backend/api-gateway
+docker compose up --build -d
+```
+
+#### Authentication Service
+
+```bash
+cd backend/auth-service
+docker compose up --build -d
+```
+
+#### Ticket Service
+
+```bash
+cd backend/ticket-service
+docker compose up --build -d
+```
+
+#### Notification Service
+
+```bash
+cd backend/notification-service
+docker compose up --build -d
+```
+
+### 📚 Frontend
+
+To install the frontend application:
+
+```bash
+cd frontend/support-mate-frontend
+npm install
+npm start
+```
+
+
+
+
+### 📁 Complete Folder Structure
+
+```
+support-mate/
+├── backend/
+│   ├── api-gateway/
+│   ├── auth-service/
+│   ├── ticket-service/
+│   └── notification-service/
+├── frontend/
+│   └── support-mate-frontend/
+├── kafka/
+├── mongodb/
+├── redis/
+└── README.md
+```

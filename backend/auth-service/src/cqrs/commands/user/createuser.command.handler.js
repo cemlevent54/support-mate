@@ -10,15 +10,23 @@ export class CreateUserCommandHandler {
     try {
       logger.info(translation('cqrs.commands.user.createUser.logs.executing'), { email: command.email });
       let roleId = command.role;
-      // Eğer rol string ise, role nesnesini bul
-      if (!roleId || typeof roleId === 'string') {
-        const roleDoc = await roleRepository.findRoleByName('User');
-        roleId = roleDoc ? roleDoc._id : null;
-      }
+      
+      // Role kontrolü ve varsayılan role atama
       if (!roleId) {
-        // Hiçbir şekilde rol bulunamazsa default user rolünü bul
-        const defaultRole = await roleRepository.findDefaultUserRole();
-        roleId = defaultRole ? defaultRole._id : null;
+        // Önce 'User' rolünü dene
+        const userRole = await roleRepository.findRoleByName('User');
+        if (userRole) {
+          roleId = userRole._id;
+        } else {
+          // 'User' yoksa 'user' (küçük harf) rolünü dene
+          const defaultRole = await roleRepository.findDefaultUserRole();
+          roleId = defaultRole ? defaultRole._id : null;
+        }
+      }
+      
+      // Hala role bulunamadıysa hata fırlat
+      if (!roleId) {
+        throw new Error('Default user role not found. Please create a default user role first.');
       }
       const user = new UserModel({
         email: command.email,

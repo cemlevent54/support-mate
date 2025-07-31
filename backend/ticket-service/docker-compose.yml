@@ -1,0 +1,31 @@
+version: "3.8"
+
+services:
+  ticket-service:
+    build: .
+    container_name: ticket_service
+    ports:
+      - "8086:8086"
+    environment:
+      - DEFAULT_LANGUAGE=tr
+      - MONGO_URI=${MONGO_URI}
+      - REDIS_URL=${REDIS_URL}
+      - KAFKA_BROKERS=${KAFKA_BROKERS}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - JWT_ALGORITHM=${JWT_ALGORITHM}
+      - PORT=${PORT}
+      - AUTH_SERVICE_URL=http://auth-service:8080
+      - AUTH_GRPC_HOST=auth_service
+      - AUTH_GRPC_PORT=50051
+      - GRPC_PORT=${GRPC_PORT}
+    networks:
+      - mongodb-network
+    restart: always
+    volumes:
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+
+networks:
+  mongodb-network:
+    external: true

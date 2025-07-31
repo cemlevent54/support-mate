@@ -11,7 +11,7 @@ const UserSchema = new mongoose.Schema(
       emailVerifiedAt: { type: Date, default: null },
       phoneNumber: { type: String, default: null },
       password: { type: String, required: true },
-      role: { type: mongoose.Schema.Types.ObjectId, ref: 'Role', required: true },
+      role: { type: mongoose.Schema.Types.ObjectId, ref: 'Role', required: false },
       roleName: { type: String, default: null },
       // Employee için Leader ilişkisi
       leaderId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },

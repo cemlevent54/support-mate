@@ -24,6 +24,17 @@ sio = socketio.AsyncServer(
 )
 
 fastapi_app = FastAPI()
+
+# Ana sayfa route'u
+@fastapi_app.get("/")
+async def root():
+    return {"message": "Ticket Service API", "status": "running"}
+
+# Health check route'u
+@fastapi_app.get("/health")
+async def health_check():
+    return {"status": "healthy", "service": "ticket-service"}
+
 fastapi_app.include_router(api_router)
 
 

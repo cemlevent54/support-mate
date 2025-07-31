@@ -19,5 +19,8 @@
     "kafkajs": "^2.2.4",
     "nodemailer": "^7.0.5",
     "winston": "^3.17.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
   }
 }

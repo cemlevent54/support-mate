@@ -62,3 +62,20 @@ mongodb/
 ├── data/           # MongoDB veri dosyaları
 └── init/           # Başlangıç scriptleri (opsional)
 ``` 
+
+## .env Eklenmesi gerekenler
+
+```
+# MongoDB service configuration
+MONGO_PORT=27017
+MONGO_ROOT_USERNAME=yourmongodbusername
+MONGO_ROOT_PASSWORD=yourmongodbpassword
+
+# Mongo Express configuration
+MONGO_EXPRESS_PORT=5000
+MONGO_EXPRESS_ADMIN_USERNAME=youradminusername
+MONGO_EXPRESS_ADMIN_PASSWORD=youradminpassword
+MONGO_EXPRESS_BASICAUTH_USERNAME=yourbasicauthusername
+MONGO_EXPRESS_BASICAUTH_PASSWORD=yourbasicauthpassword
+```
+

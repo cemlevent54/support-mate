@@ -85,3 +85,16 @@ redis/
 ├── README.md
 └── data/           # Redis veri dosyaları
 ``` 
+
+## .env Eklenmesi Gerekenler (Örnek Değerler)
+
+```
+# Redis servis ayarları
+REDIS_PORT=6379
+REDIS_CONTAINER_NAME=redis_service
+
+# Redis Commander (admin arayüzü) ayarları
+REDIS_COMMANDER_PORT=5002
+REDIS_COMMANDER_CONTAINER_NAME=redis_commander
+REDIS_COMMANDER_HOSTS=local:redis_service:6379
+```

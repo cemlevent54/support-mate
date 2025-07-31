@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 class AuthGrpcClient:
     def __init__(self):
-        self.auth_grpc_host = os.getenv("AUTH_GRPC_HOST", "localhost")
+        self.auth_grpc_host = os.getenv("AUTH_GRPC_HOST", "auth_service")
         self.auth_grpc_port = os.getenv("AUTH_GRPC_PORT", "50051")
         self.channel = None
         self.stub = None

@@ -1,7 +1,7 @@
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const logger = require('../config/logger.config.js');
 const { getServiceUrl } = require('../utils/gatewayConfigHelper.js');
-const { internalServerError } = require('../responseHandlers/serverErrors/internalServer.error.js');
+
 
 const ticketProxy = createProxyMiddleware({
   target: getServiceUrl('ticketService'),
@@ -17,7 +17,7 @@ const ticketProxy = createProxyMiddleware({
   },
   onError: (err, req, res) => {
     logger.error(`[TICKETS] Proxy error: ${err.message}`);
-    internalServerError(res);
+    res.status(500).json({ error: 'Proxy error', details: err.message });
   }
 });
 

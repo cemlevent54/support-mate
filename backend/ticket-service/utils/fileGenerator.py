@@ -54,7 +54,7 @@ def create_status_pie_chart(status_data, language='tr'):
             })
     
     if not data:
-        return Spacer(1, 10)
+       return [Spacer(1, 10)]
     
     # 3D Exploded Pie chart olustur - sol tarafa
     drawing = Drawing(500, 250)

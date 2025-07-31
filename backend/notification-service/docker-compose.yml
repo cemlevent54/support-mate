@@ -1,0 +1,29 @@
+services:
+  notification-service:
+    build: .
+    container_name: notification_service
+    ports:
+      - "${PORT}:8082"
+    environment:
+      - NODE_ENV=${NODE_ENV}
+      - PORT=${PORT}
+      - MAIL_HOST=${MAIL_HOST}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_SECURE=${MAIL_SECURE}
+      - MAIL_USER=${MAIL_USER}
+      - MAIL_PASS=${MAIL_PASS}
+      - MAIL_FROM=${MAIL_FROM}
+      - MAIL_DISPLAY_NAME=${MAIL_DISPLAY_NAME}
+      - KAFKA_BROKERS=kafka:9092
+      - CHOKIDAR_USEPOLLING=true
+      - NODEMON_POLLING=true
+    networks:
+      - mongodb-network
+    restart: always
+    volumes:
+      - ./logs:/app/logs
+      - ./src:/app/src
+
+networks:
+  mongodb-network:
+    external: true

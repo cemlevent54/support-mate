@@ -11,7 +11,7 @@ const setupSocketProxy = require('./config/socket.config.js');
 
 
 const app = express();
-const PORT = 9000;
+const PORT = process.env.PORT;
 
 const server = http.createServer(app);
 
@@ -44,6 +44,6 @@ app.use('/uploads', createProxyMiddleware({
 setupSocketProxy(server);
 
 server.listen(PORT, () => {
-  logger.info(`API Gateway running on: http://localhost:${PORT}`);
+  logger.info(`API Gateway ssrunning on: http://localhost:${PORT}`);
   logger.info(`API Gateway health endpoint: http://localhost:${PORT}/health`);
 }); 

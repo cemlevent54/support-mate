@@ -7,7 +7,7 @@ const router = express.Router();
 
 // Health check endpoint
 router.get('/health', async (req, res) => {
-  const port = req.app.get('port') || process.env.PORT || 9000;
+  const port = process.env.PORT;
   logger.info(`[HEALTH] Health check endpoint called: http://localhost:${port}/health`);
   logger.info(`[HEALTH] API Gateway base URL: http://localhost:${port}`);
   logger.info(`[HEALTH] API Gateway services: ${JSON.stringify(services)}`);

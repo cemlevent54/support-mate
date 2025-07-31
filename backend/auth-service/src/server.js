@@ -82,6 +82,7 @@ initializeApp()
     
     app.listen(PORT, () => {
       logger.info(`🚀 Server is listening on port ${PORT}`);
+      logger.info(`🚀 Server is listening on port ${PORT} , deneme mesajım`);
     });
   })
   .catch((error) => {
