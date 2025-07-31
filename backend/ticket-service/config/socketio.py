@@ -3,14 +3,13 @@ import logging
 import os
 from dotenv import load_dotenv
 load_dotenv()
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from routes import api_router
 from config.language import _
 from config.database import get_mongo_client_and_db
 from services.MessageService import MessageService
-from middlewares.lorem_filter import LoremFilterMiddleware
-
+from middlewares.swear_filter import swear_check_middleware, username_check_middleware
 logger = logging.getLogger("socketio")
 
 # Aktif kullanıcılar: socket_id -> {user_id, user_role, receiver_id, chat_id, rooms}
@@ -28,9 +27,14 @@ sio = socketio.AsyncServer(
 fastapi_app = FastAPI()
 fastapi_app.include_router(api_router)
 
-# Lorem Filter Middleware'ini ekle
-lorem_filter_middleware = LoremFilterMiddleware()
-fastapi_app.middleware("http")(lorem_filter_middleware)
+# Swear Filter Middleware'lerini ekle
+@fastapi_app.middleware("http")
+async def swear_middleware(request: Request, call_next):
+    return await swear_check_middleware(request, call_next)
+
+@fastapi_app.middleware("http")
+async def username_middleware(request: Request, call_next):
+    return await username_check_middleware(request, call_next)
 
 # Static files serving
 try:

@@ -1,9 +1,13 @@
-import { checkForSwearWords, createSwearWordResponse } from '../config/badword/swearConfig.js';
+import { checkForSwearWords, createSwearWordResponse, controlUsername } from '../config/badword/swearConfig.js';
 
 // Küfür kontrolü middleware'i
 export const swearCheckMiddleware = (req, res, next) => {
+  console.log(`[AUTH SWEAR MIDDLEWARE] ${req.method} ${req.path}`);
+  console.log(`[AUTH SWEAR MIDDLEWARE] Headers:`, req.headers);
+  
   // Google login/register için credential alanını kontrol etme
   if (req.body && req.body.credential) {
+    console.log('[AUTH SWEAR MIDDLEWARE] Skipping credential field');
     return next();
   }
   
@@ -22,7 +26,7 @@ export const swearCheckMiddleware = (req, res, next) => {
           
           const result = checkForSwearWords(value);
           if (result.hasSwearWords) {
-            console.log('Uygunsuz kelime bulundu:', { field: key, value: value, originalText: result.originalText, filteredText: result.filteredText });
+            console.log('[AUTH SWEAR DETECTED] Field:', key, 'Value:', value, 'Original:', result.originalText, 'Filtered:', result.filteredText);
             const locale = req.getLocale ? req.getLocale() : 'tr';
             return res.status(400).json(createSwearWordResponse(locale));
           }
@@ -49,10 +53,36 @@ export const swearCheckMiddleware = (req, res, next) => {
         
         const result = checkForSwearWords(value);
         if (result.hasSwearWords) {
+          console.log('[AUTH SWEAR DETECTED] Query Field:', key, 'Value:', value, 'Original:', result.originalText, 'Filtered:', result.filteredText);
           const locale = req.getLocale ? req.getLocale() : 'tr';
           return res.status(400).json(createSwearWordResponse(locale));
         }
       }
+    }
+  }
+  
+  next();
+};
+
+// Username kontrolü için özel middleware
+export const usernameCheckMiddleware = async (req, res, next) => {
+  console.log(`[AUTH USERNAME MIDDLEWARE] ${req.method} ${req.path}`);
+  
+  if (req.body && req.body.username) {
+    console.log('[AUTH USERNAME MIDDLEWARE] Checking username:', req.body.username);
+    const isClean = await controlUsername(req.body.username);
+    console.log('[AUTH USERNAME MIDDLEWARE] Username clean:', isClean);
+    
+    if (!isClean) {
+      console.log('[AUTH USERNAME DETECTED] Username contains swear words:', req.body.username);
+      const locale = req.getLocale ? req.getLocale() : 'tr';
+      return res.status(400).json({
+        success: false,
+        message: locale === 'en' 
+          ? 'Username contains inappropriate words. Please choose a different username.'
+          : 'Kullanıcı adında uygunsuz kelimeler bulunmaktadır. Lütfen farklı bir kullanıcı adı seçin.',
+        data: null
+      });
     }
   }
   

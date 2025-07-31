@@ -23,7 +23,7 @@ import { corsMiddleware } from './middlewares/cors.middleware.js';
 import { languageMiddleware } from './middlewares/language.middleware.js';
 import { errorHandler } from './middlewares/error.handler.js';
 import { seedPermissions } from './migrations/seedPermissions.js';
-import { swearCheckMiddleware } from './middlewares/swear.middleware.js';
+import { swearCheckMiddleware, usernameCheckMiddleware } from './middlewares/swear.middleware.js';
 import { startGrpcServer } from './grpc_server.js';
 
 
@@ -52,6 +52,15 @@ app.use((req, res, next) => {
     return next();
   }
   return swearCheckMiddleware(req, res, next);
+});
+
+// Username kontrolü middleware'i (register endpoint'leri için)
+app.use((req, res, next) => {
+  // Sadece register endpoint'lerinde username kontrolü yap
+  if (req.path === '/api/auth/register' || req.path === '/api/auth/google-register') {
+    return usernameCheckMiddleware(req, res, next);
+  }
+  next();
 });
 
 app.use('/api', router); 
