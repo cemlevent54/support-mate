@@ -1,5 +1,5 @@
 const { createProxyMiddleware } = require('http-proxy-middleware');
-const logger = require('../config/logger.config.js').default;
+const logger = require('../config/logger.config.js');
 const { getServiceUrl } = require('../utils/gatewayConfigHelper.js');
 const { internalServerError } = require('../responseHandlers/serverErrors/internalServer.error.js');
 
