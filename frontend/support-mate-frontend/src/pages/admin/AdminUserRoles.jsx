@@ -158,7 +158,7 @@ export default function AdminUserRoles() {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell><strong>{t('adminUserRoles.table.id')}</strong></TableCell>
+              {/* <TableCell><strong>{t('adminUserRoles.table.id')}</strong></TableCell> id sütunu kaldırıldı */}
               <TableCell><strong>{t('adminUserRoles.table.name')}</strong></TableCell>
               <TableCell><strong>{t('adminUserRoles.table.permissions')}</strong></TableCell>
               <TableCell align="center"><strong>{t('adminUserRoles.table.actions')}</strong></TableCell>
@@ -172,7 +172,7 @@ export default function AdminUserRoles() {
             ) : (
               roles.map(role => (
                 <TableRow key={role.id || role._id}>
-                  <TableCell>{role.id || role._id}</TableCell>
+                  {/* <TableCell>{role.id || role._id}</TableCell> id sütunu kaldırıldı */}
                   <TableCell>{role.name}</TableCell>
                   <TableCell>
                     <Button size="small" variant="outlined" startIcon={<ListIcon />} onClick={() => handleOpenPermModal(role)}>

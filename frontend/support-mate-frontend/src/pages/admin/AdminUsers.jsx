@@ -283,7 +283,6 @@ export default function AdminUsers() {
         <Table>
           <TableHead>
             <TableRow sx={{ bgcolor: '#f5f5f5' }}>
-              <TableCell><strong>{t('adminUsers.table.id')}</strong></TableCell>
               <TableCell><strong>{t('adminUsers.table.fullName')}</strong></TableCell>
               <TableCell><strong>{t('adminUsers.table.email')}</strong></TableCell>
               <TableCell><strong>{t('adminUsers.table.role')}</strong></TableCell>
@@ -308,7 +307,6 @@ export default function AdminUsers() {
             ) : (
               paginatedUsers.map((user) => (
                 <TableRow key={user._id} hover>
-                  <TableCell>{user.id || user._id}</TableCell>
                   <TableCell>
                     <Typography fontWeight={500}>
                       {user.firstName} {user.lastName}
